@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Loader2, ArrowLeft, Shield } from 'lucide-react';
-import Button from './Button';
+import { Mail, ArrowLeft, Shield } from 'lucide-react';
+import AuthModal from './AuthModal';
 
 const SignIn: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Add authentication logic here
-    setTimeout(() => setIsLoading(false), 1000);
+  const handleEmailSignIn = () => {
+    setAuthView('login');
+    setIsAuthModalOpen(true);
+  };
+
+  const handleEmailSignUp = () => {
+    setAuthView('register');
+    setIsAuthModalOpen(true);
   };
 
   return (
@@ -98,11 +99,10 @@ const SignIn: React.FC = () => {
                 className="w-5 h-5"
               />
               <span className="text-sm font-medium">Continue with LinkedIn</span>
-            </button>
-
-            <button
+            </button>            <button
               type="button"
               className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={handleEmailSignIn}
             >
               <Mail className="w-5 h-5" />
               <span className="text-sm font-medium">Continue with Email</span>
@@ -134,6 +134,12 @@ const SignIn: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialView={authView}
+      />
     </div>
   );
 };
