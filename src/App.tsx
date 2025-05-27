@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PartnersSlider from './components/PartnersSlider';
@@ -18,32 +18,30 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={
+          <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 font-sans">
+            <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+            <Navbar />
+            <main className="space-y-16">
+              <Hero />
+              <PartnersSlider />
+              <NaturalLanguageSearch />
+              <DataSourcesSearch />
+              <ProfileEvaluation />
+              <EmailSequences />
+              <GlobalReach />
+              <TabFeatures />
+              <Integrations />
+              <FAQ />
+            </main>
+            <Footer />
+          </div>
+        } />
         <Route
           path="/signin"
           element={<SignIn />}
         />
-        <Route
-          path="/"
-          element={
-            <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 font-sans">
-              <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
-              <Navbar />
-              <main className="space-y-16">
-                <Hero />
-                <PartnersSlider />
-                <NaturalLanguageSearch />
-                <DataSourcesSearch />
-                <ProfileEvaluation />
-                <EmailSequences />
-                <GlobalReach />
-                <TabFeatures />
-                <Integrations />
-                <FAQ />
-              </main>
-              <Footer />
-            </div>
-          }
-        />
+        <Route path="*" element={<Navigate to="/\" replace />} />
       </Routes>
     </Router>
   );

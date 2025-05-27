@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, ChevronDown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from './Button';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,9 +25,9 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <a href="/" className="flex items-center">
+            <Link to="/" className="flex items-center">
               <img src="/tallogo.png" alt="Tal" className="h-12 md:h-16" />
-            </a>
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
@@ -47,12 +49,12 @@ const Navbar: React.FC = () => {
             <a href="/pricing" className="text-slate-700 hover:text-primary-600 transition-colors">
               Pricing
             </a>
-            <a href="/demo" className="text-primary-600 hover:text-primary-700 transition-colors">
+            <Link to="/demo" className="text-primary-600 hover:text-primary-700 transition-colors">
               Request a demo
-            </a>
-            <a href="/signin" className="text-slate-700 hover:text-primary-600 transition-colors">
+            </Link>
+            <Link to="/signin" className="text-slate-700 hover:text-primary-600 transition-colors">
               Sign in
-            </a>
+            </Link>
             <Button variant="primary" size="sm">
               Try for free
             </Button>
@@ -81,12 +83,12 @@ const Navbar: React.FC = () => {
             <a href="/pricing" className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
               Pricing
             </a>
-            <a href="/demo" className="block px-3 py-2 text-base font-medium text-primary-600 hover:bg-gray-100 rounded-md">
+            <Link to="/demo" className="block px-3 py-2 text-base font-medium text-primary-600 hover:bg-gray-100 rounded-md">
               Request a demo
-            </a>
-            <a href="/signin" className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+            </Link>
+            <Link to="/signin" className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
               Sign in
-            </a>
+            </Link>
             <div className="mt-4 px-3">
               <Button variant="primary" size="full">
                 Try for free
