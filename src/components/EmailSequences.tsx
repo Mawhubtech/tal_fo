@@ -75,10 +75,10 @@ const EmailSequences: React.FC = () => {
           </div>
 
           <div className="text-left order-1 lg:order-2">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6 text-center lg:text-left">
               Engage with AI-powered<br />email sequences
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-600 mb-8 text-center lg:text-left">
               Found the perfect fit? Increase response rates with smart outreach. TalGPT personalizes your email template while retaining your tone and voice.
             </p>
             <div className="flex flex-wrap gap-4">

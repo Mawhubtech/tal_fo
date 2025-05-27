@@ -71,10 +71,10 @@ const DataSourcesSearch: React.FC = () => {
           </div>
 
           <div className="text-left order-1 lg:order-2">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6 text-center lg:text-left">
               Search across dozens of<br />data sources in real-time
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-600 mb-8 text-center lg:text-left">
               The best talent is hard to find. TalGPT analyzes professional profiles, technical websites, published papers, and more in real time.
             </p>
             <div className="flex flex-wrap gap-4">
