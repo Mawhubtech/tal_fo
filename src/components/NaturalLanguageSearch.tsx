@@ -18,7 +18,7 @@ const NaturalLanguageSearch: React.FC = () => {
             <p className="text-lg text-gray-600 mb-8 text-center lg:text-left">
               Search on TalGPT is powered by PeopleGPT, the world's first people search engine built on natural language. Describe who you're searching for, no Booleans needed.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <Button variant="primary" size="lg">
                 Try for free
               </Button>

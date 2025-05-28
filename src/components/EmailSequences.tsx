@@ -86,7 +86,7 @@ const EmailSequences: React.FC = () => {
             <p className="text-lg text-gray-600 mb-8 text-center lg:text-left">
               Found the perfect fit? Increase response rates with smart outreach. TalGPT personalizes your email template while retaining your tone and voice.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <Button variant="primary" size="lg">
                 Try for free
               </Button>

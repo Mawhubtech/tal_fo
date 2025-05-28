@@ -7,7 +7,7 @@ const PreviewVideo: React.FC = () => {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100">
       <div className="absolute inset-0 bg-grid-lines opacity-5 pointer-events-none"></div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         <div className="relative aspect-[16/9] max-w-5xl mx-auto rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
           {/* Blurred background image */}
           <div 
