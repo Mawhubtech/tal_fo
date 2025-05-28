@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import PreviewVideo from './components/PreviewVideo';
 import PartnersSlider from './components/PartnersSlider';
 import NaturalLanguageSearch from './components/NaturalLanguageSearch'; 
 import DataSourcesSearch from './components/DataSourcesSearch';
@@ -24,6 +25,7 @@ function App() {
             <Navbar />
             <main className="space-y-16">
               <Hero />
+              <PreviewVideo />
               <PartnersSlider />
               <NaturalLanguageSearch />
               <DataSourcesSearch />
