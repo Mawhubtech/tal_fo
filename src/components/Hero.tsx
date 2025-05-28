@@ -12,7 +12,7 @@ const Hero: React.FC = () => {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-16 md:pt-24 md:pb-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-12 md:pt-16 md:pb-16">
         <div className="text-center space-y-6 md:space-y-8">
           {/* New feature tag */}
           <div 
