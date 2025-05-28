@@ -71,7 +71,7 @@ const SignIn: React.FC = () => {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <img src="/tallogo.png" alt="TalGPT" className="h-12 mx-auto mb-6" />
+            <img src="/TALL.png" alt="TalGPT" className="h-12 mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-gray-900">Get started for free</h2>
           </div>
 
@@ -119,7 +119,7 @@ const SignIn: React.FC = () => {
           </div>
 
           <div className="mt-8 flex items-center justify-center gap-2">
-            <img src="/tallogo.png" alt="TalGPT" className="h-8 opacity-30" />
+            <img src="/TALL.png" alt="TalGPT" className="h-8 opacity-30" />
             <div className="h-4 w-px bg-gray-200"></div>
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <div className="flex items-center gap-1">
