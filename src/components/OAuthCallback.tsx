@@ -26,16 +26,19 @@ const OAuthCallback: React.FC = () => {
         });
         navigate('/signin?error=oauth_failed', { replace: true });
         return;
-      }
-
-      if (token) {
+      }      if (token) {
         try {
           console.log('Processing OAuth token...');
+          console.log('Token length:', token.length);
+          console.log('Token preview:', token.substring(0, 50) + '...');
           
           // Store the token
           localStorage.setItem('accessToken', token);
           localStorage.setItem('refreshToken', token); // Backend doesn't provide refresh token yet
-
+          
+          // Add a small delay to ensure token is properly stored
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           // Fetch user profile to validate token and get user data
           console.log('Fetching user profile...');
           const user = await authService.getProfile();
@@ -49,18 +52,33 @@ const OAuthCallback: React.FC = () => {
             title: 'Welcome!',
             message: 'You have been successfully signed in.'
           });
-          navigate('/dashboard', { replace: true });        } catch (error) {
+          navigate('/dashboard', { replace: true });        } catch (error: any) {
           console.error('Error handling OAuth callback:', error);
+          console.error('Error status:', error.response?.status);
+          console.error('Error data:', error.response?.data);
+          console.error('Error message:', error.message);
+          console.error('Current token in localStorage:', localStorage.getItem('accessToken'));
+          
+          // Check if it's a 401 error specifically
+          if (error.response?.status === 401) {
+            console.error('401 Unauthorized - Token might be invalid or expired');
+            console.error('Token details:', {
+              hasToken: !!localStorage.getItem('accessToken'),
+              tokenLength: localStorage.getItem('accessToken')?.length,
+              tokenPreview: localStorage.getItem('accessToken')?.substring(0, 50)
+            });
+          }
+          
           addToast({
             type: 'error',
             title: 'Authentication Error',
-            message: 'Failed to complete sign in. Please try again.'
+            message: `Failed to complete sign in: ${error.response?.data?.message || error.message}`
           });
           // Clear invalid token
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           navigate('/signin?error=oauth_failed', { replace: true });
-        }      } else {
+        }} else {
         // No token found, redirect to signin
         console.warn('No token found in OAuth callback');
         addToast({
