@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, ArrowLeft, Shield } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
+import { useGoogleLogin } from '../hooks/useAuth';
+import { useToast } from '../contexts/ToastContext';
 import AuthModal from './AuthModal';
 
 const SignIn: React.FC = () => {
@@ -9,6 +11,19 @@ const SignIn: React.FC = () => {
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const { isAuthenticated, isLoading } = useAuthContext();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();  const googleLogin = useGoogleLogin();
+  const { addToast } = useToast();
+  // Check for OAuth error in URL
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'oauth_failed') {
+      addToast({
+        type: 'error',
+        title: 'Sign In Failed',
+        message: 'OAuth authentication failed. Please try again or use email sign in.'
+      });
+    }
+  }, [searchParams, addToast]);
 
   // Redirect authenticated users to dashboard
   useEffect(() => {
@@ -27,10 +42,19 @@ const SignIn: React.FC = () => {
         </div>
       </div>
     );  }
-
   const handleEmailSignIn = () => {
     setAuthView('login');
     setIsAuthModalOpen(true);
+  };  const handleGoogleLogin = () => {
+    try {
+      googleLogin.mutate();
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to initiate Google sign in. Please try again.'
+      });
+    }
   };
 
   return (
@@ -93,10 +117,10 @@ const SignIn: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900">Get started for free</h2>
           </div>
 
-          <div className="space-y-4">
-            <button
+          <div className="space-y-4">            <button
               type="button"
               className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={handleGoogleLogin}
             >
               <img
                 src="https://www.google.com/favicon.ico"
@@ -104,19 +128,19 @@ const SignIn: React.FC = () => {
                 className="w-5 h-5"
               />
               <span className="text-sm font-medium">Continue with Google</span>
-            </button>
-
-            <button
+            </button>            <button
               type="button"
-              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed opacity-60"
+              disabled
             >
               <img
                 src="https://www.linkedin.com/favicon.ico"
                 alt="LinkedIn"
-                className="w-5 h-5"
+                className="w-5 h-5 grayscale"
               />
               <span className="text-sm font-medium">Continue with LinkedIn</span>
-            </button>            <button
+              <span className="text-xs text-gray-400 ml-2">(Coming Soon)</span>
+            </button><button
               type="button"
               className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={handleEmailSignIn}

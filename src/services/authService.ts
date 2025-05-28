@@ -20,7 +20,19 @@ export const authService = {
       refreshToken: response.data.token, // Backend doesn't provide refresh token yet
       user: response.data.user,
     };
-  },  async getProfile(): Promise<User> {
+  },
+
+  async googleLogin(): Promise<void> {
+    // Redirect to Google OAuth endpoint
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+    window.location.href = `${baseUrl}/auth/google`;
+  },
+
+  async linkedinLogin(): Promise<void> {
+    // Redirect to LinkedIn OAuth endpoint
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+    window.location.href = `${baseUrl}/auth/linkedin`;
+  },async getProfile(): Promise<User> {
     const response = await api.get<{ message: string; user: User }>('/auth/profile');
     return response.data.user;
   },

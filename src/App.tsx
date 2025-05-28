@@ -19,6 +19,7 @@ import Integrations from './components/Integrations';
 import FAQ from './components/FAQ';
 import Footer from './components/Footer';
 import SignIn from './components/SignIn';
+import OAuthCallback from './components/OAuthCallback';
 import Dashboard from './pages/Dashboard';
 
 const queryClient = new QueryClient({
@@ -54,10 +55,13 @@ function App() {
                   <FAQ />
                 </main>
                 <Footer />              </div>
-            } />
-            <Route
+            } />            <Route
               path="/signin"
               element={<SignIn />}
+            />
+            <Route
+              path="/auth/callback"
+              element={<OAuthCallback />}
             />
             <Route
               path="/dashboard"
@@ -66,7 +70,7 @@ function App() {
                   <Dashboard />
                 </ProtectedRoute>
               }
-            />            <Route path="*" element={<Navigate to="/\" replace />} />
+            /><Route path="*" element={<Navigate to="/\" replace />} />
           </Routes>        
         </Router>
         </AuthProvider>

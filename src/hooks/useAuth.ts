@@ -57,6 +57,20 @@ export const useLogout = () => {
   });
 };
 
+export const useGoogleLogin = () => {
+  return {
+    mutate: authService.googleLogin,
+    mutateAsync: authService.googleLogin,
+  };
+};
+
+export const useLinkedInLogin = () => {
+  return {
+    mutate: authService.linkedinLogin,
+    mutateAsync: authService.linkedinLogin,
+  };
+};
+
 export const useAuth = () => {
   const { data: user, isLoading, error } = useProfile();
   const hasToken = !!localStorage.getItem('accessToken');
