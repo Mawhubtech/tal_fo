@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Play, Sparkles } from 'lucide-react';
 import Button from './Button';
-import DemoPreview from './DemoPreview';
 
 const Hero: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Add a small delay to trigger animation after component mount
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <section className="relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-24 md:pt-20 md:pb-32">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 md:pt-12 md:pb-20">
         <div className="text-center space-y-6 md:space-y-8">
           {/* New feature tag */}
           <div 
@@ -51,26 +49,17 @@ const Hero: React.FC = () => {
           
           {/* CTA buttons */}
           <div 
-            className={`flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 transition-all duration-700 delay-450 transform ${
+            className={`flex flex-row items-center justify-center gap-4 pt-4 transition-all duration-700 delay-450 transform ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             } px-4 sm:px-0`}
           >
-            <Button variant="primary" size="lg" className="w-full sm:w-auto">
+            <Button variant="primary" size="lg" className="flex-1 sm:flex-initial">
               Try for free
             </Button>
-            <Button variant="outline" size="lg" icon={<Play className="w-4 h-4" />} className="w-full sm:w-auto">
+            <Button variant="outline" size="lg" icon={<Play className="w-4 h-4" />} className="flex-1 sm:flex-initial">
               Watch Tour
             </Button>
           </div>
-        </div>
-        
-        {/* Platform preview */}
-        <div 
-          className={`mt-16 md:mt-20 transition-all duration-1000 delay-600 transform ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          } px-4 sm:px-0`}
-        >
-          <DemoPreview />
         </div>
       </div>
     </section>

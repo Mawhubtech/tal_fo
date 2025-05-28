@@ -1,9 +1,14 @@
 import React from 'react';
 import Button from './Button';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
 
 const NaturalLanguageSearch: React.FC = () => {
+  const { elementRef, isVisible } = useScrollAnimation();
+
   return (
-    <section className="relative overflow-hidden">
+    <section ref={elementRef} className={`relative overflow-hidden transition-all duration-1000 transform ${
+      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="text-left">

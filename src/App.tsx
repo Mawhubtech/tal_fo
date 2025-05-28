@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import PreviewVideo from './components/PreviewVideo';
 import PartnersSlider from './components/PartnersSlider';
 import NaturalLanguageSearch from './components/NaturalLanguageSearch'; 
 import DataSourcesSearch from './components/DataSourcesSearch';
