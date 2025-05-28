@@ -12,7 +12,7 @@ const Hero: React.FC = () => {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 md:pt-12 md:pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-16 md:pt-24 md:pb-24">
         <div className="text-center space-y-6 md:space-y-8">
           {/* New feature tag */}
           <div 
@@ -48,7 +48,7 @@ const Hero: React.FC = () => {
           </p>
           
           {/* CTA buttons */}
-          <div 
+          <div
             className={`flex flex-row items-center justify-center gap-4 pt-4 transition-all duration-700 delay-450 transform ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             } px-4 sm:px-0`}
