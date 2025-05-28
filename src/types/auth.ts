@@ -1,10 +1,41 @@
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  permissions: Permission[];
+}
+
+export interface Permission {
+  id: string;
+  name: string;
+  description: string;
+  resource: string;
+  action: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   email: string;
+  password: null;
   firstName: string;
   lastName: string;
+  avatar?: string;
+  provider?: string;
+  providerId?: string;
+  status: string;
+  isEmailVerified: boolean;
+  emailVerificationToken: null | string;
+  passwordResetToken: null | string;
+  passwordResetExpires: null | string;
   createdAt: string;
   updatedAt: string;
+  roles: Role[];
 }
 
 export interface LoginRequest {
