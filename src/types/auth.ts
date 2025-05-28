@@ -25,6 +25,13 @@ export interface AuthResponse {
   user: User;
 }
 
+// Backend response format (what we actually receive)
+export interface BackendAuthResponse {
+  message: string;
+  user: User;
+  token: string;
+}
+
 export interface ApiError {
   message: string;
   statusCode: number;

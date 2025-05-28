@@ -1,18 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft, Shield } from 'lucide-react';
+import { useAuthContext } from '../contexts/AuthContext';
 import AuthModal from './AuthModal';
 
 const SignIn: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const { isAuthenticated, isLoading } = useAuthContext();
+  const navigate = useNavigate();
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );  }
 
   const handleEmailSignIn = () => {
     setAuthView('login');
-    setIsAuthModalOpen(true);
-  };
-
-  const handleEmailSignUp = () => {
-    setAuthView('register');
     setIsAuthModalOpen(true);
   };
 

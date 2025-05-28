@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { loginSchema, LoginFormData } from '../lib/validations';
 import { useLogin } from '../hooks/useAuth';
@@ -15,6 +16,8 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const login = useLogin();
   const { getErrorMessage } = useApiError();
   const { addToast } = useToast();
@@ -34,8 +37,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) =>
         message: 'You have been successfully signed in.',
       });
       onClose();
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+      
+      // Navigate to the intended destination or dashboard
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     } catch (error) {
       // Error handling is done in the mutation
     }

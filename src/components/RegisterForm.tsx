@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, User } from 'lucide-react';
 import { registerSchema, RegisterFormData } from '../lib/validations';
 import { useRegister } from '../hooks/useAuth';
@@ -16,6 +17,8 @@ interface RegisterFormProps {
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const register_mutation = useRegister();
   const { getErrorMessage } = useApiError();
   const { addToast } = useToast();
@@ -36,8 +39,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose })
         message: 'Welcome to TalGPT. Your account has been successfully created.',
       });
       onClose();
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+      
+      // Navigate to the intended destination or dashboard
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     } catch (error) {
       // Error handling is done in the mutation
     }

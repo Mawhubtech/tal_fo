@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService } from '../services/authService';
-import { LoginRequest, RegisterRequest, User } from '../types/auth';
+import type { LoginRequest, RegisterRequest } from '../types/auth';
 
 export const useLogin = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: authService.login,
+    mutationFn: (data: LoginRequest) => authService.login(data),
     onSuccess: (data) => {
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
@@ -20,7 +20,7 @@ export const useRegister = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: authService.register,
+    mutationFn: (data: RegisterRequest) => authService.register(data),
     onSuccess: (data) => {
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
@@ -31,11 +31,14 @@ export const useRegister = () => {
 };
 
 export const useProfile = () => {
+  const hasToken = !!localStorage.getItem('accessToken');
+  
   return useQuery({
     queryKey: ['user'],
     queryFn: authService.getProfile,
-    enabled: !!localStorage.getItem('accessToken'),
+    enabled: hasToken,
     retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -45,20 +48,35 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: authService.logout,
     onSuccess: () => {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       queryClient.clear();
-      window.location.href = '/signin';
+      // Force page reload to reset state and redirect to home
+      window.location.href = '/';
     },
   });
 };
 
 export const useAuth = () => {
   const { data: user, isLoading, error } = useProfile();
-  const isAuthenticated = !!user && !!localStorage.getItem('accessToken');
+  const hasToken = !!localStorage.getItem('accessToken');
+  
+  // User is authenticated if we have both a token and user data
+  const isAuthenticated = hasToken && !!user;
+
+  // Debug logging
+  console.log('Auth state:', {
+    hasToken,
+    user: !!user,
+    isAuthenticated,
+    isLoading,
+    error: !!error
+  });
 
   return {
     user,
     isAuthenticated,
-    isLoading,
+    isLoading: hasToken ? isLoading : false, // Don't show loading if no token
     error,
   };
 };
