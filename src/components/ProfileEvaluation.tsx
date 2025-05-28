@@ -55,7 +55,7 @@ const ProfileEvaluation: React.FC = () => {
             <p className="text-lg text-gray-600 mb-8 text-center lg:text-left">
               Turn your candidate search into an AI-powered spreadsheet. Autopilot ranks, scores, and organizes profiles based on your criteria for best-fit talent without manual screening.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <Button variant="primary" size="lg">
                 Try for free
               </Button>

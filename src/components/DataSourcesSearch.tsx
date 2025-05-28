@@ -82,7 +82,7 @@ const DataSourcesSearch: React.FC = () => {
             <p className="text-lg text-gray-600 mb-8 text-center lg:text-left">
               The best talent is hard to find. TalGPT analyzes professional profiles, technical websites, published papers, and more in real time.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <Button variant="primary" size="lg">
                 Try for free
               </Button>
