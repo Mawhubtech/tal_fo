@@ -171,9 +171,7 @@ const Search: React.FC = () => {
       <BooleanSearchDialog
         isOpen={isBooleanDialogOpen}
         onClose={() => setIsBooleanDialogOpen(false)}
-      />
-
-      {/* Job Description Dialog */}
+      />      {/* Job Description Dialog */}
       <JobDescriptionDialog
         isOpen={isJobDescriptionDialogOpen}
         onClose={() => setIsJobDescriptionDialogOpen(false)}
