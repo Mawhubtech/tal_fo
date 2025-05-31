@@ -1,5 +1,5 @@
 import api from '../lib/api';
-import { AIQueryRequest, AIResponse, AIChatRequest, AIChatStreamRequest } from '../types/ai';
+import { AIQueryRequest, AIResponse, AIChatRequest, AIChatStreamRequest, AIStructuredQueryRequest, AIStructuredChatRequest, AIStructuredResponse } from '../types/ai';
 
 export const aiService = {
   /**
@@ -51,5 +51,21 @@ export const aiService = {
     }
 
     return response.body;
+  },
+
+  /**
+   * Send a single query with structured JSON output
+   */
+  async structuredQuery(data: AIStructuredQueryRequest): Promise<AIStructuredResponse> {
+    const response = await api.post<AIStructuredResponse>('/ai/structured-query', data);
+    return response.data;
+  },
+
+  /**
+   * Continue a conversation with structured JSON output
+   */
+  async structuredChat(data: AIStructuredChatRequest): Promise<AIStructuredResponse> {
+    const response = await api.post<AIStructuredResponse>('/ai/structured-chat', data);
+    return response.data;
   }
 };

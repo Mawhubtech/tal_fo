@@ -31,6 +31,28 @@ export interface AIChatStreamRequest {
   temperature?: number;
 }
 
+// Structured API Types
+export interface AIStructuredQueryRequest {
+  prompt: string;
+  schema: Record<string, any>;
+  systemPrompt?: string;
+  model?: string;
+  max_tokens?: number;
+  temperature?: number;
+}
+
+export interface AIStructuredChatRequest {
+  messages: ChatMessage[];
+  schema: Record<string, any>;
+  model?: string;
+  max_tokens?: number;
+  temperature?: number;
+}
+
+export interface AIStructuredResponse {
+  data: Record<string, any>;
+}
+
 // Hook return types
 export interface UseAIQueryResult {
   data: AIResponse | null;
@@ -54,5 +76,21 @@ export interface UseAIChatStreamResult {
   error: string | null;
   isStreaming: boolean;
   streamChat: (request: AIChatStreamRequest) => Promise<void>;
+  reset: () => void;
+}
+
+export interface UseAIStructuredQueryResult {
+  data: AIStructuredResponse | null;
+  loading: boolean;
+  error: string | null;
+  structuredQuery: (request: AIStructuredQueryRequest) => Promise<void>;
+  reset: () => void;
+}
+
+export interface UseAIStructuredChatResult {
+  data: AIStructuredResponse | null;
+  loading: boolean;
+  error: string | null;
+  structuredChat: (request: AIStructuredChatRequest) => Promise<void>;
   reset: () => void;
 }
