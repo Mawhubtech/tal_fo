@@ -17,7 +17,6 @@ export const aiService = {
     const response = await api.post<AIResponse>('/ai/chat', data);
     return response.data;
   },
-
   /**
    * Stream chat completions using Server-Sent Events
    */
@@ -26,6 +25,12 @@ export const aiService = {
     params.append('messages', JSON.stringify(data.messages));
     if (data.model) {
       params.append('model', data.model);
+    }
+    if (data.max_tokens !== undefined) {
+      params.append('max_tokens', data.max_tokens.toString());
+    }
+    if (data.temperature !== undefined) {
+      params.append('temperature', data.temperature.toString());
     }
 
     const response = await fetch(`${api.defaults.baseURL}/ai/chat/stream?${params}`, {

@@ -4,6 +4,8 @@ export interface AIQueryRequest {
   prompt: string;
   systemPrompt?: string;
   model?: string;
+  max_tokens?: number;
+  temperature?: number;
 }
 
 export interface AIResponse {
@@ -18,11 +20,15 @@ export interface ChatMessage {
 export interface AIChatRequest {
   messages: ChatMessage[];
   model?: string;
+  max_tokens?: number;
+  temperature?: number;
 }
 
 export interface AIChatStreamRequest {
   messages: ChatMessage[];
   model?: string;
+  max_tokens?: number;
+  temperature?: number;
 }
 
 // Hook return types
