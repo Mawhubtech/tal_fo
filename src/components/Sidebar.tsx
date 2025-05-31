@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Search, Users, Mail, MessageSquare, BarChart2, 
-  Settings, HelpCircle, ChevronDown, Edit
+  Settings, HelpCircle, ChevronDown, Edit, FileText
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -98,8 +99,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                   <Edit className="w-3 h-3 text-purple-700" />
                 </button>
               </>
-            )}
-          </div>
+            )}          </div>
+          
+          <Link 
+            to="/dashboard/resume-processing" 
+            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
+            title={!isExpanded ? "Resume Processing" : ""}
+          >
+            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
+              <FileText className="w-4 h-4" />
+            </div>
+            {isExpanded && "Resume Processing"}
+          </Link>
           
           <a 
             href="#" 

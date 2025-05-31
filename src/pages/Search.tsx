@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   ToggleRight,
@@ -13,14 +14,13 @@ import Button from '../components/Button';
 import FilterDialog from '../components/FilterDialog';
 import BooleanSearchDialog from '../components/BooleanSearchDialog';
 import JobDescriptionDialog from '../components/JobDescriptionDialog';
-
 import { useAIQuery } from '../hooks/ai';
 
-const Search: React.FC = () => {  const [searchQuery, setSearchQuery] = useState('');
-  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+const Search: React.FC = () => {  
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
- 
  
   const [showAIEnhancement, setShowAIEnhancement] = useState(false);
 
@@ -153,11 +153,10 @@ const Search: React.FC = () => {  const [searchQuery, setSearchQuery] = useState
         >
           <FileText className="w-3.5 h-3.5 text-white" />
           Job Description
-        </Button>
-        <Button
+        </Button>        <Button
           variant="primary"
           className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-md"
-          onClick={() => setIsResumeDialogOpen(true)}
+          onClick={() => navigate('/dashboard/resume-processing')}
         >
           <User className="w-3.5 h-3.5 text-white" />
           Resume
@@ -192,13 +191,11 @@ const Search: React.FC = () => {  const [searchQuery, setSearchQuery] = useState
         isOpen={isBooleanDialogOpen}
         onClose={() => setIsBooleanDialogOpen(false)}
       />
-      
-      {/* Job Description Dialog */}
+        {/* Job Description Dialog */}
       <JobDescriptionDialog
         isOpen={isJobDescriptionDialogOpen}
         onClose={() => setIsJobDescriptionDialogOpen(false)}
       />
-      
 
 
     </div>

@@ -69,6 +69,19 @@ export interface ResumeStructure {
   summary?: string;
 }
 
+export interface ResumeProcessingResult {
+  text: string;
+  metadata: {
+    filename: string;
+    size: number;
+    type: string;
+    pages?: number;
+    wordCount: number;
+  };
+  generatedSchema: Record<string, any>;
+  structuredData: Record<string, any>;
+}
+
 export interface ProcessedDocument {
   text: string;
   metadata: {
@@ -82,10 +95,16 @@ export interface ProcessedDocument {
   structuredData?: JobDescriptionStructure | ResumeStructure | Record<string, any>;
 }
 
+// New interface for resume processing result with dynamic schema
+export interface ResumeProcessingResult {
+  // Add specific fields as per the dynamic schema requirements
+  [key: string]: any;
+}
+
 export const useDocumentProcessing = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<ProcessedDocument | null>(null);
+  const [data, setData] = useState<ProcessedDocument | ResumeProcessingResult | null>(null);
 
   // Main document processing method
   const processDocument = async (
@@ -137,11 +156,9 @@ export const useDocumentProcessing = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-      });
-
-      const processedDocument = response.data as ProcessedDocument;
+      });      const processedDocument = response.data as ProcessedDocument;
       setData(processedDocument);
-      return processedDocument;    } catch (err: any) {
+      return processedDocument;} catch (err: any) {
       // Extract the most useful error message from the response or error object
       const errorMessage = err.response?.data?.message || err.message || 'Failed to process document';
       setError(errorMessage);
@@ -245,6 +262,44 @@ export const useDocumentProcessing = () => {
     return processDocument(file, { ...defaultOptions, ...customOptions });
   };
   
+  // Process a resume with dynamic schema generation
+  const processResumeWithDynamicSchema = async (
+    file: File
+  ): Promise<ResumeProcessingResult | null> => {
+    setLoading(true);
+    setError(null);
+    setData(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await api.post('/document-processing/process-resume', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const result = response.data as ResumeProcessingResult;
+      setData(result);
+      return result;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to process resume';
+      setError(errorMessage);
+      
+      console.error('Resume processing error:', {
+        message: errorMessage,
+        statusCode: err.response?.status,
+        responseData: err.response?.data,
+        originalError: err
+      });
+      
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Process a custom document with a specified schema
   const processCustomDocument = async (
     file: File,
@@ -278,6 +333,7 @@ export const useDocumentProcessing = () => {
     processDocument,
     processJobDescription,
     processResume,
+    processResumeWithDynamicSchema,
     processCustomDocument,
     loading,
     error,

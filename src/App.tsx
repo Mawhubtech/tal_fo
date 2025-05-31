@@ -21,6 +21,7 @@ import Footer from './components/Footer';
 import SignIn from './components/SignIn';
 import OAuthCallback from './components/OAuthCallback';
 import Dashboard from './pages/Dashboard';
+import ResumeProcessingPage from './pages/ResumeProcessingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,12 +63,27 @@ function App() {
             <Route
               path="/auth/callback"
               element={<OAuthCallback />}
-            />
-            <Route
+            />            <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/resume-processing"
+              element={
+                <ProtectedRoute>
+                  <ResumeProcessingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/resume-processing"
+              element={
+                <ProtectedRoute>
+                  <ResumeProcessingPage />
                 </ProtectedRoute>
               }
             /><Route path="*" element={<Navigate to="/\" replace />} />
