@@ -13,16 +13,15 @@ import Button from '../components/Button';
 import FilterDialog from '../components/FilterDialog';
 import BooleanSearchDialog from '../components/BooleanSearchDialog';
 import JobDescriptionDialog from '../components/JobDescriptionDialog';
-import ResumeDialog from '../components/ResumeDialog';
-import DocumentProcessingDemo from '../components/DocumentProcessingDemo';
+
 import { useAIQuery } from '../hooks/ai';
 
 const Search: React.FC = () => {  const [searchQuery, setSearchQuery] = useState('');
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
-  const [isResumeDialogOpen, setIsResumeDialogOpen] = useState(false);
-  const [isDocProcessingDemoOpen, setIsDocProcessingDemoOpen] = useState(false);
+ 
+ 
   const [showAIEnhancement, setShowAIEnhancement] = useState(false);
 
   // AI hook for search enhancement
@@ -179,14 +178,7 @@ const Search: React.FC = () => {  const [searchQuery, setSearchQuery] = useState
           <Filter className="w-3.5 h-3.5 text-white" />
           Select Manually
         </Button>
-        <Button
-          variant="secondary"
-          className="gap-2 text-xs bg-gray-100 hover:bg-gray-200 text-purple-700 px-3 py-1 rounded-md border border-purple-200"
-          onClick={() => setIsDocProcessingDemoOpen(true)}
-        >
-          <FileCode className="w-3.5 h-3.5 text-purple-700" />
-          Doc Processing Demo
-        </Button>
+       
       </div>
       
       {/* Filter Dialog */}
@@ -207,30 +199,8 @@ const Search: React.FC = () => {  const [searchQuery, setSearchQuery] = useState
         onClose={() => setIsJobDescriptionDialogOpen(false)}
       />
       
-      {/* Resume Dialog */}
-      <ResumeDialog
-        isOpen={isResumeDialogOpen}
-        onClose={() => setIsResumeDialogOpen(false)}
-      />
-        {/* Document Processing Demo */}
-      {isDocProcessingDemoOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-xl font-semibold">Document Processing Demo</h2>
-              <button 
-                onClick={() => setIsDocProcessingDemoOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4">
-              <DocumentProcessingDemo />
-            </div>
-          </div>
-        </div>
-      )}
+
+
     </div>
   );
 };

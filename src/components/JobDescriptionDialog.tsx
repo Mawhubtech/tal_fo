@@ -25,13 +25,19 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
       setJobDescription(aiQuery.data.content);
     }
   }, [aiQuery.data]);
-
   // Effect to update document error from document processor
   useEffect(() => {
     if (documentProcessor.error) {
       setDocumentError(documentProcessor.error);
     }
   }, [documentProcessor.error]);
+
+  // Effect to update extracted criteria when structured query completes
+  useEffect(() => {
+    if (structuredQuery.data && structuredQuery.data.data) {
+      setExtractedCriteria(structuredQuery.data.data);
+    }
+  }, [structuredQuery.data]);
   
   if (!isOpen) return null;
   
@@ -125,17 +131,14 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
       },
       required: ['skills', 'experienceLevel', 'jobTitles']
     };
-    
-    await structuredQuery.structuredQuery({
+      await structuredQuery.structuredQuery({
       prompt: `Extract key search criteria from this job description for talent search: "${jobDescription}"`,
       schema: searchCriteriaSchema,
       systemPrompt: "You are a recruitment specialist. Extract structured search criteria from job descriptions including required skills, experience level, location, industry, and job titles. Respond only with valid JSON that matches the provided schema.",
       model: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
     });
     
-    if (structuredQuery.data) {
-      setExtractedCriteria(structuredQuery.data.data);
-    }
+    // The useEffect will handle updating extractedCriteria when structuredQuery.data changes
   };
 
   const generateJobDescription = async () => {
