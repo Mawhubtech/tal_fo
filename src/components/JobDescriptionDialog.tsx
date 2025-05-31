@@ -11,7 +11,10 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
   const [jobDescription, setJobDescription] = useState('');
   const [extractedCriteria, setExtractedCriteria] = useState<any>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
-  const [generatePrompt, setGeneratePrompt] = useState('');  // AI hooks for different purposes
+  const [generatePrompt, setGeneratePrompt] = useState('');
+  // Add a state for document processing errors
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  // AI hooks for different purposes
   const aiQuery = useAIQuery(); // For generating job descriptions
   const structuredQuery = useAIStructuredQuery(); // For extracting structured search criteria
   const documentProcessor = useDocumentProcessing(); // For processing uploaded documents
@@ -23,22 +26,34 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
     }
   }, [aiQuery.data]);
 
-  if (!isOpen) return null;  const handleUpload = () => {
+  // Effect to update document error from document processor
+  useEffect(() => {
+    if (documentProcessor.error) {
+      setDocumentError(documentProcessor.error);
+    }
+  }, [documentProcessor.error]);
+  
+  if (!isOpen) return null;
+  
+  const handleUpload = () => {
+    // Clear previous errors
+    setDocumentError(null);
+    
     // Handle file upload with document processing
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.pdf,.doc,.docx,.txt';
     fileInput.click();
-      fileInput.onchange = async (e) => {
+    
+    fileInput.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        try {
-          console.log('File selected:', file.name);
+        try {          console.log('File selected:', file.name);
           
-          const processedDocument = await documentProcessor.processDocument(file, {
-            extractJobDescription: true,
-            cleanupText: true,
-            enhanceText: false
+          // Use our specialized job description processing method
+          const processedDocument = await documentProcessor.processJobDescription(file, {
+            // Custom system prompt for better job description extraction
+            systemPrompt: "You are an expert recruitment specialist. Extract structured information from job descriptions for talent search. Focus on key requirements, skills needed, experience level, and job responsibilities. Format everything professionally."
           });
           
           if (processedDocument) {
@@ -52,6 +67,11 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
           }
         } catch (error) {
           console.error('Error processing document:', error);
+          if (error instanceof Error) {
+            setDocumentError(error.message);
+          } else {
+            setDocumentError('Failed to process document');
+          }
         }
       }
     };
@@ -276,11 +296,21 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
                   {structuredQuery.loading ? 'Extracting...' : 'Extract Criteria'}
                 </button>
               )}              <button
-                className="flex items-center gap-1 text-sm border border-gray-300 px-3 py-1 rounded-md hover:bg-gray-50"
+                className="flex items-center gap-1 text-sm border border-gray-300 px-3 py-1 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleUpload}
+                disabled={documentProcessor.loading}
               >
-                <Upload size={16} />
-                Upload
+                {documentProcessor.loading ? (
+                  <>
+                    <span className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full mr-1"></span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} />
+                    Upload
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -310,18 +340,35 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
             className="w-full h-48 p-4 border border-gray-300 rounded-lg text-sm resize-none"
-            placeholder="Paste your job description here..."
-          />          {/* AI Error Display */}
-          {(aiQuery.error || structuredQuery.error) && (
+            placeholder="Paste your job description here..."          />          {/* Error Displays */}
+          {(aiQuery.error || structuredQuery.error || documentError) && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">
-                Error: {aiQuery.error || structuredQuery.error}
-              </p>
+              <p className="text-sm text-red-700 font-medium mb-1">Error:</p>
+              {aiQuery.error && <p className="text-sm text-red-700 mb-1">• AI Query: {aiQuery.error}</p>}
+              {structuredQuery.error && <p className="text-sm text-red-700 mb-1">• Structure Extraction: {structuredQuery.error}</p>}
+              {documentError && <p className="text-sm text-red-700 mb-1">• Document Processing: {documentError}</p>}
               <button 
                 onClick={() => {
                   aiQuery.reset();
                   structuredQuery.reset();
+                  setDocumentError(null);
+                  documentProcessor.reset();
                 }}
+                className="mt-2 text-xs text-red-600 hover:text-red-800 underline"
+              >
+                Dismiss All Errors
+              </button>
+            </div>
+          )}
+
+          {/* Document Processing Error Display */}
+          {documentError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700">
+                Document Error: {documentError}
+              </p>
+              <button 
+                onClick={() => setDocumentError(null)}
                 className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
               >
                 Dismiss
