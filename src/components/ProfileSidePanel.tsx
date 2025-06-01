@@ -102,19 +102,27 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           <div className="sticky top-0 bg-white z-10">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex items-center">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => onStateChange('expanded')} 
-                  className="text-gray-600 hover:text-gray-800 flex items-center text-sm p-2 -ml-2 mr-2"
+                <div className="bg-purple-100 rounded-full h-8 w-8 flex items-center justify-center text-purple-600 text-sm font-semibold mr-3 flex-shrink-0">
+                  {personalInfo.fullName.charAt(0)}
+                </div>
+                <h3 className="text-md font-semibold text-gray-800">{personalInfo.fullName}</h3>
+              </div>
+              <div className="flex items-center">
+                <Button
+                  variant="ghost"
+                  onClick={() => onStateChange('expanded')}
+                  className="text-gray-500 hover:text-gray-700 p-2"
+                  aria-label="Expand Panel"
                 >
                   <ChevronLeft size={20} />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => onStateChange('closed')} 
-                  className="text-gray-600 hover:text-gray-800 flex items-center text-sm p-2 -ml-2"
+                <Button
+                  variant="ghost"
+                  onClick={() => onStateChange('closed')}
+                  className="text-gray-500 hover:text-gray-700 p-2 ml-1"
+                  aria-label="Close Panel"
                 >
-                  <X size={20} className="mr-1" /> Close
+                  <X size={20} />
                 </Button>
               </div>
             </div>
@@ -148,13 +156,13 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="primary" size="sm" className='bg-primary-600'>Reveal Email & Phone (1 credit)</Button>
-              <Button variant="primary" size="sm" className="bg-primary-600 text-purple-700 border-purple-700 hover:bg-purple-50 flex items-center">
-                <Plus size={16} className="mr-1 " /> Add to Sequence
+              <Button variant="primary" size="sm" className='bg-primary-600 hover:bg-primary-700'>Reveal Email & Phone (1 credit)</Button>
+              <Button variant="primary" size="sm" className="bg-primary-600 text-primary-600 border-primary-600 hover:bg-primary-700 flex items-center">
+                <Plus size={16} className="mr-1" /> Add to Sequence
               </Button>
-              <Button variant="primary" size="sm" className="bg-primary-600 hover:bg-purple-700">Shortlist</Button>
+              <Button variant="primary" size="sm" className="bg-primary-600 text-primary-600 border-primary-600 hover:bg-primary-700">Shortlist</Button>
             </div>
-          </div>          {/* Scrollable Content Area - Collapsed view with tabs */}
+          </div> {/* Scrollable Content Area - Collapsed view with tabs */}
           <div className="flex-1 overflow-y-auto">
             {/* AI-Powered Spotlight (Using Summary) */}
             {summary && (
@@ -173,14 +181,16 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                     onClick={() => setActiveTab(tab.index)}
                     className={`${
                       activeTab === tab.index
-                        ? 'border-purple-500 text-purple-600'
+                        ? 'border-purple-500 text-purple-600 font-semibold'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs flex items-center gap-1 mr-4`}
+                    } whitespace-nowrap py-3 px-1 border-b-2 text-xs flex items-center gap-1 mr-4`}
                   >
-                    <tab.icon className="w-3 h-3" />
+                    <tab.icon className="w-3.5 h-3.5" />
                     {tab.name}
                     {tab.count > 0 && (
-                      <span className="bg-gray-100 text-gray-600 py-0.5 px-1.5 rounded-full text-xs">
+                      <span className={`${
+                        activeTab === tab.index ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+                      } py-0.5 px-1.5 rounded-full text-xs font-medium`}>
                         {tab.count}
                       </span>
                     )}
@@ -363,14 +373,15 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               <Button 
                 variant="ghost" 
                 onClick={() => onStateChange('collapsed')} 
-                className="text-gray-600 hover:text-gray-800 flex items-center text-sm p-2 -ml-2 mr-2"
+                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 flex items-center text-sm p-2 rounded-md mr-1"
               >
                 <ChevronRight size={20} />
-              </Button>
-              <Button variant="ghost" onClick={() => onStateChange('closed')} className="text-gray-600 hover:text-gray-800 flex items-center text-sm p-2 -ml-2">
-                <X size={20} className="mr-1" /> Back to Search
+                 <span className="ml-1 font-medium">Collapse</span>
               </Button>
             </div>
+            <Button variant="ghost" onClick={() => onStateChange('closed')} className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 flex items-center text-sm p-2 rounded-md">
+              <X size={18} className="mr-1" /> Back to Search
+            </Button>
           </div>
         </div>
 
@@ -402,11 +413,11 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="primary" size="sm" className='bg-primary-600'>Reveal Email & Phone (1 credit)</Button>
-            <Button variant="primary" size="sm" className="bg-primary-600 text-purple-700 border-purple-700 hover:bg-purple-50 flex items-center">
-              <Plus size={16} className="mr-1 " /> Add to Sequence
+            <Button variant="primary" size="sm" className='bg-primary-600 hover:bg-primary-700'>Reveal Email & Phone (1 credit)</Button>
+            <Button variant="primary" size="sm" className="bg-primary-600 text-primary-600 border-primary-600 hover:bg-primary-700 flex items-center">
+              <Plus size={16} className="mr-1" /> Add to Sequence
             </Button>
-            <Button variant="primary" size="sm" className="bg-primary-600 hover:bg-purple-700">Shortlist</Button>
+            <Button variant="primary" size="sm" className="bg-primary-600 text-primary-600 border-primary-600 hover:bg-primary-700">Shortlist</Button>
           </div>        </div>        {/* Scrollable Content Area - Tabbed Experience, Education, Skills, Projects */}
         <div className="flex-1 overflow-y-auto">          {/* AI-Powered Spotlight (Using Summary) */}
           {summary && (
@@ -425,14 +436,16 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                   onClick={() => setActiveTab(tab.index)}
                   className={`${
                     activeTab === tab.index
-                      ? 'border-purple-500 text-purple-600'
+                      ? 'border-purple-600 text-purple-700 font-semibold'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs flex items-center gap-1 mr-6`}
+                  } whitespace-nowrap py-3 px-1 border-b-2 text-sm flex items-center gap-1.5 mr-6`}
                 >
-                  <tab.icon className="w-3 h-3" />
+                  <tab.icon className="w-4 h-4" />
                   {tab.name}
                   {tab.count > 0 && (
-                    <span className="bg-gray-100 text-gray-600 py-0.5 px-1.5 rounded-full text-xs">
+                    <span className={`${
+                      activeTab === tab.index ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+                    } py-0.5 px-1.5 rounded-full text-xs font-medium`}>
                       {tab.count}
                     </span>
                   )}
@@ -628,12 +641,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
       </div>
 
       {/* Tabbed Content Section - 1/3 of the space */}
-      <div className="w-1/3 flex flex-col border-l border-gray-200">
+      <div className="w-1/3 flex flex-col border-l border-gray-200 bg-gray-50">
         {/* Tabs Header */}
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900">Actions & Notes</h3>
+        <div className="p-4 border-b border-gray-200 bg-white">
+          <h3 className="text-base font-semibold text-gray-900">Candidate Actions</h3>
         </div>        {/* Tabs Navigation */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 bg-white">
           <nav className="flex" aria-label="Tabs">
             {sideTabs.map((tab) => (
               <button
@@ -641,11 +654,11 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                 onClick={() => setActiveSideTab(tab.index)}
                 className={`${
                   activeSideTab === tab.index
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-3 px-3 border-b-2 font-medium text-xs flex items-center gap-1 flex-1 justify-center`}
+                    ? 'border-purple-600 text-purple-700 font-semibold bg-white'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-100'
+                } whitespace-nowrap py-3 px-3 border-b-2 text-sm flex items-center gap-1.5 flex-1 justify-center transition-colors duration-150 ease-in-out`}
               >
-                <tab.icon className="w-3 h-3" />
+                <tab.icon className="w-4 h-4" />
                 {tab.name}
                 {tab.count > 0 && (
                   <span className="bg-gray-100 text-gray-600 py-0.5 px-1.5 rounded-full text-xs">
@@ -661,8 +674,8 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           {activeSideTab === 0 && (
             <div>
               <div className="mb-4">
-                <Button variant="primary" size="sm" className="w-full bg-purple-600 hover:bg-purple-700 flex items-center justify-center">
-                  <Plus size={16} className="mr-2" />
+                <Button variant="primary" size="md" className="w-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center">
+                  <Plus size={18} className="mr-2" />
                   Add to Sequence
                 </Button>
               </div>
@@ -680,17 +693,17 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               <div className="mb-4">
                 <textarea
                   placeholder="Add a note about this candidate..."
-                  className="w-full p-3 text-sm border border-gray-200 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full p-3 text-sm border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
                   rows={3}
                 />
-                <Button variant="primary" size="sm" className="w-full mt-2 bg-purple-600 hover:bg-purple-700">
+                <Button variant="primary" size="md" className="w-full mt-2 bg-primary-600 hover:bg-primary-700">
                   Add Note
                 </Button>
               </div>
-              <div className="text-center py-8">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No notes yet</p>
-                <p className="text-gray-400 text-xs mt-1">Add notes to remember key details about this candidate</p>
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm">No notes yet</p>
+                <p className="text-xs mt-1">Add notes to remember key details about this candidate</p>
               </div>
             </div>
           )}
@@ -698,10 +711,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           {/* Activity Tab */}
           {activeSideTab === 2 && (
             <div>
-              <div className="text-center py-8">
-                <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No activity yet</p>
-                <p className="text-gray-400 text-xs mt-1">Interactions and updates will appear here</p>
+              <div className="text-center py-8 text-gray-500">
+                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm">No activity yet</p>
+                <p className="text-xs mt-1">Interactions and updates will appear here</p>
               </div>
             </div>
           )}
@@ -710,7 +723,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           {activeSideTab === 3 && (
             <div>
               <div className="mb-4">
-                <select className="w-full p-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <select className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm bg-white">
                   <option>Select Pipeline Stage</option>
                   <option>Sourced</option>
                   <option>Contacted</option>
@@ -720,14 +733,14 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                   <option>Hired</option>
                   <option>Rejected</option>
                 </select>
-                <Button variant="primary" size="sm" className="w-full mt-2 bg-purple-600 hover:bg-purple-700">
+                <Button variant="primary" size="md" className="w-full mt-2 bg-primary-600 hover:bg-primary-700">
                   Update Stage
                 </Button>
               </div>
-              <div className="text-center py-8">
-                <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">Not in pipeline</p>
-                <p className="text-gray-400 text-xs mt-1">Add to pipeline to track recruitment progress</p>
+              <div className="text-center py-8 text-gray-500">
+                <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm">Not in pipeline</p>
+                <p className="text-xs mt-1">Add to pipeline to track recruitment progress</p>
               </div>
             </div>
           )}
