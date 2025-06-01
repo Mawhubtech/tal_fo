@@ -313,11 +313,12 @@ const Search: React.FC = () => {
             >              {isSearching ? (
                 <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                <Sparkles className="w-3.5 h-3.5" />
+                <SearchIcon className="w-3.5 h-3.5" />
               )}
             </button>
           </div>
-        </div>      </div>      {/* AI Filters Display */}
+        </div>  
+            </div>      {/* AI Filters Display */}
       {console.log('Filters display conditions:', { showAIFilters, filterCount: Object.keys(currentFilters).length, currentFilters })}
       {showAIFilters && Object.keys(currentFilters).length > 0 && (
         <AIFiltersDisplay 
@@ -372,14 +373,8 @@ const Search: React.FC = () => {
         >
           <FileText className="w-3.5 h-3.5 text-white" />
           Job Description
-        </Button><Button
-          variant="primary"
-          className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-md"
-          onClick={() => navigate('/dashboard/resume-processing')}
-        >
-          <User className="w-3.5 h-3.5 text-white" />
-          Resume
         </Button>
+
         <Button
           variant="primary"
           className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-md"

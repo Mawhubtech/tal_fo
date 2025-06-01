@@ -4,6 +4,7 @@ import user2Data from '../Data/user2.json';
 import user3Data from '../Data/user3.json';
 import { Search, Filter, RefreshCw, Linkedin, Globe, Mail, Plus, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
+import ProfileSidePanel, { UserStructuredData, PanelState } from '../components/ProfileSidePanel'; // Added import
 
 interface Contact {
   id: string;
@@ -15,12 +16,15 @@ interface Contact {
   currentRole?: string;
   organization?: string;
   educationInstitution?: string;
+  structuredData: UserStructuredData; // Added to hold full structured data for the panel
 }
 
 const ContactsPage: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
+  const [selectedContactData, setSelectedContactData] = useState<UserStructuredData | null>(null); // State for panel data
+  const [panelState, setPanelState] = useState<PanelState>('closed'); // State for panel visibility
 
   useEffect(() => {
     const dummyUsers = [user1Data, user2Data, user3Data];
@@ -34,6 +38,7 @@ const ContactsPage: React.FC = () => {
       currentRole: user.structuredData.experience?.[0]?.position || 'N/A',
       organization: user.structuredData.experience?.[0]?.company || 'N/A',
       educationInstitution: user.structuredData.education?.[0]?.institution || 'N/A',
+      structuredData: user.structuredData, // Store the full structured data
     }));
     setContacts(formattedContacts);
   }, []);
@@ -56,6 +61,18 @@ const ContactsPage: React.FC = () => {
     setSelectedContacts(newSelection);
   };
   
+  const handleContactNameClick = (contact: Contact) => {
+    setSelectedContactData(contact.structuredData);
+    setPanelState('expanded'); // Or 'collapsed' based on preference
+  };
+
+  const handlePanelStateChange = (newState: PanelState) => {
+    setPanelState(newState);
+    if (newState === 'closed') {
+      setSelectedContactData(null);
+    }
+  };
+
   const filteredContacts = contacts.filter(contact => 
     contact.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (contact.organization && contact.organization.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -126,7 +143,11 @@ const ContactsPage: React.FC = () => {
                     onChange={() => handleSelectContact(contact.id)}
                   />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{contact.fullName}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <button onClick={() => handleContactNameClick(contact)} className="text-purple-600 hover:text-purple-800 hover:underline">
+                    {contact.fullName}
+                  </button>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex items-center space-x-3">
                     {contact.linkedIn && (
@@ -165,6 +186,11 @@ const ContactsPage: React.FC = () => {
           No contacts found{searchTerm && ' for your search'}.
         </div>
       )}
+      <ProfileSidePanel 
+        userData={selectedContactData} 
+        panelState={panelState} 
+        onStateChange={handlePanelStateChange} 
+      />
     </div>
   );
 };

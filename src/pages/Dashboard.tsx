@@ -46,14 +46,7 @@ const Dashboard: React.FC = () => {
             <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}
            
           </Routes>
-          
-          {/* Trial notice */}
-          <div className="mt-auto border border-gray-200 rounded-lg bg-white p-4 flex items-center justify-between w-full max-w-lg">
-            <span className="text-sm">You're currently on the free trial</span>
-            <button className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-1 rounded-md text-sm">
-              Upgrade Now
-            </button>
-          </div>
+
         </main>
       </div>
     </div>
