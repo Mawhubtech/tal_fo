@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FileText,
   ToggleRight,
@@ -156,15 +156,30 @@ const AIFiltersDisplay: React.FC<{
 
 const Search: React.FC = () => {  
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');  
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
   const [showAIEnhancement, setShowAIEnhancement] = useState(false);
-    // Search filters state
+  // Search filters state
   const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
   const [isSearching, setIsSearching] = useState(false);
   const [showAIFilters, setShowAIFilters] = useState(false);
+
+  // Handle state from SearchResults page
+  useEffect(() => {
+    if (location.state) {
+      const { editFilters, query } = location.state;
+      if (editFilters) {
+        setCurrentFilters(editFilters);
+        setShowAIFilters(true);
+      }
+      if (query) {
+        setSearchQuery(query);
+      }
+    }
+  }, [location.state]);
 
   // AI hook for search enhancement
   const aiQuery = useAIQuery();
@@ -232,6 +247,19 @@ const Search: React.FC = () => {
     setCurrentFilters({});
     setShowAIFilters(false);
   };
+
+  // Effect to handle state from SearchResults page
+  useEffect(() => {
+    // Check if we have state from navigation
+    const state = location.state as { query?: string; filters?: SearchFilters };
+    if (state?.query) {
+      setSearchQuery(state.query);
+    }
+    if (state?.filters) {
+      setCurrentFilters(state.filters);
+      setShowAIFilters(Object.keys(state.filters).length > 0);
+    }
+  }, [location.state]);
 
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto px-4 py-6">
