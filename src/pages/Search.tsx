@@ -143,28 +143,7 @@ const Search: React.FC = () => {
             </button>
           </div>
         </div>
-          {/* Search filters */}
-        <div className="flex flex-wrap gap-2 mt-3">
-          <div className="flex items-center bg-purple-50 rounded-full px-3 py-0.5 border border-purple-100 shadow-sm">
-            <input type="checkbox" checked className="mr-1.5 h-3 w-3 accent-purple-700" readOnly />
-            <span className="text-xs text-purple-700">Location</span>
-          </div>
-          <div className="flex items-center bg-purple-50 rounded-full px-3 py-0.5 border border-purple-100 shadow-sm">
-            <input type="checkbox" checked className="mr-1.5 h-3 w-3 accent-purple-700" readOnly />
-            <span className="text-xs text-purple-700">Job Title</span>
-          </div>
-          <div className="flex items-center bg-purple-50 rounded-full px-3 py-0.5 border border-purple-100 shadow-sm">
-            <input type="checkbox" checked className="mr-1.5 h-3 w-3 accent-purple-700" readOnly />
-            <span className="text-xs text-purple-700">Years of Experience</span>
-          </div>
-          <div className="flex items-center bg-purple-50 rounded-full px-3 py-0.5 border border-purple-100 shadow-sm">
-            <input type="checkbox" checked className="mr-1.5 h-3 w-3 accent-purple-700" readOnly />
-            <span className="text-xs text-purple-700">Industry</span>
-          </div>
-          <div className="flex items-center bg-purple-50 rounded-full px-3 py-0.5 border border-purple-100 shadow-sm">
-            <input type="checkbox" checked className="mr-1.5 h-3 w-3 accent-purple-700" readOnly />
-            <span className="text-xs text-purple-700">Skills</span>
-          </div>        </div>
+
       </div>
 
       {/* AI Enhancement Display */}
@@ -254,10 +233,11 @@ const Search: React.FC = () => {
         </Button>
        
       </div>      {/* Filter Dialog */}
-      <FilterDialog 
-        isOpen={isFilterDialogOpen} 
+     <FilterDialog
+        isOpen={isFilterDialogOpen}
         onClose={() => setIsFilterDialogOpen(false)}
         onApplyFilters={handleApplyFilters}
+        initialFilters={currentFilters} // <-- PASS currentFilters HERE
       />
       
       {/* Boolean Search Dialog */}

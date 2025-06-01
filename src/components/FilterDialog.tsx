@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   X,
   MapPin,
@@ -10,21 +10,26 @@ import {
   Globe,
   Star,
   Zap,
-  Search,
+  Search as SearchIconUI, // Renamed to avoid conflict with Search page
   ChevronDown,
   ChevronUp,
   Plus,
   Command,
 } from 'lucide-react';
 
+// Assuming searchService.ts is located at '../../services/searchService'
+// Adjust the path if necessary
+import type { SearchFilters } from '../../services/searchService';
+
 // Types
 interface FilterDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onApplyFilters?: (filters: FilterState) => void;
+  initialFilters?: SearchFilters;
 }
 
-interface FilterState {
+export interface FilterState { // Exporting in case it's needed elsewhere
   general: {
     minExperience: string;
     maxExperience: string;
@@ -48,10 +53,11 @@ interface FilterState {
     size: string;
   };
   funding: {
-    // Add funding specific fields
+    // Add funding specific fields if any
   };
   skillsKeywords: {
     items: string[];
+    requirements?: string[]; // For AI extracted requirements
   };
   power: {
     isOpenToRemote: boolean;
@@ -93,13 +99,13 @@ interface FilterSectionProps {
   hasActiveFilters?: boolean;
 }
 
-// Enhanced ArrayInput component with better UX
-const ArrayInput: React.FC<ArrayInputProps> = ({ 
-  label, 
-  values, 
-  onChange, 
+// Enhanced ArrayInput component
+const ArrayInput: React.FC<ArrayInputProps> = ({
+  label,
+  values,
+  onChange,
   placeholder,
-  helpText 
+  helpText
 }) => {
   const [currentValue, setCurrentValue] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -131,7 +137,6 @@ const ArrayInput: React.FC<ArrayInputProps> = ({
           <span className="text-xs text-gray-500">{values.length} item{values.length !== 1 ? 's' : ''}</span>
         )}
       </div>
-      
       <div className="flex items-center gap-2 mb-3">
         <input
           type="text"
@@ -150,11 +155,9 @@ const ArrayInput: React.FC<ArrayInputProps> = ({
           <Plus size={16} />
         </button>
       </div>
-
       {helpText && (
         <p className="text-xs text-gray-500 mb-3">{helpText}</p>
       )}
-
       {values.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -169,7 +172,6 @@ const ArrayInput: React.FC<ArrayInputProps> = ({
               </button>
             )}
           </div>
-          
           <div className={`flex flex-wrap gap-2 ${!isExpanded && values.length > 3 ? 'max-h-20 overflow-hidden' : ''}`}>
             {values.map((value, index) => (
               <div
@@ -225,70 +227,74 @@ const FilterSection: React.FC<FilterSectionProps> = ({
   </div>
 );
 
-// Active Filters Summary Component
-const ActiveFiltersSummary: React.FC<{ filters: FilterState; onRemoveFilter: (section: keyof FilterState, field: string, value?: string) => void }> = ({ 
-  filters, 
-  onRemoveFilter 
-}) => {
-  const activeFilters: Array<{ section: keyof FilterState; field: string; value: any; label: string; displayValue: string }> = [];
+// Helper function to create the default initial state for filters
+const createDefaultFilterState = (): FilterState => ({
+  general: { minExperience: '0', maxExperience: '', requiredContactInfo: '', hideViewedProfiles: '', onlyConnections: '' },
+  location: { currentLocations: [], pastLocations: [], radius: '25', timezone: false },
+  job: { titles: [], skills: [] },
+  company: { names: [], industries: [], size: '' },
+  funding: {},
+  skillsKeywords: { items: [], requirements: [] },
+  power: { isOpenToRemote: false, hasEmail: false, hasPhone: false },
+  likelyToSwitch: { likelihood: '', recentActivity: '' },
+  education: { schools: [], degrees: [], majors: [] },
+  languages: { items: [] },
+  boolean: { fullName: '', booleanString: '' },
+});
 
-  // Collect all active filters
-  Object.entries(filters).forEach(([section, sectionData]) => {
+
+// Active Filters Summary Component
+const ActiveFiltersSummary: React.FC<{ 
+    filters: FilterState; 
+    onRemoveFilter: (section: keyof FilterState, field: string, value?: any) => void;
+    onClearAllFilters: () => void;
+}> = ({ 
+  filters, 
+  onRemoveFilter,
+  onClearAllFilters
+}) => {
+  const activeFiltersList: Array<{ section: keyof FilterState; field: string; value: any; label: string; displayValue: string }> = [];
+
+  Object.entries(filters).forEach(([sectionKey, sectionData]) => {
+    const section = sectionKey as keyof FilterState;
     if (typeof sectionData === 'object' && sectionData !== null) {
       Object.entries(sectionData).forEach(([field, value]) => {
+        const fieldLabel = field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1');
         if (Array.isArray(value) && value.length > 0) {
           value.forEach(item => {
-            activeFilters.push({
-              section: section as keyof FilterState,
-              field,
-              value: item,
-              label: `${field.charAt(0).toUpperCase() + field.slice(1)}`,
-              displayValue: item
-            });
+            activeFiltersList.push({ section, field, value: item, label: fieldLabel, displayValue: item });
           });
         } else if (typeof value === 'boolean' && value) {
-          activeFilters.push({
-            section: section as keyof FilterState,
-            field,
-            value,
-            label: field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1'),
-            displayValue: 'Yes'
-          });
-        } else if (typeof value === 'string' && value.trim() !== '' && value !== '25') {
-          activeFilters.push({
-            section: section as keyof FilterState,
-            field,
-            value,
-            label: field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1'),
-            displayValue: value
-          });
+          activeFiltersList.push({ section, field, value, label: fieldLabel, displayValue: 'Yes' });
+        } else if (typeof value === 'string' && value.trim() !== '' && !(field === 'radius' && value === '25') && !(field === 'minExperience' && value === '0')) {
+          // Avoid showing default "25 miles" radius or "0" minExperience if they are the only value for that field
+          // unless other parts of 'general' or 'location' are active.
+          // This simple check might need refinement based on specific UX goals for default values.
+           if (value.trim()) { // Simpler: show if not empty
+            activeFiltersList.push({ section, field, value, label: fieldLabel, displayValue: value });
+           }
         }
       });
     }
   });
 
-  if (activeFilters.length === 0) return null;
+  if (activeFiltersList.length === 0) return null;
 
   return (
     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-purple-800">
-          Active Filters ({activeFilters.length})
+          Active Filters ({activeFiltersList.length})
         </h3>
         <button
-          onClick={() => {
-            // Clear all filters by calling onRemoveFilter for each
-            activeFilters.forEach(filter => {
-              onRemoveFilter(filter.section, filter.field, filter.value);
-            });
-          }}
+          onClick={onClearAllFilters}
           className="text-xs text-purple-600 hover:text-purple-800 font-medium"
         >
           Clear All
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
-        {activeFilters.map((filter, index) => (
+        {activeFiltersList.map((filter, index) => (
           <div
             key={`${filter.section}-${filter.field}-${filter.value}-${index}`}
             className="inline-flex items-center bg-white border border-purple-300 rounded-md px-3 py-1.5 text-sm"
@@ -309,174 +315,133 @@ const ActiveFiltersSummary: React.FC<{ filters: FilterState; onRemoveFilter: (se
   );
 };
 
+
 // Main FilterDialog component
-const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFilters }) => {
-  // Expanded sections state
+const FilterDialog: React.FC<FilterDialogProps> = ({
+  isOpen,
+  onClose,
+  onApplyFilters,
+  initialFilters,
+}) => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    general: true,
-    location: false,
-    job: false,
-    company: false,
-    funding: false,
-    skills: false,
-    power: false,
-    likely: false,
-    education: false,
-    languages: false,
-    boolean: false,
+    general: true, location: false, job: false, company: false, funding: false,
+    skills: false, power: false, likely: false, education: false, languages: false, boolean: false,
   });
-
-  // Filter state
-  const [filters, setFilters] = useState<FilterState>({
-    general: {
-      minExperience: '0',
-      maxExperience: '',
-      requiredContactInfo: '',
-      hideViewedProfiles: '',
-      onlyConnections: '',
-    },
-    location: {
-      currentLocations: ['San Francisco'],
-      pastLocations: [],
-      radius: '25',
-      timezone: false,
-    },
-    job: {
-      titles: ['Product Manager'],
-      skills: ['JavaScript'],
-    },
-    company: {
-      names: [],
-      industries: [],
-      size: '',
-    },
-    funding: {},
-    skillsKeywords: {
-      items: [],
-    },
-    power: {
-      isOpenToRemote: false,
-      hasEmail: false,
-      hasPhone: false,
-    },
-    likelyToSwitch: {
-      likelihood: '',
-      recentActivity: '',
-    },
-    education: {
-      schools: [],
-      degrees: [],
-      majors: [],
-    },
-    languages: {
-      items: [],
-    },
-    boolean: {
-      fullName: '',
-      booleanString: '',
-    },
-  });
-
-  // Search state
+  const [filters, setFilters] = useState<FilterState>(createDefaultFilterState());
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Toggle section expansion
+  useEffect(() => {
+    if (isOpen) {
+      const defaults = createDefaultFilterState();
+      if (initialFilters && Object.keys(initialFilters).length > 0) {
+        setFilters({
+          general: { ...defaults.general, ...initialFilters.general },
+          location: {
+            ...defaults.location,
+            ...initialFilters.location,
+            currentLocations: initialFilters.location?.currentLocations || defaults.location.currentLocations,
+            pastLocations: initialFilters.location?.pastLocations || defaults.location.pastLocations,
+          },
+          job: {
+            ...defaults.job,
+            ...initialFilters.job,
+            titles: initialFilters.job?.titles || defaults.job.titles,
+            skills: initialFilters.job?.skills || defaults.job.skills,
+          },
+          company: {
+            ...defaults.company,
+            ...initialFilters.company,
+            names: initialFilters.company?.names || defaults.company.names,
+            industries: initialFilters.company?.industries || defaults.company.industries,
+          },
+          funding: { ...defaults.funding, /* ...initialFilters.funding if defined */ },
+          skillsKeywords: {
+            ...defaults.skillsKeywords,
+            items: initialFilters.skillsKeywords?.items || defaults.skillsKeywords.items,
+            requirements: initialFilters.skillsKeywords?.requirements || defaults.skillsKeywords.requirements,
+          },
+          power: { ...defaults.power, ...initialFilters.power },
+          likelyToSwitch: { ...defaults.likelyToSwitch, ...initialFilters.likelyToSwitch },
+          education: {
+            ...defaults.education,
+            ...initialFilters.education,
+            schools: initialFilters.education?.schools || defaults.education.schools,
+            degrees: initialFilters.education?.degrees || defaults.education.degrees,
+            majors: initialFilters.education?.majors || defaults.education.majors,
+          },
+          languages: {
+            ...defaults.languages,
+            ...initialFilters.languages,
+            items: initialFilters.languages?.items || defaults.languages.items,
+          },
+          boolean: { ...defaults.boolean, ...initialFilters.boolean },
+        });
+      } else {
+        setFilters(defaults);
+      }
+    }
+  }, [isOpen, initialFilters]);
+
   const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: !prev[sectionId]
-    }));
+    setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
   }, []);
 
-  // Update filter helper
   const updateFilter = useCallback((section: keyof FilterState, field: string, value: any) => {
     setFilters(prev => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
+      [section]: { ...prev[section], [field]: value },
     }));
   }, []);
+  
+  const handleRemoveFilterItem = (section: keyof FilterState, field: string, valueToRemove?: any) => {
+    const sectionData = filters[section] as any;
+    if (Array.isArray(sectionData[field]) && valueToRemove !== undefined) {
+      updateFilter(section, field, sectionData[field].filter((v: any) => v !== valueToRemove));
+    } else if (typeof sectionData[field] === 'boolean') {
+        updateFilter(section, field, false); 
+    } else {
+      const defaultSectionValue = (createDefaultFilterState()[section] as any)[field];
+      updateFilter(section, field, defaultSectionValue);
+    }
+  };
 
-  // Check if section has active filters
-  const hasActiveFilters = useCallback((section: keyof FilterState): boolean => {
-    const sectionData = filters[section];
-    if (typeof sectionData === 'object') {
-      return Object.values(sectionData).some(value => {
+
+  const hasActiveFilters = useCallback((sectionKey: keyof FilterState): boolean => {
+    const sectionData = filters[sectionKey];
+    const defaultSectionData = createDefaultFilterState()[sectionKey];
+
+    if (typeof sectionData === 'object' && sectionData !== null) {
+      return Object.keys(sectionData).some(fieldKey => {
+        const field = fieldKey as keyof typeof sectionData;
+        const value = sectionData[field];
+        const defaultValue = (defaultSectionData as any)[field];
+
         if (Array.isArray(value)) return value.length > 0;
-        if (typeof value === 'boolean') return value;
-        if (typeof value === 'string') return value.trim() !== '';
-        return false;
+        // For non-array types, check if it's different from its default value
+        return value !== defaultValue;
       });
     }
     return false;
   }, [filters]);
 
-  // Calculate total active filters
-  const totalActiveFilters = useMemo(() => {
-    return Object.keys(filters).reduce((count, section) => {
-      return count + (hasActiveFilters(section as keyof FilterState) ? 1 : 0);
-    }, 0);
+  const totalActiveFiltersCount = useMemo(() => {
+    let count = 0;
+    for (const section of Object.keys(filters) as Array<keyof FilterState>) {
+      if (hasActiveFilters(section)) {
+        count++;
+      }
+    }
+    return count;
   }, [filters, hasActiveFilters]);
 
-  // Handle apply filters
-  const handleApplyFilters = useCallback(() => {
+
+  const handleApplyFiltersCallback = useCallback(() => {
     onApplyFilters?.(filters);
     onClose();
   }, [filters, onApplyFilters, onClose]);
 
-  // Clear all filters
   const handleClearAll = useCallback(() => {
-    setFilters({
-      general: {
-        minExperience: '',
-        maxExperience: '',
-        requiredContactInfo: '',
-        hideViewedProfiles: '',
-        onlyConnections: '',
-      },
-      location: {
-        currentLocations: [],
-        pastLocations: [],
-        radius: '25',
-        timezone: false,
-      },
-      job: {
-        titles: [],
-        skills: [],
-      },
-      company: {
-        names: [],
-        industries: [],
-        size: '',
-      },
-      funding: {},
-      skillsKeywords: {
-        items: [],
-      },
-      power: {
-        isOpenToRemote: false,
-        hasEmail: false,
-        hasPhone: false,
-      },
-      likelyToSwitch: {
-        likelihood: '',
-        recentActivity: '',
-      },
-      education: {
-        schools: [],
-        degrees: [],
-        majors: [],
-      },
-      languages: {
-        items: [],
-      },
-      boolean: {
-        fullName: '',
-        booleanString: '',
-      },
-    });
+    setFilters(createDefaultFilterState());
   }, []);
 
   if (!isOpen) return null;
@@ -484,17 +449,17 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 p-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Search Filters</h2>
             <p className="text-sm text-gray-500 mt-1">
-              {totalActiveFilters > 0 ? `${totalActiveFilters} active filter${totalActiveFilters !== 1 ? 's' : ''}` : 'No active filters'}
+              {totalActiveFiltersCount > 0 ? `${totalActiveFiltersCount} active filter category${totalActiveFiltersCount !== 1 ? 'ies' : 'y'}` : 'No active filters'}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-600 px-3 py-1 bg-gray-100 rounded-full">
-              694 matches
+              {/* Replace with actual match count if available */}
+              N matches 
             </span>
             <button
               onClick={handleClearAll}
@@ -503,13 +468,13 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
               Clear All
             </button>
             <button
-              onClick={handleApplyFilters}
+              onClick={handleApplyFiltersCallback}
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Apply Filters
             </button>
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="text-gray-500 hover:text-gray-700 p-1 rounded-md transition-colors"
             >
               <X size={24} />
@@ -517,51 +482,36 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
           </div>
         </div>
 
-        {/* Search */}
         <div className="p-6 border-b border-gray-200">
           <div className="relative">
-            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <SearchIconUI size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search filters..."
+              placeholder="Search filters (e.g., 'Location', 'Skills')..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
-        </div>        {/* Active Filters Summary */}
+        </div>
+        
         <ActiveFiltersSummary 
-          filters={filters} 
-          onRemoveFilter={(section, field, value) => {
-            // Handle individual filter removal
-            const sectionData = filters[section] as any;
-            if (Array.isArray(sectionData[field])) {
-              // For array fields, remove the specific value
-              updateFilter(section, field, sectionData[field].filter((v: any) => v !== value));
-            } else {
-              // For non-array fields, reset the field to its initial state
-              updateFilter(section, field, '');
-            }
-          }}
+            filters={filters} 
+            onRemoveFilter={handleRemoveFilterItem}
+            onClearAllFilters={handleClearAll}
         />
 
-        {/* Filters Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
             {/* General Filters */}
             <FilterSection
-              title="General Filters"
-              icon={Layers}
-              isExpanded={expandedSections.general}
-              onToggle={() => toggleSection('general')}
-              hasActiveFilters={hasActiveFilters('general')}
+              title="General Filters" icon={Layers} isExpanded={expandedSections.general}
+              onToggle={() => toggleSection('general')} hasActiveFilters={hasActiveFilters('general')}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Min Experience (Years)</label>
-                  <input
-                    type="number"
-                    value={filters.general.minExperience}
+                  <input type="number" value={filters.general.minExperience}
                     onChange={(e) => updateFilter('general', 'minExperience', e.target.value)}
                     placeholder="0"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -569,21 +519,17 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
                 </div>
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Max Experience (Years)</label>
-                  <input
-                    type="number"
-                    value={filters.general.maxExperience}
+                  <input type="number" value={filters.general.maxExperience}
                     onChange={(e) => updateFilter('general', 'maxExperience', e.target.value)}
-                    placeholder="10"
+                    placeholder="e.g., 10"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Required Contact Info</label>
-                  <select
-                    value={filters.general.requiredContactInfo}
+                  <select value={filters.general.requiredContactInfo}
                     onChange={(e) => updateFilter('general', 'requiredContactInfo', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
@@ -594,11 +540,9 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
                     <option value="all">All contact info required</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Hide Viewed/Shortlisted</label>
-                  <select
-                    value={filters.general.hideViewedProfiles}
+                   <select value={filters.general.hideViewedProfiles}
                     onChange={(e) => updateFilter('general', 'hideViewedProfiles', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
@@ -608,11 +552,9 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
                     <option value="both">Hide both</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Connection Level</label>
-                  <select
-                    value={filters.general.onlyConnections}
+                   <select value={filters.general.onlyConnections}
                     onChange={(e) => updateFilter('general', 'onlyConnections', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
@@ -627,33 +569,23 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
 
             {/* Location Filters */}
             <FilterSection
-              title="Location Filters"
-              icon={MapPin}
-              isExpanded={expandedSections.location}
-              onToggle={() => toggleSection('location')}
-              hasActiveFilters={hasActiveFilters('location')}
+              title="Location Filters" icon={MapPin} isExpanded={expandedSections.location}
+              onToggle={() => toggleSection('location')} hasActiveFilters={hasActiveFilters('location')}
             >
-              <ArrayInput
-                label="Current Locations"
-                values={filters.location.currentLocations}
+              <ArrayInput label="Current Locations" values={filters.location.currentLocations}
                 onChange={(values) => updateFilter('location', 'currentLocations', values)}
                 placeholder="Enter city, state, or country"
                 helpText="Add multiple locations to search across different areas"
               />
-              
-              <ArrayInput
-                label="Past Locations"
-                values={filters.location.pastLocations}
+              <ArrayInput label="Past Locations" values={filters.location.pastLocations}
                 onChange={(values) => updateFilter('location', 'pastLocations', values)}
                 placeholder="Enter past city, state, or country"
                 helpText="Find candidates who previously worked in these locations"
               />
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Search Radius</label>
-                  <select
-                    value={filters.location.radius}
+                  <select value={filters.location.radius}
                     onChange={(e) => updateFilter('location', 'radius', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
@@ -663,12 +595,8 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
                     <option value="unlimited">Unlimited</option>
                   </select>
                 </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="timezone"
-                    checked={filters.location.timezone}
+                <div className="flex items-center pt-6"> {/* Adjusted for alignment */}
+                  <input type="checkbox" id="timezone" checked={filters.location.timezone}
                     onChange={(e) => updateFilter('location', 'timezone', e.target.checked)}
                     className="h-4 w-4 text-purple-600 border-gray-300 rounded accent-purple-600"
                   />
@@ -679,59 +607,41 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
               </div>
             </FilterSection>
 
-            {/* Job Filters */}
+            {/* Job & Skills */}
             <FilterSection
-              title="Job & Skills"
-              icon={Briefcase}
-              isExpanded={expandedSections.job}
-              onToggle={() => toggleSection('job')}
-              hasActiveFilters={hasActiveFilters('job')}
+              title="Job & Skills" icon={Briefcase} isExpanded={expandedSections.job}
+              onToggle={() => toggleSection('job')} hasActiveFilters={hasActiveFilters('job')}
             >
-              <ArrayInput
-                label="Job Titles"
-                values={filters.job.titles}
+              <ArrayInput label="Job Titles" values={filters.job.titles}
                 onChange={(values) => updateFilter('job', 'titles', values)}
                 placeholder="Enter job title"
                 helpText="Search for specific job titles or roles"
               />
-              
-              <ArrayInput
-                label="Skills & Technologies"
-                values={filters.job.skills}
+              <ArrayInput label="Skills & Technologies" values={filters.job.skills}
                 onChange={(values) => updateFilter('job', 'skills', values)}
                 placeholder="Enter skill or technology"
                 helpText="Find candidates with specific technical or professional skills"
               />
             </FilterSection>
 
-            {/* Company Filters */}
+            {/* Company & Industry */}
             <FilterSection
-              title="Company & Industry"
-              icon={Building}
-              isExpanded={expandedSections.company}
-              onToggle={() => toggleSection('company')}
-              hasActiveFilters={hasActiveFilters('company')}
+              title="Company & Industry" icon={Building} isExpanded={expandedSections.company}
+              onToggle={() => toggleSection('company')} hasActiveFilters={hasActiveFilters('company')}
             >
-              <ArrayInput
-                label="Company Names"
-                values={filters.company.names}
+              <ArrayInput label="Company Names" values={filters.company.names}
                 onChange={(values) => updateFilter('company', 'names', values)}
                 placeholder="Enter company name"
                 helpText="Search for candidates from specific companies"
               />
-              
-              <ArrayInput
-                label="Industries"
-                values={filters.company.industries}
+              <ArrayInput label="Industries" values={filters.company.industries}
                 onChange={(values) => updateFilter('company', 'industries', values)}
                 placeholder="Enter industry"
                 helpText="Find candidates with experience in specific industries"
               />
-
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">Company Size</label>
-                <select
-                  value={filters.company.size}
+                <select value={filters.company.size}
                   onChange={(e) => updateFilter('company', 'size', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
@@ -745,70 +655,64 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
                 </select>
               </div>
             </FilterSection>
+            
+            {/* Additional Skills & Keywords */}
+            <FilterSection
+              title="Additional Skills & Keywords" icon={KeySquare} isExpanded={expandedSections.skills}
+              onToggle={() => toggleSection('skills')} hasActiveFilters={hasActiveFilters('skillsKeywords')}
+            >
+              <ArrayInput label="Skills, Keywords, or Buzzwords" values={filters.skillsKeywords.items}
+                onChange={(values) => updateFilter('skillsKeywords', 'items', values)}
+                placeholder="Enter any skill, keyword, or term"
+                helpText="Broad search across profiles for any mentioned skills or keywords"
+              />
+              {/* Optional: UI for requirements */}
+               <ArrayInput label="Specific Requirements" values={filters.skillsKeywords.requirements || []}
+                onChange={(values) => updateFilter('skillsKeywords', 'requirements', values)}
+                placeholder="Enter specific requirement from query"
+                helpText="These are specific requirements extracted by AI"
+              />
+            </FilterSection>
 
             {/* Power Filters */}
             <FilterSection
-              title="Power Filters"
-              icon={Zap}
-              isExpanded={expandedSections.power}
-              onToggle={() => toggleSection('power')}
-              hasActiveFilters={hasActiveFilters('power')}
+              title="Power Filters" icon={Zap} isExpanded={expandedSections.power}
+              onToggle={() => toggleSection('power')} hasActiveFilters={hasActiveFilters('power')}
             >
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="openToRemote"
-                    checked={filters.power.isOpenToRemote}
+                  <input type="checkbox" id="openToRemote" checked={filters.power.isOpenToRemote}
                     onChange={(e) => updateFilter('power', 'isOpenToRemote', e.target.checked)}
                     className="h-4 w-4 text-purple-600 border-gray-300 rounded accent-purple-600"
                   />
-                  <label htmlFor="openToRemote" className="ml-3 text-sm font-medium text-gray-700">
-                    Open to Remote Work
-                  </label>
+                  <label htmlFor="openToRemote" className="ml-3 text-sm font-medium text-gray-700">Open to Remote Work</label>
                 </div>
-
                 <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="hasVerifiedEmail"
-                    checked={filters.power.hasEmail}
+                  <input type="checkbox" id="hasVerifiedEmail" checked={filters.power.hasEmail}
                     onChange={(e) => updateFilter('power', 'hasEmail', e.target.checked)}
                     className="h-4 w-4 text-purple-600 border-gray-300 rounded accent-purple-600"
                   />
-                  <label htmlFor="hasVerifiedEmail" className="ml-3 text-sm font-medium text-gray-700">
-                    Has Verified Email
-                  </label>
+                  <label htmlFor="hasVerifiedEmail" className="ml-3 text-sm font-medium text-gray-700">Has Verified Email</label>
                 </div>
-
                 <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="hasVerifiedPhone"
-                    checked={filters.power.hasPhone}
+                  <input type="checkbox" id="hasVerifiedPhone" checked={filters.power.hasPhone}
                     onChange={(e) => updateFilter('power', 'hasPhone', e.target.checked)}
                     className="h-4 w-4 text-purple-600 border-gray-300 rounded accent-purple-600"
                   />
-                  <label htmlFor="hasVerifiedPhone" className="ml-3 text-sm font-medium text-gray-700">
-                    Has Verified Phone Number
-                  </label>
+                  <label htmlFor="hasVerifiedPhone" className="ml-3 text-sm font-medium text-gray-700">Has Verified Phone Number</label>
                 </div>
               </div>
             </FilterSection>
 
-            {/* Likely to Switch */}
+            {/* Job Change Likelihood */}
             <FilterSection
-              title="Job Change Likelihood"
-              icon={Star}
-              isExpanded={expandedSections.likely}
-              onToggle={() => toggleSection('likely')}
-              hasActiveFilters={hasActiveFilters('likelyToSwitch')}
+              title="Job Change Likelihood" icon={Star} isExpanded={expandedSections.likely}
+              onToggle={() => toggleSection('likely')} hasActiveFilters={hasActiveFilters('likelyToSwitch')}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Likelihood to Switch</label>
-                  <select
-                    value={filters.likelyToSwitch.likelihood}
+                  <select value={filters.likelyToSwitch.likelihood}
                     onChange={(e) => updateFilter('likelyToSwitch', 'likelihood', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
@@ -819,11 +723,9 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
                     <option value="unlikely">Unlikely (Happy in current role)</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Recent Activity</label>
-                  <select
-                    value={filters.likelyToSwitch.recentActivity}
+                  <select value={filters.likelyToSwitch.recentActivity}
                     onChange={(e) => updateFilter('likelyToSwitch', 'recentActivity', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
@@ -837,117 +739,68 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
               </div>
             </FilterSection>
 
-            {/* Education Filters */}
+            {/* Education */}
             <FilterSection
-              title="Education"
-              icon={GraduationCap}
-              isExpanded={expandedSections.education}
-              onToggle={() => toggleSection('education')}
-              hasActiveFilters={hasActiveFilters('education')}
+              title="Education" icon={GraduationCap} isExpanded={expandedSections.education}
+              onToggle={() => toggleSection('education')} hasActiveFilters={hasActiveFilters('education')}
             >
-              <ArrayInput
-                label="Schools & Universities"
-                values={filters.education.schools}
+              <ArrayInput label="Schools & Universities" values={filters.education.schools}
                 onChange={(values) => updateFilter('education', 'schools', values)}
                 placeholder="Enter school or university name"
-                helpText="Find candidates from specific educational institutions"
               />
-              
-              <ArrayInput
-                label="Degrees"
-                values={filters.education.degrees}
+              <ArrayInput label="Degrees" values={filters.education.degrees}
                 onChange={(values) => updateFilter('education', 'degrees', values)}
-                placeholder="Enter degree type (e.g., Bachelor's, Master's, PhD)"
-                helpText="Search by degree level or type"
+                placeholder="Enter degree type (e.g., Bachelor's)"
               />
-              
-              <ArrayInput
-                label="Fields of Study"
-                values={filters.education.majors}
+              <ArrayInput label="Fields of Study" values={filters.education.majors}
                 onChange={(values) => updateFilter('education', 'majors', values)}
                 placeholder="Enter field of study or major"
-                helpText="Find candidates with specific academic backgrounds"
-              />
-            </FilterSection>
-
-            {/* Skills & Keywords */}
-            <FilterSection
-              title="Additional Skills & Keywords"
-              icon={KeySquare}
-              isExpanded={expandedSections.skills}
-              onToggle={() => toggleSection('skills')}
-              hasActiveFilters={hasActiveFilters('skillsKeywords')}
-            >
-              <ArrayInput
-                label="Skills, Keywords, or Buzzwords"
-                values={filters.skillsKeywords.items}
-                onChange={(values) => updateFilter('skillsKeywords', 'items', values)}
-                placeholder="Enter any skill, keyword, or term"
-                helpText="Broad search across profiles for any mentioned skills or keywords"
               />
             </FilterSection>
 
             {/* Languages */}
             <FilterSection
-              title="Languages"
-              icon={Globe}
-              isExpanded={expandedSections.languages}
-              onToggle={() => toggleSection('languages')}
-              hasActiveFilters={hasActiveFilters('languages')}
+              title="Languages" icon={Globe} isExpanded={expandedSections.languages}
+              onToggle={() => toggleSection('languages')} hasActiveFilters={hasActiveFilters('languages')}
             >
-              <ArrayInput
-                label="Languages Spoken"
-                values={filters.languages.items}
+              <ArrayInput label="Languages Spoken" values={filters.languages.items}
                 onChange={(values) => updateFilter('languages', 'items', values)}
-                placeholder="Enter language (e.g., Spanish, Mandarin, French)"
-                helpText="Find candidates who speak specific languages"
+                placeholder="Enter language (e.g., Spanish, Mandarin)"
               />
             </FilterSection>
 
-            {/* Boolean & Name Search */}
+            {/* Advanced Search */}
             <FilterSection
-              title="Advanced Search"
-              icon={Command}
-              isExpanded={expandedSections.boolean}
-              onToggle={() => toggleSection('boolean')}
-              hasActiveFilters={hasActiveFilters('boolean')}
+              title="Advanced Search" icon={Command} isExpanded={expandedSections.boolean}
+              onToggle={() => toggleSection('boolean')} hasActiveFilters={hasActiveFilters('boolean')}
             >
               <div className="space-y-4">
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Full Name Search</label>
-                  <input
-                    type="text"
-                    value={filters.boolean.fullName}
+                  <input type="text" value={filters.boolean.fullName}
                     onChange={(e) => updateFilter('boolean', 'fullName', e.target.value)}
                     placeholder="Enter exact name to search for"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Search for specific individuals by their full name</p>
                 </div>
-
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">Boolean Search String</label>
-                  <textarea
-                    value={filters.boolean.booleanString}
+                  <textarea value={filters.boolean.booleanString}
                     onChange={(e) => updateFilter('boolean', 'booleanString', e.target.value)}
                     placeholder='Example: ("software engineer" OR "developer") AND (React OR Angular) NOT "manager"'
                     className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Use AND, OR, NOT operators with quotes for exact phrases. Supports complex search logic.
-                  </p>
                 </div>
               </div>
             </FilterSection>
           </div>
         </div>
 
-        {/* Footer */}
         <div className="border-t border-gray-200 p-6 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {totalActiveFilters > 0 && (
-                <span>{totalActiveFilters} active filter{totalActiveFilters !== 1 ? 's' : ''} applied</span>
+              {totalActiveFiltersCount > 0 && (
+                <span>{totalActiveFiltersCount} active filter categor{totalActiveFiltersCount !== 1 ? 'ies' : 'y'} applied</span>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -964,7 +817,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ isOpen, onClose, onApplyFil
                 Cancel
               </button>
               <button
-                onClick={handleApplyFilters}
+                onClick={handleApplyFiltersCallback}
                 className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors"
               >
                 Apply Filters

@@ -48,6 +48,7 @@ export interface SearchFilters {
   };
   skillsKeywords?: {
     items?: string[];
+    requirements?: string[]; // Added requirements
   };
   power?: {
     isOpenToRemote?: boolean;
@@ -219,10 +220,14 @@ Respond only with valid JSON matching the provided schema.`;      const response
     }
 
     // Skills and keywords
-    if (keywords.keywords.length > 0) {
-      filters.skillsKeywords = {
-        items: keywords.keywords
-      };
+    if (keywords.keywords.length > 0 || keywords.requirements.length > 0) {
+      filters.skillsKeywords = {};
+      if (keywords.keywords.length > 0) {
+        filters.skillsKeywords.items = keywords.keywords;
+      }
+      if (keywords.requirements.length > 0) {
+        filters.skillsKeywords.requirements = keywords.requirements;
+      }
     }
 
     // Experience level mapping
@@ -281,7 +286,8 @@ Respond only with valid JSON matching the provided schema.`;      const response
     let totalWeight = 0;
     let matchedWeight = 0;
 
-    const userData = user.structuredData;    // Job title matching
+    const userData = user.structuredData;
+    // Job title matching
     if (filters.job?.titles && filters.job.titles.length > 0) {
       totalWeight += 3; // High importance
       const userTitles = userData.experience?.map((exp: any) => exp.position.toLowerCase()) || [];
@@ -355,6 +361,19 @@ Respond only with valid JSON matching the provided schema.`;      const response
       
       if (matchedKeywords > 0) {
         matchedWeight += Math.min(1, (matchedKeywords / filters.skillsKeywords.items.length) * 1);
+      }
+    }
+
+    // Requirements matching
+    if (filters.skillsKeywords?.requirements && filters.skillsKeywords.requirements.length > 0) {
+      totalWeight += 1.5; // Medium-low importance for requirements
+      const userText = this.getUserSearchableText(userData).toLowerCase();
+      const matchedRequirements = filters.skillsKeywords.requirements.filter(requirement =>
+        userText.includes(requirement.toLowerCase())
+      ).length;
+
+      if (matchedRequirements > 0) {
+        matchedWeight += Math.min(1.5, (matchedRequirements / filters.skillsKeywords.requirements.length) * 1.5);
       }
     }
 
@@ -434,7 +453,8 @@ Respond only with valid JSON matching the provided schema.`;      const response
    */
   private getMatchedCriteria(user: any, filters: SearchFilters): string[] {
     const criteria: string[] = [];
-    const userData = user.structuredData;    // Job titles
+    const userData = user.structuredData;
+    // Job titles
     if (filters.job?.titles && filters.job.titles.length > 0) {
       const userTitles = userData.experience?.map((exp: any) => exp.position.toLowerCase()) || [];
       const matchedTitles = filters.job.titles.filter(title =>
@@ -466,7 +486,18 @@ Respond only with valid JSON matching the provided schema.`;      const response
         userLocation.includes(location.toLowerCase()) || location.toLowerCase().includes(userLocation)
       );
       matchedLocations.forEach(location => criteria.push(`Location: ${location}`));
-    }    // Companies
+    }
+
+    // Requirements
+    if (filters.skillsKeywords?.requirements && filters.skillsKeywords.requirements.length > 0) {
+      const userText = this.getUserSearchableText(userData).toLowerCase();
+      const matchedRequirements = filters.skillsKeywords.requirements.filter(requirement =>
+        userText.includes(requirement.toLowerCase())
+      );
+      matchedRequirements.forEach(requirement => criteria.push(`Requirement: ${requirement}`));
+    }
+
+    // Companies
     if (filters.company?.names && filters.company.names.length > 0) {
       const userCompanies = userData.experience?.map((exp: any) => exp.company.toLowerCase()) || [];
       const matchedCompanies = filters.company.names.filter(company =>
