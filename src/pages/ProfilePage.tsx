@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Briefcase, GraduationCap, Zap, FolderOpen } from 'lucide-react';
 import Button from '../components/Button';
 
 // Define interfaces for type safety - ADD 'export' HERE
@@ -28,10 +28,14 @@ export interface Experience {
 export interface Education {
   degree: string;
   institution: string;
-  startDate: string;
+  startDate?: string;
   endDate?: string;
+  graduationDate?: string;
   location?: string;
   description?: string;
+  major?: string;
+  courses?: string[];
+  honors?: string[];
 }
 
 export interface Project {
@@ -88,7 +92,8 @@ const ProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);  useEffect(() => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(0);useEffect(() => {
     // Simulate loading data
     setIsLoading(true);
     
@@ -244,8 +249,7 @@ const ProfilePage: React.FC = () => {
             ) : null}
           </div>
         </div>
-      </div>
-      
+      </div>      
       {/* Summary Section */}
       {summary && (
         <div className="bg-white shadow-sm rounded-lg p-6 mb-4 border border-gray-200">
@@ -254,133 +258,221 @@ const ProfilePage: React.FC = () => {
         </div>
       )}
       
-      {/* Experience Section */}
-      {experience && experience.length > 0 && (
-        <div className="bg-white shadow-sm rounded-lg p-6 mb-4 border border-gray-200">
-          <h2 className="font-medium text-lg mb-4">Experience</h2>
-          <div className="space-y-6">
-            {experience.map((exp, index) => (
-              <div key={index} className={index !== experience.length - 1 ? "pb-6 border-b border-gray-100" : ""}>
-                <div className="flex justify-between">
-                  <div className="mb-1">
-                    <h3 className="font-medium">{exp.position}</h3>
-                    <p className="text-gray-600">{exp.company}</p>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {exp.startDate} - {exp.endDate || 'Present'}
-                  </div>
-                </div>
-                {exp.location && <p className="text-sm text-gray-500 mb-2">{exp.location}</p>}
-                {exp.description && <p className="text-gray-600 mb-2">{exp.description}</p>}
-                
-                {exp.responsibilities && exp.responsibilities.length > 0 && (
-                  <div className="mt-2">
-                    <h4 className="text-sm font-medium mb-1">Responsibilities:</h4>
-                    <ul className="list-disc list-inside pl-2 space-y-1">
-                      {exp.responsibilities.map((resp, i) => (
-                        <li key={i} className="text-sm text-gray-600">{resp}</li>
-                      ))}
-                    </ul>
-                  </div>
+      {/* Tabs Navigation */}
+      <div className="bg-white shadow-sm rounded-lg border border-gray-200 mb-4">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+            {[
+              { name: 'Experience', icon: Briefcase, index: 0, count: experience?.length || 0 },
+              { name: 'Education', icon: GraduationCap, index: 1, count: education?.length || 0 },
+              { name: 'Skills', icon: Zap, index: 2, count: skills?.length || 0 },
+              { name: 'Projects', icon: FolderOpen, index: 3, count: projects?.length || 0 },
+            ].map((tab) => (
+              <button
+                key={tab.name}
+                onClick={() => setActiveTab(tab.index)}
+                className={`${
+                  activeTab === tab.index
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.name}
+                {tab.count > 0 && (
+                  <span className="bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                    {tab.count}
+                  </span>
                 )}
-                
-                {exp.achievements && exp.achievements.length > 0 && (
-                  <div className="mt-2">
-                    <h4 className="text-sm font-medium mb-1">Key Achievements:</h4>
-                    <ul className="list-disc list-inside pl-2 space-y-1">
-                      {exp.achievements.map((ach, i) => (
-                        <li key={i} className="text-sm text-gray-600">{ach}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+              </button>
             ))}
-          </div>
+          </nav>
         </div>
-      )}
-      
-      {/* Education Section */}
-      {education && education.length > 0 && (
-        <div className="bg-white shadow-sm rounded-lg p-6 mb-4 border border-gray-200">
-          <h2 className="font-medium text-lg mb-4">Education</h2>
-          <div className="space-y-4">
-            {education.map((edu, index) => (
-              <div key={index} className={index !== education.length - 1 ? "pb-4 border-b border-gray-100" : ""}>
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="font-medium">{edu.degree}</h3>
-                    <p className="text-gray-600">{edu.institution}</p>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {edu.startDate} - {edu.endDate || 'Present'}
-                  </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {/* Experience Tab */}
+          {activeTab === 0 && (
+            <div>
+              {experience && experience.length > 0 ? (
+                <div className="space-y-6">
+                  {experience.map((exp, index) => (
+                    <div key={index} className={index !== experience.length - 1 ? "pb-6 border-b border-gray-100" : ""}>
+                      <div className="flex justify-between">
+                        <div className="mb-1">
+                          <h3 className="font-medium">{exp.position}</h3>
+                          <p className="text-gray-600">{exp.company}</p>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {exp.startDate} - {exp.endDate || 'Present'}
+                        </div>
+                      </div>
+                      {exp.location && <p className="text-sm text-gray-500 mb-2">{exp.location}</p>}
+                      {exp.description && <p className="text-gray-600 mb-2">{exp.description}</p>}
+                      
+                      {exp.responsibilities && exp.responsibilities.length > 0 && (
+                        <div className="mt-2">
+                          <h4 className="text-sm font-medium mb-1">Responsibilities:</h4>
+                          <ul className="list-disc list-inside pl-2 space-y-1">
+                            {exp.responsibilities.map((resp, i) => (
+                              <li key={i} className="text-sm text-gray-600">{resp}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {exp.achievements && exp.achievements.length > 0 && (
+                        <div className="mt-2">
+                          <h4 className="text-sm font-medium mb-1">Key Achievements:</h4>
+                          <ul className="list-disc list-inside pl-2 space-y-1">
+                            {exp.achievements.map((ach, i) => (
+                              <li key={i} className="text-sm text-gray-600">{ach}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                {edu.location && <p className="text-sm text-gray-500">{edu.location}</p>}
-                {edu.description && <p className="mt-1 text-gray-600">{edu.description}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Skills Section */}
-      {skills && skills.length > 0 && (
-        <div className="bg-white shadow-sm rounded-lg p-6 mb-4 border border-gray-200">
-          <h2 className="font-medium text-lg mb-3">Skills</h2>
-          <div className="flex flex-wrap gap-2">
-            {skills.map((skill, index) => (
-              <span key={index} className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Projects Section */}
-      {projects && projects.length > 0 && (
-        <div className="bg-white shadow-sm rounded-lg p-6 mb-4 border border-gray-200">
-          <h2 className="font-medium text-lg mb-4">Projects</h2>
-          <div className="space-y-6">
-            {projects.map((project, index) => (
-              <div key={index} className={index !== projects.length - 1 ? "pb-6 border-b border-gray-100" : ""}>
-                <div className="flex justify-between">
-                  <h3 className="font-medium">{project.name}</h3>
-                  {project.date && <div className="text-sm text-gray-500">{project.date}</div>}
+              ) : (
+                <div className="text-center py-8">
+                  <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No experience information available</p>
                 </div>
-                {project.description && <p className="mt-1 text-gray-600">{project.description}</p>}
-                
-                {project.technologies && project.technologies.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {project.technologies.map((tech, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">
-                        {tech}
+              )}
+            </div>
+          )}
+
+          {/* Education Tab */}
+          {activeTab === 1 && (
+            <div>
+              {education && education.length > 0 ? (
+                <div className="space-y-4">
+                  {education.map((edu, index) => (
+                    <div key={index} className={index !== education.length - 1 ? "pb-4 border-b border-gray-100" : ""}>
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-medium">{edu.degree}</h3>
+                          <p className="text-gray-600">{edu.institution}</p>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {edu.startDate && edu.endDate ? `${edu.startDate} - ${edu.endDate}` : 
+                           edu.graduationDate ? edu.graduationDate :
+                           edu.startDate ? `${edu.startDate} - Present` : ''}
+                        </div>
+                      </div>
+                      {edu.location && <p className="text-sm text-gray-500">{edu.location}</p>}
+                      {edu.major && <p className="text-sm text-gray-600 mt-1">Major: {edu.major}</p>}
+                      {edu.description && <p className="mt-1 text-gray-600">{edu.description}</p>}
+                      
+                      {edu.courses && edu.courses.length > 0 && (
+                        <div className="mt-2">
+                          <h4 className="text-sm font-medium mb-1">Relevant Courses:</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {edu.courses.map((course, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                {course}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {edu.honors && edu.honors.length > 0 && (
+                        <div className="mt-2">
+                          <h4 className="text-sm font-medium mb-1">Honors & Awards:</h4>
+                          <ul className="list-disc list-inside pl-2 space-y-1">
+                            {edu.honors.map((honor, i) => (
+                              <li key={i} className="text-sm text-gray-600">{honor}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No education information available</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Skills Tab */}
+          {activeTab === 2 && (
+            <div>
+              {skills && skills.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {skills.map((skill, index) => (
+                      <span key={index} className="px-3 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                        {skill}
                       </span>
                     ))}
                   </div>
-                )}
-                
-                {project.url && (
-                  <div className="mt-2">
-                    <a 
-                      href={project.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-purple-600 hover:text-purple-800 text-sm flex items-center gap-1"
-                    >
-                      <span>View Project</span>
-                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Zap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No skills information available</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Projects Tab */}
+          {activeTab === 3 && (
+            <div>
+              {projects && projects.length > 0 ? (
+                <div className="space-y-6">
+                  {projects.map((project, index) => (
+                    <div key={index} className={index !== projects.length - 1 ? "pb-6 border-b border-gray-100" : ""}>
+                      <div className="flex justify-between">
+                        <h3 className="font-medium">{project.name}</h3>
+                        {project.date && <div className="text-sm text-gray-500">{project.date}</div>}
+                      </div>
+                      {project.description && <p className="mt-1 text-gray-600">{project.description}</p>}
+                      
+                      {project.technologies && project.technologies.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {project.technologies.map((tech, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {project.url && (
+                        <div className="mt-2">
+                          <a 
+                            href={project.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-purple-600 hover:text-purple-800 text-sm flex items-center gap-1"
+                          >
+                            <span>View Project</span>
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No projects information available</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
