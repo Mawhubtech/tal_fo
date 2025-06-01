@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Button from './Button';
-import ProfileSidePanel, { type PanelState } from '../pages/ProfileSidePanel';
+import ProfileSidePanel, { type PanelState } from './ProfileSidePanel';
 import type { UserStructuredData } from '../pages/ProfilePage';
 
 // Mock user data for demonstration

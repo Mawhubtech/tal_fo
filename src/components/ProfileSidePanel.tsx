@@ -1,9 +1,66 @@
 import React, { useState } from 'react';
 import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, FileText, Clock, GraduationCap, Zap } from 'lucide-react'; // Ensure these icons are installed
-import Button from '../components/Button'; // Adjust path to your Button component if necessary
+import Button from './Button'; // Adjust path to your Button component if necessary
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
-import type { UserStructuredData } from './ProfilePage';
+// Define interfaces for type safety - ADD 'export' HERE
+export interface PersonalInfo {
+  fullName: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  website?: string;
+  linkedIn?: string;
+  github?: string;
+}
+
+export interface Experience {
+  position: string;
+  company: string;
+  startDate: string;
+  endDate?: string;
+  location?: string;
+  description?: string;
+  responsibilities?: string[];
+  achievements?: string[];
+}
+
+export interface Education {
+  degree: string;
+  institution: string;
+  startDate?: string;
+  endDate?: string;
+  graduationDate?: string;
+  location?: string;
+  description?: string;
+  major?: string;
+  courses?: string[];
+  honors?: string[];
+}
+
+export interface Project {
+  name: string;
+  date?: string;
+  description?: string;
+  technologies?: string[];
+  url?: string;
+}
+
+export interface UserStructuredData {
+  personalInfo: PersonalInfo;
+  summary?: string;
+  experience?: Experience[];
+  education?: Education[];
+  skills?: string[];
+  projects?: Project[];
+}
+
+export interface UserData { // If UserData is also needed elsewhere
+  fileName: string;
+  fileSize: number;
+  extractedText: string;
+  structuredData: UserStructuredData;
+}
 
 export type PanelState = 'closed' | 'collapsed' | 'expanded';
 

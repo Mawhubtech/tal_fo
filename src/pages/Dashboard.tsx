@@ -7,7 +7,7 @@ import SearchResultsPage from './SearchResults'; // Import the new SearchResults
 import EmailSequencesPage from './EmailSequencesPage'; // Import the new page
 import ContactsPage from './ContactsPage'; // Import the new ContactsPage
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
-import ProfilePage from './ProfilePage'; // Import ProfilePage
+
 
 // Mock functions and objects - replace with your actual implementations
 // --- End of Mock Data ---
@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}
             <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
             <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}
-            <Route path="profile/:userId" element={<ProfilePage />} /> {/* Route for ProfilePage */}
+           
           </Routes>
           
           {/* Trial notice */}
