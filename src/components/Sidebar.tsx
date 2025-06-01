@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, Users, Mail, MessageSquare, BarChart2, 
-  Settings, HelpCircle, ChevronDown, Edit, FileText
+  Settings, HelpCircle, ChevronDown, Edit, FileText, Send // Added Send icon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -134,16 +134,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             {isExpanded && "Contacts"}
           </a>
           
-          <a 
-            href="#" 
-            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700`}
+          <Link 
+            to="/dashboard/sequences" // Updated link
+            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`} // Added hover effect
             title={!isExpanded ? "Sequences" : ""}
           >
             <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
-              <MessageSquare className="w-4 h-4" />
+              <Send className="w-4 h-4" /> {/* Changed icon to Send */}
             </div>
             {isExpanded && "Sequences"}
-          </a>
+          </Link>
           
           <a 
             href="#" 

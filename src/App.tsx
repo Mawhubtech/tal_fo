@@ -22,6 +22,7 @@ import SignIn from './components/SignIn';
 import OAuthCallback from './components/OAuthCallback';
 import Dashboard from './pages/Dashboard';
 import ResumeProcessingPage from './pages/ResumeProcessingPage';
+import EmailSequencesPage from './pages/EmailSequencesPage'; // Import EmailSequencesPage
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,30 +64,18 @@ function App() {
             <Route
               path="/auth/callback"
               element={<OAuthCallback />}
-            />            <Route
-              path="/dashboard"
+            />
+            {/* Updated Dashboard Route to handle nested routes */}
+            <Route
+              path="/dashboard/*" // Add /* to allow nested routes
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/dashboard/resume-processing"
-              element={
-                <ProtectedRoute>
-                  <ResumeProcessingPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/resume-processing"
-              element={
-                <ProtectedRoute>
-                  <ResumeProcessingPage />
-                </ProtectedRoute>
-              }
-            /><Route path="*" element={<Navigate to="/\" replace />} />
+            {/* Remove individual /dashboard/resume-processing and /dashboard/sequences routes as they are handled by Dashboard.tsx */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>        
         </Router>
         </AuthProvider>
