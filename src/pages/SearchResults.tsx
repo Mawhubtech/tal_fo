@@ -7,7 +7,7 @@ import type { SearchFilters } from '../services/searchService';
 
 // Assuming ProfilePage.tsx and its types are in the same directory or adjust path
 import type { UserStructuredData } from './ProfilePage';
-import ProfileSidePanel from './ProfileSidePanel'; // Adjust path if ProfileSidePanel is elsewhere
+import ProfileSidePanel, { type PanelState } from './ProfileSidePanel'; // Import the PanelState type
 
 const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,10 +16,9 @@ const SearchResultsPage: React.FC = () => {
   const [results, setResults] = useState<any[]>([]);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
-
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
+  const [panelState, setPanelState] = useState<PanelState>('closed');
 
   useEffect(() => {
     if (location.state) {
@@ -52,23 +51,23 @@ const SearchResultsPage: React.FC = () => {
       }
     });
   };
-
   // Handlers for the profile side panel
   const handleOpenProfilePanel = (userData: UserStructuredData) => {
     setSelectedUserDataForPanel(userData);
-    setIsPanelOpen(true);
+    setPanelState('expanded');
     document.body.style.overflow = 'hidden'; // Prevent background scroll
   };
 
-  const handleCloseProfilePanel = () => {
-    setIsPanelOpen(false);
-    setSelectedUserDataForPanel(null);
-    document.body.style.overflow = 'auto'; // Restore background scroll
+  const handlePanelStateChange = (newState: PanelState) => {
+    setPanelState(newState);
+    if (newState === 'closed') {
+      setSelectedUserDataForPanel(null);
+      document.body.style.overflow = 'auto'; // Restore background scroll
+    }
   };
-
   return (
     <> {/* Added React.Fragment to wrap main content and panel */}
-      <div className={`container mx-auto px-6 py-4 max-w-full bg-gray-50 min-h-screen ${isPanelOpen ? 'overflow-hidden' : ''}`}>
+      <div className={`container mx-auto px-6 py-4 max-w-full bg-gray-50 min-h-screen ${panelState !== 'closed' ? 'overflow-hidden' : ''}`}>
         {/* Header with back button */}
         <div className="flex items-center justify-between py-6 mb-4">
           <Button
@@ -261,21 +260,22 @@ const SearchResultsPage: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Side Panel and Overlay */}
-      {isPanelOpen && (
+      </div>      {/* Side Panel and Overlay */}
+      {panelState !== 'closed' && (
         <>
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out"
-            onClick={handleCloseProfilePanel}
-            aria-hidden="true"
-          ></div>
+          {/* Overlay - only show for expanded state */}
+          {panelState === 'expanded' && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out"
+              onClick={() => handlePanelStateChange('closed')}
+              aria-hidden="true"
+            ></div>
+          )}
           {/* Panel */}
           <ProfileSidePanel
             userData={selectedUserDataForPanel}
-            onClose={handleCloseProfilePanel}
+            panelState={panelState}
+            onStateChange={handlePanelStateChange}
           />
         </>
       )}
