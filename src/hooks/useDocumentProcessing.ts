@@ -261,9 +261,8 @@ export const useDocumentProcessing = () => {
     
     return processDocument(file, { ...defaultOptions, ...customOptions });
   };
-  
-  // Process a resume with dynamic schema generation
-  const processResumeWithDynamicSchema = async (
+    // Process a resume with comprehensive predefined schema (faster processing)
+  const processResumeWithPredefinedSchema = async (
     file: File
   ): Promise<ResumeProcessingResult | null> => {
     setLoading(true);
@@ -328,12 +327,11 @@ export const useDocumentProcessing = () => {
     setError(null);
     setData(null);
   };
-
   return {
     processDocument,
     processJobDescription,
     processResume,
-    processResumeWithDynamicSchema,
+    processResumeWithPredefinedSchema,
     processCustomDocument,
     loading,
     error,

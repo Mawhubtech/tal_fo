@@ -4,7 +4,7 @@ import Button from './Button';
 import { Upload, FileText, Database, Zap, User, Briefcase, GraduationCap, Code, Award, Heart, MapPin, Mail, Phone, Calendar, Building } from 'lucide-react';
 
 const ResumeProcessingDemo: React.FC = () => {
-  const { processResumeWithDynamicSchema, loading, error } = useDocumentProcessing();
+  const { processResumeWithPredefinedSchema, loading, error } = useDocumentProcessing();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [result, setResult] = useState<ResumeProcessingResult | null>(null);
 
@@ -19,7 +19,7 @@ const ResumeProcessingDemo: React.FC = () => {
   const handleProcessResume = async () => {
     if (!selectedFile) return;
 
-    const processedResult = await processResumeWithDynamicSchema(selectedFile);
+    const processedResult = await processResumeWithPredefinedSchema(selectedFile);
     if (processedResult) {
       setResult(processedResult);
     }
@@ -359,18 +359,17 @@ const ResumeProcessingDemo: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">        <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            AI-Powered Resume Processing with Dynamic Schema
+            AI-Powered Resume Processing with Comprehensive Schema
           </h2>
           <p className="text-sm text-gray-600 mt-2">
             Upload a resume (PDF or DOCX) and our AI will:
             <br />
             1. Extract the text content
             <br />
-            2. Analyze the content to create a comprehensive schema
+            2. Use a comprehensive predefined schema covering all resume sections
             <br />
             3. Extract all structured data according to that schema
           </p>
@@ -453,12 +452,11 @@ const ResumeProcessingDemo: React.FC = () => {
             </div>
           </div>
 
-          {/* Generated Schema */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Generated Schema */}          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">AI-Generated Schema</h3>
+              <h3 className="text-lg font-semibold">Comprehensive Predefined Schema</h3>
               <p className="text-sm text-gray-600 mt-1">
-                The AI analyzed your resume and created this comprehensive schema
+                This comprehensive schema covers all possible resume sections for maximum data extraction
               </p>
             </div>
             <div className="p-6">
@@ -479,11 +477,10 @@ const ResumeProcessingDemo: React.FC = () => {
               </div>
             </div>
           </div>          {/* Structured Data */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 lg:col-span-1">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 lg:col-span-1">            <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold">Extracted Structured Data</h3>
               <p className="text-sm text-gray-600 mt-1">
-                All resume information structured according to the generated schema
+                All resume information structured according to the comprehensive predefined schema
               </p>
             </div>
             <div className="p-6">
@@ -528,12 +525,11 @@ const ResumeProcessingDemo: React.FC = () => {
               <p className="text-sm text-gray-600">
                 AI extracts all text content from your PDF or DOCX resume
               </p>
-            </div>
-            <div className="text-center p-4 border rounded-lg">
+            </div>            <div className="text-center p-4 border rounded-lg">
               <Database className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <h4 className="font-semibold mb-1">2. Generate Schema</h4>
+              <h4 className="font-semibold mb-1">2. Apply Schema</h4>
               <p className="text-sm text-gray-600">
-                AI analyzes content to create a comprehensive data structure schema
+                AI uses a comprehensive predefined schema covering all resume sections
               </p>
             </div>
             <div className="text-center p-4 border rounded-lg">

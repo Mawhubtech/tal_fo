@@ -4,7 +4,7 @@ import Button from './Button';
 import { Upload, FileText, Database, Zap, User, Briefcase, GraduationCap, Code, Award, Heart, MapPin, Mail, Phone, Calendar, Building } from 'lucide-react';
 
 const ResumeProcessing: React.FC = () => {
-  const { processResumeWithDynamicSchema, loading, error } = useDocumentProcessing();
+  const { processResumeWithPredefinedSchema, loading, error } = useDocumentProcessing();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [result, setResult] = useState<ResumeProcessingResult | null>(null);
 
@@ -19,7 +19,7 @@ const ResumeProcessing: React.FC = () => {
   const handleProcessResume = async () => {
     if (!selectedFile) return;
 
-    const processedResult = await processResumeWithDynamicSchema(selectedFile);
+    const processedResult = await processResumeWithPredefinedSchema(selectedFile);
     if (processedResult) {
       setResult(processedResult);
     }
@@ -359,18 +359,17 @@ const ResumeProcessing: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">        <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            AI-Powered Resume Processing with Dynamic Schema
+            AI-Powered Resume Processing with Comprehensive Schema
           </h2>
           <p className="text-sm text-gray-600 mt-2">
             Upload a resume (PDF or DOCX) and our AI will:
             <br />
             1. Extract the text content
             <br />
-            2. Analyze the content to create a comprehensive schema
+            2. Use a comprehensive predefined schema covering all resume sections
             <br />
             3. Extract all structured data according to that schema
           </p>
@@ -436,64 +435,7 @@ const ResumeProcessing: React.FC = () => {
         </div>
       </div>
 
-      {result && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Document Metadata */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">Document Information</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-2 text-sm">
-                <div><strong>Filename:</strong> {result.metadata.filename}</div>
-                <div><strong>File Size:</strong> {(result.metadata.size / 1024).toFixed(1)} KB</div>
-                <div><strong>File Type:</strong> {result.metadata.type}</div>
-                <div><strong>Word Count:</strong> {result.metadata.wordCount}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Generated Schema */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">AI-Generated Schema</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                The AI analyzed your resume and created this comprehensive schema
-              </p>
-            </div>
-            <div className="p-6">
-              <pre className="text-xs bg-gray-50 p-3 rounded-lg overflow-auto max-h-96">
-                {formatJsonDisplay(result.generatedSchema)}
-              </pre>
-            </div>
-          </div>
-
-          {/* Extracted Text */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 lg:col-span-1">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">Extracted Text</h3>
-            </div>
-            <div className="p-6">
-              <div className="bg-gray-50 p-3 rounded-lg max-h-96 overflow-auto">
-                <pre className="text-xs whitespace-pre-wrap">{result.text}</pre>
-              </div>
-            </div>
-          </div>          {/* Structured Data */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 lg:col-span-1">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">Extracted Structured Data</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                All resume information structured according to the generated schema
-              </p>
-            </div>
-            <div className="p-6">
-              <pre className="text-xs bg-gray-50 p-3 rounded-lg overflow-auto max-h-96">
-                {formatJsonDisplay(result.structuredData)}
-              </pre>
-            </div>
-          </div>
-        </div>
-      )}
+ 
 
       {/* Dynamic Resume Cards */}
       {result && (
