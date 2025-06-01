@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';   // Your Sidebar component
 import TopNavbar from '../components/TopNavbar'; // Your TopNavbar component
 import Search from './Search'; // Import the new Search component
 import EmailSequencesPage from './EmailSequencesPage'; // Import the new page
+import ContactsPage from './ContactsPage'; // Import the new ContactsPage
 
 // Mock functions and objects - replace with your actual implementations
 // --- End of Mock Data ---
@@ -41,6 +42,7 @@ const Dashboard: React.FC = () => {
           <Routes> {/* Add Routes component here */}
             <Route path="/" element={<Search />} /> {/* Default route */}
             <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
+            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}
           </Routes>
           
           {/* Trial notice */}

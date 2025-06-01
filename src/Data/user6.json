@@ -1,0 +1,71 @@
+{
+  "fileName": "user6_banner_data.json",
+  "fileSize": 280700,
+  "extractedText": "Dr. Bruce Banner - Scientist, Developer, Specialist in high-energy data processing...",
+  "structuredData": {
+    "personalInfo": {
+      "fullName": "Dr. Bruce Banner",
+      "email": "bruce.banner@example.com",
+      "phone": "678-901-2345",
+      "location": "Dayton, OH (formerly) / Remote",
+      "website": "bannerhulk-research.org",
+      "linkedIn": "linkedin.com/in/drbrucebanner",
+      "github": "github.com/greenbyte"
+    },
+    "summary": "Accomplished Physicist and Software Developer with a unique expertise in handling massive datasets and high-stress computational environments. Seeking roles that leverage analytical skills and contribute to scientific advancement or large-scale data solutions.",
+    "experience": [
+      {
+        "position": "Senior Data Scientist & Calming Algorithm Developer",
+        "company": "Avengers Initiative (Consultant)",
+        "startDate": "2012-05-01",
+        "endDate": "Present",
+        "location": "Various (Global)",
+        "description": "Developing algorithms for threat assessment and emotional state regulation. Processing and analyzing vast quantities of anomalous data.",
+        "responsibilities": [
+          "Gamma radiation data analysis",
+          "Developing stress-reduction software protocols",
+          "Collaborating with a diverse team of specialists"
+        ],
+        "achievements": [
+          "Contributed to the stabilization of several world-ending threats",
+          "Developed a surprisingly effective meditation app"
+        ],
+        "technologies": ["Python", "R", "Big Data Analytics", "Machine Learning", "Bioinformatics", "FORTRAN (legacy systems)"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Ph.D. in Nuclear Physics & Computer Science",
+        "institution": "California Institute of Technology (Caltech)",
+        "graduationDate": "Year Withheld",
+        "location": "Pasadena, CA",
+        "thesis": "The Effects of Gamma Radiation on Complex Systems and Their Computational Models"
+      }
+    ],
+    "skills": ["Data Analysis", "Python", "Machine Learning", "Physics", "Problem Solving under Pressure", "Anger Management (work in progress)"],
+    "certifications": [
+      {
+        "name": "Advanced Data Visualization",
+        "issuer": "DataViz Institute",
+        "dateIssued": "2019-03-01"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Nobel Prize in Physics (Nominee)",
+        "issuer": "Swedish Academy of Sciences",
+        "date": "Pre-Incident",
+        "description": "For groundbreaking work in gamma radiation."
+      }
+    ],
+    "interests": ["Meditation", "Yoga", "Reading Scientific Journals", "Helping Others"],
+    "projects": [
+      {
+        "name": "Project GreenCode",
+        "description": "An open-source library for high-volume, fault-tolerant data stream processing.",
+        "technologies": ["Scala", "Akka", "Kafka"],
+        "url": "github.com/greenbyte/greencode"
+      }
+    ]
+  }
+}

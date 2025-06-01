@@ -1,0 +1,71 @@
+{
+  "fileName": "user7_romanoff_intel.txt",
+  "fileSize": 190450,
+  "extractedText": "Natasha Romanoff - Cybersecurity expert and full-stack operative...",
+  "structuredData": {
+    "personalInfo": {
+      "fullName": "Natalia Romanova (Natasha Romanoff)",
+      "email": "n.romanoff@shield-ops.example.com",
+      "phone": "789-012-3456",
+      "location": "Undisclosed (Global)",
+      "website": "confidential-consulting.com",
+      "linkedIn": "linkedin.com/in/natasharomanoff (Cover)",
+      "github": "github.com/blackwidowdev"
+    },
+    "summary": "Highly adaptable Cybersecurity Analyst and Full Stack Developer with extensive experience in intelligence gathering, threat neutralization, and secure systems development. Excels in high-stakes environments requiring discretion and precision.",
+    "experience": [
+      {
+        "position": "Senior Cybersecurity Operative & Developer",
+        "company": "S.H.I.E.L.D. / Independent Contractor",
+        "startDate": "Classified",
+        "endDate": "Present",
+        "location": "Global",
+        "description": "Specializing in digital infiltration, exfiltration, and the development of secure communication and operational tools.",
+        "responsibilities": [
+          "Penetration testing and vulnerability assessment",
+          "Developing custom security software and hardware",
+          "Counter-intelligence and data encryption"
+        ],
+        "achievements": [
+          "Successfully neutralized numerous global cyber threats",
+          "Developed an uncrackable (to date) communication protocol"
+        ],
+        "technologies": ["Python", "Go", "Assembly", "Network Security", "Cryptography", "Social Engineering"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Specialized Training",
+        "institution": "Red Room Academy & S.H.I.E.L.D. Institute",
+        "graduationDate": "Classified",
+        "location": "Various",
+        "major": "Espionage, Cybersecurity, Software Exploitation"
+      }
+    ],
+    "skills": ["Cybersecurity", "Full Stack Development", "Stealth Operations", "Multilingual", "Data Encryption", "Interrogation (Digital & Analog)"],
+    "certifications": [
+      {
+        "name": "Offensive Security Certified Professional (OSCP)",
+        "issuer": "Offensive Security",
+        "dateIssued": "Year Redacted"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Medal of Valor (Classified)",
+        "issuer": "Various Governments",
+        "date": "Multiple",
+        "description": "For services rendered in global security."
+      }
+    ],
+    "interests": ["Ballet (formerly)", "Cryptography Puzzles", "Maintaining low profile", "Motorcycles"],
+    "projects": [
+      {
+        "name": "Ghost Protocol Suite",
+        "description": "A suite of tools for secure and anonymous digital operations.",
+        "technologies": ["TOR, Zero-Knowledge Proofs, Custom Encryption"],
+        "url": "Not Publicly Available"
+      }
+    ]
+  }
+}

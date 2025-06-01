@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, Users, Mail, MessageSquare, BarChart2, 
-  Settings, HelpCircle, ChevronDown, Edit, FileText, Send // Added Send icon
+  Settings, HelpCircle, ChevronDown, Edit, FileText, Send, Users as ContactsIcon // Added ContactsIcon (alias for Users)
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -123,16 +123,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             {isExpanded && "Shortlist"}
           </a>
           
-          <a 
-            href="#" 
-            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700`}
+          <Link 
+            to="/dashboard/contacts" // Updated link to contacts page
+            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
             title={!isExpanded ? "Contacts" : ""}
           >
             <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
-              <Mail className="w-4 h-4" />
+              <ContactsIcon className="w-4 h-4" /> {/* Changed icon to ContactsIcon */}
             </div>
             {isExpanded && "Contacts"}
-          </a>
+          </Link>
           
           <Link 
             to="/dashboard/sequences" // Updated link
