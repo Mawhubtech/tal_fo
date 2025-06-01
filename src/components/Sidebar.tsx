@@ -84,9 +84,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             <div className={isExpanded ? "mr-3" : ""}>📦</div>
             {isExpanded && "Projects"}
           </a>
-          
-          <div 
-            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium text-purple-700 bg-purple-50 border-l-4 border-purple-700`}
+            <Link 
+            to="/dashboard" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium text-purple-700 bg-purple-50 border-l-4 border-purple-700 hover:bg-purple-100`}
             title={!isExpanded ? "Search" : ""}
           >
             <div className={isExpanded ? "mr-3 text-purple-700" : "text-purple-700"}>
@@ -99,7 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                   <Edit className="w-3 h-3 text-purple-700" />
                 </button>
               </>
-            )}          </div>
+            )}          </Link>
           
           <Link 
             to="/dashboard/resume-processing" 
