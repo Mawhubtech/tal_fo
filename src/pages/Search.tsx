@@ -6,27 +6,33 @@ import {
   Search as SearchIcon,
   Filter,
   Sparkles,
-  User,
-  FileCode,
-  X
+  User
 } from 'lucide-react';
 import Button from '../components/Button';
 import FilterDialog from '../components/FilterDialog';
 import BooleanSearchDialog from '../components/BooleanSearchDialog';
 import JobDescriptionDialog from '../components/JobDescriptionDialog';
+import SearchResults from '../components/SearchResults';
 import { useAIQuery } from '../hooks/ai';
+import { extractKeywords, convertKeywordsToFilters, searchUsers } from '../services/searchService';
+import type { SearchFilters } from '../services/searchService';
 
 const Search: React.FC = () => {  
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');  
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
- 
   const [showAIEnhancement, setShowAIEnhancement] = useState(false);
+  
+  // Search results and filters state
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
   // AI hook for search enhancement
   const aiQuery = useAIQuery();
-
   // Function to enhance search with AI
   const enhanceSearchWithAI = async () => {
     if (!searchQuery.trim()) return;
@@ -37,6 +43,48 @@ const Search: React.FC = () => {
       model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
     });
     setShowAIEnhancement(true);
+  };
+
+  // Main search function with AI keyword extraction
+  const handleAISearch = async () => {
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    try {
+      // Extract keywords using AI
+      const keywords = await extractKeywords(searchQuery);
+      
+      // Convert to filters
+      const filters = convertKeywordsToFilters(keywords);
+      setCurrentFilters(filters);
+      
+      // Open filter dialog for user to review/edit
+      setIsFilterDialogOpen(true);
+    } catch (error) {
+      console.error('Error in AI search:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Execute search with current filters
+  const runSearch = async (filters: SearchFilters) => {
+    setIsSearching(true);
+    try {
+      const results = await searchUsers(filters, searchQuery);
+      setSearchResults(results);
+      setShowResults(true);
+    } catch (error) {
+      console.error('Error searching users:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle filter application from dialog
+  const handleApplyFilters = (filters: SearchFilters) => {
+    setCurrentFilters(filters);
+    runSearch(filters);
   };
 
   return (
@@ -80,10 +128,18 @@ const Search: React.FC = () => {
             {aiQuery.loading && (
               <div className="mr-1 p-1.5">
                 <div className="w-3.5 h-3.5 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            )}
-            <button className="bg-purple-700 hover:bg-purple-800 text-white p-1.5 rounded-md transition-colors">
-              →
+              </div>            )}
+            <button 
+              onClick={handleAISearch}
+              disabled={!searchQuery.trim() || isSearching}
+              className="bg-purple-700 hover:bg-purple-800 disabled:bg-gray-400 text-white p-1.5 rounded-md transition-colors"
+              title="Extract keywords and search"
+            >
+              {isSearching ? (
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                '→'
+              )}
             </button>
           </div>
         </div>
@@ -145,7 +201,26 @@ const Search: React.FC = () => {
             Dismiss
           </button>
         </div>
-      )}      {/* Action buttons */}<div className="flex gap-3 mt-6 flex-wrap justify-center">
+      )}      {/* Action buttons */}
+      <div className="flex gap-3 mt-6 flex-wrap justify-center">
+        {Object.keys(currentFilters).length > 0 && (
+          <Button
+            variant="primary"
+            className="gap-2 text-xs bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium"
+            onClick={() => runSearch(currentFilters)}
+            disabled={isSearching}
+          >
+            {isSearching ? (
+              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <>
+                <SearchIcon className="w-3.5 h-3.5 text-white" />
+                Run Search
+              </>
+            )}
+          </Button>
+        )}
+        
         <Button
           variant="primary"
           className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-md"
@@ -153,7 +228,7 @@ const Search: React.FC = () => {
         >
           <FileText className="w-3.5 h-3.5 text-white" />
           Job Description
-        </Button>        <Button
+        </Button><Button
           variant="primary"
           className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-md"
           onClick={() => navigate('/dashboard/resume-processing')}
@@ -178,25 +253,40 @@ const Search: React.FC = () => {
           Select Manually
         </Button>
        
-      </div>
-      
-      {/* Filter Dialog */}
+      </div>      {/* Filter Dialog */}
       <FilterDialog 
         isOpen={isFilterDialogOpen} 
-        onClose={() => setIsFilterDialogOpen(false)} 
+        onClose={() => setIsFilterDialogOpen(false)}
+        onApplyFilters={handleApplyFilters}
       />
       
       {/* Boolean Search Dialog */}
       <BooleanSearchDialog
         isOpen={isBooleanDialogOpen}
         onClose={() => setIsBooleanDialogOpen(false)}
-      />
-        {/* Job Description Dialog */}
+      />      {/* Job Description Dialog */}
       <JobDescriptionDialog
         isOpen={isJobDescriptionDialogOpen}
         onClose={() => setIsJobDescriptionDialogOpen(false)}
-      />
-
+      />      {/* Search Results */}
+      {showResults && (
+        <div className="mt-8 w-full max-w-6xl mx-auto">
+          <SearchResults 
+            results={searchResults}
+            isLoading={isSearching}
+            searchQuery={searchQuery}
+            appliedFilters={currentFilters}
+            onViewProfile={(userId: string) => {
+              console.log('View profile:', userId);
+              // TODO: Implement profile view
+            }}
+            onContactCandidate={(userId: string) => {
+              console.log('Contact candidate:', userId);
+              // TODO: Implement contact functionality
+            }}
+          />
+        </div>
+      )}
 
     </div>
   );
