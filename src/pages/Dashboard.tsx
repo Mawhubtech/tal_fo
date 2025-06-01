@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'; // Import Routes and Route
 import Sidebar from '../components/Sidebar';   // Your Sidebar component
 import TopNavbar from '../components/TopNavbar'; // Your TopNavbar component
 import Search from './Search'; // Import the new Search component
+import SearchResultsPage from './SearchResults'; // Import the new SearchResults page
 import EmailSequencesPage from './EmailSequencesPage'; // Import the new page
 import ContactsPage from './ContactsPage'; // Import the new ContactsPage
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
@@ -38,9 +39,9 @@ const Dashboard: React.FC = () => {
           onNewSearch={handleNewSearch}
         />
 
-        {/* Main content area */}
-        <main className="flex-1 p-4 flex flex-col items-center justify-center overflow-y-auto">          <Routes> {/* Add Routes component here */}
+        {/* Main content area */}        <main className="flex-1 p-4 flex flex-col items-center justify-center overflow-y-auto">          <Routes> {/* Add Routes component here */}
             <Route path="/" element={<Search />} /> {/* Default route */}
+            <Route path="search-results" element={<SearchResultsPage />} /> {/* Route for SearchResultsPage */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}
             <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
             <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}

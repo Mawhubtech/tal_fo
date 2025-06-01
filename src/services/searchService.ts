@@ -192,46 +192,41 @@ Respond only with valid JSON matching the provided schema.`;      const response
 
   /**
    * Convert extracted keywords to filter format
-   */
-  convertKeywordsToFilters(keywords: ExtractedKeywords): SearchFilters {
-    const filters: SearchFilters = {};
-
-    // Job filters
-    if (keywords.jobTitles.length > 0 || keywords.skills.length > 0) {
-      filters.job = {
-        titles: keywords.jobTitles,
-        skills: keywords.skills
-      };
+   */  convertKeywordsToFilters(keywords: ExtractedKeywords): SearchFilters {
+    // Handle null or undefined keywords
+    if (!keywords) {
+      console.warn('Keywords object is null or undefined');
+      return {};
     }
-
-    // Location filters
-    if (keywords.locations.length > 0) {
+    
+    const filters: SearchFilters = {};// Job filters
+    if ((keywords?.jobTitles?.length > 0) || (keywords?.skills?.length > 0)) {
+      filters.job = {
+        titles: keywords?.jobTitles || [],
+        skills: keywords?.skills || []
+      };
+    }    // Location filters
+    if (keywords?.locations?.length > 0) {
       filters.location = {
         currentLocations: keywords.locations
       };
-    }
-
-    // Company filters
-    if (keywords.companies.length > 0 || keywords.industries.length > 0) {
+    }    // Company filters
+    if ((keywords?.companies?.length > 0) || (keywords?.industries?.length > 0)) {
       filters.company = {
-        names: keywords.companies,
-        industries: keywords.industries
+        names: keywords?.companies || [],
+        industries: keywords?.industries || []
       };
-    }
-
-    // Skills and keywords
-    if (keywords.keywords.length > 0 || keywords.requirements.length > 0) {
+    }// Skills and keywords
+    if ((keywords?.keywords?.length > 0) || (keywords?.requirements?.length > 0)) {
       filters.skillsKeywords = {};
-      if (keywords.keywords.length > 0) {
+      if (keywords?.keywords?.length > 0) {
         filters.skillsKeywords.items = keywords.keywords;
       }
-      if (keywords.requirements.length > 0) {
+      if (keywords?.requirements?.length > 0) {
         filters.skillsKeywords.requirements = keywords.requirements;
       }
-    }
-
-    // Experience level mapping
-    if (keywords.experienceLevel) {
+    }    // Experience level mapping
+    if (keywords?.experienceLevel) {
       const expLevel = keywords.experienceLevel.toLowerCase();
       if (expLevel.includes('entry') || expLevel.includes('junior')) {
         filters.general = { minExperience: '0', maxExperience: '2' };
@@ -242,10 +237,8 @@ Respond only with valid JSON matching the provided schema.`;      const response
       } else if (expLevel.includes('lead') || expLevel.includes('principal') || expLevel.includes('staff')) {
         filters.general = { minExperience: '8' };
       }
-    }
-
-    // Work type preferences
-    if (keywords.workType) {
+    }    // Work type preferences
+    if (keywords?.workType) {
       const workType = keywords.workType.toLowerCase();
       if (workType.includes('remote')) {
         filters.power = { isOpenToRemote: true };
