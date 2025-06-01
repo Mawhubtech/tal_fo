@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, FileText, Clock, GraduationCap, Zap } from 'lucide-react'; // Ensure these icons are installed
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight } from 'lucide-react'; // Ensure these icons are installed
 import Button from './Button'; // Adjust path to your Button component if necessary
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
@@ -345,34 +345,64 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* Projects Tab */}
+              )}              {/* Projects Tab */}
               {activeTab === 3 && (
                 <div>
                   {projects && projects.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {projects.slice(0, 2).map((project, index) => (
-                        <div key={index} className={index !== Math.min(projects.length - 1, 1) ? "pb-3 border-b border-gray-100" : ""}>
+                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
                           <div className="flex justify-between items-start">
-                            <h4 className="font-medium text-gray-900 text-sm">{project.name}</h4>
-                            {project.date && <div className="text-xs text-gray-500">{project.date}</div>}
+                            <div className="flex">
+                              <div className="mr-3 mt-0.5">
+                                {project.name.toLowerCase().includes('web') ? (
+                                  <Globe className="h-5 w-5 text-blue-600" />
+                                ) : project.name.toLowerCase().includes('mobile') || project.name.toLowerCase().includes('app') ? (
+                                  <Smartphone className="h-5 w-5 text-indigo-600" />
+                                ) : project.name.toLowerCase().includes('data') || project.name.toLowerCase().includes('analytics') ? (
+                                  <BarChart className="h-5 w-5 text-emerald-600" />
+                                ) : project.name.toLowerCase().includes('ai') || project.name.toLowerCase().includes('ml') ? (
+                                  <Cpu className="h-5 w-5 text-red-600" />
+                                ) : (
+                                  <Code2 className="h-5 w-5 text-purple-600" />
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900 text-sm">{project.name}</h4>
+                                {project.date && <div className="text-xs text-gray-500">{project.date}</div>}
+                              </div>
+                            </div>
                           </div>
                           {project.description && (
-                            <p className="mt-1 text-xs text-gray-700 leading-relaxed line-clamp-2">{project.description}</p>
+                            <p className="mt-2 text-xs text-gray-700 leading-relaxed line-clamp-2 ml-8">{project.description}</p>
                           )}
                           {project.technologies && project.technologies.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
+                            <div className="mt-2 flex flex-wrap gap-1 ml-8">
                               {project.technologies.slice(0, 3).map((tech, i) => (
-                                <span key={i} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">
+                                <span key={i} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs flex items-center">
+                                  <span className="w-1 h-1 bg-green-700 rounded-full mr-1"></span>
                                   {tech}
                                 </span>
                               ))}
                               {project.technologies.length > 3 && (
-                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs flex items-center">
+                                  <span className="w-1 h-1 bg-gray-600 rounded-full mr-1"></span>
                                   +{project.technologies.length - 3}
                                 </span>
                               )}
+                            </div>
+                          )}
+                          {project.url && (
+                            <div className="mt-2 ml-8">
+                              <a 
+                                href={project.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-purple-600 hover:text-purple-800 text-xs flex items-center gap-1"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                <span>View Project</span>
+                              </a>
                             </div>
                           )}
                         </div>
@@ -380,9 +410,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                       {projects.length > 2 && (
                         <button
                           onClick={() => onStateChange('expanded')}
-                          className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2"
+                          className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2 flex items-center"
                         >
-                          View all {projects.length} projects →
+                          View all {projects.length} projects
+                          <ArrowRight className="ml-1 h-4 w-4" />
                         </button>
                       )}
                     </div>
@@ -641,54 +672,85 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             )}
 
             {/* Projects Tab */}
-            {activeTab === 3 && (
-              <div>
-                {projects && projects.length > 0 ? (
-                  <div className="space-y-5">
-                    {projects.map((project, index) => (
-                      <div key={index} className={index !== projects.length - 1 ? "pb-5 border-b border-gray-100" : ""}>
-                        <div className="flex justify-between">
-                          <h4 className="font-medium text-gray-900">{project.name}</h4>
-                          {project.date && <div className="text-xs text-gray-500">{project.date}</div>}
+              {activeTab === 3 && (
+                <div>
+                  {projects && projects.length > 0 ? (
+                    <div className="space-y-4">
+                      {projects.slice(0, 2).map((project, index) => (
+                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex">
+                              <div className="mr-3 mt-0.5">
+                                {project.name.toLowerCase().includes('web') ? (
+                                  <Globe className="h-5 w-5 text-blue-600" />
+                                ) : project.name.toLowerCase().includes('mobile') || project.name.toLowerCase().includes('app') ? (
+                                  <Smartphone className="h-5 w-5 text-indigo-600" />
+                                ) : project.name.toLowerCase().includes('data') || project.name.toLowerCase().includes('analytics') ? (
+                                  <BarChart className="h-5 w-5 text-emerald-600" />
+                                ) : project.name.toLowerCase().includes('ai') || project.name.toLowerCase().includes('ml') ? (
+                                  <Cpu className="h-5 w-5 text-red-600" />
+                                ) : (
+                                  <Code2 className="h-5 w-5 text-purple-600" />
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900 text-sm">{project.name}</h4>
+                                {project.date && <div className="text-xs text-gray-500">{project.date}</div>}
+                              </div>
+                            </div>
+                          </div>
+                          {project.description && (
+                            <p className="mt-2 text-xs text-gray-700 leading-relaxed line-clamp-2 ml-8">{project.description}</p>
+                          )}
+                          {project.technologies && project.technologies.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1 ml-8">
+                              {project.technologies.slice(0, 3).map((tech, i) => (
+                                <span key={i} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs flex items-center">
+                                  <span className="w-1 h-1 bg-green-700 rounded-full mr-1"></span>
+                                  {tech}
+                                </span>
+                              ))}
+                              {project.technologies.length > 3 && (
+                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs flex items-center">
+                                  <span className="w-1 h-1 bg-gray-600 rounded-full mr-1"></span>
+                                  +{project.technologies.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {project.url && (
+                            <div className="mt-2 ml-8">
+                              <a 
+                                href={project.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-purple-600 hover:text-purple-800 text-xs flex items-center gap-1"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                <span>View Project</span>
+                              </a>
+                            </div>
+                          )}
                         </div>
-                        {project.description && <p className="mt-1 text-sm text-gray-700">{project.description}</p>}
-                        
-                        {project.technologies && project.technologies.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {project.technologies.map((tech, i) => (
-                              <span key={i} className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">
-                                {tech}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {project.url && (
-                          <div className="mt-2">
-                            <a 
-                              href={project.url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-purple-600 hover:text-purple-800 text-xs flex items-center gap-1"
-                            >
-                              <span>View Project</span>
-                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No projects information available</p>
-                  </div>
-                )}
-              </div>
-            )}
+                      ))}
+                      {projects.length > 2 && (
+                        <button
+                          onClick={() => onStateChange('expanded')}
+                          className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2 flex items-center"
+                        >
+                          View all {projects.length} projects
+                          <ArrowRight className="ml-1 h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <FolderOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">No projects information</p>
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
         </div>
       </div>
