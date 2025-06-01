@@ -36,66 +36,161 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     { name: 'Activity', icon: Clock, index: 2, count: 0 },
     { name: 'Pipeline', icon: Briefcase, index: 3, count: 0 },
   ];
-
-  // Collapsed state - show only narrow sidebar with tabs
+  // Collapsed state - show only the 2/3 profile section
   if (panelState === 'collapsed') {
     return (
-      <div className="fixed inset-y-0 right-0 w-16 bg-white shadow-2xl z-50 flex flex-col border-l border-gray-200">        {/* Expand button */}
-        <div className="p-3 border-b border-gray-200">
-          <Button 
-            variant="ghost" 
-            onClick={() => onStateChange('expanded')} 
-            className="w-full text-gray-600 hover:text-gray-800 flex items-center justify-center p-2"
-          >
-            <ChevronLeft size={20} />
-          </Button>
-        </div>
-        
-        {/* Profile avatar */}
-        <div className="p-3 border-b border-gray-200">
-          <div className="bg-purple-100 rounded-full h-10 w-10 flex items-center justify-center text-purple-600 text-lg font-semibold mx-auto">
-            {personalInfo.fullName.charAt(0)}
-          </div>
-        </div>
-          {/* Vertical tabs */}
-        <div className="flex-1 py-4">
-          {profileTabs.map((tab) => (
-            <button
-              key={tab.name}
-              onClick={() => {
-                setActiveTab(tab.index);
-                onStateChange('expanded');
-              }}
-              className={`${
-                activeTab === tab.index
-                  ? 'bg-purple-50 text-purple-600 border-r-2 border-purple-500'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              } w-full p-3 flex flex-col items-center gap-1 relative group`}
-              title={tab.name}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.count > 0 && (
-                <span className="bg-gray-100 text-gray-600 rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                  {tab.count}
-                </span>
-              )}
-              
-              {/* Tooltip */}
-              <div className="absolute right-full mr-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                {tab.name}
+      <div className="fixed inset-y-0 left-52 right-0 bg-white shadow-2xl z-50 flex">
+        {/* Profile Info Section - 2/3 of the space (collapsed view) */}
+        <div className="flex-1 w-2/3 flex flex-col border-r border-gray-200">
+          {/* Panel Header - Sticky */}
+          <div className="sticky top-0 bg-white z-10">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => onStateChange('expanded')} 
+                  className="text-gray-600 hover:text-gray-800 flex items-center text-sm p-2 -ml-2 mr-2"
+                >
+                  <ChevronLeft size={20} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => onStateChange('closed')} 
+                  className="text-gray-600 hover:text-gray-800 flex items-center text-sm p-2 -ml-2"
+                >
+                  <X size={20} className="mr-1" /> Close
+                </Button>
               </div>
-            </button>
-          ))}
-        </div>
-          {/* Close button */}
-        <div className="p-3 border-t border-gray-200">
-          <Button 
-            variant="ghost" 
-            onClick={() => onStateChange('closed')} 
-            className="w-full text-gray-600 hover:text-gray-800 flex items-center justify-center p-2"
-          >
-            <X size={20} />
-          </Button>
+            </div>
+          </div>
+
+          {/* Profile Basic Info + Main Action Buttons */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-start">
+              <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold mr-4 flex-shrink-0">
+                {personalInfo.fullName.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold text-gray-900">{personalInfo.fullName}</h2>
+                <div className="flex items-center text-sm text-gray-500 mt-0.5">
+                  {personalInfo.location}
+                  {personalInfo.github && (
+                    <>
+                      <span className="mx-1.5">·</span>
+                      <a
+                        href={personalInfo.github.startsWith('http') ? personalInfo.github : `https://${personalInfo.github}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-500 hover:text-purple-600 flex items-center"
+                        title="GitHub Profile"
+                      >
+                        <Github size={16} />
+                      </a>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button variant="primary" size="sm" className='bg-primary-600'>Reveal Email & Phone (1 credit)</Button>
+              <Button variant="primary" size="sm" className="bg-primary-600 text-purple-700 border-purple-700 hover:bg-purple-50 flex items-center">
+                <Plus size={16} className="mr-1 " /> Add to Sequence
+              </Button>
+              <Button variant="primary" size="sm" className="bg-primary-600 hover:bg-purple-700">Shortlist</Button>
+            </div>
+          </div>
+
+          {/* Scrollable Content Area - Collapsed view shows summary */}
+          <div className="flex-1 overflow-y-auto">
+            {/* AI-Powered Spotlight (Using Summary) */}
+            {summary && (
+              <div className="p-6 border-b border-gray-100">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">AI-Powered Spotlight</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
+              </div>
+            )}
+
+            {/* Highlights Section (Simplified) */}
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Highlights</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {experience && experience.length > 0 && (
+                  <div className="bg-purple-50 p-3 rounded-md">
+                    <Briefcase size={18} className="text-purple-600 mb-1.5" />
+                    <p className="text-xs text-gray-500">Current Role</p>
+                    <p className="text-sm font-medium text-gray-800 truncate">{experience[0].position}</p>
+                  </div>
+                )}
+                {skills && skills.length > 0 && (
+                   <div className="bg-green-50 p-3 rounded-md">
+                    <Star size={18} className="text-green-600 mb-1.5" />
+                    <p className="text-xs text-gray-500">Top Skill Focus</p>
+                    <p className="text-sm font-medium text-gray-800 truncate">{skills[0]}</p>
+                  </div>
+                )}
+                 {education && education.length > 0 && education[0].institution.toLowerCase().includes("university") && (
+                   <div className="bg-blue-50 p-3 rounded-md">
+                    {/* Using a generic icon, replace if you have a better one for 'university' */}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 mb-1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20v6H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M12 12v9"/><path d="M12 3L2 7l10 4 10-4-10-4z"/></svg>
+                    <p className="text-xs text-gray-500">Education</p>
+                    <p className="text-sm font-medium text-gray-800 truncate">{education[0].institution}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Experience Preview */}
+            {experience && experience.length > 0 && (
+              <div className="p-6 border-b border-gray-100">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Recent Experience</h3>
+                <div className="space-y-3">
+                  {experience.slice(0, 2).map((exp, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900 text-sm">{exp.position}</h4>
+                          <p className="text-sm text-gray-600">{exp.company}</p>
+                        </div>
+                        <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
+                          {exp.startDate} - {exp.endDate || 'Present'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {experience.length > 2 && (
+                    <button
+                      onClick={() => onStateChange('expanded')}
+                      className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                    >
+                      View all {experience.length} experiences →
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Skills Preview */}
+            {skills && skills.length > 0 && (
+              <div className="p-6">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Skills</h3>
+                <div className="flex flex-wrap gap-2">
+                  {skills.slice(0, 6).map((skill, index) => (
+                    <span key={index} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                      {skill}
+                    </span>
+                  ))}
+                  {skills.length > 6 && (
+                    <button
+                      onClick={() => onStateChange('expanded')}
+                      className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium hover:bg-gray-200"
+                    >
+                      +{skills.length - 6} more
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
