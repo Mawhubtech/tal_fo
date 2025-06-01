@@ -67,7 +67,11 @@ const SearchResultsPage: React.FC = () => {
   };
   return (
     <> {/* Added React.Fragment to wrap main content and panel */}
-      <div className={`container mx-auto px-6 py-4 max-w-full bg-gray-50 min-h-screen ${panelState !== 'closed' ? 'overflow-hidden' : ''}`}>
+      <div className={`container mx-auto px-6 py-4 max-w-full bg-gray-50 min-h-screen transition-all duration-300 ${
+        panelState === 'expanded' ? 'mr-[66.666667%] overflow-hidden' : 
+        panelState === 'collapsed' ? 'mr-[33.333333%] overflow-hidden' : 
+        ''
+      }`}>
         {/* Header with back button */}
         <div className="flex items-center justify-between py-6 mb-4">
           <Button
