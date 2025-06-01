@@ -7,6 +7,7 @@ import SearchResultsPage from './SearchResults'; // Import the new SearchResults
 import EmailSequencesPage from './EmailSequencesPage'; // Import the new page
 import ContactsPage from './ContactsPage'; // Import the new ContactsPage
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
+import ProfilePage from './ProfilePage'; // Import ProfilePage
 
 // Mock functions and objects - replace with your actual implementations
 // --- End of Mock Data ---
@@ -37,14 +38,13 @@ const Dashboard: React.FC = () => {
         {/* TopNavbar Component */}
         <TopNavbar
           onNewSearch={handleNewSearch}
-        />
-
-        {/* Main content area */}        <main className="flex-1 p-4 flex flex-col items-center justify-center overflow-y-auto">          <Routes> {/* Add Routes component here */}
+        />        {/* Main content area */}        <main className="flex-1 p-4 flex flex-col items-center justify-center overflow-y-auto">          <Routes> {/* Add Routes component here */}
             <Route path="/" element={<Search />} /> {/* Default route */}
             <Route path="search-results" element={<SearchResultsPage />} /> {/* Route for SearchResultsPage */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}
             <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
             <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}
+            <Route path="profile/:userId" element={<ProfilePage />} /> {/* Route for ProfilePage */}
           </Routes>
           
           {/* Trial notice */}

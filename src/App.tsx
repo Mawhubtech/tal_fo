@@ -74,8 +74,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* Remove individual /dashboard/resume-processing and /dashboard/sequences routes as they are handled by Dashboard.tsx */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Remove individual /dashboard/resume-processing and /dashboard/sequences routes as they are handled by Dashboard.tsx */}            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>        
         </Router>
         </AuthProvider>
