@@ -63,11 +63,11 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, onClose }
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="outline" size="sm">Reveal Email & Phone (1 credit)</Button>
-            <Button variant="outline" size="sm" className="text-purple-700 border-purple-700 hover:bg-purple-50 flex items-center">
-              <Plus size={16} className="mr-1" /> Add to Sequence
+            <Button variant="primary" size="sm" className='bg-primary-600'>Reveal Email & Phone (1 credit)</Button>
+            <Button variant="primary" size="sm" className="bg-primary-600 text-purple-700 border-purple-700 hover:bg-purple-50 flex items-center">
+              <Plus size={16} className="mr-1 " /> Add to Sequence
             </Button>
-            <Button variant="primary" size="sm" className="bg-purple-600 hover:bg-purple-700">Shortlist</Button>
+            <Button variant="primary" size="sm" className="bg-primary-600 hover:bg-purple-700">Shortlist</Button>
           </div>
         </div>
       </div>      {/* Scrollable Content Area */}
