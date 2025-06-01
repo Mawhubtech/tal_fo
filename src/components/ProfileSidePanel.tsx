@@ -205,36 +205,54 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               {activeTab === 0 && (
                 <div>
                   {experience && experience.length > 0 ? (
-                    <div className="space-y-3">
-                      {experience.slice(0, 3).map((exp, index) => (
-                        <div key={index} className={index !== Math.min(experience.length - 1, 2) ? "pb-3 border-b border-gray-100" : ""}>
+                    <div className="space-y-5">
+                      {experience.map((exp, index) => (
+                        <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== experience.length - 1 ? "mb-4" : ""}`}>
                           <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-gray-900 text-sm">{exp.position}</h4>
-                              <p className="text-sm text-gray-600">{exp.company}</p>
+                            <div className="flex">
+                              <div className="mr-3 mt-1">
+                                <Briefcase className="h-5 w-5 text-purple-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">{exp.position}</h4>
+                                <p className="text-sm text-gray-600">{exp.company}</p>
+                                {exp.location && <p className="text-xs text-gray-500 mt-0.5">{exp.location}</p>}
+                              </div>
                             </div>
                             <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
                               {exp.startDate} - {exp.endDate || 'Present'}
                             </div>
                           </div>
-                          {exp.description && (
-                            <p className="mt-1 text-xs text-gray-700 leading-relaxed line-clamp-2">{exp.description}</p>
+                          {exp.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
+                          
+                          {exp.responsibilities && exp.responsibilities.length > 0 && (
+                            <div className="mt-3">
+                              <h5 className="text-xs font-medium mb-1">Responsibilities:</h5>
+                              <ul className="list-disc list-inside pl-2 space-y-1">
+                                {exp.responsibilities.map((resp, i) => (
+                                  <li key={i} className="text-xs text-gray-600">{resp}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {exp.achievements && exp.achievements.length > 0 && (
+                            <div className="mt-3">
+                              <h5 className="text-xs font-medium mb-1">Key Achievements:</h5>
+                              <ul className="list-disc list-inside pl-2 space-y-1">
+                                {exp.achievements.map((ach, i) => (
+                                  <li key={i} className="text-xs text-gray-600">{ach}</li>
+                                ))}
+                              </ul>
+                            </div>
                           )}
                         </div>
                       ))}
-                      {experience.length > 3 && (
-                        <button
-                          onClick={() => onStateChange('expanded')}
-                          className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2"
-                        >
-                          View all {experience.length} experiences →
-                        </button>
-                      )}
                     </div>
                   ) : (
-                    <div className="text-center py-6">
-                      <Briefcase className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">No experience information</p>
+                    <div className="text-center py-8">
+                      <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No experience information available</p>
                     </div>
                   )}
                 </div>
@@ -244,14 +262,19 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               {activeTab === 1 && (
                 <div>
                   {education && education.length > 0 ? (
-                    <div className="space-y-3">
-                      {education.slice(0, 2).map((edu, index) => (
-                        <div key={index} className={index !== Math.min(education.length - 1, 1) ? "pb-3 border-b border-gray-100" : ""}>
+                    <div className="space-y-4">
+                      {education.map((edu, index) => (
+                        <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== education.length - 1 ? "mb-4" : ""}`}>
                           <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-gray-900 text-sm">{edu.degree}</h4>
-                              <p className="text-sm text-gray-600">{edu.institution}</p>
-                              {edu.major && <p className="text-xs text-gray-500 mt-0.5">Major: {edu.major}</p>}
+                            <div className="flex">
+                              <div className="mr-3 mt-1">
+                                <GraduationCap className="h-5 w-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">{edu.degree}</h4>
+                                <p className="text-sm text-gray-600">{edu.institution}</p>
+                                {edu.location && <p className="text-xs text-gray-500 mt-0.5">{edu.location}</p>}
+                              </div>
                             </div>
                             <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
                               {edu.startDate && edu.endDate ? `${edu.startDate} - ${edu.endDate}` : 
@@ -259,21 +282,39 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                                edu.startDate ? `${edu.startDate} - Present` : ''}
                             </div>
                           </div>
+                          {edu.major && <p className="text-xs text-gray-600 mt-1 ml-8">Major: {edu.major}</p>}
+                          {edu.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{edu.description}</p>}
+                          
+                          {edu.courses && edu.courses.length > 0 && (
+                            <div className="mt-3">
+                              <h5 className="text-xs font-medium mb-1">Relevant Courses:</h5>
+                              <div className="flex flex-wrap gap-1">
+                                {edu.courses.map((course, i) => (
+                                  <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                    {course}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {edu.honors && edu.honors.length > 0 && (
+                            <div className="mt-3">
+                              <h5 className="text-xs font-medium mb-1">Honors & Awards:</h5>
+                              <ul className="list-disc list-inside pl-2 space-y-1">
+                                {edu.honors.map((honor, i) => (
+                                  <li key={i} className="text-xs text-gray-600">{honor}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       ))}
-                      {education.length > 2 && (
-                        <button
-                          onClick={() => onStateChange('expanded')}
-                          className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2"
-                        >
-                          View all {education.length} education entries →
-                        </button>
-                      )}
                     </div>
                   ) : (
-                    <div className="text-center py-6">
-                      <GraduationCap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">No education information</p>
+                    <div className="text-center py-8">
+                      <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No education information available</p>
                     </div>
                   )}
                 </div>
@@ -283,27 +324,24 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               {activeTab === 2 && (
                 <div>
                   {skills && skills.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                      <div className="flex items-center mb-3">
+                        <Zap className="h-5 w-5 text-yellow-500 mr-2" />
+                        <h3 className="text-md font-medium text-gray-800">Professional Skills</h3>
+                      </div>
                       <div className="flex flex-wrap gap-2">
-                        {skills.slice(0, 12).map((skill, index) => (
-                          <span key={index} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                        {skills.map((skill, index) => (
+                          <span key={index} className="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-full text-sm font-medium flex items-center">
+                            <Zap className="h-3.5 w-3.5 mr-1 text-purple-600" />
                             {skill}
                           </span>
                         ))}
                       </div>
-                      {skills.length > 12 && (
-                        <button
-                          onClick={() => onStateChange('expanded')}
-                          className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2"
-                        >
-                          View all {skills.length} skills →
-                        </button>
-                      )}
                     </div>
                   ) : (
-                    <div className="text-center py-6">
-                      <Zap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">No skills information</p>
+                    <div className="text-center py-8">
+                      <Zap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No skills information available</p>
                     </div>
                   )}
                 </div>
@@ -462,21 +500,26 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                 {experience && experience.length > 0 ? (
                   <div className="space-y-5">
                     {experience.map((exp, index) => (
-                      <div key={index} className={index !== experience.length - 1 ? "pb-5 border-b border-gray-100" : ""}>
+                      <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== experience.length - 1 ? "mb-4" : ""}`}>
                         <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium text-gray-900">{exp.position}</h4>
-                            <p className="text-sm text-gray-600">{exp.company}</p>
-                            {exp.location && <p className="text-xs text-gray-500 mt-0.5">{exp.location}</p>}
+                          <div className="flex">
+                            <div className="mr-3 mt-1">
+                              <Briefcase className="h-5 w-5 text-purple-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{exp.position}</h4>
+                              <p className="text-sm text-gray-600">{exp.company}</p>
+                              {exp.location && <p className="text-xs text-gray-500 mt-0.5">{exp.location}</p>}
+                            </div>
                           </div>
                           <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
                             {exp.startDate} - {exp.endDate || 'Present'}
                           </div>
                         </div>
-                        {exp.description && <p className="mt-2 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
+                        {exp.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
                         
                         {exp.responsibilities && exp.responsibilities.length > 0 && (
-                          <div className="mt-2">
+                          <div className="mt-3">
                             <h5 className="text-xs font-medium mb-1">Responsibilities:</h5>
                             <ul className="list-disc list-inside pl-2 space-y-1">
                               {exp.responsibilities.map((resp, i) => (
@@ -487,7 +530,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                         )}
                         
                         {exp.achievements && exp.achievements.length > 0 && (
-                          <div className="mt-2">
+                          <div className="mt-3">
                             <h5 className="text-xs font-medium mb-1">Key Achievements:</h5>
                             <ul className="list-disc list-inside pl-2 space-y-1">
                               {exp.achievements.map((ach, i) => (
@@ -514,12 +557,17 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                 {education && education.length > 0 ? (
                   <div className="space-y-4">
                     {education.map((edu, index) => (
-                      <div key={index} className={index !== education.length - 1 ? "pb-4 border-b border-gray-100" : ""}>
+                      <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== education.length - 1 ? "mb-4" : ""}`}>
                         <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium text-gray-900">{edu.degree}</h4>
-                            <p className="text-sm text-gray-600">{edu.institution}</p>
-                            {edu.location && <p className="text-xs text-gray-500 mt-0.5">{edu.location}</p>}
+                          <div className="flex">
+                            <div className="mr-3 mt-1">
+                              <GraduationCap className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{edu.degree}</h4>
+                              <p className="text-sm text-gray-600">{edu.institution}</p>
+                              {edu.location && <p className="text-xs text-gray-500 mt-0.5">{edu.location}</p>}
+                            </div>
                           </div>
                           <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
                             {edu.startDate && edu.endDate ? `${edu.startDate} - ${edu.endDate}` : 
@@ -527,11 +575,11 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                              edu.startDate ? `${edu.startDate} - Present` : ''}
                           </div>
                         </div>
-                        {edu.major && <p className="text-xs text-gray-600 mt-1">Major: {edu.major}</p>}
-                        {edu.description && <p className="mt-2 text-sm text-gray-700 leading-relaxed">{edu.description}</p>}
+                        {edu.major && <p className="text-xs text-gray-600 mt-1 ml-8">Major: {edu.major}</p>}
+                        {edu.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{edu.description}</p>}
                         
                         {edu.courses && edu.courses.length > 0 && (
-                          <div className="mt-2">
+                          <div className="mt-3">
                             <h5 className="text-xs font-medium mb-1">Relevant Courses:</h5>
                             <div className="flex flex-wrap gap-1">
                               {edu.courses.map((course, i) => (
@@ -544,7 +592,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                         )}
                         
                         {edu.honors && edu.honors.length > 0 && (
-                          <div className="mt-2">
+                          <div className="mt-3">
                             <h5 className="text-xs font-medium mb-1">Honors & Awards:</h5>
                             <ul className="list-disc list-inside pl-2 space-y-1">
                               {edu.honors.map((honor, i) => (
@@ -569,10 +617,15 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             {activeTab === 2 && (
               <div>
                 {skills && skills.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                    <div className="flex items-center mb-3">
+                      <Zap className="h-5 w-5 text-yellow-500 mr-2" />
+                      <h3 className="text-md font-medium text-gray-800">Professional Skills</h3>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {skills.map((skill, index) => (
-                        <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                        <span key={index} className="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-full text-sm font-medium flex items-center">
+                          <Zap className="h-3.5 w-3.5 mr-1 text-purple-600" />
                           {skill}
                         </span>
                       ))}
