@@ -11,6 +11,13 @@ import AllJobsPage from './AllJobsPage'; // Import AllJobsPage
 import CreateJobPage from './CreateJobPage'; // Import CreateJobPage
 import ArchivedJobsPage from './ArchivedJobsPage'; // Import ArchivedJobsPage
 
+// ATS Pages
+import PipelinesPage from './ats/PipelinesPage'; // Import PipelinesPage
+import AllCandidatesPage from './ats/AllCandidatesPage'; // Import AllCandidatesPage
+import TasksPage from './ats/TasksPage'; // Import TasksPage
+import InterviewsPage from './ats/InterviewsPage'; // Import InterviewsPage
+import ReportsPage from './ats/ReportsPage'; // Import ReportsPage
+
 
 // Mock functions and objects - replace with your actual implementations
 // --- End of Mock Data ---
@@ -46,13 +53,17 @@ const Dashboard: React.FC = () => {
             <Route path="search-results" element={<SearchResultsPage />} /> {/* Route for SearchResultsPage */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}
             <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}
-            {/* Job Pages */}
+            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}            {/* Job Pages */}
             <Route path="jobs/all" element={<AllJobsPage />} />
             <Route path="jobs/create" element={<CreateJobPage />} />
             <Route path="jobs/archived" element={<ArchivedJobsPage />} />
-           
-          </Routes>
+            
+            {/* ATS Pages */}
+            <Route path="ats/pipelines" element={<PipelinesPage />} />
+            <Route path="ats/all-candidates" element={<AllCandidatesPage />} />
+            <Route path="ats/tasks" element={<TasksPage />} />
+            <Route path="ats/interviews" element={<InterviewsPage />} />
+            <Route path="ats/reports" element={<ReportsPage />} /></Routes>
 
         </main>
       </div>
