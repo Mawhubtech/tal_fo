@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Search, Users, Mail, MessageSquare, BarChart2, 
+  Search, Users, Mail, MessageSquare, 
   Settings, HelpCircle, ChevronDown, Edit, FileText, Send, Users as ContactsIcon // Added ContactsIcon (alias for Users)
 } from 'lucide-react';
 
@@ -145,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             {isExpanded && "Sequences"}
           </Link>
           
-          <a 
+          {/* <a 
             href="#" 
             className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700`}
             title={!isExpanded ? "Usage" : ""}
@@ -165,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               <Settings className="w-4 h-4" />
             </div>
             {isExpanded && "Integrations"}
-          </a>
+          </a> */}
         </nav>
       </div>
       
