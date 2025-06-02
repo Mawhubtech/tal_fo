@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Copy, Archive, Trash2, Search as SearchIcon, ChevronDown } from 'lucide-react'; // Added ChevronDown
 
@@ -9,12 +9,11 @@ const mockJobs = [
   { id: '3', title: 'UX Designer', department: 'Design', location: 'Remote', status: 'Draft', applications: 0, hiringManager: 'Alice Brown', createdDate: '2025-05-20' },
 ];
 
-const AllJobsPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+const AllJobsPage: React.FC = () => {  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [jobs, setJobs] = useState(mockJobs); // Manage jobs in state
-  const [editingStatusJobId, setEditingStatusJobId] = useState<string | null>(null);
+  const [openDropdownJobId, setOpenDropdownJobId] = useState<string | null>(null);
   // TODO: Add date range filter state
 
   const handleStatusChange = (jobId: string, newStatus: 'Open' | 'Closed' | 'Draft') => {
@@ -23,10 +22,27 @@ const AllJobsPage: React.FC = () => {
         job.id === jobId ? { ...job, status: newStatus } : job
       )
     );
-    setEditingStatusJobId(null); // Hide dropdown after selection
+    setOpenDropdownJobId(null); // Hide dropdown after selection
     // TODO: API call to update status on the backend
     console.log(`Updated job ${jobId} status to ${newStatus} (locally)`);
   };
+  const toggleDropdown = (jobId: string) => {
+    setOpenDropdownJobId(openDropdownJobId === jobId ? null : jobId);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openDropdownJobId && !(event.target as Element).closest('.status-dropdown')) {
+        setOpenDropdownJobId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdownJobId]);
 
   const filteredJobs = jobs.filter(job => { // Filter from state
     return (
@@ -124,35 +140,43 @@ const AllJobsPage: React.FC = () => {
                 <tr key={job.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{job.title}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{job.department}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{job.location}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {editingStatusJobId === job.id ? (
-                      <select
-                        value={job.status}
-                        onChange={(e) => handleStatusChange(job.id, e.target.value as 'Active' | 'Inactive' | 'Draft' | 'Closed')}
-                        onBlur={() => setEditingStatusJobId(null)}
-                        autoFocus
-                        className="px-2 py-1 border rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none" // Added appearance-none and custom styling
-                      >
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                        <option value="Draft">Draft</option>
-                        <option value="Closed">Closed</option>
-                      </select>
-                    ) : (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{job.location}</td>                  <td className="px-6 py-4 whitespace-nowrap relative">
+                    <div className="relative status-dropdown">
                       <span
-                        onClick={() => setEditingStatusJobId(job.id)}
-                        className={`px-2 py-1 rounded-full text-xs font-semibold cursor-pointer flex items-center ${
-                          job.status === 'Active' ? 'bg-green-100 text-green-700' :
-                          job.status === 'Inactive' ? 'bg-yellow-100 text-yellow-700' :
-                          job.status === 'Draft' ? 'bg-blue-100 text-blue-700' :
-                          'bg-red-100 text-red-700'
+                        onClick={() => toggleDropdown(job.id)}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-all duration-150 hover:shadow-sm min-w-[80px] justify-center ${
+                          job.status === 'Open' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                          job.status === 'Closed' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
+                          job.status === 'Draft' ? 'bg-gray-100 text-gray-800 hover:bg-gray-200' :
+                          'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                         }`}
                       >
                         {job.status}
-                        <ChevronDown size={14} className="ml-1 opacity-50" /> {/* Added dropdown arrow icon */}
+                        <ChevronDown size={12} className="ml-1.5 opacity-60" />
                       </span>
-                    )}
+                        {openDropdownJobId === job.id && (
+                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[100px] flex flex-col">
+                          <button
+                            onClick={() => handleStatusChange(job.id, 'Open')}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded-t-md border-b border-gray-100 last:border-b-0"
+                          >
+                            Open
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(job.id, 'Closed')}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                          >
+                            Closed
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(job.id, 'Draft')}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded-b-md border-b border-gray-100 last:border-b-0"
+                          >
+                            Draft
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{job.applications}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{job.hiringManager}</td>
