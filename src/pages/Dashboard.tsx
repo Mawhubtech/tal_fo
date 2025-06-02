@@ -7,6 +7,9 @@ import SearchResultsPage from './SearchResults'; // Import the new SearchResults
 import EmailSequencesPage from './EmailSequencesPage'; // Import the new page
 import ContactsPage from './ContactsPage'; // Import the new ContactsPage
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
+import AllJobsPage from './AllJobsPage'; // Import AllJobsPage
+import CreateJobPage from './CreateJobPage'; // Import CreateJobPage
+import ArchivedJobsPage from './ArchivedJobsPage'; // Import ArchivedJobsPage
 
 
 // Mock functions and objects - replace with your actual implementations
@@ -38,12 +41,16 @@ const Dashboard: React.FC = () => {
         {/* TopNavbar Component */}
         <TopNavbar
           onNewSearch={handleNewSearch}
-        />        {/* Main content area */}        <main className="flex-1 p-4 flex flex-col items-center justify-center overflow-y-auto">          <Routes> {/* Add Routes component here */}
+        />        {/* Main content area */}        <main className="flex-1 p-4 overflow-y-auto"> {/* Removed flex items-center justify-center and added overflow-y-auto if not already present for scrolling */}          <Routes> {/* Add Routes component here */}
             <Route path="/" element={<Search />} /> {/* Default route */}
             <Route path="search-results" element={<SearchResultsPage />} /> {/* Route for SearchResultsPage */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}
             <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
             <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}
+            {/* Job Pages */}
+            <Route path="jobs/all" element={<AllJobsPage />} />
+            <Route path="jobs/create" element={<CreateJobPage />} />
+            <Route path="jobs/archived" element={<ArchivedJobsPage />} />
            
           </Routes>
 
