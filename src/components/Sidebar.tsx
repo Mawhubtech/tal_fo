@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, Users, Mail, MessageSquare, 
-  Settings, HelpCircle, ChevronDown, Edit, FileText, Send, Users as ContactsIcon // Added ContactsIcon (alias for Users)
+  Settings, HelpCircle, ChevronDown, Edit, FileText, Send, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
+  Briefcase, LayoutGrid // Added for Jobs and ATS
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -13,16 +14,10 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
   const [selectedProject, setSelectedProject] = useState('First Project');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
-  // Helper function to get role badge color
-  const getRoleBadgeColor = (roleName: string) => {
-    const roleColors: Record<string, string> = {
-      'admin': 'bg-blue-100 text-blue-800',
-      'super-admin': 'bg-purple-100 text-purple-800',
-      'user': 'bg-green-100 text-green-800',
-    };
-    
-    return roleColors[roleName.toLowerCase()] || 'bg-gray-100 text-gray-800';
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
   return (
@@ -144,6 +139,56 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             </div>
             {isExpanded && "Sequences"}
           </Link>
+          
+          {/* Jobs Section */}
+          <div>
+            <button 
+              onClick={() => toggleSection('jobs')}
+              className={`flex items-center w-full ${isExpanded ? 'px-4 justify-between' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
+              title={!isExpanded ? "Jobs" : ""}
+            >
+              <div className="flex items-center">
+                <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                {isExpanded && "Jobs"}
+              </div>
+              {isExpanded && <ChevronDown className={`w-4 h-4 transform transition-transform ${openSections['jobs'] ? 'rotate-180' : ''}`} />}
+            </button>
+            {openSections['jobs'] && isExpanded && (
+              <nav className="pl-8 space-y-1 py-1">
+                <Link to="/dashboard/jobs/all" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">All Jobs</Link>
+                <Link to="/dashboard/jobs/create" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">Create Job</Link>
+                <Link to="/dashboard/jobs/archived" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">Archived Jobs</Link>
+              </nav>
+            )}
+          </div>
+
+          {/* ATS Section */}
+          <div>
+            <button 
+              onClick={() => toggleSection('ats')}
+              className={`flex items-center w-full ${isExpanded ? 'px-4 justify-between' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
+              title={!isExpanded ? "ATS" : ""}
+            >
+              <div className="flex items-center">
+                <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
+                  <LayoutGrid className="w-4 h-4" />
+                </div>
+                {isExpanded && "ATS"}
+              </div>
+              {isExpanded && <ChevronDown className={`w-4 h-4 transform transition-transform ${openSections['ats'] ? 'rotate-180' : ''}`} />}
+            </button>
+            {openSections['ats'] && isExpanded && (
+              <nav className="pl-8 space-y-1 py-1">
+                <Link to="/dashboard/ats/pipelines" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">Pipelines</Link>
+                <Link to="/dashboard/ats/all-candidates" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">All Candidates</Link>
+                <Link to="/dashboard/ats/tasks" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">Tasks</Link>
+                <Link to="/dashboard/ats/interviews" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">Interviews</Link>
+                <Link to="/dashboard/ats/reports" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">Reports</Link>
+              </nav>
+            )}
+          </div>
           
           {/* <a 
             href="#" 
