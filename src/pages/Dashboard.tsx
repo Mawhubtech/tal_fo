@@ -18,6 +18,13 @@ import TasksPage from './ats/TasksPage'; // Import TasksPage
 import InterviewsPage from './ats/InterviewsPage'; // Import InterviewsPage
 import ReportsPage from './ats/ReportsPage'; // Import ReportsPage
 
+// Admin Pages
+import UserManagementPage from './admin/UserManagementPage'; // Import UserManagementPage
+import CandidateProfilesPage from './admin/CandidateProfilesPage'; // Import CandidateProfilesPage
+import CompanyManagementPage from './admin/CompanyManagementPage'; // Import CompanyManagementPage
+import JobBoardConfigPage from './admin/JobBoardConfigPage'; // Import JobBoardConfigPage
+import AnalyticsPage from './admin/AnalyticsPage'; // Import AnalyticsPage
+import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSettingsPage
 
 // Mock functions and objects - replace with your actual implementations
 // --- End of Mock Data ---
@@ -57,13 +64,20 @@ const Dashboard: React.FC = () => {
             <Route path="jobs/all" element={<AllJobsPage />} />
             <Route path="jobs/create" element={<CreateJobPage />} />
             <Route path="jobs/archived" element={<ArchivedJobsPage />} />
-            
-            {/* ATS Pages */}
+              {/* ATS Pages */}
             <Route path="ats/pipelines" element={<PipelinesPage />} />
             <Route path="ats/all-candidates" element={<AllCandidatesPage />} />
             <Route path="ats/tasks" element={<TasksPage />} />
             <Route path="ats/interviews" element={<InterviewsPage />} />
-            <Route path="ats/reports" element={<ReportsPage />} /></Routes>
+            <Route path="ats/reports" element={<ReportsPage />} />
+            
+            {/* Admin Pages */}
+            <Route path="admin/user-management" element={<UserManagementPage />} />
+            <Route path="admin/candidate-profiles" element={<CandidateProfilesPage />} />
+            <Route path="admin/company-management" element={<CompanyManagementPage />} />
+            <Route path="admin/job-board-config" element={<JobBoardConfigPage />} />
+            <Route path="admin/analytics" element={<AnalyticsPage />} />
+            <Route path="admin/system-settings" element={<SystemSettingsPage />} /></Routes>
 
         </main>
       </div>
