@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, RotateCcw, Trash2, Search as SearchIcon, MoreVertical, Calendar, MapPin, User, Briefcase, Archive } from 'lucide-react';
+import { Eye, RotateCcw, Trash2, Search as SearchIcon, MoreVertical, Calendar, Archive, Plus } from 'lucide-react';
 import {
   DndContext,
   DragEndEvent,
@@ -10,6 +10,7 @@ import {
   useSensors,
   closestCorners,
   useDroppable,
+  DragOverEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -124,21 +125,41 @@ const ArchivedJobCard: React.FC<ArchivedJobCardProps> = ({ job, isDragging = fal
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isSortableDragging ? 0.5 : 1,
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Recently Archived':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Old Archive':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'Permanently Deleted':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+  // Function to format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
   };
+
+  if (isDragging) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg border-2 border-purple-300 p-3 opacity-90 rotate-2 transform scale-105 transition-all">
+        <div className="flex items-center mb-2">
+          <div className="w-8 h-8 bg-gray-200 rounded-full mr-2 flex items-center justify-center">
+            <Archive size={16} className="text-gray-500" />
+          </div>
+          <div>
+            <h3 className="font-medium text-sm text-gray-800">{job.title}</h3>
+            <p className="text-xs text-gray-500">{job.department}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -146,81 +167,76 @@ const ArchivedJobCard: React.FC<ArchivedJobCardProps> = ({ job, isDragging = fal
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing opacity-80 ${
-        isDragging || isSortableDragging ? 'opacity-50' : ''
+      className={`bg-white border border-gray-200 rounded-lg p-3 mb-2 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing ${
+        isSortableDragging ? 'opacity-30 scale-95' : ''
       }`}
-    >
-      <div className="flex justify-between items-start mb-3">
-        <h3 className="font-semibold text-gray-900 text-sm leading-tight">{job.title}</h3>
-        <div className="flex items-center space-x-1">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(job.status)}`}>
-            <Archive size={10} className="inline mr-1" />
-            Archived
-          </span>
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDropdown(!showDropdown);
-              }}
-              className="p-1 hover:bg-gray-100 rounded"
-            >
-              <MoreVertical size={16} className="text-gray-400" />
-            </button>
-            {showDropdown && (
-              <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[120px]">
-                <button className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center">
-                  <Eye size={14} className="mr-2" /> View
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onReopen(job.id);
-                    setShowDropdown(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center text-green-600"
-                >
-                  <RotateCcw size={14} className="mr-2" /> Reopen
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(job.id);
-                    setShowDropdown(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center text-red-600"
-                >
-                  <Trash2 size={14} className="mr-2" /> Delete
-                </button>
-              </div>
-            )}
-          </div>
+    >      {/* Candidate Info */}
+      <div className="flex items-center mb-2">
+        <div className="w-8 h-8 bg-gray-100 rounded-full mr-2 flex items-center justify-center">
+          <Archive size={16} className="text-gray-500" />
+        </div>
+        <div>
+          <h3 className="font-medium text-sm text-gray-800">{job.title}</h3>
+          <p className="text-xs text-gray-500">{job.department}</p>
         </div>
       </div>
       
-      <div className="space-y-2 text-xs text-gray-600">
-        <div className="flex items-center">
-          <Briefcase size={12} className="mr-2 text-gray-400" />
-          <span>{job.department}</span>
-        </div>
-        <div className="flex items-center">
-          <MapPin size={12} className="mr-2 text-gray-400" />
-          <span>{job.location}</span>
-        </div>
-        <div className="flex items-center">
-          <User size={12} className="mr-2 text-gray-400" />
-          <span>{job.hiringManager}</span>
-        </div>
-        <div className="flex items-center">
-          <Calendar size={12} className="mr-2 text-gray-400" />
-          <span>Archived: {job.archivedDate}</span>
-        </div>
+      {/* Job Details */}
+      <div className="flex flex-wrap gap-1 mb-2">
+        <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">
+          {job.location}
+        </span>
+        <span className="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded">
+          {job.applications} applications
+        </span>
       </div>
       
-      <div className="mt-3 pt-3 border-t border-gray-100">
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-500">Applications</span>
-          <span className="text-sm font-semibold text-purple-600">{job.applications}</span>
+      {/* Last Updated */}
+      <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+        <div className="flex items-center">
+          <Calendar size={12} className="mr-1" />
+          Archived {formatDate(job.archivedDate)}
+        </div>
+        
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onReopen(job.id);
+            }}
+            className="p-1 hover:bg-gray-100 rounded" 
+            title="Reopen Job"
+          >
+            <RotateCcw size={14} className="text-green-500 hover:text-green-600" />
+          </button>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowDropdown(!showDropdown);
+            }}
+            className="p-1 hover:bg-gray-100 rounded" 
+            title="More Actions"
+          >
+            <MoreVertical size={14} className="text-gray-400 hover:text-gray-600" />
+          </button>
+          
+          {showDropdown && (
+            <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[120px]">
+              <button className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center">
+                <Eye size={14} className="mr-2" /> View Details
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(job.id);
+                  setShowDropdown(false);
+                }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center text-red-600"
+              >
+                <Trash2 size={14} className="mr-2" /> Delete Permanently
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -238,49 +254,76 @@ interface ArchiveColumnProps {
 }
 
 const ArchiveColumn: React.FC<ArchiveColumnProps> = ({ title, status, jobs, jobCount, onReopen, onDelete }) => {
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: status,
+    data: {
+      type: 'column',
+      status,
+    },
   });
 
-  const getColumnColor = (status: string) => {
+  const getBorderColor = (status: string) => {
     switch (status) {
       case 'Recently Archived':
-        return 'border-yellow-200 bg-yellow-50';
+        return 'border-yellow-500';
       case 'Old Archive':
-        return 'border-gray-200 bg-gray-50';
+        return 'border-gray-500';
       case 'Permanently Deleted':
-        return 'border-red-200 bg-red-50';
+        return 'border-red-500';
       default:
-        return 'border-gray-200 bg-gray-50';
+        return 'border-gray-500';
     }
   };
 
   return (
-    <div ref={setNodeRef} className={`flex-1 min-w-[300px] rounded-lg border-2 ${getColumnColor(status)} p-4`}>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-gray-800 text-lg">{title}</h2>
-        <span className="bg-white px-2 py-1 rounded-full text-sm font-medium text-gray-600 border">
-          {jobCount}
-        </span>
+    <div className="bg-white rounded-lg shadow-sm min-w-[280px]">
+      {/* Column Header */}
+      <div className={`px-4 py-3 border-t-4 rounded-t-lg flex justify-between items-center ${getBorderColor(status)} ${
+        isOver ? 'bg-purple-50' : ''
+      }`}>
+        <div>
+          <h2 className="font-semibold text-gray-800">{title}</h2>
+          <p className="text-xs text-gray-500">{jobCount} jobs</p>
+        </div>
+        
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical size={16} />
+        </button>
       </div>
       
-      <SortableContext items={jobs.map(job => job.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3 min-h-[200px]">
-          {jobs.map((job) => (
-            <ArchivedJobCard 
-              key={job.id} 
-              job={job} 
-              onReopen={onReopen}
-              onDelete={onDelete}
-            />
-          ))}
-          {jobs.length === 0 && (
-            <div className="text-center py-8 text-gray-400">
-              <div className="text-sm">No jobs in {title.toLowerCase()}</div>
-            </div>
-          )}
-        </div>
-      </SortableContext>
+      {/* Jobs in this column */}
+      <div ref={setNodeRef} className="p-2 overflow-y-auto max-h-[calc(100vh-350px)]">
+        <SortableContext items={jobs.map(job => job.id)} strategy={verticalListSortingStrategy}>
+          <div className={`transition-all duration-200 ${isOver ? 'bg-purple-50 rounded-lg p-2' : ''}`}>
+            {jobs.map((job) => (
+              <ArchivedJobCard 
+                key={job.id} 
+                job={job} 
+                onReopen={onReopen}
+                onDelete={onDelete}
+              />
+            ))}
+            
+            {/* Empty state */}
+            {jobs.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-6 text-center text-gray-400">
+                <Archive size={32} className="mb-2" />
+                <p className="text-sm">No jobs in {title.toLowerCase()}</p>
+                <button className="mt-2 text-xs text-purple-600 hover:text-purple-800 flex items-center">
+                  <Plus size={12} className="mr-1" />
+                  Move job here
+                </button>
+              </div>
+            )}
+            
+            {isOver && jobs.length > 0 && (
+              <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 bg-purple-50 text-center text-purple-600 text-sm font-medium mt-2">
+                Drop here to move job
+              </div>
+            )}
+          </div>
+        </SortableContext>
+      </div>
     </div>
   );
 };
