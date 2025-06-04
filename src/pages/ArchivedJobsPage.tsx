@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, RotateCcw, Trash2, Search as SearchIcon, MoreVertical, Calendar, Archive, Plus } from 'lucide-react';
+import { Eye, RotateCcw, Trash2, Search as SearchIcon, MoreVertical, Calendar, Archive, Plus, List } from 'lucide-react'; // Added List
 import {
   DndContext,
   DragEndEvent,
@@ -16,6 +16,7 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
+  arrayMove, // Added arrayMove
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -334,6 +335,10 @@ const ArchivedJobsPage: React.FC = () => {
 	const [archivedDateFilter, setArchivedDateFilter] = useState('');
 	const [jobs, setJobs] = useState(mockArchivedJobs);
 	const [activeJob, setActiveJob] = useState<any>(null);
+	const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+	const [view, setView] = useState<'kanban' | 'list'>('kanban'); // New state for view mode
+	const [openListDropdownId, setOpenListDropdownId] = useState<string | null>(null); // State for list view dropdowns
+
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -349,33 +354,87 @@ const ArchivedJobsPage: React.FC = () => {
 		setActiveJob(job);
 	};
 
+	const handleDragOver = (event: DragOverEvent) => { // Added handler
+		const { over } = event;
+		if (over?.data?.current?.type === 'column') {
+			setDragOverColumn(over.id as string);
+		} else {
+			setDragOverColumn(null);
+		}
+	};
+
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 		setActiveJob(null);
+		setDragOverColumn(null);
 		
 		if (!over) return;
 		
-		const activeJobId = active.id as string;
-		const newStatus = over.id as ArchiveStatus;
+		const activeId = active.id as string;
 		
-		if (activeJobId && newStatus && Object.values(ARCHIVE_STATUS).includes(newStatus)) {
-			setJobs(prevJobs => 
-				prevJobs.map(job => 
-					job.id === activeJobId ? { ...job, status: newStatus } : job
-				)
-			);
-			console.log(`Updated archived job ${activeJobId} status to ${newStatus}`);
-		}
+		setJobs(currentJobs => {
+			const activeJobIndex = currentJobs.findIndex(job => job.id === activeId);
+			if (activeJobIndex === -1) return currentJobs;
+
+			const activeJobData = currentJobs[activeJobIndex];
+
+			// Case 1: Dropping onto a droppable column area
+			if (over.data.current?.type === 'column') {
+				const newStatus = over.id as ArchiveStatus;
+				
+				if (activeJobData.status !== newStatus && Object.values(ARCHIVE_STATUS).includes(newStatus)) {
+					console.log(`Updating archived job ${activeId} status to ${newStatus} (column drop)`);
+					return currentJobs.map(job =>
+						job.id === activeId ? { ...job, status: newStatus } : job
+					);
+				}
+				return currentJobs;
+			}
+
+			// Case 2: Dropping onto another job card (for reordering or moving between columns)
+			if (over.data.current?.type === 'archived-job') {
+				const overJobId = over.id as string;
+				const overJobIndex = currentJobs.findIndex(job => job.id === overJobId);
+
+				if (overJobIndex === -1 || activeId === overJobId) return currentJobs;
+
+				const overJobData = currentJobs[overJobIndex];
+
+				if (activeJobData.status === overJobData.status) {
+					// Reorder within the same column
+					console.log(`Reordering job ${activeId} with ${overJobId} in status ${activeJobData.status}`);
+					return arrayMove(currentJobs, activeJobIndex, overJobIndex);
+				} else {
+					// Moving to a different column (where overJobData resides)
+					const newStatus = overJobData.status as ArchiveStatus;
+					if (Object.values(ARCHIVE_STATUS).includes(newStatus)) {
+						console.log(`Moving job ${activeId} to status ${newStatus} and reordering with ${overJobId}`);
+						const jobsWithUpdatedStatus = currentJobs.map((job, index) =>
+							index === activeJobIndex ? { ...job, status: newStatus } : job
+						);
+						// Find the new index of the active job after status update, if it changed position due to map
+                        // However, arrayMove works on indices, and the conceptual position of activeJob is still activeJobIndex
+                        // in the jobsWithUpdatedStatus array before the move.
+						return arrayMove(jobsWithUpdatedStatus, activeJobIndex, overJobIndex);
+					}
+					return currentJobs;
+				}
+			}
+			return currentJobs;
+		});
 	};
 
 	const handleReopenJob = (jobId: string) => {
 		console.log(`Reopening job ${jobId}`);
 		// TODO: Implement API call to change job status back to active
+		// For UI update:
+		setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId)); // Example: remove from archived, assuming it moves to an active list elsewhere
 	};
 
 	const handleDeletePermanently = (jobId: string) => {
 		console.log(`Deleting job ${jobId} permanently`);
 		// TODO: Implement API call to delete job permanently
+		setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
 	};
 
 	const filteredArchivedJobs = jobs.filter((job) => {
@@ -395,9 +454,12 @@ const ArchivedJobsPage: React.FC = () => {
 	// Close dropdowns when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
-			if (!(event.target as Element).closest('.relative')) {
-				// Close any open dropdowns
+			if (!(event.target as Element).closest('.relative-dropdown-container')) {
+				setOpenListDropdownId(null);
 			}
+			// For ArchivedJobCard dropdowns, they manage their own state.
+			// This check is primarily for the list view dropdowns.
+			// If ArchivedJobCard dropdowns also need global closing, their container would need a similar class.
 		};
 
 		document.addEventListener('mousedown', handleClickOutside);
@@ -406,12 +468,60 @@ const ArchivedJobsPage: React.FC = () => {
 		};
 	}, []);
 
+	// Function to format date (already exists, ensure it's accessible if moved or used in list view)
+	const formatDate = (dateString: string) => {
+		const date = new Date(dateString);
+		const now = new Date();
+		const diffTime = Math.abs(now.getTime() - date.getTime());
+		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+		
+		if (diffDays === 0) {
+		return 'Today';
+		} else if (diffDays === 1) {
+		return 'Yesterday';
+		} else if (diffDays < 7) {
+		return `${diffDays} days ago`;
+		} else {
+		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+		}
+	};
+
 	return (
-		<div className="p-6">
+		<div className="p-6 bg-gray-50 min-h-screen">
 			<div className="flex justify-between items-center mb-6">
 				<div>
 					<h1 className="text-2xl font-semibold text-gray-900">Archived Jobs</h1>
-					<p className="text-sm text-gray-600 mt-1">Manage archived job postings with drag & drop</p>
+					<p className="text-sm text-gray-600 mt-1">
+						{view === 'kanban' ? 'Manage archived job postings with drag & drop' : 'View and manage all archived job postings'}
+					</p>
+				</div>
+			</div>
+
+			{/* View Switcher */}
+			<div className="mb-6">
+				<div className="flex space-x-2 bg-white border border-gray-200 rounded-md p-1 w-min">
+				<button 
+					className={`px-4 py-2 text-sm font-medium rounded-md flex items-center ${
+					view === 'kanban' 
+						? 'bg-purple-600 text-white shadow-sm' 
+						: 'bg-white text-gray-700 hover:bg-gray-50'
+					}`}
+					onClick={() => setView('kanban')}
+				>
+					<Archive size={16} className="mr-2" /> 
+					Kanban
+				</button>
+				<button 
+					className={`px-4 py-2 text-sm font-medium rounded-md flex items-center ${
+					view === 'list' 
+						? 'bg-purple-600 text-white shadow-sm' 
+						: 'bg-white text-gray-700 hover:bg-gray-50'
+					}`}
+					onClick={() => setView('list')}
+				>
+					<List size={16} className="mr-2" />
+					List
+				</button>
 				</div>
 			</div>
 
@@ -494,37 +604,146 @@ const ArchivedJobsPage: React.FC = () => {
 			</div>
 
 			{/* Archive Kanban Board */}
-			<DndContext
-				sensors={sensors}
-				collisionDetection={closestCorners}
-				onDragStart={handleDragStart}
-				onDragEnd={handleDragEnd}
-			>
-				<div className="flex space-x-6 overflow-x-auto pb-4 min-h-[600px]">
-					{Object.entries(ARCHIVE_STATUS).map(([key, status]) => (
-						<ArchiveColumn
-							key={key}
-							title={status}
-							status={status as ArchiveStatus}
-							jobs={jobsByStatus[status as ArchiveStatus]}
-							jobCount={jobsByStatus[status as ArchiveStatus].length}
-							onReopen={handleReopenJob}
-							onDelete={handleDeletePermanently}
-						/>
-					))}
+			{view === 'kanban' && (
+				<DndContext
+					sensors={sensors}
+					collisionDetection={closestCorners}
+					onDragStart={handleDragStart}
+					onDragOver={handleDragOver} 
+					onDragEnd={handleDragEnd}
+				>
+					<div className="flex space-x-6 overflow-x-auto pb-4 min-h-[600px]">
+						{Object.entries(ARCHIVE_STATUS).map(([key, status]) => (
+							<ArchiveColumn
+								key={key}
+								title={status}
+								status={status as ArchiveStatus}
+								jobs={jobsByStatus[status as ArchiveStatus]}
+								jobCount={jobsByStatus[status as ArchiveStatus].length}
+								onReopen={handleReopenJob}
+								onDelete={handleDeletePermanently}
+							/>
+						))}
+					</div>
+					
+					<DragOverlay>
+						{activeJob ? (
+							<ArchivedJobCard 
+								job={activeJob} 
+								isDragging 
+								onReopen={handleReopenJob}
+								onDelete={handleDeletePermanently}
+							/>
+						) : null}
+					</DragOverlay>
+				</DndContext>
+			)}
+
+			{/* Archive List View */}
+			{view === 'list' && (
+				<div className="bg-white rounded-lg shadow-sm overflow-hidden">
+					{filteredArchivedJobs.length > 0 ? (
+						<div className="divide-y divide-gray-200">
+							{filteredArchivedJobs.map((job) => (
+								<div key={job.id} className="p-4 hover:bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+									<div className="flex-1 mb-4 sm:mb-0">
+										<div className="flex items-center mb-1">
+											<span className="font-semibold text-gray-900 text-base">{job.title}</span>
+											<span className={`ml-3 px-2 py-0.5 rounded-full text-xs font-medium border ${
+												job.status === 'Permanently Deleted' ? 'bg-red-100 text-red-700 border-red-200' : 
+												job.status === 'Old Archive' ? 'bg-gray-100 text-gray-700 border-gray-200' :
+												'bg-yellow-100 text-yellow-700 border-yellow-200' // Recently Archived
+											}`}>
+												{job.status}
+											</span>
+										</div>
+										<div className="text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+											<div className="flex items-center">
+												<Archive size={14} className="mr-1.5 text-gray-400" /> {job.department}
+											</div>
+											<div className="flex items-center">
+												<SearchIcon size={14} className="mr-1.5 text-gray-400" /> {job.location} {/* Using SearchIcon as placeholder, consider MapPin */}
+											</div>
+										</div>
+										<div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
+											<div className="flex items-center">
+												<Calendar size={12} className="mr-1.5" /> Archived: {formatDate(job.archivedDate)}
+											</div>
+											<div className="flex items-center">
+												<Plus size={12} className="mr-1.5" /> Applications: {job.applications} {/* Using Plus as placeholder, consider Users or similar */}
+											</div>
+										</div>
+									</div>
+									
+									<div className="flex items-center space-x-2 sm:space-x-3">
+										<button
+											onClick={() => handleReopenJob(job.id)}
+											className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full transition-colors"
+											title="Reopen Job"
+											disabled={job.status === 'Permanently Deleted'} // Cannot reopen permanently deleted
+										>
+											<RotateCcw size={16} />
+										</button>
+										<div className="relative relative-dropdown-container">
+											<button
+												onClick={(e) => {
+													e.stopPropagation();
+													setOpenListDropdownId(openListDropdownId === job.id ? null : job.id);
+												}}
+												className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+												title="More options"
+											>
+												<MoreVertical size={18} />
+											</button>
+											{openListDropdownId === job.id && (
+												<div 
+													className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-xl z-20 py-1"
+													onClick={(e) => e.stopPropagation()}
+												>
+													<button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+														<Eye size={14} className="mr-2" /> View Details
+													</button>
+													{job.status !== 'Permanently Deleted' && (
+														<button 
+															onClick={() => {
+																handleDeletePermanently(job.id);
+																setOpenListDropdownId(null);
+															}}
+															className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+														>
+															<Trash2 size={14} className="mr-2" /> Delete Permanently
+														</button>
+													)}
+												</div>
+											)}
+										</div>
+									</div>
+								</div>
+							))}
+						</div>
+					) : (
+						<div className="p-10 text-center">
+							<Archive size={32} className="text-gray-400 mx-auto mb-3" />
+							<h3 className="text-lg font-medium text-gray-900">No archived jobs found</h3>
+							<p className="mt-1 text-sm text-gray-500">
+								No archived jobs match your current filters. Try adjusting your search or filter criteria.
+							</p>
+							{ (searchTerm || departmentFilter || archivedDateFilter) && (
+								<button
+									onClick={() => {
+										setSearchTerm('');
+										setDepartmentFilter('');
+										setArchivedDateFilter('');
+									}}
+									className="mt-4 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none"
+								>
+									Clear Filters
+								</button>
+							)}
+						</div>
+					)}
 				</div>
-				
-				<DragOverlay>
-					{activeJob ? (
-						<ArchivedJobCard 
-							job={activeJob} 
-							isDragging 
-							onReopen={handleReopenJob}
-							onDelete={handleDeletePermanently}
-						/>
-					) : null}
-				</DragOverlay>
-			</DndContext>
+			)}
 		</div>
 	);
 };
