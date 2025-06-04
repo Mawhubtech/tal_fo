@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Copy, Archive, Trash2, Search as SearchIcon, MoreVertical, Calendar, MapPin, User, Briefcase, Plus, List } from 'lucide-react';
+import { Eye, Copy, Archive, Trash2, Search as SearchIcon, MoreVertical, Calendar, MapPin, User, Briefcase, Plus, List, Filter as FilterIcon } from 'lucide-react'; // FilterIcon imported
 import {
   DndContext,
   DragEndEvent,
@@ -227,7 +227,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, jobs, jobCou
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm min-w-[280px]">
+    <div className="bg-white rounded-lg shadow-sm w-96"> {/* Changed min-w-[280px] to w-96 */}
       {/* Column Header */}
       <div className={`px-4 py-3 border-t-4 rounded-t-lg flex justify-between items-center ${getBorderColor(status)} ${
         isOver ? 'bg-purple-50' : ''
@@ -276,11 +276,12 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, jobs, jobCou
 const AllJobsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(''); // New state for Status filter
   const [jobs, setJobs] = useState(mockJobs);
   const [activeJob, setActiveJob] = useState<any>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  const [view, setView] = useState<'kanban' | 'list'>('kanban'); // New state for view mode
-  const [openListDropdownId, setOpenListDropdownId] = useState<string | null>(null); // State for list view dropdowns
+  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [openListDropdownId, setOpenListDropdownId] = useState<string | null>(null);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -376,13 +377,21 @@ const AllJobsPage: React.FC = () => {
   const filteredJobs = jobs.filter(job => {
     return (
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (departmentFilter ? job.department === departmentFilter : true)
+      (departmentFilter ? job.department === departmentFilter : true) &&
+      (statusFilter ? job.status === statusFilter : true) // Apply status filter
     );
   });
   const jobsByStatus = {
     Open: filteredJobs.filter(job => job.status === 'Open'),
     Closed: filteredJobs.filter(job => job.status === 'Closed'),
     Draft: filteredJobs.filter(job => job.status === 'Draft'),
+  };
+
+  // Function to clear all filters
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setDepartmentFilter('');
+    setStatusFilter('');
   };
 
   // Close dropdowns when clicking outside
@@ -415,62 +424,60 @@ const AllJobsPage: React.FC = () => {
         </div>
         <Link 
           to="/dashboard/jobs/create" 
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors flex items-center"
+          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center text-sm"
         >
-          <Plus size={18} className="mr-1" />
+          <Plus size={18} className="mr-2" />
           Create Job
         </Link>
       </div>
 
       {/* View Switcher */}
       <div className="mb-6">
-        <div className="flex space-x-2 bg-white border border-gray-200 rounded-md p-1 w-min">
-          <button 
-            className={`px-4 py-2 text-sm font-medium rounded-md flex items-center ${
-              view === 'kanban' 
-                ? 'bg-purple-600 text-white shadow-sm' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-            onClick={() => setView('kanban')}
-          >
-            <Briefcase size={16} className="mr-2" />
-            Kanban
-          </button>
-          <button 
-            className={`px-4 py-2 text-sm font-medium rounded-md flex items-center ${
-              view === 'list' 
-                ? 'bg-purple-600 text-white shadow-sm' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-            onClick={() => setView('list')}
-          >
-            <List size={16} className="mr-2" />
-            List
-          </button>
+        <div className="flex bg-white border border-gray-200 rounded-lg p-1 shadow-sm w-min">
+          {[{ viewName: 'kanban', label: 'Kanban', icon: Briefcase }, { viewName: 'list', label: 'List', icon: List }].map((item) => (
+            <button
+              key={item.viewName}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md flex items-center transition-colors duration-150 ease-in-out ${
+                view === item.viewName
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-purple-50 hover:text-purple-700'
+              }`}
+              onClick={() => setView(item.viewName as 'kanban' | 'list')}
+            >
+              <item.icon size={16} className="mr-2" />
+              {item.label}
+            </button>
+          ))}
         </div>
       </div>
       
-      {/* Filters and Search */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchIcon size={16} className="text-gray-400" />
+      {/* Filters and Search Section - Enhanced */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6 border border-gray-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          {/* Search Input */}
+          <div>
+            <label htmlFor="search" className="block text-xs font-medium text-gray-700 mb-1">Search by Title</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <SearchIcon size={16} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="search"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                placeholder="e.g. Software Engineer"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <input
-              type="text"
-              id="search"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              placeholder="Search by job title..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
           </div>
           
+          {/* Department Filter */}
           <div>
+            <label htmlFor="department" className="block text-xs font-medium text-gray-700 mb-1">Department</label>
             <select
               id="department"
-              className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
             >
@@ -482,21 +489,53 @@ const AllJobsPage: React.FC = () => {
               <option value="Analytics">Analytics</option>
             </select>
           </div>
+
+          {/* Status Filter (New) */}
+          <div>
+            <label htmlFor="statusFilter" className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+            <select
+              id="statusFilter"
+              className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All Statuses</option>
+              {Object.values(COLUMN_STATUS).map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
           
-          <div className="flex items-center justify-between">
-            <div className="flex space-x-4 text-sm">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">{jobsByStatus.Open.length} Open</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">{jobsByStatus.Closed.length} Closed</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-gray-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">{jobsByStatus.Draft.length} Draft</span>
-              </div>
+          {/* Clear Filters Button */}
+          <div>
+            <button
+              onClick={clearAllFilters}
+              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500"
+            >
+              <FilterIcon size={16} className="mr-2 text-gray-400" />
+              Clear Filters
+            </button>
+          </div>
+        </div>
+        
+        {/* Summary Counts - Placed below the filters for clarity */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Summary</h3>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <div className="flex items-center">
+              <div className="w-2.5 h-2.5 bg-green-500 rounded-full mr-2"></div>
+              <span className="text-gray-700 font-medium">{jobsByStatus.Open.length}</span>
+              <span className="text-gray-500 ml-1">Open</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2.5 h-2.5 bg-red-500 rounded-full mr-2"></div>
+              <span className="text-gray-700 font-medium">{jobsByStatus.Closed.length}</span>
+              <span className="text-gray-500 ml-1">Closed</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2.5 h-2.5 bg-gray-400 rounded-full mr-2"></div>
+              <span className="text-gray-700 font-medium">{jobsByStatus.Draft.length}</span>
+              <span className="text-gray-500 ml-1">Draft</span>
             </div>
           </div>
         </div>
@@ -528,48 +567,52 @@ const AllJobsPage: React.FC = () => {
             {activeJob ? <JobCard job={activeJob} isDragging /> : null}
           </DragOverlay>
         </DndContext>
-      )}
+      )} {/* Corrected: Changed from '}' to ')}' */}
 
-      {/* List View */}
+      {/* List View - Enhanced Aesthetics */}
       {view === 'list' && (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
           {filteredJobs.length > 0 ? (
             <div className="divide-y divide-gray-200">
               {filteredJobs.map((job) => (
-                <div key={job.id} className="p-4 hover:bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex-1 mb-4 sm:mb-0">
-                    <div className="flex items-center mb-1">
-                      <Link to={`/dashboard/jobs/${job.id}`} className="font-semibold text-gray-900 hover:text-purple-600 transition-colors text-base">
+                <div key={job.id} className="p-4 hover:bg-gray-50 transition-colors duration-150 flex flex-col sm:flex-row sm:items-start sm:justify-between">
+                  {/* Left Section: Job Info */}
+                  <div className="flex-1 mb-4 sm:mb-0 sm:pr-4">
+                    <div className="flex items-center mb-1.5">
+                      <Link to={`/dashboard/jobs/${job.id}`} className="font-semibold text-lg text-gray-800 hover:text-purple-700 transition-colors">
                         {job.title}
                       </Link>
-                      <span className={`ml-3 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(job.status)}`}>
+                      <span className={`ml-3 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(job.status)}`}>
                         {job.status}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                    <div className="text-sm text-gray-600 space-y-1">
                       <div className="flex items-center">
-                        <Briefcase size={14} className="mr-1.5 text-gray-400" /> {job.department}
+                        <Briefcase size={14} className="mr-1.5 text-gray-400 flex-shrink-0" /> {job.department}
                       </div>
                       <div className="flex items-center">
-                        <MapPin size={14} className="mr-1.5 text-gray-400" /> {job.location}
+                        <MapPin size={14} className="mr-1.5 text-gray-400 flex-shrink-0" /> {job.location}
                       </div>
                     </div>
-                    <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
+                    <div className="mt-2 text-xs text-gray-500 space-y-1">
                        <div className="flex items-center">
-                         <User size={12} className="mr-1.5" /> Hiring Manager: {job.hiringManager}
+                         <User size={12} className="mr-1.5 text-gray-400 flex-shrink-0" /> 
+                         <span className="font-medium text-gray-600 mr-1">Hiring Manager:</span> {job.hiringManager}
                        </div>
                        <div className="flex items-center">
-                         <Calendar size={12} className="mr-1.5" /> Created: {job.createdDate}
+                         <Calendar size={12} className="mr-1.5 text-gray-400 flex-shrink-0" /> 
+                         <span className="font-medium text-gray-600 mr-1">Created:</span> {job.createdDate}
                        </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                     <div className="text-right sm:text-center">
-                        <p className="text-lg font-semibold text-purple-600">{job.applications}</p>
+                  {/* Right Section: Applications & Actions */}
+                  <div className="flex sm:flex-col sm:items-end sm:text-right items-center space-x-3 sm:space-x-0 sm:space-y-3">
+                     <div className="text-center sm:text-right">
+                        <p className="text-xl font-bold text-purple-600">{job.applications}</p>
                         <p className="text-xs text-gray-500">Applications</p>
                      </div>
-                     <div className="relative relative-dropdown-container"> {/* Added class for click outside */}
+                     <div className="relative relative-dropdown-container">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -583,7 +626,7 @@ const AllJobsPage: React.FC = () => {
                         {openListDropdownId === job.id && (
                           <div 
                             className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-xl z-20 py-1"
-                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside dropdown
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <Link to={`/dashboard/jobs/${job.id}`} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                               <Eye size={14} className="mr-2" /> View Details
@@ -607,20 +650,17 @@ const AllJobsPage: React.FC = () => {
             </div>
           ) : (
             <div className="p-10 text-center">
-              <Briefcase size={32} className="text-gray-400 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900">No jobs found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                No jobs match your current filters. Try adjusting your search or filter criteria.
+              <Briefcase size={36} className="text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-800">No jobs found</h3>
+              <p className="mt-2 text-sm text-gray-600">
+                No jobs match your current filters. Try adjusting your search or filter criteria, or clear all filters.
               </p>
-              { (searchTerm || departmentFilter) && (
+              { (searchTerm || departmentFilter || statusFilter) && (
                 <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setDepartmentFilter('');
-                  }}
-                  className="mt-4 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none"
+                  onClick={clearAllFilters}
+                  className="mt-6 px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                 >
-                  Clear Filters
+                  Clear All Filters
                 </button>
               )}
             </div>
