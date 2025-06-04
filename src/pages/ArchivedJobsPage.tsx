@@ -277,7 +277,7 @@ const ArchiveColumn: React.FC<ArchiveColumnProps> = ({ title, status, jobs, jobC
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm min-w-[280px]">
+    <div className="bg-white rounded-lg shadow-sm w-96"> {/* Changed min-w-[280px] to w-96 */}
       {/* Column Header */}
       <div className={`px-4 py-3 border-t-4 rounded-t-lg flex justify-between items-center ${getBorderColor(status)} ${
         isOver ? 'bg-purple-50' : ''
