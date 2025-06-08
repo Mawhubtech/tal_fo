@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../components/ProfileSidePanel';
 
 interface PersonalInfo {
@@ -234,13 +235,22 @@ const CandidatesPage: React.FC = () => {
     );
   }
   return (
-    <React.Fragment>
-      <div className={`min-h-screen bg-gray-50 p-6 transition-all duration-300 ${
+    <React.Fragment>      <div className={`min-h-screen bg-gray-50 p-6 transition-all duration-300 ${
         panelState === 'expanded' ? 'mr-[66.666667%] overflow-hidden' : 
         panelState === 'collapsed' ? 'mr-[33.333333%] overflow-hidden' : 
         ''
       }`}>
         <div className="space-y-6">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center text-sm text-gray-500 mb-4">
+          <Link to="/dashboard" className="flex items-center hover:text-purple-600 transition-colors">
+            <Home className="w-4 h-4 mr-1" />
+            Dashboard
+          </Link>
+          <ChevronRight className="w-4 h-4 mx-2" />
+          <span className="text-gray-900 font-medium">Candidate Management</span>
+        </div>
+        
         {/* Header */}
         <div className="bg-white rounded-lg border p-6">
           <div className="flex items-center justify-between">
@@ -301,11 +311,15 @@ const CandidatesPage: React.FC = () => {
               <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
                 <Upload className="h-4 w-4 mr-2" />
                 Import
-              </button>
-              <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
+              </button>              <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
                 <Download className="h-4 w-4 mr-2" />
                 Export
-              </button>              <button className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm">
+              </button>
+              <Link to="/dashboard/resume-processing" className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
+                <FileText className="h-4 w-4 mr-2" />
+                Bulk Processing
+              </Link>
+              <button className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Candidate
               </button>

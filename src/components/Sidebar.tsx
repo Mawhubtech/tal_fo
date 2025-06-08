@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, Users, MessageSquare, 
-  Settings, HelpCircle, ChevronDown, FileText, Send, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
+  Settings, HelpCircle, ChevronDown, Send, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
   Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3 // Added for Jobs and Admin
 } from 'lucide-react';
 
@@ -12,8 +12,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    sourcing: true,
-    admin: false
+    sourcing: false,
+    admin: true
   });
 
   const toggleSection = (section: string) => {
@@ -132,8 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [
               <Briefcase className="w-4 h-4" />
             </div>
             {isExpanded && "Jobs"}
-          </Link>          {/* Candidates Section */}
-          <Link 
+          </Link>          {/* Candidates Section */}          <Link 
             to="/dashboard/candidates" 
             className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
             title={!isExpanded ? "Candidates" : ""}
@@ -141,8 +140,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [
             <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
               <UserPlus className="w-4 h-4" />
             </div>
-            {isExpanded && "Candidates"}
-          </Link>          {/* Clients Section */}
+            {isExpanded && "Candidates"}          </Link>
+          
+          {/* Clients Section */}
           <Link 
             to="/dashboard/clients" 
             className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
@@ -172,15 +172,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [
             
             {/* Expanded menu */}
             {openSections['admin'] && isExpanded && (
-              <nav className="pl-8 space-y-1 py-1">
-                <Link to="/dashboard/admin" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
+              <nav className="pl-8 space-y-1 py-1">                <Link to="/dashboard/admin" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
                   <LayoutGrid className="w-3 h-3 mr-2" />
                   Overview
                 </Link>
-                <Link to="/dashboard/resume-processing" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                  <FileText className="w-3 h-3 mr-2" />
-                  Resume Processing
-                </Link>                <div className="border-t border-gray-100 my-1 pt-1">
+                <div className="border-t border-gray-100 my-1 pt-1">
                   <div className="text-xs text-gray-500 mb-1 font-medium">Management</div>
                   <Link to="/dashboard/admin/users" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
                     <Users className="w-3 h-3 mr-2" />
@@ -212,15 +208,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-2">
                     Admin
                   </div>
-                  <nav className="space-y-1">
-                    <Link to="/dashboard/admin" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
+                  <nav className="space-y-1">                    <Link to="/dashboard/admin" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
                       <LayoutGrid className="w-4 h-4 mr-3" />
                       Overview
                     </Link>
-                    <Link to="/dashboard/resume-processing" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                      <FileText className="w-4 h-4 mr-3" />
-                      Resume Processing
-                    </Link>                    <div className="border-t border-gray-100 my-2 pt-2">
+                    <div className="border-t border-gray-100 my-2 pt-2">
                       <div className="px-3 py-1 text-xs font-medium text-gray-500">Management</div>
                       <Link to="/dashboard/admin/users" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
                         <Users className="w-4 h-4 mr-3" />

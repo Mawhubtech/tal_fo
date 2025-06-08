@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Edit3, Trash2, Building, Users, MapPin, Globe, Phone, Mail, Calendar, Eye } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, Building, Users, MapPin, Globe, Phone, Mail, Calendar, Eye, Home, ChevronRight } from 'lucide-react';
 import { ClientService, type Client } from './data/clientService';
 
 const ClientManagementPage: React.FC = () => {
@@ -70,9 +70,18 @@ const ClientManagementPage: React.FC = () => {
       </div>
     );
   }
-  
-  return (
+    return (
     <div className="space-y-6">
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center text-sm text-gray-500 mb-4">
+        <Link to="/dashboard" className="flex items-center hover:text-gray-700">
+          <Home className="w-4 h-4 mr-1" />
+          Dashboard
+        </Link>
+        <ChevronRight className="w-4 h-4 mx-2" />
+        <span className="text-gray-900 font-medium">Client Management</span>
+      </div>
+      
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex-1 flex flex-col sm:flex-row gap-4">
