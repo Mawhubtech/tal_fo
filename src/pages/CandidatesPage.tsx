@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MoreHorizontal, MessageSquare, UserCheck } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MoreHorizontal, MessageSquare, UserCheck, Eye } from 'lucide-react';
+import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../components/ProfileSidePanel';
 
 interface PersonalInfo {
   fullName: string;
@@ -51,9 +52,14 @@ const CandidatesPage: React.FC = () => {
   const [candidates, setCandidates] = useState<EnhancedCandidate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [experienceFilter, setExperienceFilter] = useState<string>('all');  const [loading, setLoading] = useState(true);
+  const [experienceFilter, setExperienceFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // State for the profile side panel
+  const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
+  const [panelState, setPanelState] = useState<PanelState>('closed');
 
   useEffect(() => {
     const loadCandidates = async () => {
@@ -84,10 +90,23 @@ const CandidatesPage: React.FC = () => {
       } finally {
         setLoading(false);
       }
-    };
-
-    loadCandidates();
+    };    loadCandidates();
   }, []);
+
+  // Handlers for the profile side panel
+  const handleOpenProfilePanel = (userData: UserStructuredData) => {
+    setSelectedUserDataForPanel(userData);
+    setPanelState('expanded');
+    document.body.style.overflow = 'hidden'; // Prevent background scroll
+  };
+
+  const handlePanelStateChange = (newState: PanelState) => {
+    setPanelState(newState);
+    if (newState === 'closed') {
+      setSelectedUserDataForPanel(null);
+      document.body.style.overflow = 'auto'; // Restore background scroll
+    }
+  };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -187,7 +206,6 @@ const CandidatesPage: React.FC = () => {
     if (dateString === 'Present') return 'Present';
     return new Date(dateString).toLocaleDateString();
   };
-
   if (loading) {
     return (
       <div className="p-6">
@@ -196,9 +214,15 @@ const CandidatesPage: React.FC = () => {
         </div>
       </div>
     );
-  }  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="space-y-6">
+  }
+  return (
+    <React.Fragment>
+      <div className={`min-h-screen bg-gray-50 p-6 transition-all duration-300 ${
+        panelState === 'expanded' ? 'mr-[66.666667%] overflow-hidden' : 
+        panelState === 'collapsed' ? 'mr-[33.333333%] overflow-hidden' : 
+        ''
+      }`}>
+        <div className="space-y-6">
         {/* Header */}
         <div className="bg-white rounded-lg border p-6">
           <div className="flex items-center justify-between">
@@ -398,6 +422,13 @@ const CandidatesPage: React.FC = () => {
                       </td>                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-1">
                           <button 
+                            className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded"
+                            title="View Profile"
+                            onClick={() => handleOpenProfilePanel(candidate.structuredData)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
                             className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded"
                             title="Send Message"
                           >
@@ -496,13 +527,33 @@ const CandidatesPage: React.FC = () => {
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
-                </button>
-              </div>
+                </button>              </div>
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+
+      {/* Side Panel and Overlay */}
+      {panelState !== 'closed' && (
+        <>
+          {/* Overlay - only show for expanded state */}
+          {panelState === 'expanded' && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out"
+              onClick={() => handlePanelStateChange('closed')}
+              aria-hidden="true"
+            ></div>
+          )}
+          {/* Panel */}
+          <ProfileSidePanel
+            userData={selectedUserDataForPanel}
+            panelState={panelState}
+            onStateChange={handlePanelStateChange}
+          />
+        </>
+      )}
+    </React.Fragment>
   );
 };
 
