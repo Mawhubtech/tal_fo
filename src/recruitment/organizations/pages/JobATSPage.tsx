@@ -14,8 +14,7 @@ const JobATSPage: React.FC = () => {
 	departmentId: string; 
 	jobId: string; 
   }>();
-  
-  const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
+    const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
   const [job, setJob] = useState<JobType | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +22,7 @@ const JobATSPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'score'>('date');
+  const [candidates, setCandidates] = useState<any[]>([]);
 
   // Calendar view states
   const [tasksView, setTasksView] = useState<'list' | 'calendar'>('list');
@@ -51,15 +51,29 @@ const JobATSPage: React.FC = () => {
 		setLoading(false);
 	  }
 	};
-
 	loadJob();
   }, [jobId, organizationId, departmentId]);
+
+  // Initialize candidates state with mock data
+  useEffect(() => {
+	const mockJobKey = jobId ? getMockJobKey(jobId) : '';
+	const initialCandidates = mockJobKey && mockCandidatesByJob[mockJobKey] ? mockCandidatesByJob[mockJobKey] : [];
+	setCandidates(initialCandidates);
+  }, [jobId]);
+
   // Get mock data using imported function
   const mockJobKey = jobId ? getMockJobKey(jobId) : '';
-  const allCandidates = mockJobKey && mockCandidatesByJob[mockJobKey] ? mockCandidatesByJob[mockJobKey] : [];
   const allTasks = mockJobKey && mockTasksByJob[mockJobKey] ? mockTasksByJob[mockJobKey] : [];
   const allInterviews = mockJobKey && mockInterviewsByJob[mockJobKey] ? mockInterviewsByJob[mockJobKey] : [];
   const reportData = mockJobKey && mockReportsByJob[mockJobKey] ? mockReportsByJob[mockJobKey] : null;
+
+  const handleCandidateUpdate = (updatedCandidate: any) => {
+	setCandidates(prevCandidates => 
+	  prevCandidates.map(candidate => 
+		candidate.id === updatedCandidate.id ? updatedCandidate : candidate
+	  )
+	);
+  };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
 	setCurrentDate(prev => {
@@ -158,9 +172,8 @@ const JobATSPage: React.FC = () => {
 			  <p className="text-gray-600">{job.department} • {job.location} • {job.employmentType}</p>
 			  <p className="text-gray-500 text-sm">Status: {job.status} • Experience Level: {job.experience}</p>
 			</div>
-		  </div>
-		  <div className="text-right">
-			<p className="text-2xl font-bold text-gray-900">{allCandidates.length}</p>
+		  </div>		  <div className="text-right">
+			<p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
 			<p className="text-sm text-gray-500">Total Candidates</p>
 		  </div>
 		</div>
@@ -175,10 +188,9 @@ const JobATSPage: React.FC = () => {
 			  activeTab === 'pipeline'
 				? 'border-b-2 border-purple-500 text-purple-600'
 				: 'text-gray-500 hover:text-gray-700'
-			}`}
-		  >
+			}`}		  >
 			<Users className="w-4 h-4 mr-2" />
-			Pipeline ({allCandidates.length})
+			Pipeline ({candidates.length})
 		  </button>
 		  <button
 			onClick={() => setActiveTab('tasks')}
@@ -214,18 +226,17 @@ const JobATSPage: React.FC = () => {
 			Reports
 		  </button>
 		</div>
-	  </div>
-
-	  {/* Tab Content */}
+	  </div>	  {/* Tab Content */}
 	  {activeTab === 'pipeline' && (
 		<PipelineTab 
-		  candidates={allCandidates}
+		  candidates={candidates}
 		  searchQuery={searchQuery}
 		  onSearchChange={setSearchQuery}
 		  selectedStage={selectedStage}
 		  onStageChange={setSelectedStage}
 		  sortBy={sortBy}
 		  onSortChange={setSortBy}
+		  onCandidateUpdate={handleCandidateUpdate}
 		/>
 	  )}
 

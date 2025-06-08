@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { LayoutGrid, List } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
-import { STAGES } from '../../../data/mock';
 import { PipelineFilters } from './PipelineFilters';
-import { StageColumn } from './StageColumn';
 import { PipelineStats } from './PipelineStats';
+import { PipelineListView } from './PipelineListView';
+import { PipelineKanbanView } from './PipelineKanbanView';
 
 interface PipelineTabProps {
   candidates: Candidate[];
@@ -14,6 +15,7 @@ interface PipelineTabProps {
   sortBy: 'date' | 'score';
   onSortChange: (sort: 'date' | 'score') => void;
   onCandidateClick?: (candidate: Candidate) => void;
+  onCandidateUpdate?: (candidate: Candidate) => void;
 }
 
 export const PipelineTab: React.FC<PipelineTabProps> = ({
@@ -24,8 +26,11 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
   onStageChange,
   sortBy,
   onSortChange,
-  onCandidateClick
+  onCandidateClick,
+  onCandidateUpdate
 }) => {
+  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          candidate.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -36,38 +41,88 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
     return matchesSearch && matchesStage;
   });
 
+  // Sort candidates
+  const sortedCandidates = [...filteredCandidates].sort((a, b) => {
+    if (sortBy === 'date') {
+      return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
+    } else {
+      return b.score - a.score;
+    }
+  });
+
   const getCandidatesByStage = (stage: string) => {
-    return filteredCandidates.filter(candidate => candidate.stage === stage);
+    return sortedCandidates.filter(candidate => candidate.stage === stage);
+  };
+
+  const handleCandidateStageChange = (candidateId: string, newStage: string) => {
+    const candidate = candidates.find(c => c.id === candidateId);
+    if (candidate && onCandidateUpdate) {
+      const updatedCandidate = { ...candidate, stage: newStage };
+      onCandidateUpdate(updatedCandidate);
+    }
   };
 
   return (
     <>
-      <PipelineFilters
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        selectedStage={selectedStage}
-        onStageChange={onStageChange}
-        sortBy={sortBy}
-        onSortChange={onSortChange}
-      />
-
-      {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-6 overflow-x-auto min-h-[calc(100vh-400px)]">
-        {STAGES.map((stage) => (
-          <StageColumn
-            key={stage}
-            stage={stage}
-            candidates={getCandidatesByStage(stage)}
-            onCandidateClick={onCandidateClick}
+      {/* Header with View Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex-1">
+          <PipelineFilters
+            searchQuery={searchQuery}
+            onSearchChange={onSearchChange}
+            selectedStage={selectedStage}
+            onStageChange={onStageChange}
+            sortBy={sortBy}
+            onSortChange={onSortChange}
           />
-        ))}
+        </div>
+        
+        {/* View Toggle */}
+        <div className="flex border border-gray-300 rounded-lg overflow-hidden bg-white">
+          <button
+            onClick={() => setView('kanban')}
+            className={`px-4 py-2 text-sm flex items-center transition-colors ${
+              view === 'kanban' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4 mr-2" />
+            Kanban
+          </button>
+          <button
+            onClick={() => setView('list')}
+            className={`px-4 py-2 text-sm flex items-center transition-colors ${
+              view === 'list' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <List className="w-4 h-4 mr-2" />
+            List
+          </button>
+        </div>
       </div>
 
+      {/* Content based on view */}
+      {view === 'kanban' ? (
+        <PipelineKanbanView
+          candidates={sortedCandidates}
+          onCandidateClick={onCandidateClick}
+          onCandidateStageChange={handleCandidateStageChange}
+        />
+      ) : (
+        <PipelineListView
+          candidates={sortedCandidates}
+          onCandidateClick={onCandidateClick}
+        />
+      )}
+
       {/* Quick Stats */}
-      <PipelineStats
+      {/* <PipelineStats
         candidates={candidates}
         getCandidatesByStage={getCandidatesByStage}
-      />
+      /> */}
     </>
   );
 };
