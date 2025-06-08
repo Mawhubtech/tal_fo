@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom'; // Import Routes and Route
 import Sidebar from '../components/Sidebar';   // Your Sidebar component
 import TopNavbar from '../components/TopNavbar'; // Your TopNavbar component
+import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
 import Search from './Search'; // Import the new Search component
 import SearchResultsPage from './SearchResults'; // Import the new SearchResults page
 import EmailSequencesPage from './EmailSequencesPage'; // Import the new page
@@ -58,29 +59,30 @@ const Dashboard: React.FC = () => {
         <TopNavbar
           onNewSearch={handleNewSearch}
         />        {/* Main content area */}        <main className="flex-1 p-4 overflow-y-auto"> {/* Removed flex items-center justify-center and added overflow-y-auto if not already present for scrolling */}          <Routes> {/* Add Routes component here */}
-            <Route path="/" element={<Search />} /> {/* Default route */}
+            <Route path="/" element={<DashboardOverview />} /> {/* Dashboard Overview as default route */}            <Route path="search" element={<Search />} /> {/* Search talents page */}
+            <Route path="projects" element={<div className="p-6"><h1 className="text-2xl font-bold">Projects</h1><p>Projects page coming soon...</p></div>} />
+            <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
             <Route path="search-results" element={<SearchResultsPage />} /> {/* Route for SearchResultsPage */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}
             <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}            {/* Job Pages */}
+            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}{/* Job Pages */}
             <Route path="jobs/all" element={<AllJobsPage />} />
-            <Route path="jobs/create" element={<CreateJobPage />} />
-            <Route path="jobs/archived" element={<ArchivedJobsPage />} />
+            <Route path="jobs/create" element={<CreateJobPage />} />            <Route path="jobs/archived" element={<ArchivedJobsPage />} />
+            <Route path="organizations" element={<div className="p-6"><h1 className="text-2xl font-bold">Organizations</h1><p>Organizations page coming soon...</p></div>} />
               {/* ATS Pages */}
             <Route path="ats/pipelines" element={<PipelinesPage />} />
-            <Route path="ats/all-candidates" element={<AllCandidatesPage />} />
+            <Route path="ats/candidates" element={<AllCandidatesPage />} />
             <Route path="ats/tasks" element={<TasksPage />} />
             <Route path="ats/interviews" element={<InterviewsPage />} />
             <Route path="ats/reports" element={<ReportsPage />} />            
-            {/* Admin Pages with Layout */}
-            <Route path="admin" element={<AdminLayout />}>
+            {/* Admin Pages with Layout */}            <Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminOverviewPage />} />
-              <Route path="user-management" element={<UserManagementPage />} />
-              <Route path="candidate-profiles" element={<CandidateProfilesPage />} />
-              <Route path="company-management" element={<CompanyManagementPage />} />
-              <Route path="job-board-config" element={<JobBoardConfigPage />} />
+              <Route path="users" element={<UserManagementPage />} />
+              <Route path="candidates" element={<CandidateProfilesPage />} />
+              <Route path="companies" element={<CompanyManagementPage />} />
+              <Route path="job-boards" element={<JobBoardConfigPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="system-settings" element={<SystemSettingsPage />} />
+              <Route path="settings" element={<SystemSettingsPage />} />
             </Route></Routes>
 
         </main>
