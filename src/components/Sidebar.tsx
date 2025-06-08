@@ -132,9 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [
               <Briefcase className="w-4 h-4" />
             </div>
             {isExpanded && "Jobs"}
-          </Link>
-
-          {/* Candidates Section */}
+          </Link>          {/* Candidates Section */}
           <Link 
             to="/dashboard/candidates" 
             className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
@@ -144,6 +142,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [
               <UserPlus className="w-4 h-4" />
             </div>
             {isExpanded && "Candidates"}
+          </Link>          {/* Clients Section */}
+          <Link 
+            to="/dashboard/clients" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
+            title={!isExpanded ? "Clients" : ""}
+          >
+            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
+              <Building className="w-4 h-4" />
+            </div>
+            {isExpanded && "Clients"}
           </Link>
 
           {/* Admin Section */}
@@ -177,10 +185,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [
                   <Link to="/dashboard/admin/users" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
                     <Users className="w-3 h-3 mr-2" />
                     Users
-                  </Link>
-                  <Link to="/dashboard/admin/companies" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                    <Building className="w-3 h-3 mr-2" />
-                    Companies
                   </Link>
                 </div>
                 <div className="border-t border-gray-100 my-1 pt-1">
@@ -221,10 +225,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [
                       <Link to="/dashboard/admin/users" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
                         <Users className="w-4 h-4 mr-3" />
                         Users
-                      </Link>
-                      <Link to="/dashboard/admin/companies" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <Building className="w-4 h-4 mr-3" />
-                        Companies
                       </Link>
                     </div>
                     <div className="border-t border-gray-100 my-2 pt-2">

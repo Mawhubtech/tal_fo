@@ -24,7 +24,7 @@ import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
 import UserManagementPage from './admin/UserManagementPage'; // Import UserManagementPage
 import CandidateProfilesPage from '../recruitment/candidates/pages/CandidateProfilesPage'; // Import CandidateProfilesPage
-import CompanyManagementPage from './admin/CompanyManagementPage'; // Import CompanyManagementPage
+import { ClientManagementPage, ClientDetailPage } from './clients'; // Import ClientManagementPage and ClientDetailPage
 import JobBoardConfigPage from '../recruitment/jobs/pages/JobBoardConfigPage'; // Import JobBoardConfigPage
 import AnalyticsPage from './admin/AnalyticsPage'; // Import AnalyticsPage
 import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSettingsPage
@@ -64,9 +64,11 @@ const Dashboard: React.FC = () => {
             <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
             <Route path="search-results" element={<SearchResults />} /> {/* Route for SearchResults */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}            {/* Jobs and Candidates standalone routes */}
+            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}            {/* Jobs, Candidates, and Clients standalone routes */}
             <Route path="jobs" element={<OrganizationsPage />} />
             <Route path="candidates" element={<CandidatesPage />} />
+            <Route path="clients" element={<ClientManagementPage />} />
+            <Route path="clients/:clientId" element={<ClientDetailPage />} />
             
             {/* New Hierarchical Recruitment Flow */}
             <Route path="organizations" element={<OrganizationsPage />} />
@@ -77,11 +79,11 @@ const Dashboard: React.FC = () => {
             
             {/* Job Creation - Integrated with hierarchical flow */}
             <Route path="organizations/:organizationId/create-job" element={<CreateJobPage />} />
-            <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={<CreateJobPage />} />{/* Admin Pages with Layout */}<Route path="admin" element={<AdminLayout />}>
+            <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={<CreateJobPage />} />{/* Admin Pages with Layout */}            <Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="candidates" element={<CandidateProfilesPage />} />
-              <Route path="companies" element={<CompanyManagementPage />} />
+              <Route path="clients" element={<ClientManagementPage />} />
               <Route path="job-boards" element={<JobBoardConfigPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />

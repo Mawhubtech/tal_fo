@@ -1,120 +1,33 @@
-import React, { useState } from 'react';
-import { Search, Plus, Edit3, Trash2, Building, Users, MapPin, Globe, Phone, Mail, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, Plus, Edit3, Trash2, Building, Users, MapPin, Globe, Phone, Mail, Calendar, Eye } from 'lucide-react';
+import { ClientService, type Client } from './data/clientService';
 
-interface Company {
-  id: string;
-  name: string;
-  industry: string;
-  size: string;
-  location: string;
-  website: string;
-  email: string;
-  phone: string;
-  status: 'active' | 'inactive' | 'suspended';
-  employees: number;
-  openJobs: number;
-  totalHires: number;
-  createdDate: string;
-  lastActivity: string;
-  description?: string;
-  logoUrl?: string;
-}
-
-// Mock company data
-const mockCompanies: Company[] = [
-  {
-    id: '1',
-    name: 'TechCorp Solutions',
-    industry: 'Technology',
-    size: 'Large (1000+ employees)',
-    location: 'San Francisco, CA',
-    website: 'https://techcorp.com',
-    email: 'hr@techcorp.com',
-    phone: '+1 (555) 123-4567',
-    status: 'active',
-    employees: 1250,
-    openJobs: 8,
-    totalHires: 45,
-    createdDate: '2023-01-15',
-    lastActivity: '2024-01-22',
-    description: 'Leading technology solutions provider specializing in enterprise software.'
-  },
-  {
-    id: '2',
-    name: 'StartupX',
-    industry: 'Fintech',
-    size: 'Small (10-50 employees)',
-    location: 'New York, NY',
-    website: 'https://startupx.io',
-    email: 'careers@startupx.io',
-    phone: '+1 (555) 234-5678',
-    status: 'active',
-    employees: 35,
-    openJobs: 5,
-    totalHires: 12,
-    createdDate: '2023-06-20',
-    lastActivity: '2024-01-21',
-    description: 'Innovative fintech startup revolutionizing digital payments.'
-  },
-  {
-    id: '3',
-    name: 'Healthcare Plus',
-    industry: 'Healthcare',
-    size: 'Medium (100-500 employees)',
-    location: 'Boston, MA',
-    website: 'https://healthcareplus.com',
-    email: 'jobs@healthcareplus.com',
-    phone: '+1 (555) 345-6789',
-    status: 'active',
-    employees: 320,
-    openJobs: 12,
-    totalHires: 28,
-    createdDate: '2022-11-10',
-    lastActivity: '2024-01-20',
-    description: 'Comprehensive healthcare services provider with cutting-edge medical technology.'
-  },
-  {
-    id: '4',
-    name: 'GreenEnergy Co',
-    industry: 'Energy',
-    size: 'Medium (100-500 employees)',
-    location: 'Austin, TX',
-    website: 'https://greenenergy.com',
-    email: 'talent@greenenergy.com',
-    phone: '+1 (555) 456-7890',
-    status: 'inactive',
-    employees: 180,
-    openJobs: 0,
-    totalHires: 15,
-    createdDate: '2023-03-05',
-    lastActivity: '2023-12-15',
-    description: 'Sustainable energy solutions for a greener future.'
-  },
-  {
-    id: '5',
-    name: 'RetailMax',
-    industry: 'Retail',
-    size: 'Large (1000+ employees)',
-    location: 'Chicago, IL',
-    website: 'https://retailmax.com',
-    email: 'hr@retailmax.com',
-    phone: '+1 (555) 567-8901',
-    status: 'suspended',
-    employees: 2100,
-    openJobs: 0,
-    totalHires: 67,
-    createdDate: '2022-08-12',
-    lastActivity: '2024-01-10',
-    description: 'National retail chain with stores across the country.'
-  }
-];
-
-const CompanyManagementPage: React.FC = () => {
-  const [companies] = useState<Company[]>(mockCompanies);
+const ClientManagementPage: React.FC = () => {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [industryFilter, setIndustryFilter] = useState<string>('all');
   const [sizeFilter, setSizeFilter] = useState<string>('all');
+
+  const clientService = new ClientService();
+
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        setLoading(true);
+        const clientData = await clientService.getAllClients();
+        setClients(clientData);
+      } catch (error) {
+        console.error('Error loading clients:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadClients();
+  }, []);
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -128,39 +41,45 @@ const CompanyManagementPage: React.FC = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
-
-  const filteredCompanies = companies.filter(company => {
-    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         company.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         company.location.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         client.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         client.location.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || company.status === statusFilter;
-    const matchesIndustry = industryFilter === 'all' || company.industry === industryFilter;
-    const matchesSize = sizeFilter === 'all' || company.size.includes(sizeFilter);
+    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
+    const matchesIndustry = industryFilter === 'all' || client.industry === industryFilter;
+    const matchesSize = sizeFilter === 'all' || client.size.includes(sizeFilter);
     
     return matchesSearch && matchesStatus && matchesIndustry && matchesSize;
   });
 
   const stats = {
-    total: companies.length,
-    active: companies.filter(c => c.status === 'active').length,
-    inactive: companies.filter(c => c.status === 'inactive').length,
-    suspended: companies.filter(c => c.status === 'suspended').length,
-    totalOpenJobs: companies.reduce((sum, c) => sum + c.openJobs, 0),
-    totalHires: companies.reduce((sum, c) => sum + c.totalHires, 0)
+    total: clients.length,
+    active: clients.filter(c => c.status === 'active').length,
+    inactive: clients.filter(c => c.status === 'inactive').length,
+    suspended: clients.filter(c => c.status === 'suspended').length,
+    totalOpenJobs: clients.reduce((sum, c) => sum + c.openJobs, 0),
+    totalHires: clients.reduce((sum, c) => sum + c.totalHires, 0)
   };
-
-  const uniqueIndustries = [...new Set(companies.map(c => c.industry))];
+  const uniqueIndustries = [...new Set(clients.map(c => c.industry))];
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading clients...</div>
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-6">
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex-1 flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <input
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />            <input
               type="text"
-              placeholder="Search companies by name, industry, or location..."
+              placeholder="Search clients by name, industry, or location..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -198,18 +117,16 @@ const CompanyManagementPage: React.FC = () => {
               <option value="Large">Large (1000+)</option>
             </select>
           </div>
-        </div>
-        <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
+        </div>        <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
           <Plus className="h-4 w-4 mr-2" />
-          Add Company
+          Add Client
         </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-        <div className="bg-white p-4 rounded-lg border">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">        <div className="bg-white p-4 rounded-lg border">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-          <div className="text-sm text-gray-600">Total Companies</div>
+          <div className="text-sm text-gray-600">Total Clients</div>
         </div>
         <div className="bg-white p-4 rounded-lg border">
           <div className="text-2xl font-bold text-green-600">{stats.active}</div>
@@ -236,9 +153,8 @@ const CompanyManagementPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Company
+              <tr>                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Client
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Industry & Size
@@ -259,31 +175,34 @@ const CompanyManagementPage: React.FC = () => {
                   Actions
                 </th>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCompanies.map((company) => (
-                <tr key={company.id} className="hover:bg-gray-50">
+            </thead>            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredClients.map((client) => (
+                <tr key={client.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center">
                         <Building className="h-6 w-6 text-gray-600" />
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{company.name}</div>
+                      </div>                      <div className="ml-4">
+                        <Link 
+                          to={`/dashboard/clients/${client.id}`}
+                          className="text-sm font-medium text-gray-900 hover:text-purple-600 hover:underline cursor-pointer"
+                        >
+                          {client.name}
+                        </Link>
                         <div className="flex items-center text-sm text-gray-500">
                           <MapPin className="h-4 w-4 mr-1" />
-                          {company.location}
+                          {client.location}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{company.industry}</div>
-                      <div className="text-sm text-gray-500">{company.size}</div>
+                      <div className="text-sm font-medium text-gray-900">{client.industry}</div>
+                      <div className="text-sm text-gray-500">{client.size}</div>
                       <div className="flex items-center text-sm text-gray-500">
                         <Users className="h-4 w-4 mr-1" />
-                        {company.employees.toLocaleString()} employees
+                        {client.employees.toLocaleString()} employees
                       </div>
                     </div>
                   </td>
@@ -291,32 +210,32 @@ const CompanyManagementPage: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex items-center text-sm text-gray-900">
                         <Globe className="h-4 w-4 mr-1" />
-                        <a href={company.website} className="text-primary-600 hover:text-primary-800" target="_blank" rel="noopener noreferrer">
-                          {company.website.replace('https://', '')}
+                        <a href={client.website} className="text-primary-600 hover:text-primary-800" target="_blank" rel="noopener noreferrer">
+                          {client.website.replace('https://', '')}
                         </a>
                       </div>
                       <div className="flex items-center text-sm text-gray-500">
                         <Mail className="h-4 w-4 mr-1" />
-                        {company.email}
+                        {client.email}
                       </div>
                       <div className="flex items-center text-sm text-gray-500">
                         <Phone className="h-4 w-4 mr-1" />
-                        {company.phone}
+                        {client.phone}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(company.status)}`}>
-                      {company.status.charAt(0).toUpperCase() + company.status.slice(1)}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(client.status)}`}>
+                      {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="space-y-1">
                       <div className="text-sm text-gray-900">
-                        <span className="font-medium text-primary-600">{company.openJobs}</span> open jobs
+                        <span className="font-medium text-primary-600">{client.openJobs}</span> open jobs
                       </div>
                       <div className="text-sm text-gray-500">
-                        <span className="font-medium text-green-600">{company.totalHires}</span> total hires
+                        <span className="font-medium text-green-600">{client.totalHires}</span> total hires
                       </div>
                     </div>
                   </td>
@@ -324,19 +243,31 @@ const CompanyManagementPage: React.FC = () => {
                     <div>
                       <div className="flex items-center text-sm text-gray-900">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(company.createdDate).toLocaleDateString()}
+                        {new Date(client.createdDate).toLocaleDateString()}
                       </div>
                       <div className="text-sm text-gray-500">
-                        Last: {new Date(company.lastActivity).toLocaleDateString()}
+                        Last: {new Date(client.lastActivity).toLocaleDateString()}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  </td>                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      <button className="text-green-600 hover:text-green-900">
+                      <Link 
+                        to={`/dashboard/clients/${client.id}`}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="View client details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                      <button 
+                        className="text-green-600 hover:text-green-900"
+                        title="Edit client"
+                      >
                         <Edit3 className="h-4 w-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
+                      <button 
+                        className="text-red-600 hover:text-red-900"
+                        title="Delete client"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -349,9 +280,8 @@ const CompanyManagementPage: React.FC = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-700">
-          Showing {filteredCompanies.length} of {companies.length} companies
+      <div className="flex items-center justify-between">        <div className="text-sm text-gray-700">
+          Showing {filteredClients.length} of {clients.length} clients
         </div>
         <div className="flex space-x-2">
           <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">
@@ -372,4 +302,4 @@ const CompanyManagementPage: React.FC = () => {
   );
 };
 
-export default CompanyManagementPage;
+export default ClientManagementPage;
