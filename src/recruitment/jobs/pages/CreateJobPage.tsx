@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { OrganizationService, DepartmentService } from '../../organizations/data';
+import type { Organization, Department } from '../../organizations/data';
 
 const CreateJobPage: React.FC = () => {
+  const { organizationId, departmentId } = useParams<{ 
+    organizationId: string; 
+    departmentId: string; 
+  }>();
+  
+  // Context data
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [department, setDepartment] = useState<Department | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Form state
   const [jobTitle, setJobTitle] = useState('');
-  const [department, setDepartment] = useState('');
+  const [department_form, setDepartment_form] = useState('');
   const [location, setLocation] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [employmentType, setEmploymentType] = useState('Full-time');
@@ -22,6 +35,39 @@ const CreateJobPage: React.FC = () => {
   const [requirements, setRequirements] = useState(['']);
   const [responsibilities, setResponsibilities] = useState(['']);
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
+  const organizationService = new OrganizationService();
+  const departmentService = new DepartmentService();
+
+  // Load context data when organizationId is present
+  useEffect(() => {
+    const loadContextData = async () => {
+      if (!organizationId) return;
+
+      try {
+        setLoading(true);
+        
+        // Load organization
+        const orgData = await organizationService.getOrganizationById(organizationId);
+        setOrganization(orgData);
+
+        // Load department if in department context
+        if (departmentId) {
+          const deptData = await departmentService.getDepartmentById(organizationId, departmentId);
+          setDepartment(deptData);
+          // Pre-fill department field
+          if (deptData) {
+            setDepartment_form(deptData.name);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading context data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadContextData();
+  }, [organizationId, departmentId]);
   const addSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
       setSkills([...skills, newSkill.trim()]);
@@ -71,11 +117,10 @@ const CreateJobPage: React.FC = () => {
   const removeResponsibility = (index: number) => {
     setResponsibilities(responsibilities.filter((_, i) => i !== index));
   };
-
   const handleSubmit = (publish: boolean) => {
     console.log('Submitting job...', {
       jobTitle,
-      department,
+      department: department_form,
       location,
       jobDescription,
       employmentType,
@@ -94,26 +139,59 @@ const CreateJobPage: React.FC = () => {
       status: publish ? 'Open' : 'Draft'
     });
     // TODO: API call to save/publish job
-  };  return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Breadcrumbs */}
+  };return (
+    <div className="min-h-screen bg-gray-100">      {/* Breadcrumbs */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center text-sm text-gray-500">
               <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
               <span className="mx-2">/</span>
-              <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
-              <span className="mx-2">/</span>
-              <span className="text-gray-900 font-medium">Create Job</span>
-              <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Legacy View</span>
+              {organizationId ? (
+                <>
+                  <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
+                  <span className="mx-2">/</span>
+                  {organization ? (
+                    <Link 
+                      to={`/dashboard/organizations/${organizationId}`} 
+                      className="hover:text-gray-700"
+                    >
+                      {organization.name}
+                    </Link>
+                  ) : (
+                    <span>Loading...</span>
+                  )}
+                  <span className="mx-2">/</span>
+                  {departmentId && department ? (
+                    <>
+                      <Link 
+                        to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
+                        className="hover:text-gray-700"
+                      >
+                        {department.name}
+                      </Link>
+                      <span className="mx-2">/</span>
+                    </>
+                  ) : null}
+                  <span className="text-gray-900 font-medium">Create Job</span>
+                </>
+              ) : (
+                <>
+                  <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
+                  <span className="mx-2">/</span>
+                  <span className="text-gray-900 font-medium">Create Job</span>
+                  <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Legacy View</span>
+                </>
+              )}
             </div>
-            <Link 
-              to="/dashboard/organizations" 
-              className="text-sm bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Switch to Hierarchical Flow
-            </Link>
+            {!organizationId && (
+              <Link 
+                to="/dashboard/organizations" 
+                className="text-sm bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Switch to Hierarchical Flow
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -152,15 +230,14 @@ const CreateJobPage: React.FC = () => {
                     placeholder="e.g., Senior Software Engineer"
                     required
                   />
-                </div>
-                <div>
+                </div>                <div>
                   <label htmlFor="department" className="block text-sm font-semibold text-gray-700 mb-2">
                     Department *
                   </label>
                   <select
                     id="department"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
+                    value={department_form}
+                    onChange={(e) => setDepartment_form(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
                     required
                   >

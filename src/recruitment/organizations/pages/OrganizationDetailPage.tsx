@@ -2,24 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Plus, Users, Briefcase, Building, 
-  MapPin, Search, Grid3X3, List 
+  MapPin, Search, Grid3X3, List, ChevronDown, ChevronUp, Clock
 } from 'lucide-react';
 import { OrganizationService, DepartmentService, JobService } from '../data';
 import type { Organization, Department, Job } from '../data';
-import AllJobsCard from '../components/AllJobsCard';
 
 const OrganizationDetailPage: React.FC = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAllJobs, setShowAllJobs] = useState(false);
+  const [jobsSearchTerm, setJobsSearchTerm] = useState('');
   
   // State for data
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingJobs, setLoadingJobs] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
   const organizationService = new OrganizationService();
   const departmentService = new DepartmentService();
   const jobService = new JobService();
@@ -43,13 +45,11 @@ const OrganizationDetailPage: React.FC = () => {
         if (!orgData) {
           setError('Organization not found');
           return;
-        }        // Load departments
+        }
+        
+        // Load departments
         const deptData = await departmentService.getDepartmentsByOrganization(organizationId);
         setDepartments(deptData);
-
-        // Load all jobs for organization
-        const jobsData = await jobService.getJobsByOrganization(organizationId);
-        setAllJobs(jobsData);
         
         setError(null);
       } catch (err) {
@@ -63,11 +63,56 @@ const OrganizationDetailPage: React.FC = () => {
     loadData();
   }, [organizationId]);
 
+  // Load all jobs when showAllJobs is toggled
+  useEffect(() => {
+    const loadAllJobs = async () => {
+      if (!showAllJobs || !organizationId) return;
+
+      try {
+        setLoadingJobs(true);
+        const jobsData = await jobService.getJobsByOrganization(organizationId);
+        setAllJobs(jobsData);
+      } catch (err) {
+        console.error('Error loading jobs:', err);
+      } finally {
+        setLoadingJobs(false);
+      }
+    };
+
+    loadAllJobs();
+  }, [showAllJobs, organizationId]);
+
   // Filter departments
   const filteredDepartments = departments.filter(dept =>
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     dept.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Filter jobs
+  const filteredJobs = allJobs.filter(job =>
+    job.title.toLowerCase().includes(jobsSearchTerm.toLowerCase()) ||
+    job.department.toLowerCase().includes(jobsSearchTerm.toLowerCase()) ||
+    job.location.toLowerCase().includes(jobsSearchTerm.toLowerCase())
+  );
+
+  // Helper function to format job status
+  const getJobStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'bg-green-100 text-green-800';
+      case 'closed': return 'bg-red-100 text-red-800';
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Helper function to format dates
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(date);
+  };
 
   if (loading) {
     return (
@@ -166,9 +211,112 @@ const OrganizationDetailPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Departments */}
-        <div className="lg:col-span-2">
+      {/* All Jobs Section */}
+      <div className="bg-white rounded-lg shadow-sm border mb-6">
+        <div className="p-6 border-b border-gray-200">
+          <button
+            onClick={() => setShowAllJobs(!showAllJobs)}
+            className="flex items-center justify-between w-full text-left"
+          >
+            <div className="flex items-center">
+              <Briefcase className="w-5 h-5 text-purple-600 mr-3" />
+              <h2 className="text-xl font-semibold text-gray-900">
+                All Jobs ({organization.activeJobs})
+              </h2>
+            </div>
+            {showAllJobs ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+          <p className="text-gray-600 mt-1 ml-8">View all job openings across departments</p>
+        </div>
+
+        {showAllJobs && (
+          <div className="p-6">
+            {loadingJobs ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-gray-500">Loading jobs...</p>
+              </div>
+            ) : (
+              <>
+                {/* Search Jobs */}
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search jobs..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      value={jobsSearchTerm}
+                      onChange={(e) => setJobsSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Jobs List */}
+                {filteredJobs.length > 0 ? (
+                  <div className="space-y-4">
+                    {filteredJobs.map((job) => (
+                      <Link
+                        key={job.id}
+                        to={`/dashboard/organizations/${organizationId}/departments/${job.departmentId}/jobs/${job.id}`}
+                        className="block bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-lg font-medium text-gray-900">{job.title}</h3>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getJobStatusColor(job.status)}`}>
+                                {job.status}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center text-sm text-gray-600 mb-2">
+                              <Building className="w-4 h-4 mr-1" />
+                              <span className="mr-4">{job.department}</span>
+                              <MapPin className="w-4 h-4 mr-1" />
+                              <span className="mr-4">{job.location}</span>
+                              <Clock className="w-4 h-4 mr-1" />
+                              <span className="mr-4">{job.employmentType}</span>
+                              <Users className="w-4 h-4 mr-1" />
+                              <span>{job.applicantCount} applicants</span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center text-sm text-gray-500">
+                                <span>Posted: {formatDate(job.postedDate)}</span>
+                                <span className="mx-2">•</span>
+                                <span>Deadline: {formatDate(job.applicationDeadline)}</span>
+                              </div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {job.salary}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Briefcase className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500">
+                      {jobsSearchTerm ? 'No jobs found matching your search' : 'No jobs found'}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="w-full">
+        {/* Departments */}
+        <div>
           {/* Departments Header */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Departments</h2>
@@ -284,20 +432,13 @@ const OrganizationDetailPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          )}
-
-          {/* Empty State for Departments */}
+          )}          {/* Empty State for Departments */}
           {filteredDepartments.length === 0 && (
             <div className="text-center py-8">
               <Building className="w-8 h-8 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500">No departments found</p>
             </div>
           )}
-        </div>
-
-        {/* Right Column - All Jobs Card */}
-        <div className="lg:col-span-1">
-          <AllJobsCard organizationId={organizationId!} jobs={allJobs} />
         </div>
       </div>
     </div>

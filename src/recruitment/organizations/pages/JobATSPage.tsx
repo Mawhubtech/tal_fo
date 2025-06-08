@@ -407,8 +407,7 @@ const JobATSPage: React.FC = () => {
         <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
         <span className="mx-2">/</span>
         <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
-        <span className="mx-2">/</span>
-        <Link to={`/dashboard/organizations/${organizationId}/departments`} className="hover:text-gray-700">
+        <span className="mx-2">/</span>        <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
           Organization
         </Link>
         <span className="mx-2">/</span>

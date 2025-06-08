@@ -133,8 +133,7 @@ const DepartmentJobsPage: React.FC = () => {
         <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
         <span className="mx-2">/</span>
         <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
-        <span className="mx-2">/</span>
-        <Link to={`/dashboard/organizations/${organizationId}/departments`} className="hover:text-gray-700">
+        <span className="mx-2">/</span>        <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
           {organization.name}
         </Link>
         <span className="mx-2">/</span>
@@ -143,9 +142,8 @@ const DepartmentJobsPage: React.FC = () => {
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <Link 
-            to={`/dashboard/organizations/${organizationId}/departments`}
+        <div className="flex items-center">          <Link 
+            to={`/dashboard/organizations/${organizationId}`}
             className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
