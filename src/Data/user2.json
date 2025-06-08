@@ -2,15 +2,15 @@
   "fileName": "user2_cv.docx",
   "fileSize": 234567,
   "extractedText": "Complete CV for Bob The Builder...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Bob The Builder",
       "email": "bob.builder@example.com",
       "phone": "234-567-8901",
       "location": "Fixham, UK",
       "website": "bobbuilds.com",
       "linkedIn": "linkedin.com/in/bobthebuilder",
-      "github": "github.com/bobbuilder"
+      "github": "github.com/bobbuilder",
+      "avatar": "https://randomuser.me/api/portraits/men/2.jpg"
     },
     "summary": "Dedicated and skilled Construction Manager and Software Developer, bridging the gap between physical and digital construction. Proven ability to manage teams and deliver projects on time.",
     "experience": [

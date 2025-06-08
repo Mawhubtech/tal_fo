@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Button from './Button';
-import ProfileSidePanel, { type PanelState } from './ProfileSidePanel';
-import type { UserStructuredData } from '../pages/ProfilePage';
+import ProfileSidePanel, { type PanelState, type UserStructuredData } from './ProfileSidePanel';
 
 // Mock user data for demonstration
 const mockUserData: UserStructuredData = {
@@ -11,7 +10,8 @@ const mockUserData: UserStructuredData = {
     email: "sarah.johnson@example.com",
     phone: "+1 (555) 123-4567",
     linkedIn: "https://linkedin.com/in/sarahjohnson",
-    github: "https://github.com/sarahjohnson"
+    github: "https://github.com/sarahjohnson",
+    avatar: "https://randomuser.me/api/portraits/women/5.jpg"
   },
   summary: "Experienced full-stack developer with 5+ years building scalable web applications using React, Node.js, and cloud technologies. Passionate about creating user-friendly interfaces and optimizing system performance.",
   experience: [
@@ -79,9 +79,44 @@ const mockUserData: UserStructuredData = {
       name: "Task Management App",
       description: "Mobile-first task management application with real-time collaboration",
       technologies: ["React Native", "Firebase", "TypeScript"],
-      date: "2022",
-      url: "https://github.com/sarahjohnson/task-manager"
+      date: "2022",      url: "https://github.com/sarahjohnson/task-manager"
     }
+  ],
+  certifications: [
+    {
+      name: "AWS Certified Solutions Architect",
+      issuer: "Amazon Web Services",
+      dateIssued: "2023-03-15",
+      expirationDate: "2026-03-15"
+    },
+    {
+      name: "Google Cloud Professional Developer",
+      issuer: "Google Cloud",
+      dateIssued: "2022-08-20",
+      expirationDate: "2024-08-20"
+    }
+  ],
+  awards: [
+    {
+      name: "Employee of the Year",
+      issuer: "TechCorp Inc.",
+      date: "2023-12-01",
+      description: "Recognized for outstanding technical leadership and team collaboration"
+    },
+    {
+      name: "Innovation Award",
+      issuer: "StartupXYZ",
+      date: "2021-09-15",
+      description: "For developing automated deployment system that improved efficiency"
+    }
+  ],
+  interests: [
+    "Machine Learning",
+    "Rock Climbing", 
+    "Photography",
+    "Sustainable Technology",
+    "Mentoring",
+    "Open Source Contributions"
   ]
 };
 
@@ -173,12 +208,19 @@ const ProfilePanelDemo: React.FC = () => {
 
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Sample Profile Card</h2>
-          <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-            <div className="flex items-center justify-between">
+          <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold">
-                  SJ
-                </div>
+                {mockUserData.personalInfo.avatar ? (
+                  <img 
+                    src={mockUserData.personalInfo.avatar} 
+                    alt={mockUserData.personalInfo.fullName}
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold">
+                    SJ
+                  </div>
+                )}
                 <div>
                   <h3 
                     className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-purple-600 transition-colors"

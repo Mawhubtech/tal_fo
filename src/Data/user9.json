@@ -2,15 +2,15 @@
   "fileName": "user9_strange_manuscript.docx",
   "fileSize": 450320,
   "extractedText": "Dr. Stephen Strange - Master of Mystic Arts and Quantum Computing...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Dr. Stephen Strange",
       "email": "stephen.strange@sanctum.example.com",
       "phone": "901-234-5678",
       "location": "New York, NY (Bleecker Street)",
       "website": "masterofthemysticarts.io",
       "linkedIn": "linkedin.com/in/drstephenstrange",
-      "github": "github.com/sorcerersupreme"
+      "github": "github.com/sorcerersupreme",
+      "avatar": "https://randomuser.me/api/portraits/men/9.jpg"
     },
     "summary": "Former neurosurgeon turned Master of the Mystic Arts, now exploring the intersection of magic and technology, particularly in quantum computing and alternate dimension data analysis. Seeking to apply unique insights to complex computational problems.",
     "experience": [

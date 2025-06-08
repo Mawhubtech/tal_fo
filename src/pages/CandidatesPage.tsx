@@ -10,6 +10,7 @@ interface PersonalInfo {
   website?: string;
   linkedIn?: string;
   github?: string;
+  avatar?: string;
 }
 
 interface Experience {
@@ -366,14 +367,21 @@ const CandidatesPage: React.FC = () => {
                 </thead>                <tbody className="bg-white divide-y divide-gray-100">
                   {paginatedCandidates.map((candidate) => (
                     <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                              <span className="text-sm font-medium text-purple-600">
-                                {candidate.structuredData.personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                              </span>
-                            </div>
-                          </div>                          <div className="ml-4">
+                      <td className="px-6 py-4 whitespace-nowrap">                        <div className="flex items-center">                          <div className="flex-shrink-0 h-10 w-10">
+                            {candidate.structuredData.personalInfo.avatar ? (
+                              <img 
+                                src={candidate.structuredData.personalInfo.avatar} 
+                                alt={candidate.structuredData.personalInfo.fullName}
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                <span className="text-sm font-medium text-purple-600">
+                                  {candidate.structuredData.personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </span>
+                              </div>
+                            )}
+                          </div><div className="ml-4">
                             <button 
                               className="text-sm font-semibold text-purple-600 hover:text-purple-800 hover:underline cursor-pointer transition-colors text-left"
                               onClick={() => handleOpenProfilePanel(candidate.structuredData)}

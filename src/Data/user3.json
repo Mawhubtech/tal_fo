@@ -2,15 +2,15 @@
   "fileName": "user3_profile.pdf",
   "fileSize": 345678,
   "extractedText": "Professional profile of Charles Xavier...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Charles Xavier",
       "email": "charles.xavier@example.com",
       "phone": "345-678-9012",
       "location": "Westchester, NY",
       "website": "xavierinstitute.edu",
       "linkedIn": "linkedin.com/in/professorx",
-      "github": "github.com/profx"
+      "github": "github.com/profx",
+      "avatar": "https://randomuser.me/api/portraits/men/3.jpg"
     },
     "summary": "Visionary leader and Full Stack Developer with expertise in AI and human-computer interaction. Dedicated to fostering talent and building a better future through technology and education.",
     "experience": [

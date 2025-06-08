@@ -2,15 +2,15 @@
   "fileName": "user8_parker_portfolio.html",
   "fileSize": 210980,
   "extractedText": "Peter Parker - Freelance Photographer and Web Developer...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Peter Parker",
       "email": "peter.parker@dailybugle.example.com",
       "phone": "890-123-4567",
       "location": "Queens, NY",
       "website": "spideyswebdev.com",
       "linkedIn": "linkedin.com/in/peterbparker",
-      "github": "github.com/webslinger"
+      "github": "github.com/webslinger",
+      "avatar": "https://randomuser.me/api/portraits/men/8.jpg"
     },
     "summary": "Resourceful and agile Full Stack Web Developer with a knack for creative problem-solving and a strong background in physics and chemistry. Passionate about building intuitive user experiences and helping small businesses get online. Also a freelance photographer.",
     "experience": [

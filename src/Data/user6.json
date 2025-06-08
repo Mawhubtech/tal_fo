@@ -2,15 +2,15 @@
   "fileName": "user6_banner_data.json",
   "fileSize": 280700,
   "extractedText": "Dr. Bruce Banner - Scientist, Developer, Specialist in high-energy data processing...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Dr. Bruce Banner",
       "email": "bruce.banner@example.com",
       "phone": "678-901-2345",
       "location": "Dayton, OH (formerly) / Remote",
       "website": "bannerhulk-research.org",
       "linkedIn": "linkedin.com/in/drbrucebanner",
-      "github": "github.com/greenbyte"
+      "github": "github.com/greenbyte",
+      "avatar": "https://randomuser.me/api/portraits/men/6.jpg"
     },
     "summary": "Accomplished Physicist and Software Developer with a unique expertise in handling massive datasets and high-stress computational environments. Seeking roles that leverage analytical skills and contribute to scientific advancement or large-scale data solutions.",
     "experience": [

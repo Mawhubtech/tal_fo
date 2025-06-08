@@ -2,15 +2,15 @@
   "fileName": "user10_maximoff_notes.txt",
   "fileSize": 300100,
   "extractedText": "Wanda Maximoff - Reality Warper and UI/UX Specialist...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Wanda Maximoff",
       "email": "w.maximoff@realitydesign.example.com",
       "phone": "012-345-6789",
       "location": "Westview, NJ (formerly) / Sokovia (formerly)",
       "website": "hexdesigns.io",
       "linkedIn": "linkedin.com/in/wandamaximoff (Conceptual)",
-      "github": "github.com/scarletdev"
+      "github": "github.com/scarletdev",
+      "avatar": "https://randomuser.me/api/portraits/women/10.jpg"
     },
     "summary": "Highly intuitive UI/UX Designer and Frontend Developer with a unique ability to reshape user experiences and digital realities. Passionate about creating emotionally resonant and immersive interfaces. Exploring the ethical implications of persuasive design.",
     "experience": [

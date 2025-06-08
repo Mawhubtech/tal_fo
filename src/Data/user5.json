@@ -2,15 +2,15 @@
   "fileName": "user5_stark_brief.pdf",
   "fileSize": 500600,
   "extractedText": "Tony Stark: Innovator, Philanthropist, Developer...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Anthony Stark",
       "email": "tony.stark@starkindustries.com",
       "phone": "567-890-1234",
       "location": "Malibu, CA / New York, NY",
       "website": "starkindustries.com",
       "linkedIn": "linkedin.com/in/tonystark",
-      "github": "github.com/ironman-dev"
+      "github": "github.com/ironman-dev",
+      "avatar": "https://randomuser.me/api/portraits/men/5.jpg"
     },
     "summary": "Genius inventor, billionaire, philanthropist, and hands-on Full Stack Engineer. Specializes in AI, robotics, and creating groundbreaking technologies that push the boundaries of science. Currently focused on sustainable energy solutions and advanced AI assistants.",
     "experience": [

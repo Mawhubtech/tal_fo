@@ -2,15 +2,15 @@
   "fileName": "user1_resume.pdf",
   "fileSize": 123456,
   "extractedText": "Full resume text for Alice Wonderland...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Alice Wonderland",
       "email": "alice.wonderland@example.com",
       "phone": "123-456-7890",
       "location": "New York, NY",
       "website": "alicein.dev",
       "linkedIn": "linkedin.com/in/alicew",
-      "github": "github.com/alicew"
+      "github": "github.com/alicew",
+      "avatar": "https://randomuser.me/api/portraits/women/1.jpg"
     },
     "summary": "Creative Software Engineer with 5 years of experience in developing whimsical web applications and exploring new technologies. Passionate about user experience and magical interfaces.",
     "experience": [

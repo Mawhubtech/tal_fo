@@ -2,15 +2,15 @@
   "fileName": "user4_resume_diana.pdf",
   "fileSize": 150200,
   "extractedText": "Resume of Diana Prince, focusing on diplomacy and software solutions...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Diana Prince",
       "email": "diana.prince@example.com",
       "phone": "456-789-0123",
       "location": "Washington D.C. / Themyscira",
       "website": "princeconsulting.org",
       "linkedIn": "linkedin.com/in/dianaprince",
-      "github": "github.com/wonderdev"
+      "github": "github.com/wonderdev",
+      "avatar": "https://randomuser.me/api/portraits/women/4.jpg"
     },
     "summary": "Experienced Diplomat and Software Engineer specializing in secure communication platforms and conflict resolution algorithms. Passionate about leveraging technology for global peace and understanding.",
     "experience": [

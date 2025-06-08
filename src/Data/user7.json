@@ -2,15 +2,15 @@
   "fileName": "user7_romanoff_intel.txt",
   "fileSize": 190450,
   "extractedText": "Natasha Romanoff - Cybersecurity expert and full-stack operative...",
-  "structuredData": {
-    "personalInfo": {
+  "structuredData": {    "personalInfo": {
       "fullName": "Natalia Romanova (Natasha Romanoff)",
       "email": "n.romanoff@shield-ops.example.com",
       "phone": "789-012-3456",
       "location": "Undisclosed (Global)",
       "website": "confidential-consulting.com",
       "linkedIn": "linkedin.com/in/natasharomanoff (Cover)",
-      "github": "github.com/blackwidowdev"
+      "github": "github.com/blackwidowdev",
+      "avatar": "https://randomuser.me/api/portraits/women/7.jpg"
     },
     "summary": "Highly adaptable Cybersecurity Analyst and Full Stack Developer with extensive experience in intelligence gathering, threat neutralization, and secure systems development. Excels in high-stakes environments requiring discretion and precision.",
     "experience": [
