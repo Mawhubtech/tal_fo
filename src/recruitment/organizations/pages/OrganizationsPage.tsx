@@ -1,78 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Building, Users, Briefcase, ChevronRight, Search } from 'lucide-react';
-
-interface Organization {
-  id: string;
-  name: string;
-  description: string;
-  departmentCount: number;
-  activeJobs: number;
-  totalEmployees: number;
-  logoUrl?: string;
-  industry: string;
-  location: string;
-}
-
-// Mock organization data
-const mockOrganizations: Organization[] = [
-  {
-    id: 'org-1',
-    name: 'TechCorp Solutions',
-    description: 'Leading technology solutions provider specializing in enterprise software development and cloud services.',
-    departmentCount: 8,
-    activeJobs: 12,
-    totalEmployees: 1250,
-    industry: 'Technology',
-    location: 'San Francisco, CA'
-  },
-  {
-    id: 'org-2',
-    name: 'FinanceFirst',
-    description: 'Innovative financial services company providing digital banking and investment solutions.',
-    departmentCount: 6,
-    activeJobs: 8,
-    totalEmployees: 650,
-    industry: 'Financial Services',
-    location: 'New York, NY'
-  },
-  {
-    id: 'org-3',
-    name: 'HealthcarePlus',
-    description: 'Comprehensive healthcare services provider with cutting-edge medical technology and patient care.',
-    departmentCount: 12,
-    activeJobs: 15,
-    totalEmployees: 2100,
-    industry: 'Healthcare',
-    location: 'Boston, MA'
-  },
-  {
-    id: 'org-4',
-    name: 'GreenEnergy Co',
-    description: 'Sustainable energy solutions company focused on renewable energy and environmental technology.',
-    departmentCount: 5,
-    activeJobs: 7,
-    totalEmployees: 320,
-    industry: 'Energy',
-    location: 'Austin, TX'
-  },
-  {
-    id: 'org-5',
-    name: 'EduTech Innovations',
-    description: 'Educational technology platform transforming learning experiences through innovative digital solutions.',
-    departmentCount: 7,
-    activeJobs: 9,
-    totalEmployees: 450,
-    industry: 'Education Technology',
-    location: 'Seattle, WA'
-  }
-];
+import { OrganizationService } from '../data/organizationService';
+import type { Organization } from '../data/types';
 
 const OrganizationsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState<string>('all');
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredOrganizations = mockOrganizations.filter(org => {
+  const organizationService = new OrganizationService();
+
+  useEffect(() => {
+    const loadOrganizations = async () => {
+      try {
+        const data = await organizationService.getAllOrganizations();
+        setOrganizations(data);
+      } catch (error) {
+        console.error('Failed to load organizations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrganizations();
+  }, []);
+
+  const filteredOrganizations = organizations.filter(org => {
     const matchesSearch = org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          org.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          org.location.toLowerCase().includes(searchTerm.toLowerCase());
@@ -82,14 +37,24 @@ const OrganizationsPage: React.FC = () => {
     return matchesSearch && matchesIndustry;
   });
 
-  const industries = [...new Set(mockOrganizations.map(org => org.industry))];
+  const industries = [...new Set(organizations.map(org => org.industry))];
 
   const totalStats = {
-    organizations: mockOrganizations.length,
-    departments: mockOrganizations.reduce((sum, org) => sum + org.departmentCount, 0),
-    activeJobs: mockOrganizations.reduce((sum, org) => sum + org.activeJobs, 0),
-    employees: mockOrganizations.reduce((sum, org) => sum + org.totalEmployees, 0)
+    organizations: organizations.length,
+    departments: organizations.reduce((sum, org) => sum + org.departmentCount, 0),
+    activeJobs: organizations.reduce((sum, org) => sum + org.activeJobs, 0),
+    employees: organizations.reduce((sum, org) => sum + org.totalEmployees, 0)
   };
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-gray-500 mt-4">Loading organizations...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

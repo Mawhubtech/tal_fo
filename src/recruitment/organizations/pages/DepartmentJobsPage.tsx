@@ -1,222 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Briefcase, MapPin, DollarSign, 
   Search, Grid3X3, List, ChevronRight 
 } from 'lucide-react';
-
-interface Job {
-  id: string;
-  title: string;
-  department: string;
-  location: string;
-  type: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
-  level: 'Entry Level' | 'Mid Level' | 'Senior Level' | 'Lead Level' | 'Executive';
-  salary: string;
-  status: 'Active' | 'Draft' | 'Closed';
-  applicants: number;
-  postedDate: string;
-  hiringManager: string;
-  description: string;
-  requirements: string[];
-  benefits: string[];
-}
-
-interface Organization {
-  id: string;
-  name: string;
-  industry: string;
-  location: string;
-}
-
-interface Department {
-  id: string;
-  name: string;
-  manager: string;
-  color: string;
-  icon: string;
-}
-
-// Mock data
-const mockOrganizations: Record<string, Organization> = {
-  'org-1': {
-    id: 'org-1',
-    name: 'TechCorp Solutions',
-    industry: 'Technology',
-    location: 'San Francisco, CA'
-  }
-};
-
-const mockDepartments: Record<string, Department> = {
-  'eng': {
-    id: 'eng',
-    name: 'Engineering',
-    manager: 'Sarah Johnson',
-    color: 'bg-blue-500',
-    icon: '💻'
-  },
-  'product': {
-    id: 'product',
-    name: 'Product',
-    manager: 'Michael Chen',
-    color: 'bg-green-500',
-    icon: '🎯'
-  },
-  'design': {
-    id: 'design',
-    name: 'Design',
-    manager: 'Emily Rodriguez',
-    color: 'bg-purple-500',
-    icon: '🎨'
-  },
-  'marketing': {
-    id: 'marketing',
-    name: 'Marketing',
-    manager: 'David Kim',
-    color: 'bg-pink-500',
-    icon: '📈'
-  }
-};
-
-// Mock jobs by department
-const mockJobsByDepartment: Record<string, Job[]> = {
-  'eng': [
-    {
-      id: 'job-101',
-      title: 'Senior Software Engineer - Frontend',
-      department: 'Engineering',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      level: 'Senior Level',
-      salary: '$140,000 - $180,000',
-      status: 'Active',
-      applicants: 24,
-      postedDate: '2025-01-15',
-      hiringManager: 'Sarah Johnson',
-      description: 'We are looking for a skilled Frontend Engineer to join our team and help build amazing user experiences.',
-      requirements: ['5+ years React experience', 'TypeScript proficiency', 'Modern CSS frameworks'],
-      benefits: ['Health insurance', 'Stock options', 'Flexible working hours']
-    },
-    {
-      id: 'job-102',
-      title: 'DevOps Engineer - Cloud Infrastructure',
-      department: 'Engineering',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      level: 'Mid Level',
-      salary: '$120,000 - $160,000',
-      status: 'Active',
-      applicants: 18,
-      postedDate: '2025-01-20',
-      hiringManager: 'Sarah Johnson',
-      description: 'Join our DevOps team to build and maintain scalable cloud infrastructure.',
-      requirements: ['AWS/GCP experience', 'Kubernetes', 'CI/CD pipelines'],
-      benefits: ['Health insurance', 'Stock options', 'Learning stipend']
-    },
-    {
-      id: 'job-103',
-      title: 'Backend Developer - Node.js',
-      department: 'Engineering',
-      location: 'Remote',
-      type: 'Full-time',
-      level: 'Mid Level',
-      salary: '$110,000 - $150,000',
-      status: 'Active',
-      applicants: 31,
-      postedDate: '2025-01-10',
-      hiringManager: 'Sarah Johnson',
-      description: 'We need a talented Backend Developer to help scale our API infrastructure.',
-      requirements: ['Node.js expertise', 'Database design', 'API development'],
-      benefits: ['Remote work', 'Health insurance', 'Professional development']
-    }
-  ],
-  'product': [
-    {
-      id: 'job-201',
-      title: 'Product Manager - Mobile Apps',
-      department: 'Product',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      level: 'Mid Level',
-      salary: '$130,000 - $170,000',
-      status: 'Active',
-      applicants: 15,
-      postedDate: '2025-01-18',
-      hiringManager: 'Michael Chen',
-      description: 'Lead product strategy and development for our mobile applications.',
-      requirements: ['3+ years PM experience', 'Mobile product experience', 'Data-driven approach'],
-      benefits: ['Stock options', 'Health insurance', 'Flexible schedule']
-    },
-    {
-      id: 'job-202',
-      title: 'Senior Product Analyst',
-      department: 'Product',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      level: 'Senior Level',
-      salary: '$120,000 - $160,000',
-      status: 'Draft',
-      applicants: 0,
-      postedDate: '2025-01-22',
-      hiringManager: 'Michael Chen',
-      description: 'Analyze product metrics and drive data-informed product decisions.',
-      requirements: ['SQL proficiency', 'Analytics tools', 'Statistical analysis'],
-      benefits: ['Health insurance', 'Stock options', 'Learning budget']
-    }
-  ],
-  'design': [
-    {
-      id: 'job-301',
-      title: 'Senior UX Designer',
-      department: 'Design',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      level: 'Senior Level',
-      salary: '$115,000 - $155,000',
-      status: 'Active',
-      applicants: 12,
-      postedDate: '2025-01-12',
-      hiringManager: 'Emily Rodriguez',
-      description: 'Create exceptional user experiences for our web and mobile products.',
-      requirements: ['5+ years UX design', 'Figma proficiency', 'User research experience'],
-      benefits: ['Creative freedom', 'Health insurance', 'Design conference budget']
-    },
-    {
-      id: 'job-302',
-      title: 'Lead Product Designer',
-      department: 'Design',
-      location: 'Hybrid',
-      type: 'Full-time',
-      level: 'Lead Level',
-      salary: '$140,000 - $180,000',
-      status: 'Active',
-      applicants: 8,
-      postedDate: '2025-01-25',
-      hiringManager: 'Emily Rodriguez',
-      description: 'Lead design vision and mentor a team of talented designers.',
-      requirements: ['7+ years design experience', 'Team leadership', 'Design systems'],
-      benefits: ['Leadership development', 'Stock options', 'Flexible work']
-    }
-  ],
-  'marketing': [
-    {
-      id: 'job-401',
-      title: 'Marketing Manager - Growth',
-      department: 'Marketing',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      level: 'Mid Level',
-      salary: '$95,000 - $130,000',
-      status: 'Active',
-      applicants: 22,
-      postedDate: '2025-01-14',
-      hiringManager: 'David Kim',
-      description: 'Drive user acquisition and growth marketing initiatives.',
-      requirements: ['Digital marketing experience', 'Analytics proficiency', 'A/B testing'],
-      benefits: ['Marketing budget', 'Health insurance', 'Performance bonuses']
-    }
-  ]
-};
+import { OrganizationService, DepartmentService, JobService } from '../data';
+import type { Job, Organization, Department } from '../data';
 
 const DepartmentJobsPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ organizationId: string; departmentId: string }>();
@@ -225,41 +14,107 @@ const DepartmentJobsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<string>('all');
+  
+  // State for data
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [department, setDepartment] = useState<Department | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const organizationService = new OrganizationService();
+  const departmentService = new DepartmentService();
+  const jobService = new JobService();
 
-  const organization = organizationId ? mockOrganizations[organizationId] : null;
-  const department = departmentId ? mockDepartments[departmentId] : null;
-  const jobs = departmentId ? (mockJobsByDepartment[departmentId] || []) : [];
+  // Load data
+  useEffect(() => {
+    const loadData = async () => {
+      if (!organizationId || !departmentId) {
+        setError('Missing organization or department ID');
+        setLoading(false);
+        return;
+      }
 
+      try {
+        setLoading(true);
+          // Load organization
+        const orgData = await organizationService.getOrganizationById(organizationId);
+        setOrganization(orgData);
+        
+        // Load department
+        const deptData = await departmentService.getDepartmentById(organizationId, departmentId);
+        setDepartment(deptData);
+
+        // Load jobs for department
+        const jobsData = await jobService.getJobsByDepartment(departmentId);
+        setJobs(jobsData);
+        
+        setError(null);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [organizationId, departmentId]);
+  // Filter jobs
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
-    const matchesType = typeFilter === 'all' || job.type === typeFilter;
-    const matchesLevel = levelFilter === 'all' || job.level === levelFilter;
+    const matchesType = typeFilter === 'all' || job.employmentType === typeFilter;
+    const matchesLevel = levelFilter === 'all' || job.experience === levelFilter;
     
     return matchesSearch && matchesStatus && matchesType && matchesLevel;
   });
 
+  const formatSalary = (salary: string) => {
+    return salary || 'Salary not specified';
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'Active':
+      case 'active':
         return 'bg-green-100 text-green-800';
-      case 'Draft':
+      case 'draft':
         return 'bg-yellow-100 text-yellow-800';
-      case 'Closed':
+      case 'paused':
+        return 'bg-orange-100 text-orange-800';
+      case 'closed':
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  if (!organization || !department) {
+  const formatStatus = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading jobs...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !organization || !department) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
           <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Page not found</h3>
-          <p className="text-gray-500 mb-4">The organization or department you're looking for doesn't exist.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {error || 'Page not found'}
+          </h3>
+          <p className="text-gray-500 mb-4">
+            {error || "The organization or department you're looking for doesn't exist."}
+          </p>
           <Link 
             to="/dashboard/organizations" 
             className="text-purple-600 hover:text-purple-700 font-medium"
@@ -324,12 +179,12 @@ const DepartmentJobsPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <div className={`w-12 h-12 ${department.color} rounded-lg flex items-center justify-center text-white text-xl`}>
-              {department.icon}
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Briefcase className="w-6 h-6 text-purple-600" />
             </div>
             <div className="ml-4">
               <h2 className="text-lg font-semibold text-gray-900">{department.name} Department</h2>
-              <p className="text-gray-600">Manager: {department.manager}</p>
+              <p className="text-gray-600">{department.description}</p>
             </div>
           </div>
           <div className="text-right">
@@ -364,9 +219,10 @@ const DepartmentJobsPage: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Draft">Draft</option>
-              <option value="Closed">Closed</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="paused">Paused</option>
+              <option value="closed">Closed</option>
             </select>
           </div>
 
@@ -378,10 +234,10 @@ const DepartmentJobsPage: React.FC = () => {
               onChange={(e) => setTypeFilter(e.target.value)}
             >
               <option value="all">All Types</option>
-              <option value="Full-time">Full-time</option>
-              <option value="Part-time">Part-time</option>
-              <option value="Contract">Contract</option>
-              <option value="Internship">Internship</option>
+              <option value="full-time">Full-time</option>
+              <option value="part-time">Part-time</option>
+              <option value="contract">Contract</option>
+              <option value="internship">Internship</option>
             </select>
           </div>
 
@@ -393,11 +249,11 @@ const DepartmentJobsPage: React.FC = () => {
               onChange={(e) => setLevelFilter(e.target.value)}
             >
               <option value="all">All Levels</option>
-              <option value="Entry Level">Entry Level</option>
-              <option value="Mid Level">Mid Level</option>
-              <option value="Senior Level">Senior Level</option>
-              <option value="Lead Level">Lead Level</option>
-              <option value="Executive">Executive</option>
+              <option value="entry">Entry Level</option>
+              <option value="mid">Mid Level</option>
+              <option value="senior">Senior Level</option>
+              <option value="lead">Lead Level</option>
+              <option value="executive">Executive</option>
             </select>
           </div>
         </div>
@@ -419,11 +275,11 @@ const DepartmentJobsPage: React.FC = () => {
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <DollarSign className="w-4 h-4 mr-1" />
-                      {job.salary}
+                      {formatSalary(job.salary)}
                     </div>
                   </div>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(job.status)}`}>
-                    {job.status}
+                    {formatStatus(job.status)}
                   </span>
                 </div>
 
@@ -431,15 +287,15 @@ const DepartmentJobsPage: React.FC = () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Type:</span>
-                    <span className="font-medium">{job.type}</span>
+                    <span className="font-medium capitalize">{job.employmentType.replace('-', ' ')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Level:</span>
-                    <span className="font-medium">{job.level}</span>
+                    <span className="font-medium capitalize">{job.experience} Level</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Applicants:</span>
-                    <span className="font-medium">{job.applicants}</span>
+                    <span className="font-medium">{job.applicantCount || 0}</span>
                   </div>
                 </div>
 
@@ -491,20 +347,22 @@ const DepartmentJobsPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{job.title}</div>
-                        <div className="text-sm text-gray-500">{job.salary}</div>
+                        <div className="text-sm text-gray-500">{formatSalary(job.salary)}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{job.type} • {job.level}</div>
+                      <div className="text-sm text-gray-900 capitalize">
+                        {job.employmentType.replace('-', ' ')} • {job.experience} Level
+                      </div>
                       <div className="text-sm text-gray-500">{job.location}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(job.status)}`}>
-                        {job.status}
+                        {formatStatus(job.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {job.applicants}
+                      {job.applicantCount || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(job.postedDate).toLocaleDateString()}
@@ -526,11 +384,22 @@ const DepartmentJobsPage: React.FC = () => {
       )}
 
       {/* Empty State */}
-      {filteredJobs.length === 0 && (
+      {filteredJobs.length === 0 && !loading && (
         <div className="text-center py-12">
           <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+          <p className="text-gray-500 mb-4">
+            {jobs.length === 0 
+              ? "This department doesn't have any jobs yet." 
+              : "Try adjusting your search or filter criteria."
+            }
+          </p>
+          <Link
+            to={`/dashboard/organizations/${organizationId}/create-job`}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Create New Job
+          </Link>
         </div>
       )}
     </div>

@@ -1,201 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Building, Users, ChevronRight, Search, ArrowLeft } from 'lucide-react';
-
-interface Department {
-  id: string;
-  name: string;
-  description: string;
-  manager: string;
-  activeJobs: number;
-  totalEmployees: number;
-  color: string;
-  icon: string;
-}
-
-interface Organization {
-  id: string;
-  name: string;
-  industry: string;
-  location: string;
-}
-
-// Mock organizations data
-const mockOrganizations: Record<string, Organization> = {
-  'org-1': {
-    id: 'org-1',
-    name: 'TechCorp Solutions',
-    industry: 'Technology',
-    location: 'San Francisco, CA'
-  },
-  'org-2': {
-    id: 'org-2',
-    name: 'FinanceFirst',
-    industry: 'Financial Services',
-    location: 'New York, NY'
-  },
-  'org-3': {
-    id: 'org-3',
-    name: 'HealthcarePlus',
-    industry: 'Healthcare',
-    location: 'Boston, MA'
-  }
-};
-
-// Mock departments data by organization
-const mockDepartmentsByOrg: Record<string, Department[]> = {
-  'org-1': [
-    {
-      id: 'eng',
-      name: 'Engineering',
-      description: 'Software development, DevOps, and technical infrastructure teams.',
-      manager: 'Sarah Johnson',
-      activeJobs: 8,
-      totalEmployees: 450,
-      color: 'bg-blue-500',
-      icon: '💻'
-    },
-    {
-      id: 'product',
-      name: 'Product',
-      description: 'Product management, strategy, and user experience design.',
-      manager: 'Michael Chen',
-      activeJobs: 3,
-      totalEmployees: 85,
-      color: 'bg-green-500',
-      icon: '🎯'
-    },
-    {
-      id: 'design',
-      name: 'Design',
-      description: 'UI/UX design, visual design, and design systems.',
-      manager: 'Emily Rodriguez',
-      activeJobs: 2,
-      totalEmployees: 45,
-      color: 'bg-purple-500',
-      icon: '🎨'
-    },
-    {
-      id: 'marketing',
-      name: 'Marketing',
-      description: 'Digital marketing, brand management, and growth strategies.',
-      manager: 'David Kim',
-      activeJobs: 4,
-      totalEmployees: 120,
-      color: 'bg-pink-500',
-      icon: '📈'
-    },
-    {
-      id: 'sales',
-      name: 'Sales',
-      description: 'Business development, account management, and revenue growth.',
-      manager: 'Lisa Wang',
-      activeJobs: 3,
-      totalEmployees: 95,
-      color: 'bg-orange-500',
-      icon: '💼'
-    },
-    {
-      id: 'hr',
-      name: 'Human Resources',
-      description: 'Talent acquisition, employee relations, and organizational development.',
-      manager: 'James Wilson',
-      activeJobs: 2,
-      totalEmployees: 35,
-      color: 'bg-teal-500',
-      icon: '👥'
-    },
-    {
-      id: 'finance',
-      name: 'Finance',
-      description: 'Financial planning, accounting, and corporate finance.',
-      manager: 'Maria Garcia',
-      activeJobs: 1,
-      totalEmployees: 28,
-      color: 'bg-indigo-500',
-      icon: '💰'
-    },
-    {
-      id: 'operations',
-      name: 'Operations',
-      description: 'Business operations, IT support, and administrative functions.',
-      manager: 'Robert Taylor',
-      activeJobs: 2,
-      totalEmployees: 65,
-      color: 'bg-gray-500',
-      icon: '⚙️'
-    }
-  ],
-  'org-2': [
-    {
-      id: 'eng',
-      name: 'Engineering',
-      description: 'Financial technology development and platform engineering.',
-      manager: 'Alex Thompson',
-      activeJobs: 5,
-      totalEmployees: 180,
-      color: 'bg-blue-500',
-      icon: '💻'
-    },
-    {
-      id: 'product',
-      name: 'Product',
-      description: 'Financial product management and strategy.',
-      manager: 'Jennifer Lee',
-      activeJobs: 2,
-      totalEmployees: 45,
-      color: 'bg-green-500',
-      icon: '🎯'
-    },
-    {
-      id: 'compliance',
-      name: 'Compliance',
-      description: 'Regulatory compliance and risk management.',
-      manager: 'Thomas Brown',
-      activeJobs: 3,
-      totalEmployees: 55,
-      color: 'bg-red-500',
-      icon: '⚖️'
-    },
-    {
-      id: 'sales',
-      name: 'Sales',
-      description: 'Financial services sales and client relationship management.',
-      manager: 'Amanda Davis',
-      activeJobs: 4,
-      totalEmployees: 85,
-      color: 'bg-orange-500',
-      icon: '💼'
-    },
-    {
-      id: 'finance',
-      name: 'Finance',
-      description: 'Corporate finance and financial planning & analysis.',
-      manager: 'Kevin Martinez',
-      activeJobs: 2,
-      totalEmployees: 35,
-      color: 'bg-indigo-500',
-      icon: '💰'
-    },
-    {
-      id: 'operations',
-      name: 'Operations',
-      description: 'Financial operations and customer support.',
-      manager: 'Rachel Kim',
-      activeJobs: 3,
-      totalEmployees: 75,
-      color: 'bg-gray-500',
-      icon: '⚙️'
-    }
-  ]
-};
+import { OrganizationService, DepartmentService } from '../data';
+import type { Department, Organization } from '../data';
 
 const DepartmentsPage: React.FC = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
   const [searchTerm, setSearchTerm] = useState('');
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const organization = organizationId ? mockOrganizations[organizationId] : null;
-  const departments = organizationId ? (mockDepartmentsByOrg[organizationId] || []) : [];
+  const organizationService = new OrganizationService();
+  const departmentService = new DepartmentService();
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!organizationId) return;
+
+      try {
+        const [orgData, deptData] = await Promise.all([
+          organizationService.getOrganizationById(organizationId),
+          departmentService.getDepartmentsByOrganization(organizationId)
+        ]);
+
+        setOrganization(orgData);
+        setDepartments(deptData);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [organizationId]);
 
   const filteredDepartments = departments.filter(dept =>
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -208,6 +47,17 @@ const DepartmentsPage: React.FC = () => {
     activeJobs: departments.reduce((sum, dept) => sum + dept.activeJobs, 0),
     totalEmployees: departments.reduce((sum, dept) => sum + dept.totalEmployees, 0)
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-gray-500 mt-4">Loading departments...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!organization) {
     return (
