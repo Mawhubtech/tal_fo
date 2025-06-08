@@ -51,16 +51,21 @@ const SystemSettingsPage: React.FC = () => {
       )}
     </button>
   );
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
-          <p className="text-gray-600">Configure system-wide settings and preferences</p>
+    <div className="space-y-6">
+      {/* Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="bg-white border border-gray-300 rounded-lg p-2">
+            <Shield className="h-5 w-5 text-gray-600" />
+          </div>
+          <span className="text-sm text-gray-600">Last updated: 2 hours ago</span>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex gap-3">
+          <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Backup Settings
+          </button>
           <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
             <Save className="h-4 w-4 mr-2" />
             Save All Changes
@@ -68,8 +73,7 @@ const SystemSettingsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-6">
-        {/* Sidebar Navigation */}
+      <div className="flex gap-6">{/* Sidebar Navigation */}
         <div className="w-64 bg-white rounded-lg border p-4">
           <nav className="space-y-2">
             {sections.map((section) => {

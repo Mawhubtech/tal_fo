@@ -205,6 +205,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               {isExpanded && <ChevronDown className={`w-4 h-4 transform transition-transform ${openSections['admin'] ? 'rotate-180' : ''}`} />}
             </button>            {openSections['admin'] && isExpanded && (
               <nav className="pl-8 space-y-1 py-1">
+                <Link to="/dashboard/admin" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
+                  <LayoutGrid className="w-3 h-3 mr-2" />
+                  Overview
+                </Link>
                 <Link to="/dashboard/admin/user-management" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
                   <Users className="w-3 h-3 mr-2" />
                   User Management

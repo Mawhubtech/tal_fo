@@ -151,21 +151,58 @@ const CompanyManagementPage: React.FC = () => {
   };
 
   const uniqueIndustries = [...new Set(companies.map(c => c.industry))];
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Company Management</h1>
-          <p className="text-gray-600">Manage client companies and their hiring requirements</p>
+    <div className="space-y-6">
+      {/* Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex-1 flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search companies by name, industry, or location..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-3">
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={industryFilter}
+              onChange={(e) => setIndustryFilter(e.target.value)}
+            >
+              <option value="all">All Industries</option>
+              {uniqueIndustries.map(industry => (
+                <option key={industry} value={industry}>{industry}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={sizeFilter}
+              onChange={(e) => setSizeFilter(e.target.value)}
+            >
+              <option value="all">All Sizes</option>
+              <option value="Small">Small (10-50)</option>
+              <option value="Medium">Medium (50-200)</option>
+              <option value="Large">Large (1000+)</option>
+            </select>
+          </div>
         </div>
-        <div className="flex space-x-3">
-          <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Company
-          </button>
-        </div>
+        <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Company
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -194,55 +231,7 @@ const CompanyManagementPage: React.FC = () => {
           <div className="text-2xl font-bold text-purple-600">{stats.totalHires}</div>
           <div className="text-sm text-gray-600">Total Hires</div>
         </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search companies by name, industry, or location..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-3">
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="suspended">Suspended</option>
-          </select>
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={industryFilter}
-            onChange={(e) => setIndustryFilter(e.target.value)}
-          >
-            <option value="all">All Industries</option>
-            {uniqueIndustries.map(industry => (
-              <option key={industry} value={industry}>{industry}</option>
-            ))}
-          </select>
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={sizeFilter}
-            onChange={(e) => setSizeFilter(e.target.value)}
-          >
-            <option value="all">All Sizes</option>
-            <option value="Small">Small (10-50)</option>
-            <option value="Medium">Medium (100-500)</option>
-            <option value="Large">Large (1000+)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Companies Table */}
+      </div>      {/* Companies Table */}
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">

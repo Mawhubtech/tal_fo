@@ -170,16 +170,48 @@ const CandidateProfilesPage: React.FC = () => {
     hired: candidates.filter(c => c.status === 'hired').length,
     rejected: candidates.filter(c => c.status === 'rejected').length
   };
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Candidate Profiles</h1>
-          <p className="text-gray-600">Manage job applicant profiles and candidate pipeline</p>
+    <div className="space-y-6">
+      {/* Action Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex-1 flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, email, position, or skills..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-3">
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="interviewing">Interviewing</option>
+              <option value="hired">Hired</option>
+              <option value="rejected">Rejected</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={positionFilter}
+              onChange={(e) => setPositionFilter(e.target.value)}
+            >
+              <option value="all">All Positions</option>
+              <option value="Developer">Developer</option>
+              <option value="Designer">Designer</option>
+              <option value="Manager">Manager</option>
+              <option value="Engineer">Engineer</option>
+            </select>
+          </div>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex gap-3">
           <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
             <Upload className="h-4 w-4 mr-2" />
             Import
@@ -217,48 +249,7 @@ const CandidateProfilesPage: React.FC = () => {
           <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
           <div className="text-sm text-gray-600">Rejected</div>
         </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search candidates by name, email, position, or skills..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-3">
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="interviewing">Interviewing</option>
-            <option value="hired">Hired</option>
-            <option value="rejected">Rejected</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={positionFilter}
-            onChange={(e) => setPositionFilter(e.target.value)}
-          >
-            <option value="all">All Positions</option>
-            <option value="Developer">Developer</option>
-            <option value="Designer">Designer</option>
-            <option value="Engineer">Engineer</option>
-            <option value="Manager">Manager</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Candidates Table */}
+      </div>      {/* Candidates Table */}
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">

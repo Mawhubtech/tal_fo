@@ -19,6 +19,8 @@ import InterviewsPage from './ats/InterviewsPage'; // Import InterviewsPage
 import ReportsPage from './ats/ReportsPage'; // Import ReportsPage
 
 // Admin Pages
+import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
+import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
 import UserManagementPage from './admin/UserManagementPage'; // Import UserManagementPage
 import CandidateProfilesPage from './admin/CandidateProfilesPage'; // Import CandidateProfilesPage
 import CompanyManagementPage from './admin/CompanyManagementPage'; // Import CompanyManagementPage
@@ -69,15 +71,17 @@ const Dashboard: React.FC = () => {
             <Route path="ats/all-candidates" element={<AllCandidatesPage />} />
             <Route path="ats/tasks" element={<TasksPage />} />
             <Route path="ats/interviews" element={<InterviewsPage />} />
-            <Route path="ats/reports" element={<ReportsPage />} />
-            
-            {/* Admin Pages */}
-            <Route path="admin/user-management" element={<UserManagementPage />} />
-            <Route path="admin/candidate-profiles" element={<CandidateProfilesPage />} />
-            <Route path="admin/company-management" element={<CompanyManagementPage />} />
-            <Route path="admin/job-board-config" element={<JobBoardConfigPage />} />
-            <Route path="admin/analytics" element={<AnalyticsPage />} />
-            <Route path="admin/system-settings" element={<SystemSettingsPage />} /></Routes>
+            <Route path="ats/reports" element={<ReportsPage />} />            
+            {/* Admin Pages with Layout */}
+            <Route path="admin" element={<AdminLayout />}>
+              <Route index element={<AdminOverviewPage />} />
+              <Route path="user-management" element={<UserManagementPage />} />
+              <Route path="candidate-profiles" element={<CandidateProfilesPage />} />
+              <Route path="company-management" element={<CompanyManagementPage />} />
+              <Route path="job-board-config" element={<JobBoardConfigPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="system-settings" element={<SystemSettingsPage />} />
+            </Route></Routes>
 
         </main>
       </div>
