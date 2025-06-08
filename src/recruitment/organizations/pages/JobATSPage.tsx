@@ -4,7 +4,7 @@ import {
   ArrowLeft, Briefcase, Users, MoreHorizontal, Search, Filter, Plus,
   Calendar, Mail, Phone, Target, Eye, UserPlus, MessageSquare,
   Clock, CheckCircle, BarChart3, Video, MapPin, AlertCircle,
-  TrendingUp, PieChart, Download
+  TrendingUp, PieChart, Download, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { JobService } from '../data';
 import type { Job as JobType } from '../data';
@@ -302,6 +302,11 @@ const JobATSPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'score'>('date');
   const [job, setJob] = useState<JobType | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Calendar view states
+  const [tasksView, setTasksView] = useState<'list' | 'calendar'>('list');
+  const [interviewsView, setInterviewsView] = useState<'list' | 'calendar'>('list');
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const jobService = new JobService();
 
@@ -377,6 +382,207 @@ const JobATSPage: React.FC = () => {
     if (score >= 4.0) return 'text-yellow-600';
     return 'text-red-600';
   };
+
+  // Calendar helper functions
+  const getCalendarDays = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    const days = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+    
+    return days;
+  };
+
+  const getItemsForDate = (date: Date, items: any[]) => {
+    return items.filter(item => {
+      const itemDate = new Date(item.dueDate || item.date);
+      return itemDate.toDateString() === date.toDateString();
+    });
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const CalendarHeader = () => (
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-lg font-semibold text-gray-900">
+        {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+      </h3>
+      <div className="flex items-center space-x-2">
+        <button
+          onClick={() => navigateMonth('prev')}
+          className="p-2 hover:bg-gray-100 rounded-lg"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setCurrentDate(new Date())}
+          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+        >
+          Today
+        </button>
+        <button
+          onClick={() => navigateMonth('next')}
+          className="p-2 hover:bg-gray-100 rounded-lg"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const TasksCalendarView = () => {
+    const calendarDays = getCalendarDays(currentDate);
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return (
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <CalendarHeader />
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {weekDays.map(day => (
+            <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {calendarDays.map((day, index) => {
+            if (!day) {
+              return <div key={index} className="p-2 h-24"></div>;
+            }
+            
+            const dayTasks = getItemsForDate(day, allTasks);
+            const isToday = day.toDateString() === new Date().toDateString();
+            
+            return (
+              <div
+                key={index}
+                className={`p-2 h-24 border border-gray-100 hover:bg-gray-50 ${
+                  isToday ? 'bg-blue-50 border-blue-200' : ''
+                }`}
+              >
+                <div className={`text-sm font-medium mb-1 ${
+                  isToday ? 'text-blue-600' : 'text-gray-900'
+                }`}>
+                  {day.getDate()}
+                </div>
+                <div className="space-y-1">
+                  {dayTasks.slice(0, 2).map(task => (
+                    <div
+                      key={task.id}
+                      className={`text-xs p-1 rounded truncate ${
+                        task.priority === 'High' ? 'bg-red-100 text-red-800' :
+                        task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}
+                      title={task.title}
+                    >
+                      {task.title}
+                    </div>
+                  ))}
+                  {dayTasks.length > 2 && (
+                    <div className="text-xs text-gray-500">
+                      +{dayTasks.length - 2} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const InterviewsCalendarView = () => {
+    const calendarDays = getCalendarDays(currentDate);
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return (
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <CalendarHeader />
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {weekDays.map(day => (
+            <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {calendarDays.map((day, index) => {
+            if (!day) {
+              return <div key={index} className="p-2 h-24"></div>;
+            }
+            
+            const dayInterviews = getItemsForDate(day, allInterviews);
+            const isToday = day.toDateString() === new Date().toDateString();
+            
+            return (
+              <div
+                key={index}
+                className={`p-2 h-24 border border-gray-100 hover:bg-gray-50 ${
+                  isToday ? 'bg-blue-50 border-blue-200' : ''
+                }`}
+              >
+                <div className={`text-sm font-medium mb-1 ${
+                  isToday ? 'text-blue-600' : 'text-gray-900'
+                }`}>
+                  {day.getDate()}
+                </div>
+                <div className="space-y-1">
+                  {dayInterviews.slice(0, 2).map(interview => (
+                    <div
+                      key={interview.id}
+                      className={`text-xs p-1 rounded truncate ${
+                        interview.status === 'Scheduled' ? 'bg-blue-100 text-blue-800' :
+                        interview.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}
+                      title={`${interview.candidateName} - ${interview.interviewType}`}
+                    >
+                      {new Date(interview.date).toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit' 
+                      })} {interview.candidateName}
+                    </div>
+                  ))}
+                  {dayInterviews.length > 2 && (
+                    <div className="text-xs text-gray-500">
+                      +{dayInterviews.length - 2} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
@@ -674,9 +880,7 @@ const JobATSPage: React.FC = () => {
             </div>
           </div>
         </>
-      )}
-
-      {/* Tasks Tab */}
+      )}      {/* Tasks Tab */}
       {activeTab === 'tasks' && (
         <div className="space-y-6">
           {/* Task Actions */}
@@ -690,74 +894,102 @@ const JobATSPage: React.FC = () => {
                 <Filter className="w-4 h-4 mr-2" />
                 Filter
               </button>
+              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setTasksView('list')}
+                  className={`px-3 py-2 text-sm flex items-center ${
+                    tasksView === 'list' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Users className="w-4 h-4 mr-1" />
+                  List
+                </button>
+                <button
+                  onClick={() => setTasksView('calendar')}
+                  className={`px-3 py-2 text-sm flex items-center ${
+                    tasksView === 'calendar' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Calendar
+                </button>
+              </div>
             </div>
             <div className="text-sm text-gray-500">
               {allTasks.filter(t => t.status === 'Pending').length} pending • {allTasks.filter(t => t.status === 'In Progress').length} in progress
             </div>
           </div>
 
-          {/* Tasks List */}
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Tasks & Action Items</h3>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {allTasks.map((task) => (
-                <div key={task.id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h4 className="font-medium text-gray-900">{task.title}</h4>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          task.priority === 'High' ? 'bg-red-100 text-red-800' :
-                          task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {task.priority}
-                        </span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          task.status === 'Pending' ? 'bg-gray-100 text-gray-800' :
-                          task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {task.status}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 text-sm mb-2">{task.description}</p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <Users className="w-4 h-4 mr-1" />
-                          <span>Assigned to {task.assignedTo}</span>
+          {/* Tasks Content */}
+          {tasksView === 'list' ? (
+            /* Tasks List */
+            <div className="bg-white rounded-lg shadow-sm border">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Tasks & Action Items</h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {allTasks.map((task) => (
+                  <div key={task.id} className="px-6 py-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h4 className="font-medium text-gray-900">{task.title}</h4>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            task.priority === 'High' ? 'bg-red-100 text-red-800' :
+                            task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {task.priority}
+                          </span>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            task.status === 'Pending' ? 'bg-gray-100 text-gray-800' :
+                            task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {task.status}
+                          </span>
                         </div>
-                        <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          <span>Due {new Date(task.dueDate).toLocaleDateString()}</span>
-                        </div>
-                        {task.candidateName && (
+                        <p className="text-gray-600 text-sm mb-2">{task.description}</p>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
                           <div className="flex items-center">
-                            <Target className="w-4 h-4 mr-1" />
-                            <span>For {task.candidateName}</span>
+                            <Users className="w-4 h-4 mr-1" />
+                            <span>Assigned to {task.assignedTo}</span>
                           </div>
-                        )}
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            <span>Due {new Date(task.dueDate).toLocaleDateString()}</span>
+                          </div>
+                          {task.candidateName && (
+                            <div className="flex items-center">
+                              <Target className="w-4 h-4 mr-1" />
+                              <span>For {task.candidateName}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center space-x-2 ml-4">
+                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Tasks Calendar */
+            <TasksCalendarView />
+          )}
         </div>
-      )}
-
-      {/* Interviews Tab */}
+      )}      {/* Interviews Tab */}
       {activeTab === 'interviews' && (
         <div className="space-y-6">
           {/* Interview Actions */}
@@ -768,82 +1000,129 @@ const JobATSPage: React.FC = () => {
                 Schedule Interview
               </button>
               <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center">
-                <Calendar className="w-4 h-4 mr-2" />
-                Calendar View
+                <Filter className="w-4 h-4 mr-2" />
+                Filter
               </button>
+              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setInterviewsView('list')}
+                  className={`px-3 py-2 text-sm flex items-center ${
+                    interviewsView === 'list' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Users className="w-4 h-4 mr-1" />
+                  List
+                </button>
+                <button
+                  onClick={() => setInterviewsView('calendar')}
+                  className={`px-3 py-2 text-sm flex items-center ${
+                    interviewsView === 'calendar' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Calendar
+                </button>
+              </div>
             </div>
             <div className="text-sm text-gray-500">
               {allInterviews.filter(i => i.status === 'Scheduled').length} scheduled • {allInterviews.filter(i => i.status === 'Completed').length} completed
             </div>
           </div>
 
-          {/* Interviews List */}
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Interview Schedule</h3>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {allInterviews.map((interview) => (
-                <div key={interview.id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h4 className="font-medium text-gray-900">{interview.title}</h4>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          interview.status === 'Scheduled' ? 'bg-blue-100 text-blue-800' :
-                          interview.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {interview.status}
-                        </span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          interview.format === 'Video Call' ? 'bg-purple-100 text-purple-800' :
-                          interview.format === 'Phone' ? 'bg-green-100 text-green-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {interview.format}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 text-sm mb-2">With {interview.candidateName}</p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          <span>{new Date(interview.scheduledTime).toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <Users className="w-4 h-4 mr-1" />
-                          <span>Interviewer: {interview.interviewer}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <Clock className="w-4 h-4 mr-1" />
-                          <span>{interview.duration} min</span>
-                        </div>
-                        {interview.location && (
-                          <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            <span>{interview.location}</span>
+          {/* Interviews Content */}
+          {interviewsView === 'list' ? (
+            /* Interviews List */
+            <div className="bg-white rounded-lg shadow-sm border">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Interview Schedule</h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {allInterviews.map((interview) => (
+                  <div key={interview.id} className="px-6 py-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <img 
+                          src={interview.candidateAvatar} 
+                          alt={interview.candidateName}
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h4 className="font-medium text-gray-900">{interview.candidateName}</h4>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              interview.status === 'Scheduled' ? 'bg-blue-100 text-blue-800' :
+                              interview.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {interview.status}
+                            </span>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              interview.format === 'Video' ? 'bg-purple-100 text-purple-800' :
+                              interview.format === 'Phone' ? 'bg-green-100 text-green-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {interview.format}
+                            </span>
                           </div>
-                        )}
+                          <p className="text-gray-600 text-sm mb-2">{interview.interviewType} Interview</p>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              <span>{new Date(interview.date).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1" />
+                              <span>{new Date(interview.date).toLocaleTimeString('en-US', { 
+                                hour: 'numeric', 
+                                minute: '2-digit' 
+                              })}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Users className="w-4 h-4 mr-1" />
+                              <span>with {interview.interviewers.join(', ')}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1" />
+                              <span>{interview.duration} min</span>
+                            </div>
+                            {interview.location && (
+                              <div className="flex items-center">
+                                <MapPin className="w-4 h-4 mr-1" />
+                                <span>{interview.location}</span>
+                              </div>
+                            )}
+                          </div>
+                          {interview.notes && (
+                            <p className="text-sm text-gray-600 mt-2 italic">{interview.notes}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      {interview.format === 'Video Call' && (
-                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                          <Video className="w-4 h-4" />
+                      <div className="flex items-center space-x-2 ml-4">
+                        {interview.format === 'Video' && (
+                          <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                            <Video className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
+                          <MessageSquare className="w-4 h-4" />
                         </button>
-                      )}
-                      <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Interviews Calendar */
+            <InterviewsCalendarView />
+          )}
         </div>
       )}
 
