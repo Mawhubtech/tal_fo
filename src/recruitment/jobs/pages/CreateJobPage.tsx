@@ -203,10 +203,11 @@ const CreateJobPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto p-6">
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+      </div>      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Content - Takes up 2 columns on large screens, full width on smaller */}
+          <div className="lg:col-span-2">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
           {/* Job Overview */}
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
@@ -646,9 +647,7 @@ const CreateJobPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Action Buttons */}
+          </div>          {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
             <button
               type="button"
@@ -666,6 +665,207 @@ const CreateJobPage: React.FC = () => {
             </button>
           </div>
         </form>
+      </div>      {/* Sidebar - Takes up 1 column on large screens, full width on smaller */}
+      <div className="lg:col-span-1 space-y-6">
+        {/* Live Job Preview */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden sticky top-6">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+            <h3 className="text-lg font-semibold text-white">📋 Live Preview</h3>
+          </div>
+          <div className="p-6 max-h-[calc(100vh-160px)] overflow-y-auto">
+            <div className="space-y-6">{/* Job Title */}
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  {jobTitle || 'Job Title'}
+                </h2>
+                <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-3">
+                  <span className="flex items-center">
+                    <Building size={14} className="mr-1" />
+                    {department_form || 'Department'}
+                  </span>
+                  <span className="flex items-center">
+                    <MapPin size={14} className="mr-1" />
+                    {location || 'Location'}
+                  </span>
+                </div>
+
+                {/* Employment Type & Status Badges */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                    {employmentType}
+                  </span>
+                  {remote && (
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                      Remote Available
+                    </span>
+                  )}
+                  {experienceLevel && (
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                      {experienceLevel}
+                    </span>
+                  )}
+                </div>
+              </div>{/* Salary Range */}
+              {(salaryMin || salaryMax) && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-green-800 mb-1">Salary Range</p>
+                  <p className="text-lg font-semibold text-green-900">
+                    {salaryMin && salaryMax 
+                      ? `${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'C$'}${parseInt(salaryMin).toLocaleString()} - ${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'C$'}${parseInt(salaryMax).toLocaleString()}`
+                      : salaryMin 
+                        ? `From ${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'C$'}${parseInt(salaryMin).toLocaleString()}`
+                        : salaryMax 
+                          ? `Up to ${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'C$'}${parseInt(salaryMax).toLocaleString()}`
+                          : ''
+                    }
+                  </p>
+                </div>
+              )}              {/* Job Description */}
+              {jobDescription && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">About the Role</p>
+                  <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4 border border-gray-200 leading-relaxed whitespace-pre-wrap">
+                    {jobDescription}
+                  </div>
+                </div>
+              )}
+
+              {/* Responsibilities */}
+              {responsibilities.some(resp => resp.trim()) && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Key Responsibilities</p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {responsibilities.filter(resp => resp.trim()).map((responsibility, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        {responsibility}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Requirements */}
+              {requirements.some(req => req.trim()) && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Requirements</p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {requirements.filter(req => req.trim()).map((requirement, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        {requirement}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Skills */}
+              {skills.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Required Skills</p>
+                  <div className="flex flex-wrap gap-1">
+                    {skills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Benefits */}
+              {benefits.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Benefits & Perks</p>
+                  <div className="flex flex-wrap gap-1">
+                    {benefits.map((benefit, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium"
+                      >
+                        {benefit}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Application Deadline */}
+              {applicationDeadline && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-orange-800 mb-1">Application Deadline</p>
+                  <p className="text-sm text-orange-900">
+                    {new Date(applicationDeadline).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+              )}
+
+              {/* Preview Footer */}
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-xs text-gray-500 text-center">
+                  This is how your job posting will appear to candidates
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Indicator */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+            <h3 className="text-lg font-semibold text-white">📊 Completion</h3>
+          </div>
+          <div className="p-6">
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Job Details</span>
+                <span className={`font-medium ${jobTitle && department_form && location ? 'text-green-600' : 'text-gray-400'}`}>
+                  {jobTitle && department_form && location ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Description</span>
+                <span className={`font-medium ${jobDescription ? 'text-green-600' : 'text-gray-400'}`}>
+                  {jobDescription ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Requirements</span>
+                <span className={`font-medium ${requirements.some(req => req.trim()) ? 'text-green-600' : 'text-gray-400'}`}>
+                  {requirements.some(req => req.trim()) ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Skills</span>
+                <span className={`font-medium ${skills.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {skills.length > 0 ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+                <div 
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.round(
+                      ((jobTitle && department_form && location ? 25 : 0) +
+                       (jobDescription ? 25 : 0) +
+                       (requirements.some(req => req.trim()) ? 25 : 0) +
+                       (skills.length > 0 ? 25 : 0))
+                    )}%`
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>        </div>
       </div>
     </div>
   );
