@@ -183,9 +183,60 @@ const mockDepartmentsByOrg: Record<string, Department[]> = {
       description: 'Healthcare administration and support services.',
       manager: 'Robert Johnson',
       activeJobs: 3,
-      totalEmployees: 180,
-      color: 'bg-purple-500',
+      totalEmployees: 180,      color: 'bg-purple-500',
       icon: '📋'
+    }
+  ],
+  'org-4': [
+    {
+      id: 'eng',
+      name: 'Engineering',
+      description: 'Renewable energy technology development and system engineering.',
+      manager: 'Dr. Susan Green',
+      activeJobs: 3,
+      totalEmployees: 85,
+      color: 'bg-blue-500',
+      icon: '💻'
+    },
+    {
+      id: 'sales',
+      name: 'Sales',
+      description: 'Energy solutions sales and client relationship management.',
+      manager: 'Mark Thompson',
+      activeJobs: 2,
+      totalEmployees: 45,
+      color: 'bg-orange-500',
+      icon: '💼'
+    },
+    {
+      id: 'operations',
+      name: 'Operations',
+      description: 'Energy production operations and facility management.',
+      manager: 'Lisa Chen',
+      activeJobs: 1,
+      totalEmployees: 120,
+      color: 'bg-gray-500',
+      icon: '⚙️'
+    },
+    {
+      id: 'research',
+      name: 'Research & Development',
+      description: 'Sustainable energy research and innovation.',
+      manager: 'Dr. James Wilson',
+      activeJobs: 1,
+      totalEmployees: 35,
+      color: 'bg-green-500',
+      icon: '🔬'
+    },
+    {
+      id: 'finance',
+      name: 'Finance',
+      description: 'Financial planning and energy project financing.',
+      manager: 'Maria Rodriguez',
+      activeJobs: 0,
+      totalEmployees: 20,
+      color: 'bg-indigo-500',
+      icon: '💰'
     }
   ]
 };

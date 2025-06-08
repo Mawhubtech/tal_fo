@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Briefcase, Users, MoreHorizontal, Search, Filter, Plus,
@@ -6,6 +6,8 @@ import {
   Clock, CheckCircle, BarChart3, Video, MapPin, AlertCircle,
   TrendingUp, PieChart, Download
 } from 'lucide-react';
+import { JobService } from '../data';
+import type { Job as JobType } from '../data';
 
 interface Candidate {
   id: string;
@@ -20,50 +22,6 @@ interface Candidate {
   source: string;
   appliedDate: string;
 }
-
-interface Job {
-  id: string;
-  title: string;
-  department: string;
-  status: string;
-  hiringManager: string;
-  location: string;
-  type: string;
-  salary: string;
-}
-
-const mockJobs: Record<string, Job> = {
-  'job-101': {
-    id: 'job-101',
-    title: 'Senior Software Engineer - Frontend',
-    department: 'Engineering',
-    status: 'Active',
-    hiringManager: 'Sarah Johnson',
-    location: 'San Francisco, CA',
-    type: 'Full-time',
-    salary: '$140,000 - $180,000'
-  },
-  'job-201': {
-    id: 'job-201',
-    title: 'Product Manager - Mobile Apps',
-    department: 'Product',
-    status: 'Active',
-    hiringManager: 'Michael Chen',
-    location: 'San Francisco, CA',
-    type: 'Full-time',
-    salary: '$130,000 - $170,000'
-  },
-  'job-301': {
-    id: 'job-301',
-    title: 'Senior UX Designer',
-    department: 'Design',
-    status: 'Active',
-    hiringManager: 'Emily Rodriguez',
-    location: 'San Francisco, CA',
-    type: 'Full-time',
-    salary: '$115,000 - $155,000'
-  }
-};
 
 const mockCandidatesByJob: Record<string, Candidate[]> = {
   'job-101': [
@@ -342,12 +300,50 @@ const JobATSPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'score'>('date');
+  const [job, setJob] = useState<JobType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const job = jobId ? mockJobs[jobId] : null;
-  const allCandidates = jobId ? (mockCandidatesByJob[jobId] || []) : [];
-  const allTasks = jobId ? (mockTasksByJob[jobId] || []) : [];
-  const allInterviews = jobId ? (mockInterviewsByJob[jobId] || []) : [];
-  const reportData = jobId ? mockReportsByJob[jobId] : null;
+  const jobService = new JobService();
+
+  useEffect(() => {
+    const loadJob = async () => {
+      if (!jobId || !organizationId || !departmentId) {
+        setLoading(false);
+        return;
+      }      try {
+        setLoading(true);
+        // Get all jobs for the organization and filter by department and job ID
+        const jobs = await jobService.getJobsByOrganization(organizationId);
+        const foundJob = jobs.find(j => j.id === jobId && j.departmentId === departmentId);
+        setJob(foundJob || null);
+      } catch (error) {
+        console.error('Error loading job:', error);
+        setJob(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadJob();
+  }, [jobId, organizationId, departmentId]);
+  // For now, we'll use the existing mock data for candidates, tasks, etc.
+  // In a real application, these would also be loaded from the backend
+  // Map job IDs to mock data keys - for jobs 1,2,3,4 we'll use job-101, job-201, etc.
+  const getMockJobKey = (id: string): string => {
+    const jobIdMap: Record<string, string> = {
+      '1': 'job-101',  // Senior Frontend Developer -> Frontend Engineer mock data
+      '2': 'job-201',  // Product Manager -> Product Manager mock data  
+      '3': 'job-101',  // UX Designer -> use Frontend Engineer data as fallback
+      '4': 'job-101',  // DevOps Engineer -> use Frontend Engineer data as fallback
+    };
+    return jobIdMap[id] || 'job-101';
+  };
+  
+  const mockJobKey = jobId ? getMockJobKey(jobId) : '';
+  const allCandidates = mockJobKey && mockCandidatesByJob[mockJobKey] ? mockCandidatesByJob[mockJobKey] : [];
+  const allTasks = mockJobKey && mockTasksByJob[mockJobKey] ? mockTasksByJob[mockJobKey] : [];
+  const allInterviews = mockJobKey && mockInterviewsByJob[mockJobKey] ? mockInterviewsByJob[mockJobKey] : [];
+  const reportData = mockJobKey && mockReportsByJob[mockJobKey] ? mockReportsByJob[mockJobKey] : null;
 
   const filteredCandidates = allCandidates.filter(candidate => {
     const matchesSearch = candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -381,6 +377,16 @@ const JobATSPage: React.FC = () => {
     if (score >= 4.0) return 'text-yellow-600';
     return 'text-red-600';
   };
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading job details...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!job) {
     return (
@@ -445,11 +451,10 @@ const JobATSPage: React.FC = () => {
           <div className="flex items-center">
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
               <Briefcase className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
+            </div>            <div className="ml-4">
               <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
-              <p className="text-gray-600">{job.department} • {job.location} • {job.type}</p>
-              <p className="text-gray-500 text-sm">Hiring Manager: {job.hiringManager}</p>
+              <p className="text-gray-600">{job.department} • {job.location} • {job.employmentType}</p>
+              <p className="text-gray-500 text-sm">Status: {job.status} • Experience Level: {job.experience}</p>
             </div>
           </div>
           <div className="text-right">
