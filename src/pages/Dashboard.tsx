@@ -6,18 +6,15 @@ import DashboardOverview from './DashboardOverview'; // Import the new Dashboard
 // Sourcing imports
 import { Search, SearchResults, ContactsPage, EmailSequencesPage } from '../sourcing';
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
-// Job Pages
-import AllJobsPage from '../recruitment/jobs/pages/AllJobsPage'; // Import AllJobsPage
+// Job Pages - Only keep CreateJobPage for the new flow
 import CreateJobPage from '../recruitment/jobs/pages/CreateJobPage'; // Import CreateJobPage
-import ArchivedJobsPage from '../recruitment/jobs/pages/ArchivedJobsPage'; // Import ArchivedJobsPage
 
 // Organization Pages (New Hierarchical Flow)
 import OrganizationsPage from '../recruitment/organizations/pages/OrganizationsPage';
+import OrganizationDetailPage from '../recruitment/organizations/pages/OrganizationDetailPage';
 import DepartmentsPage from '../recruitment/organizations/pages/DepartmentsPage';
 import DepartmentJobsPage from '../recruitment/organizations/pages/DepartmentJobsPage';
 import JobATSPage from '../recruitment/organizations/pages/JobATSPage';
-
-// ATS Pages - Removed legacy pages, now integrated into JobATSPage
 
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
@@ -64,18 +61,16 @@ const Dashboard: React.FC = () => {
             <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
             <Route path="search-results" element={<SearchResults />} /> {/* Route for SearchResults */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}
-
-            {/* New Hierarchical Recruitment Flow */}
+            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}            {/* New Hierarchical Recruitment Flow */}
             <Route path="organizations" element={<OrganizationsPage />} />
+            <Route path="organizations/:organizationId" element={<OrganizationDetailPage />} />
             <Route path="organizations/:organizationId/departments" element={<DepartmentsPage />} />
             <Route path="organizations/:organizationId/departments/:departmentId/jobs" element={<DepartmentJobsPage />} />
             <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/ats" element={<JobATSPage />} />
-
-            {/* Legacy Job Pages (for backward compatibility) */}
-            <Route path="jobs/all" element={<AllJobsPage />} />
-            <Route path="jobs/create" element={<CreateJobPage />} />            
-            <Route path="jobs/archived" element={<ArchivedJobsPage />} />            {/* Admin Pages with Layout */}<Route path="admin" element={<AdminLayout />}>
+            
+            {/* Job Creation - Integrated with hierarchical flow */}
+            <Route path="organizations/:organizationId/create-job" element={<CreateJobPage />} />
+            <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={<CreateJobPage />} />{/* Admin Pages with Layout */}<Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="candidates" element={<CandidateProfilesPage />} />

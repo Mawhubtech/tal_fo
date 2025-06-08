@@ -193,11 +193,10 @@ const OrganizationsPage: React.FC = () => {
       </div>
 
       {/* Organizations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredOrganizations.map((org) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">        {filteredOrganizations.map((org) => (
           <Link
             key={org.id}
-            to={`/dashboard/organizations/${org.id}/departments`}
+            to={`/dashboard/organizations/${org.id}`}
             className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200"
           >
             <div className="p-6">
