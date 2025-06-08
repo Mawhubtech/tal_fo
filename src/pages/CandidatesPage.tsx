@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MoreHorizontal, MessageSquare, UserCheck, Eye } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown } from 'lucide-react';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../components/ProfileSidePanel';
 
 interface PersonalInfo {
@@ -61,6 +61,9 @@ const CandidatesPage: React.FC = () => {
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
 
+  // State for dropdown menus
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
   useEffect(() => {
     const loadCandidates = async () => {
       try {
@@ -92,6 +95,20 @@ const CandidatesPage: React.FC = () => {
       }
     };    loadCandidates();
   }, []);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openDropdownId && !(event.target as Element).closest('.dropdown-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdownId]);
 
   // Handlers for the profile side panel
   const handleOpenProfilePanel = (userData: UserStructuredData) => {
@@ -229,10 +246,9 @@ const CandidatesPage: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Candidate Management</h1>
               <p className="text-gray-600 mt-1">Manage and review candidate applications efficiently</p>
-            </div>
-            <div className="flex items-center space-x-4">
+            </div>            <div className="flex items-center space-x-4">
               <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">{candidates.length}</div>
+                <div className="text-2xl font-bold text-purple-600">{candidates.length}</div>
                 <div className="text-sm text-gray-500">Total Candidates</div>
               </div>
               <div className="w-px h-12 bg-gray-300"></div>
@@ -251,14 +267,13 @@ const CandidatesPage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Search by name, email, or skills..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="flex gap-3">
-                <select
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              <div className="flex gap-3">                <select
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -270,7 +285,7 @@ const CandidatesPage: React.FC = () => {
                   <option value="inactive">Inactive</option>
                 </select>
                 <select
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
                   value={experienceFilter}
                   onChange={(e) => setExperienceFilter(e.target.value)}
                 >
@@ -289,17 +304,15 @@ const CandidatesPage: React.FC = () => {
               <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
                 <Download className="h-4 w-4 mr-2" />
                 Export
-              </button>
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm">
+              </button>              <button className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Candidate
               </button>
             </div>
           </div>
         </div>        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="text-3xl font-bold text-gray-900 mb-1">{stats.total}</div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="text-3xl font-bold text-purple-600 mb-1">{stats.total}</div>
             <div className="text-sm text-gray-600 font-medium">Total Candidates</div>
             <div className="text-xs text-gray-500 mt-1">All applications</div>
           </div>
@@ -312,9 +325,8 @@ const CandidatesPage: React.FC = () => {
             <div className="text-3xl font-bold text-yellow-600 mb-1">{stats.interviewing}</div>
             <div className="text-sm text-gray-600 font-medium">Interviewing</div>
             <div className="text-xs text-gray-500 mt-1">In process</div>
-          </div>
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="text-3xl font-bold text-blue-600 mb-1">{stats.hired}</div>
+          </div>          <div className="bg-white p-6 rounded-lg border shadow-sm">
+            <div className="text-3xl font-bold text-purple-600 mb-1">{stats.hired}</div>
             <div className="text-sm text-gray-600 font-medium">Hired</div>
             <div className="text-xs text-gray-500 mt-1">Successfully placed</div>
           </div>
@@ -355,16 +367,20 @@ const CandidatesPage: React.FC = () => {
                   {paginatedCandidates.map((candidate) => (
                     <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <span className="text-sm font-medium text-blue-600">
+                        <div className="flex items-center">                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                              <span className="text-sm font-medium text-purple-600">
                                 {candidate.structuredData.personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
                               </span>
                             </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-semibold text-gray-900">{candidate.structuredData.personalInfo.fullName}</div>
+                          </div>                          <div className="ml-4">
+                            <button 
+                              className="text-sm font-semibold text-purple-600 hover:text-purple-800 hover:underline cursor-pointer transition-colors text-left"
+                              onClick={() => handleOpenProfilePanel(candidate.structuredData)}
+                              title="Click to view full profile"
+                            >
+                              {candidate.structuredData.personalInfo.fullName}
+                            </button>
                             <div className="text-sm text-gray-500 flex items-center">
                               <Mail className="w-3 h-3 mr-1" />
                               {candidate.structuredData.personalInfo.email}
@@ -402,10 +418,9 @@ const CandidatesPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1 max-w-xs">
+                      <td className="px-6 py-4">                        <div className="flex flex-wrap gap-1 max-w-xs">
                           {candidate.structuredData.skills.slice(0, 3).map((skill, index) => (
-                            <span key={index} className="inline-flex px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
+                            <span key={index} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
                               {skill}
                             </span>
                           ))}
@@ -420,40 +435,53 @@ const CandidatesPage: React.FC = () => {
                           <div className="text-sm text-gray-500">Last: {formatDate(candidate.lastActivity)}</div>
                         </div>
                       </td>                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-1">
+                        <div className="relative dropdown-container">
                           <button 
-                            className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded"
-                            title="View Profile"
-                            onClick={() => handleOpenProfilePanel(candidate.structuredData)}
+                            className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 hover:border-purple-300 transition-colors"
+                            onClick={() => setOpenDropdownId(openDropdownId === candidate.id ? null : candidate.id)}
                           >
-                            <Eye className="w-4 h-4" />
+                            Actions
+                            <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${openDropdownId === candidate.id ? 'rotate-180' : ''}`} />
                           </button>
-                          <button 
-                            className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded"
-                            title="Send Message"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-1 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded"
-                            title="Mark as Hired"
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded"
-                            title="Download Resume"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <div className="relative">
-                            <button 
-                              className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded"
-                              title="More Actions"
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
-                          </div>
+                          
+                          {openDropdownId === candidate.id && (
+                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                              <div className="py-1">
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+                                  onClick={() => {
+                                    handleOpenProfilePanel(candidate.structuredData);
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  <Eye className="w-4 h-4 mr-3" />
+                                  View Profile
+                                </button>
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
+                                  onClick={() => setOpenDropdownId(null)}
+                                >
+                                  <MessageSquare className="w-4 h-4 mr-3" />
+                                  Send Message
+                                </button>
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+                                  onClick={() => setOpenDropdownId(null)}
+                                >
+                                  <UserCheck className="w-4 h-4 mr-3" />
+                                  Mark as Hired
+                                </button>
+                                <div className="border-t border-gray-100 my-1"></div>
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                  onClick={() => setOpenDropdownId(null)}
+                                >
+                                  <Download className="w-4 h-4 mr-3" />
+                                  Download Resume
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -509,10 +537,9 @@ const CandidatesPage: React.FC = () => {
                     return (
                       <button
                         key={pageNumber}
-                        onClick={() => handlePageChange(pageNumber)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                        onClick={() => handlePageChange(pageNumber)}                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
                           currentPage === pageNumber
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-purple-600 text-white'
                             : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
                         }`}
                       >
