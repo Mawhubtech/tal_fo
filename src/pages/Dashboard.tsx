@@ -11,12 +11,13 @@ import AllJobsPage from '../recruitment/jobs/pages/AllJobsPage'; // Import AllJo
 import CreateJobPage from '../recruitment/jobs/pages/CreateJobPage'; // Import CreateJobPage
 import ArchivedJobsPage from '../recruitment/jobs/pages/ArchivedJobsPage'; // Import ArchivedJobsPage
 
-// ATS Pages
-import PipelinesPage from '../recruitment/ats/pages/PipelinesPage'; // Import PipelinesPage
-import AllCandidatesPage from '../recruitment/ats/pages/AllCandidatesPage'; // Import AllCandidatesPage
-import TasksPage from '../recruitment/ats/pages/TasksPage'; // Import TasksPage
-import InterviewsPage from '../recruitment/ats/pages/InterviewsPage'; // Import InterviewsPage
-import ReportsPage from '../recruitment/ats/pages/ReportsPage'; // Import ReportsPage
+// Organization Pages (New Hierarchical Flow)
+import OrganizationsPage from '../recruitment/organizations/pages/OrganizationsPage';
+import DepartmentsPage from '../recruitment/organizations/pages/DepartmentsPage';
+import DepartmentJobsPage from '../recruitment/organizations/pages/DepartmentJobsPage';
+import JobATSPage from '../recruitment/organizations/pages/JobATSPage';
+
+// ATS Pages - Removed legacy pages, now integrated into JobATSPage
 
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
@@ -62,19 +63,19 @@ const Dashboard: React.FC = () => {
             <Route path="projects" element={<div className="p-6"><h1 className="text-2xl font-bold">Projects</h1><p>Projects page coming soon...</p></div>} />
             <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
             <Route path="search-results" element={<SearchResults />} /> {/* Route for SearchResults */}
-            <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}
-            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}{/* Job Pages */}
+            <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
+            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}
+
+            {/* New Hierarchical Recruitment Flow */}
+            <Route path="organizations" element={<OrganizationsPage />} />
+            <Route path="organizations/:organizationId/departments" element={<DepartmentsPage />} />
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs" element={<DepartmentJobsPage />} />
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/ats" element={<JobATSPage />} />
+
+            {/* Legacy Job Pages (for backward compatibility) */}
             <Route path="jobs/all" element={<AllJobsPage />} />
-            <Route path="jobs/create" element={<CreateJobPage />} />            <Route path="jobs/archived" element={<ArchivedJobsPage />} />
-            <Route path="organizations" element={<div className="p-6"><h1 className="text-2xl font-bold">Organizations</h1><p>Organizations page coming soon...</p></div>} />
-              {/* ATS Pages */}
-            <Route path="ats/pipelines" element={<PipelinesPage />} />
-            <Route path="ats/candidates" element={<AllCandidatesPage />} />
-            <Route path="ats/tasks" element={<TasksPage />} />
-            <Route path="ats/interviews" element={<InterviewsPage />} />
-            <Route path="ats/reports" element={<ReportsPage />} />            
-            {/* Admin Pages with Layout */}            <Route path="admin" element={<AdminLayout />}>
+            <Route path="jobs/create" element={<CreateJobPage />} />            
+            <Route path="jobs/archived" element={<ArchivedJobsPage />} />            {/* Admin Pages with Layout */}<Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="candidates" element={<CandidateProfilesPage />} />

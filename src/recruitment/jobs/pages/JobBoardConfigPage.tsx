@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Save, Globe, Eye, Settings, Plus, Edit3, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 
 interface JobBoardConfig {
@@ -140,9 +141,33 @@ const JobBoardConfigPage: React.FC = () => {
     activeBoards: jobBoards.filter(b => b.isActive).length,
     totalJobs: jobBoards.reduce((sum, b) => sum + b.jobsCount, 0),
     templates: templates.length
-  };
-  return (
-    <div className="space-y-6">
+  };  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Breadcrumbs */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center text-sm text-gray-500">
+          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+          <span className="mx-2">/</span>
+          <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
+          <span className="mx-2">/</span>
+          <span className="text-gray-900 font-medium">Job Board Config</span>
+          <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Legacy View</span>
+        </div>
+        <Link 
+          to="/dashboard/organizations" 
+          className="text-sm bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          Switch to Hierarchical Flow
+        </Link>
+      </div>
+
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Job Board Configuration</h1>
+        <p className="text-gray-600 mt-1">Manage job board integrations and posting templates</p>
+      </div>
+
+      <div className="space-y-6">
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -483,10 +508,10 @@ const JobBoardConfigPage: React.FC = () => {
                   <ToggleLeft className="h-6 w-6 text-gray-400" />
                 </div>
               </div>
-            </div>
-          </div>
+            </div>          </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

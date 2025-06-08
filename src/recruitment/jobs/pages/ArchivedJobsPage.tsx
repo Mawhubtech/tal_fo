@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Eye, RotateCcw, Trash2, Search as SearchIcon, MoreVertical, Calendar, Archive, Plus, List } from 'lucide-react'; // Added List
 import {
   DndContext,
@@ -485,9 +486,26 @@ const ArchivedJobsPage: React.FC = () => {
 		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 		}
 	};
-
 	return (
 		<div className="p-6 bg-gray-50 min-h-screen">
+			{/* Breadcrumbs */}
+			<div className="flex items-center justify-between mb-4">
+				<div className="flex items-center text-sm text-gray-500">
+					<Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+					<span className="mx-2">/</span>
+					<Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
+					<span className="mx-2">/</span>
+					<span className="text-gray-900 font-medium">Archived Jobs</span>
+					<span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Legacy View</span>
+				</div>
+				<Link 
+					to="/dashboard/organizations" 
+					className="text-sm bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors"
+				>
+					Switch to Hierarchical Flow
+				</Link>
+			</div>
+
 			<div className="flex justify-between items-center mb-6">
 				<div>
 					<h1 className="text-2xl font-semibold text-gray-900">Archived Jobs</h1>

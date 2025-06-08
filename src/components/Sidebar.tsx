@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { 
   Search, Users, MessageSquare, 
   Settings, HelpCircle, ChevronDown, FileText, Send, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
-  Briefcase, LayoutGrid, Shield, UserPlus, UserCheck, Building, Target, BarChart3 // Added for Jobs, ATS, and Admin
+  Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3 // Added for Jobs and Admin
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -139,99 +139,61 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               </div>
               {isExpanded && <ChevronDown className={`w-4 h-4 transform transition-transform ${openSections['jobs'] ? 'rotate-180' : ''}`} />}
             </button>
-            
-            {/* Expanded menu */}
+              {/* Expanded menu */}
             {openSections['jobs'] && isExpanded && (
               <nav className="pl-8 space-y-1 py-1">
-                <Link to="/dashboard/jobs/all" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                  <Briefcase className="w-3 h-3 mr-2" />
-                  All Jobs
-                </Link>
-                <Link to="/dashboard/jobs/create" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                  <UserPlus className="w-3 h-3 mr-2" />
-                  Create Job
-                </Link>
-                <Link to="/dashboard/jobs/archived" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                  <FileText className="w-3 h-3 mr-2" />
-                  Archived
-                </Link>
-                <Link to="/dashboard/organizations" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                  <Building className="w-3 h-3 mr-2" />
-                  Organizations
-                </Link>
-                <div className="border-t border-gray-100 my-1 pt-1">
-                  <div className="text-xs text-gray-500 mb-1 font-medium">ATS</div>
-                  <Link to="/dashboard/ats/pipelines" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                    <LayoutGrid className="w-3 h-3 mr-2" />
-                    Pipelines
-                  </Link>
-                  <Link to="/dashboard/ats/candidates" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                    <Users className="w-3 h-3 mr-2" />
-                    Candidates
-                  </Link>
-                  <Link to="/dashboard/ats/tasks" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                    <Target className="w-3 h-3 mr-2" />
-                    Tasks
-                  </Link>
-                  <Link to="/dashboard/ats/interviews" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                    <UserCheck className="w-3 h-3 mr-2" />
-                    Interviews
-                  </Link>
-                  <Link to="/dashboard/ats/reports" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                    <BarChart3 className="w-3 h-3 mr-2" />
-                    Reports
+                <div className="border-b border-gray-100 pb-1 mb-1">
+                  <div className="text-xs text-gray-500 mb-1 font-medium">Hierarchical Flow</div>
+                  <Link to="/dashboard/organizations" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
+                    <Building className="w-3 h-3 mr-2" />
+                    Organizations
                   </Link>
                 </div>
+                <div className="border-b border-gray-100 pb-1 mb-1">
+                  <div className="text-xs text-gray-500 mb-1 font-medium">Legacy Views</div>
+                  <Link to="/dashboard/jobs/all" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
+                    <Briefcase className="w-3 h-3 mr-2" />
+                    All Jobs
+                  </Link>
+                  <Link to="/dashboard/jobs/create" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
+                    <UserPlus className="w-3 h-3 mr-2" />
+                    Create Job
+                  </Link>
+                  <Link to="/dashboard/jobs/archived" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
+                    <FileText className="w-3 h-3 mr-2" />
+                    Archived
+                  </Link>                </div>
               </nav>
             )}
-            
-            {/* Collapsed hover menu */}
+              {/* Collapsed hover menu */}
             {!isExpanded && (
-              <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div className="absolute left-full top-0 ml-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="p-2">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-2">
                     Jobs
                   </div>
                   <nav className="space-y-1">
-                    <Link to="/dashboard/jobs/all" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                      <Briefcase className="w-4 h-4 mr-3" />
-                      All Jobs
-                    </Link>
-                    <Link to="/dashboard/jobs/create" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                      <UserPlus className="w-4 h-4 mr-3" />
-                      Create Job
-                    </Link>
-                    <Link to="/dashboard/jobs/archived" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                      <FileText className="w-4 h-4 mr-3" />
-                      Archived
-                    </Link>
-                    <Link to="/dashboard/organizations" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                      <Building className="w-4 h-4 mr-3" />
-                      Organizations
-                    </Link>
-                    <div className="border-t border-gray-100 my-2 pt-2">
-                      <div className="px-3 py-1 text-xs font-medium text-gray-500">ATS</div>
-                      <Link to="/dashboard/ats/pipelines" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <LayoutGrid className="w-4 h-4 mr-3" />
-                        Pipelines
-                      </Link>
-                      <Link to="/dashboard/ats/candidates" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <Users className="w-4 h-4 mr-3" />
-                        Candidates
-                      </Link>
-                      <Link to="/dashboard/ats/tasks" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <Target className="w-4 h-4 mr-3" />
-                        Tasks
-                      </Link>
-                      <Link to="/dashboard/ats/interviews" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <UserCheck className="w-4 h-4 mr-3" />
-                        Interviews
-                      </Link>
-                      <Link to="/dashboard/ats/reports" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <BarChart3 className="w-4 h-4 mr-3" />
-                        Reports
+                    <div className="border-b border-gray-100 pb-2 mb-2">
+                      <div className="px-3 py-1 text-xs font-medium text-gray-500 mb-1">Hierarchical Flow</div>
+                      <Link to="/dashboard/organizations" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
+                        <Building className="w-4 h-4 mr-3" />
+                        Organizations
                       </Link>
                     </div>
+                    <div className="border-b border-gray-100 pb-2 mb-2">
+                      <div className="px-3 py-1 text-xs font-medium text-gray-500 mb-1">Legacy Views</div>
+                      <Link to="/dashboard/jobs/all" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
+                        <Briefcase className="w-4 h-4 mr-3" />
+                        All Jobs
+                      </Link>
+                      <Link to="/dashboard/jobs/create" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
+                        <UserPlus className="w-4 h-4 mr-3" />
+                        Create Job
+                      </Link>
+                      <Link to="/dashboard/jobs/archived" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
+                        <FileText className="w-4 h-4 mr-3" />
+                        Archived
+                      </Link>                    </div>
                   </nav>
                 </div>
               </div>

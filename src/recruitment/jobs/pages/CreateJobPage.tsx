@@ -96,6 +96,28 @@ const CreateJobPage: React.FC = () => {
     // TODO: API call to save/publish job
   };  return (
     <div className="min-h-screen bg-gray-100">
+      {/* Breadcrumbs */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center text-sm text-gray-500">
+              <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+              <span className="mx-2">/</span>
+              <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
+              <span className="mx-2">/</span>
+              <span className="text-gray-900 font-medium">Create Job</span>
+              <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Legacy View</span>
+            </div>
+            <Link 
+              to="/dashboard/organizations" 
+              className="text-sm bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Switch to Hierarchical Flow
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

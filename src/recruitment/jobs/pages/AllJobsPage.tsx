@@ -412,14 +412,23 @@ const AllJobsPage: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <div>
+      {/* Breadcrumbs */}
+      <div className="flex items-center text-sm text-gray-500 mb-4">
+        <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+        <span className="mx-2">/</span>
+        <span className="text-gray-900 font-medium">Jobs (Legacy View)</span>
+        <span className="mx-2">•</span>
+        <Link to="/dashboard/organizations" className="text-purple-600 hover:text-purple-700 font-medium">
+          Switch to Hierarchical View →
+        </Link>
+      </div>
+      
+      <div className="flex justify-between items-center mb-6">        <div>
           <h1 className="text-2xl font-bold text-gray-900">All Jobs</h1>
           <p className="text-sm text-gray-600 mt-1">
-            {view === 'kanban' ? 'Manage and track job postings with drag & drop' : 'View and manage all job postings'}
+            {filteredJobs.length} of {jobs.length} jobs • Legacy view for all organizations
           </p>
         </div>
         <Link 
