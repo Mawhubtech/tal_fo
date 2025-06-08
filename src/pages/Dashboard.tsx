@@ -16,6 +16,9 @@ import DepartmentsPage from '../recruitment/organizations/pages/DepartmentsPage'
 import DepartmentJobsPage from '../recruitment/organizations/pages/DepartmentJobsPage';
 import JobATSPage from '../recruitment/organizations/pages/JobATSPage';
 
+// Candidates Page
+import CandidatesPage from './CandidatesPage'; // Import the new CandidatesPage
+
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
@@ -61,7 +64,11 @@ const Dashboard: React.FC = () => {
             <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
             <Route path="search-results" element={<SearchResults />} /> {/* Route for SearchResults */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}            {/* New Hierarchical Recruitment Flow */}
+            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}            {/* Jobs and Candidates standalone routes */}
+            <Route path="jobs" element={<OrganizationsPage />} />
+            <Route path="candidates" element={<CandidatesPage />} />
+            
+            {/* New Hierarchical Recruitment Flow */}
             <Route path="organizations" element={<OrganizationsPage />} />
             <Route path="organizations/:organizationId" element={<OrganizationDetailPage />} />
             <Route path="organizations/:organizationId/departments" element={<DepartmentsPage />} />

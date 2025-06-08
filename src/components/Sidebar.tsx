@@ -11,10 +11,8 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     sourcing: true,
-    jobs: true,
     admin: false
   });
 
@@ -125,44 +123,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               </div>
             )}
           </div>          {/* Jobs Section */}
-          <div className="relative group">
-            <button 
-              onClick={() => isExpanded && toggleSection('jobs')}
-              className={`flex items-center w-full ${isExpanded ? 'px-4 justify-between' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
-              title={!isExpanded ? "Jobs" : ""}
-            >
-              <div className="flex items-center">
-                <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
-                  <Briefcase className="w-4 h-4" />
-                </div>
-                {isExpanded && "Jobs"}
-              </div>
-              {isExpanded && <ChevronDown className={`w-4 h-4 transform transition-transform ${openSections['jobs'] ? 'rotate-180' : ''}`} />}
-            </button>            {/* Expanded menu */}
-            {openSections['jobs'] && isExpanded && (
-              <nav className="pl-8 space-y-1 py-1">
-                <Link to="/dashboard/organizations" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                  <Building className="w-3 h-3 mr-2" />
-                  Organizations
-                </Link>
-              </nav>
-            )}            {/* Collapsed hover menu */}
-            {!isExpanded && (
-              <div className="absolute left-full top-0 ml-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div className="p-2">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-2">
-                    Jobs
-                  </div>
-                  <nav className="space-y-1">
-                    <Link to="/dashboard/organizations" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                      <Building className="w-4 h-4 mr-3" />
-                      Organizations
-                    </Link>
-                  </nav>
-                </div>
-              </div>
-            )}
-          </div>          {/* Admin Section */}
+          <Link 
+            to="/dashboard/jobs" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
+            title={!isExpanded ? "Jobs" : ""}
+          >
+            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
+              <Briefcase className="w-4 h-4" />
+            </div>
+            {isExpanded && "Jobs"}
+          </Link>
+
+          {/* Candidates Section */}
+          <Link 
+            to="/dashboard/candidates" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
+            title={!isExpanded ? "Candidates" : ""}
+          >
+            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
+              <UserPlus className="w-4 h-4" />
+            </div>
+            {isExpanded && "Candidates"}
+          </Link>
+
+          {/* Admin Section */}
           <div className="relative group">
             <button 
               onClick={() => isExpanded && toggleSection('admin')}
@@ -188,16 +172,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                 <Link to="/dashboard/resume-processing" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
                   <FileText className="w-3 h-3 mr-2" />
                   Resume Processing
-                </Link>
-                <div className="border-t border-gray-100 my-1 pt-1">
+                </Link>                <div className="border-t border-gray-100 my-1 pt-1">
                   <div className="text-xs text-gray-500 mb-1 font-medium">Management</div>
                   <Link to="/dashboard/admin/users" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
                     <Users className="w-3 h-3 mr-2" />
                     Users
-                  </Link>
-                  <Link to="/dashboard/admin/candidates" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
-                    <UserPlus className="w-3 h-3 mr-2" />
-                    Candidates
                   </Link>
                   <Link to="/dashboard/admin/companies" className="flex items-center py-1 text-sm text-gray-600 hover:text-gray-900">
                     <Building className="w-3 h-3 mr-2" />
@@ -237,16 +216,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     <Link to="/dashboard/resume-processing" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
                       <FileText className="w-4 h-4 mr-3" />
                       Resume Processing
-                    </Link>
-                    <div className="border-t border-gray-100 my-2 pt-2">
+                    </Link>                    <div className="border-t border-gray-100 my-2 pt-2">
                       <div className="px-3 py-1 text-xs font-medium text-gray-500">Management</div>
                       <Link to="/dashboard/admin/users" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
                         <Users className="w-4 h-4 mr-3" />
                         Users
-                      </Link>
-                      <Link to="/dashboard/admin/candidates" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
-                        <UserPlus className="w-4 h-4 mr-3" />
-                        Candidates
                       </Link>
                       <Link to="/dashboard/admin/companies" className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md">
                         <Building className="w-4 h-4 mr-3" />
