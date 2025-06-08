@@ -139,9 +139,8 @@ const CreateJobPage: React.FC = () => {
       status: publish ? 'Open' : 'Draft'
     });
     // TODO: API call to save/publish job
-  };return (
-    <div className="min-h-screen bg-gray-100">      {/* Breadcrumbs */}
-      <div className="bg-white border-b">
+  };return (    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">      {/* Breadcrumbs */}
+      <div className="bg-white border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center text-sm text-gray-500">
@@ -194,19 +193,31 @@ const CreateJobPage: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      </div>      {/* Header */}      <div className="bg-white shadow-sm border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center h-16">
+          <div className="flex items-center justify-between h-16">
             <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => handleSubmit(false)}
+                className="px-4 py-2 border-2 border-purple-600 text-purple-700 rounded-lg hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm"
+              >
+                Save as Draft
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSubmit(true)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm shadow-md"
+              >
+                Publish Job
+              </button>
+            </div>
           </div>
         </div>
-      </div>      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content - Takes up 2 columns on large screens, full width on smaller */}
-          <div className="lg:col-span-2">
+      </div><div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow flex flex-col">        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-148px)] overflow-hidden">
+            {/* Main Content - Takes up 1/2 space on large screens, full width on smaller */}
+          <div className="overflow-y-auto lg:pr-4 h-full pb-20">
             <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
           {/* Job Overview */}
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
@@ -647,32 +658,14 @@ const CreateJobPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
-            <button
-              type="button"
-              onClick={() => handleSubmit(false)}
-              className="px-8 py-3 border-2 border-purple-600 text-purple-700 rounded-lg hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-semibold text-center"
-            >
-              Save as Draft
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSubmit(true)}
-              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              Publish Job
-            </button>
-          </div>
-        </form>
-      </div>      {/* Sidebar - Takes up 1 column on large screens, full width on smaller */}
-      <div className="lg:col-span-1 space-y-6">
+          </div>          </form>
+      </div>        {/* Sidebar - Takes up 1/2 space on large screens, full width on smaller */}      
+	  <div className="h-full">
         {/* Live Job Preview */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden sticky top-6">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden h-full flex flex-col relative">          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex-shrink-0 sticky top-0 z-10">
             <h3 className="text-lg font-semibold text-white">📋 Live Preview</h3>
           </div>
-          <div className="p-6 max-h-[calc(100vh-160px)] overflow-y-auto">
+          <div className="p-6 overflow-y-auto overflow-x-hidden flex-grow max-h-[calc(100vh-200px)]">
             <div className="space-y-6">{/* Job Title */}
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">
@@ -724,8 +717,10 @@ const CreateJobPage: React.FC = () => {
               {jobDescription && (
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-2">About the Role</p>
-                  <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4 border border-gray-200 leading-relaxed whitespace-pre-wrap">
-                    {jobDescription}
+                  <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4 border border-gray-200 leading-relaxed break-words overflow-x-hidden">
+                    {jobDescription.split('\n').map((line, index) => (
+                      <p key={index} className="mb-2 last:mb-0">{line || ' '}</p>
+                    ))}
                   </div>
                 </div>
               )}
@@ -806,20 +801,15 @@ const CreateJobPage: React.FC = () => {
                     })}
                   </p>
                 </div>
-              )}
-
-              {/* Preview Footer */}
+              )}              {/* Preview Footer */}
               <div className="pt-4 border-t border-gray-200">
                 <p className="text-xs text-gray-500 text-center">
                   This is how your job posting will appear to candidates
                 </p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            </div>      </div>
+        </div>        {/* Progress Indicator - Hidden on larger screens since sidebar is already full height */}
+        <div className="lg:hidden bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-6 mb-24">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
             <h3 className="text-lg font-semibold text-white">📊 Completion</h3>
           </div>
@@ -863,9 +853,8 @@ const CreateJobPage: React.FC = () => {
                 ></div>
               </div>
             </div>
-          </div>
+          </div>        </div>      </div>        
         </div>
-      </div>        </div>
       </div>
     </div>
   );
