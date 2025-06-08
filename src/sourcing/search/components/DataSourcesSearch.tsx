@@ -1,7 +1,7 @@
 import React from 'react';
 import { Upload, Github, FileStackIcon as StackIcon, Mail, Phone, MapPin } from 'lucide-react';
-import Button from './Button';
-import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import Button from '../../../components/Button';
+import { useScrollAnimation } from '../../../hooks/useScrollAnimation';
 
 const DataSourcesSearch: React.FC = () => {
   const { elementRef, isVisible } = useScrollAnimation();

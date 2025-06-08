@@ -1,6 +1,6 @@
 import React from 'react';
-import Button from './Button';
-import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import Button from '../../../components/Button';
+import { useScrollAnimation } from '../../../hooks/useScrollAnimation';
 
 const NaturalLanguageSearch: React.FC = () => {
   const { elementRef, isVisible } = useScrollAnimation();

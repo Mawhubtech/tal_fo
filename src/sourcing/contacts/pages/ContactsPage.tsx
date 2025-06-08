@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import user1Data from '../Data/user1.json';
-import user2Data from '../Data/user2.json';
-import user3Data from '../Data/user3.json';
+import user1Data from '../../../data/user1.json';
+import user2Data from '../../../data/user2.json';
+import user3Data from '../../../data/user3.json';
 import { Search, Filter, RefreshCw, Linkedin, Globe, Mail, Plus, ChevronDown } from 'lucide-react';
-import Button from '../components/Button';
-import ProfileSidePanel, { UserStructuredData, PanelState } from '../components/ProfileSidePanel'; // Added import
+import Button from '../../../components/Button';
+import ProfileSidePanel, { UserStructuredData, PanelState } from '../../../components/ProfileSidePanel'; // Added import
 
 interface Contact {
   id: string;
@@ -81,10 +81,9 @@ const ContactsPage: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen w-full">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-2">
+      <div className="flex justify-between items-center mb-6">        <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-semibold text-gray-800">All Contacts</h1>
-          <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-700">
+          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
             <RefreshCw className="w-5 h-5" />
           </Button>
         </div>

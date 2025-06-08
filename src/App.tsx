@@ -9,10 +9,8 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PreviewVideo from './components/PreviewVideo';
 import PartnersSlider from './components/PartnersSlider';
-import NaturalLanguageSearch from './components/NaturalLanguageSearch'; 
-import DataSourcesSearch from './components/DataSourcesSearch';
+import { NaturalLanguageSearch, DataSourcesSearch, EmailSequences } from './sourcing'; 
 import ProfileEvaluation from './components/ProfileEvaluation';
-import EmailSequences from './components/EmailSequences';
 import GlobalReach from './components/GlobalReach';
 import TabFeatures from './components/TabFeatures';
 import Integrations from './components/Integrations';
@@ -22,7 +20,7 @@ import SignIn from './components/SignIn';
 import OAuthCallback from './components/OAuthCallback';
 import Dashboard from './pages/Dashboard';
 import ResumeProcessingPage from './pages/ResumeProcessingPage';
-import EmailSequencesPage from './pages/EmailSequencesPage'; // Import EmailSequencesPage
+import { EmailSequencesPage } from './sourcing'; // Import EmailSequencesPage from sourcing
 
 const queryClient = new QueryClient({
   defaultOptions: {

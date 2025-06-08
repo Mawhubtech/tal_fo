@@ -3,29 +3,28 @@ import { Routes, Route } from 'react-router-dom'; // Import Routes and Route
 import Sidebar from '../components/Sidebar';   // Your Sidebar component
 import TopNavbar from '../components/TopNavbar'; // Your TopNavbar component
 import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
-import Search from './Search'; // Import the new Search component
-import SearchResultsPage from './SearchResults'; // Import the new SearchResults page
-import EmailSequencesPage from './EmailSequencesPage'; // Import the new page
-import ContactsPage from './ContactsPage'; // Import the new ContactsPage
+// Sourcing imports
+import { Search, SearchResults, ContactsPage, EmailSequencesPage } from '../sourcing';
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
-import AllJobsPage from './AllJobsPage'; // Import AllJobsPage
-import CreateJobPage from './CreateJobPage'; // Import CreateJobPage
-import ArchivedJobsPage from './ArchivedJobsPage'; // Import ArchivedJobsPage
+// Job Pages
+import AllJobsPage from '../recruitment/jobs/pages/AllJobsPage'; // Import AllJobsPage
+import CreateJobPage from '../recruitment/jobs/pages/CreateJobPage'; // Import CreateJobPage
+import ArchivedJobsPage from '../recruitment/jobs/pages/ArchivedJobsPage'; // Import ArchivedJobsPage
 
 // ATS Pages
-import PipelinesPage from './ats/PipelinesPage'; // Import PipelinesPage
-import AllCandidatesPage from './ats/AllCandidatesPage'; // Import AllCandidatesPage
-import TasksPage from './ats/TasksPage'; // Import TasksPage
-import InterviewsPage from './ats/InterviewsPage'; // Import InterviewsPage
-import ReportsPage from './ats/ReportsPage'; // Import ReportsPage
+import PipelinesPage from '../recruitment/ats/pages/PipelinesPage'; // Import PipelinesPage
+import AllCandidatesPage from '../recruitment/ats/pages/AllCandidatesPage'; // Import AllCandidatesPage
+import TasksPage from '../recruitment/ats/pages/TasksPage'; // Import TasksPage
+import InterviewsPage from '../recruitment/ats/pages/InterviewsPage'; // Import InterviewsPage
+import ReportsPage from '../recruitment/ats/pages/ReportsPage'; // Import ReportsPage
 
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
 import UserManagementPage from './admin/UserManagementPage'; // Import UserManagementPage
-import CandidateProfilesPage from './admin/CandidateProfilesPage'; // Import CandidateProfilesPage
+import CandidateProfilesPage from '../recruitment/candidates/pages/CandidateProfilesPage'; // Import CandidateProfilesPage
 import CompanyManagementPage from './admin/CompanyManagementPage'; // Import CompanyManagementPage
-import JobBoardConfigPage from './admin/JobBoardConfigPage'; // Import JobBoardConfigPage
+import JobBoardConfigPage from '../recruitment/jobs/pages/JobBoardConfigPage'; // Import JobBoardConfigPage
 import AnalyticsPage from './admin/AnalyticsPage'; // Import AnalyticsPage
 import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSettingsPage
 
@@ -62,7 +61,7 @@ const Dashboard: React.FC = () => {
             <Route path="/" element={<DashboardOverview />} /> {/* Dashboard Overview as default route */}            <Route path="search" element={<Search />} /> {/* Search talents page */}
             <Route path="projects" element={<div className="p-6"><h1 className="text-2xl font-bold">Projects</h1><p>Projects page coming soon...</p></div>} />
             <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
-            <Route path="search-results" element={<SearchResultsPage />} /> {/* Route for SearchResultsPage */}
+            <Route path="search-results" element={<SearchResults />} /> {/* Route for SearchResults */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}
             <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
             <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}{/* Job Pages */}

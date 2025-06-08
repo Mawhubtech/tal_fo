@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight, Bold, Italic, Link, List, Undo2, RotateCw } from 'lucide-react';
 
-import Button from '../components/Button'; // Assuming Button component is in this path
+import Button from '../../../components/Button'; // Assuming Button component is in this path
 
 const EmailSequencesPage: React.FC = () => {
   return (

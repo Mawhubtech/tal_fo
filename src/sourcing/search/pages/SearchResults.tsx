@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import Button from '../components/Button';
-import { searchUsers } from '../services/searchService';
-import type { SearchFilters } from '../services/searchService';
+import Button from '../../../components/Button';
+import { searchUsers } from '../../../services/searchService';
+import type { SearchFilters } from '../../../services/searchService';
 
 // Assuming ProfilePage.tsx and its types are in the same directory or adjust path
-import type { UserStructuredData } from './ProfilePage';
-import ProfileSidePanel, { type PanelState } from '../components/ProfileSidePanel'; // Import the PanelState type
+import type { UserStructuredData } from '../../../components/ProfileSidePanel';
+import ProfileSidePanel, { type PanelState } from '../../../components/ProfileSidePanel'; // Import the PanelState type
 
 const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();

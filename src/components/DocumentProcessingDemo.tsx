@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FileText, User, PlusCircle } from 'lucide-react';
-import JobDescriptionDialog from './JobDescriptionDialog';
+import JobDescriptionDialog from '../recruitment/components/JobDescriptionDialog';
 import ResumeDialog from './ResumeDialog';
 import { ResumeStructure } from '../hooks/useDocumentProcessing';
 

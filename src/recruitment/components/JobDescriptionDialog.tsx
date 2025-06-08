@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Upload, Sparkles } from 'lucide-react';
-import { useAIStructuredQuery, useAIQuery, useDocumentProcessing } from '../hooks/ai';
+import { useAIStructuredQuery, useAIQuery, useDocumentProcessing } from '../../hooks/ai';
 
 interface JobDescriptionDialogProps {
   isOpen: boolean;

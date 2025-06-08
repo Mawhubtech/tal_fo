@@ -6,17 +6,16 @@ import {
   Search as SearchIcon,
   Filter,
   Sparkles,
-  User,
   Edit,
   X
 } from 'lucide-react';
-import Button from '../components/Button';
-import FilterDialog from '../components/FilterDialog';
+import Button from '../../../components/Button';
+import FilterDialog from '../../../components/FilterDialog';
 import BooleanSearchDialog from '../components/BooleanSearchDialog';
-import JobDescriptionDialog from '../components/JobDescriptionDialog';
-import { useAIQuery } from '../hooks/ai';
-import { extractKeywords, convertKeywordsToFilters } from '../services/searchService';
-import type { SearchFilters } from '../services/searchService';
+import JobDescriptionDialog from '../../../recruitment/components/JobDescriptionDialog';
+import { useAIQuery } from '../../../hooks/ai';
+import { extractKeywords, convertKeywordsToFilters } from '../../../services/searchService';
+import type { SearchFilters } from '../../../services/searchService';
 
 // New component for displaying AI filters
 const AIFiltersDisplay: React.FC<{

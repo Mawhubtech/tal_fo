@@ -1,7 +1,7 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, Bold, Italic, Link, List, Undo2, RotateCw } from 'lucide-react';
-import Button from './Button';
-import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { ArrowRight, Bold, Italic, Link, List, Undo2, RotateCw } from 'lucide-react';
+import Button from '../../../components/Button';
+import { useScrollAnimation } from '../../../hooks/useScrollAnimation';
 
 const EmailSequences: React.FC = () => {
   const { elementRef, isVisible } = useScrollAnimation();
