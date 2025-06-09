@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 import { ClientService } from './data/clientService';
 import type { Client } from './data/clientService';
+import { JobService } from '../../recruitment/organizations/data/jobService';
+import { DepartmentService } from '../../recruitment/organizations/data/departmentService';
+import type { Job, Department } from '../../recruitment/organizations/data/types';
 
 // Utility function to generate consistent colors based on string
 const stringToColor = (str: string) => {
@@ -40,11 +43,18 @@ const getInitials = (name: string) => {
 const ClientDetailPage: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [client, setClient] = useState<Client | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);  const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'departments' | 'activity' | 'contracts'>('overview');
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'departments' | 'activity' | 'contracts'>('overview');
   const [searchTerm, setSearchTerm] = useState('');
 
   const clientService = new ClientService();
+  const jobService = new JobService();
+  const departmentService = new DepartmentService();
 
   // Load client data
   useEffect(() => {
@@ -72,10 +82,58 @@ const ClientDetailPage: React.FC = () => {
       } finally {
         setLoading(false);
       }
+    };    loadClient();
+  }, [clientId]);
+
+  // Load jobs when activeTab changes to 'jobs' or when client data is loaded
+  useEffect(() => {
+    const loadJobs = async () => {
+      if (!client || activeTab !== 'jobs') return;
+
+      try {
+        setLoadingJobs(true);
+        const jobsData = await jobService.getJobsByOrganization(client.id);
+        setJobs(jobsData);
+      } catch (err) {
+        console.error('Error loading jobs:', err);
+      } finally {
+        setLoadingJobs(false);
+      }
+    };    loadJobs();
+  }, [client, activeTab]);
+
+  // Load departments when activeTab changes to 'departments' or when client data is loaded
+  useEffect(() => {
+    const loadDepartments = async () => {
+      if (!client || activeTab !== 'departments') return;
+
+      try {
+        setLoadingDepartments(true);
+        const departmentsData = await departmentService.getDepartmentsByOrganization(client.id);
+        setDepartments(departmentsData);
+      } catch (err) {
+        console.error('Error loading departments:', err);
+      } finally {
+        setLoadingDepartments(false);
+      }
     };
 
-    loadClient();
-  }, [clientId]);
+    loadDepartments();
+  }, [client, activeTab]);
+
+  // Helper functions
+  const getJobStatusColor = (status: string) => {
+    switch (status) {
+      case 'open':
+        return 'bg-green-100 text-green-800';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   // Helper functions
   const getStatusBadgeColor = (status: string) => {
@@ -493,72 +551,150 @@ const ClientDetailPage: React.FC = () => {
                   <button className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
                     <Plus className="w-4 h-4 mr-2" />
                     New Job
-                  </button>
-                </div>
+                  </button>                </div>
               </div>
               
-              <div className="space-y-4">
-                {[1, 2, 3].map((job) => (
-                  <div key={job} className="bg-gray-50 rounded-lg p-4 border">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-lg font-medium text-gray-900">Senior Software Developer</h4>
-                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                            Active
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center text-sm text-gray-600 mb-3">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          <span className="mr-4">Remote</span>
-                          <Clock className="w-4 h-4 mr-1" />
-                          <span className="mr-4">Full-time</span>
-                          <Users className="w-4 h-4 mr-1" />
-                          <span>24 applicants</span>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-gray-500">
-                            Posted: {formatDate('2024-06-01')} • Deadline: {formatDate('2024-07-01')}
-                          </div>
-                          <div className="text-lg font-semibold text-gray-900">
-                            $120,000 - $150,000
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+              {/* Filter jobs based on search term */}
+              {(() => {
+                const filteredJobs = jobs.filter(job =>
+                  job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  job.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  job.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+                );
 
-          {activeTab === 'departments' && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Department Structure</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {['Engineering', 'Marketing', 'Sales', 'HR'].map((dept) => (
-                  <div key={dept} className="bg-gray-50 rounded-lg p-4 border">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                          <Users className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{dept}</h4>
-                          <p className="text-sm text-gray-500">Department Head: John Doe</p>
+                return (
+                  <div className="space-y-4">
+                {loadingJobs ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Loading jobs...</p>
+                  </div>
+                ) : filteredJobs.length > 0 ? (
+                  filteredJobs.map((job) => (
+                    <Link
+                      key={job.id}
+                      to={`/dashboard/organizations/${client?.id}/departments/${job.departmentId}/jobs/${job.id}/ats`}
+                      className="block bg-gray-50 rounded-lg p-4 border hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-lg font-medium text-gray-900">{job.title}</h4>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getJobStatusColor(job.status)}`}>
+                              {job.status}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center text-sm text-gray-600 mb-3">
+                            <Building className="w-4 h-4 mr-1" />
+                            <span className="mr-4">{job.department}</span>
+                            <MapPin className="w-4 h-4 mr-1" />
+                            <span className="mr-4">{job.location}</span>
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span className="mr-4">{job.employmentType}</span>
+                            <Users className="w-4 h-4 mr-1" />
+                            <span>{job.applicantCount} applicants</span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-500">
+                              Posted: {new Date(job.postedDate).toLocaleDateString()} • Deadline: {new Date(job.applicationDeadline).toLocaleDateString()}
+                            </div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {job.salary}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Open Positions: <span className="font-medium text-gray-900">3</span></span>
-                      <span className="text-gray-500">Employees: <span className="font-medium text-gray-900">45</span></span>
-                    </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>                    <p className="text-gray-500 mb-4">
+                      {searchTerm ? "No jobs match your search criteria." : "This client doesn't have any jobs yet."}
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
+                );
+              })()}
+            </div>
+          )}          {activeTab === 'departments' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Department Structure</h3>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search departments..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {(() => {
+                if (loadingDepartments) {
+                  return (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                      <p className="text-gray-500">Loading departments...</p>
+                    </div>
+                  );
+                }
+
+                const filteredDepartments = departments.filter(dept =>
+                  dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  dept.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  dept.manager.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                return filteredDepartments.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredDepartments.map((dept) => (
+                      <Link
+                        key={dept.id}
+                        to={`/dashboard/organizations/${client?.id}/departments/${dept.id}/jobs`}
+                        className="bg-gray-50 rounded-lg p-4 border hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-200 transition-colors">
+                              <Users className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900 group-hover:text-purple-700 transition-colors">{dept.name}</h4>
+                              <p className="text-sm text-gray-500">Manager: {dept.manager}</p>
+                            </div>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{dept.description}</p>
+                        
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Open Jobs: <span className="font-medium text-gray-900">{dept.activeJobs}</span></span>
+                          <span className="text-gray-500">Employees: <span className="font-medium text-gray-900">{dept.totalEmployees}</span></span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No departments found</h3>
+                    <p className="text-gray-500 mb-4">
+                      {searchTerm ? "No departments match your search criteria." : "This client doesn't have any departments yet."}
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
