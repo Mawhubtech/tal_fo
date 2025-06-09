@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '../services/authService';
 import { useToast } from '../contexts/ToastContext';
+import { useShowWelcomeToast } from '../hooks/useAuth';
 
 const OAuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ const OAuthCallback: React.FC = () => {
   const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(true);
   const { addToast } = useToast();
+  const showWelcomeToast = useShowWelcomeToast();
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
@@ -47,12 +49,9 @@ const OAuthCallback: React.FC = () => {
           // Store user data in query cache
           queryClient.setQueryData(['user'], user);          // Navigate to dashboard after successful authentication
           console.log('Redirecting to dashboard...');
-          addToast({
-            type: 'success',
-            title: 'Welcome!',
-            message: 'You have been successfully signed in.'
-          });
-          navigate('/dashboard', { replace: true });        } catch (error: any) {
+          // Use the shared welcome toast function
+          showWelcomeToast();
+          navigate('/dashboard', { replace: true });} catch (error: any) {
           console.error('Error handling OAuth callback:', error);
           console.error('Error status:', error.response?.status);
           console.error('Error data:', error.response?.data);

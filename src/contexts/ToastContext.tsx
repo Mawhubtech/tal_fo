@@ -24,13 +24,26 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
-
-  const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
+  }, []);  const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9);
     const newToast = { ...toast, id };
     
-    setToasts((prev) => [...prev, newToast]);
+    setToasts((prev) => {
+      // Check if a toast with the same title and message already exists in the current state
+      const duplicateExists = prev.some(
+        existingToast => 
+          existingToast.title === toast.title && 
+          existingToast.message === toast.message &&
+          existingToast.type === toast.type
+      );
+      
+      // Don't add duplicate toasts
+      if (duplicateExists) {
+        return prev;
+      }
+      
+      return [...prev, newToast];
+    });
 
     // Auto remove after duration (default 5 seconds)
     setTimeout(() => {

@@ -9,6 +9,34 @@ import {
 import { ClientService } from './data/clientService';
 import type { Client } from './data/clientService';
 
+// Utility function to generate consistent colors based on string
+const stringToColor = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Predefined vibrant colors for better visual appeal
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA5A5', '#A178DF',
+    '#75C9B7', '#FFD166', '#118AB2', '#06D6A0', '#EF476F',
+    '#FFC43D', '#E76F51', '#1B9AAA', '#6A0572', '#AB83A1'
+  ];
+  
+  // Use a consistent color from our palette based on the hash
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Function to get client initials from name
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 const ClientDetailPage: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [client, setClient] = useState<Client | null>(null);
@@ -108,8 +136,15 @@ const ClientDetailPage: React.FC = () => {
   if (error || !client) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="text-center py-12">
-          <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <div className="text-center py-12">          <div 
+            className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold mx-auto mb-4 shadow-sm"
+            style={{ 
+              backgroundColor: '#A3A3A3',
+              backgroundImage: 'linear-gradient(135deg, #A3A3A3AA, #A3A3A3)',
+            }}
+          >
+            <XCircle className="w-6 h-6" />
+          </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             {error || 'Client not found'}
           </h3>
@@ -146,10 +181,15 @@ const ClientDetailPage: React.FC = () => {
             className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex items-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl mr-4">
-              {client.name.charAt(0)}
+          </Link>          <div className="flex items-center">
+            <div 
+              className="w-16 h-16 rounded-lg flex items-center justify-center text-white font-bold text-2xl mr-4 shadow-sm"
+              style={{ 
+                backgroundColor: stringToColor(client.name),
+                backgroundImage: `linear-gradient(135deg, ${stringToColor(client.name)}aa, ${stringToColor(client.name)})`,
+              }}
+            >
+              {getInitials(client.name)}
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>

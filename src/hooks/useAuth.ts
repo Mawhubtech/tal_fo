@@ -1,9 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService } from '../services/authService';
 import type { LoginRequest, RegisterRequest } from '../types/auth';
+import { useToast } from '../contexts/ToastContext';
+
+// Helper function to show welcome toast
+export const useShowWelcomeToast = () => {
+  const { addToast } = useToast();
+  
+  return () => {
+    addToast({
+      type: 'success',
+      title: 'Welcome back!',
+      message: 'You have been successfully signed in.',
+    });
+  };
+};
 
 export const useLogin = () => {
   const queryClient = useQueryClient();
+  const showWelcomeToast = useShowWelcomeToast();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
@@ -12,12 +27,15 @@ export const useLogin = () => {
       localStorage.setItem('refreshToken', data.refreshToken);
       queryClient.setQueryData(['user'], data.user);
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      // Show welcome toast here instead of in the LoginForm component
+      showWelcomeToast();
     },
   });
 };
 
 export const useRegister = () => {
   const queryClient = useQueryClient();
+  const showWelcomeToast = useShowWelcomeToast();
 
   return useMutation({
     mutationFn: (data: RegisterRequest) => authService.register(data),
@@ -26,6 +44,8 @@ export const useRegister = () => {
       localStorage.setItem('refreshToken', data.refreshToken);
       queryClient.setQueryData(['user'], data.user);
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      // Show welcome toast for new registrations too
+      showWelcomeToast();
     },
   });
 };

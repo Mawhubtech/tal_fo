@@ -264,7 +264,7 @@ const Search: React.FC = () => {
     <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto px-4 py-6">
       {/* Logo and title */}
       <div className="text-center mb-8">
-        <img src="/TALL.png" alt="PeopleGPT" className="h-12 mx-auto mb-2" />
+       
          <p className="text-gray-500 text-sm mt-1">
           Find exactly who you're looking for, in seconds.
           <a href="#" className="ml-1 text-purple-700 hover:text-purple-800 hover:underline transition-colors">

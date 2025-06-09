@@ -27,22 +27,13 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
     
     return roleColors[roleName.toLowerCase()] || 'bg-gray-100 text-gray-800';
   };
-
   return (
     <div className="border-b border-gray-200 flex items-center justify-between p-3">
-      <div className="flex-1"></div>
+      <div className="flex-1 flex items-center">
+        <img src="/TALL.png" alt="PeopleGPT" className="h-12" />
+      </div>
       
       <div className="flex items-center gap-4">
-        <Button
-          variant="primary"
-          size="sm"
-          className="bg-primary-600 hover:bg-purple-800 flex items-center gap-1 rounded-md text-sm"
-          onClick={onNewSearch}
-        >
-          <Search className="w-4 h-4" />
-          New Search
-        </Button>
-        
         {/* User profile dropdown */}
         <div className="relative">
           <button 

@@ -31,11 +31,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) =>
   });  const onSubmit = async (data: LoginFormData) => {
     try {
       await login.mutateAsync(data);
-      addToast({
-        type: 'success',
-        title: 'Welcome back!',
-        message: 'You have been successfully signed in.',
-      });
+      // Welcome toast is now shown in the useLogin hook
       onClose();
       
       // Navigate to the intended destination or dashboard

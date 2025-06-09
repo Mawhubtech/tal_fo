@@ -33,11 +33,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose })
     try {
       const { confirmPassword, ...registerData } = data;
       await register_mutation.mutateAsync(registerData);
-      addToast({
-        type: 'success',
-        title: 'Account created!',
-        message: 'Welcome to TalGPT. Your account has been successfully created.',
-      });
+      // Welcome toast is now shown in the useRegister hook
       onClose();
       
       // Navigate to the intended destination or dashboard

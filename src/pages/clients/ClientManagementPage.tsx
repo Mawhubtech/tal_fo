@@ -1,7 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Edit3, Trash2, Building, Users, MapPin, Globe, Phone, Mail, Calendar, Eye, Home, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, Users, MapPin, Globe, Phone, Mail, Calendar, Eye, Home, ChevronRight } from 'lucide-react';
 import { ClientService, type Client } from './data/clientService';
+
+// Utility function to generate consistent colors based on string
+const stringToColor = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Predefined vibrant colors for better visual appeal
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA5A5', '#A178DF',
+    '#75C9B7', '#FFD166', '#118AB2', '#06D6A0', '#EF476F',
+    '#FFC43D', '#E76F51', '#1B9AAA', '#6A0572', '#AB83A1'
+  ];
+  
+  // Use a consistent color from our palette based on the hash
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Function to get client initials from name
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
 
 const ClientManagementPage: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -189,9 +217,15 @@ const ClientManagementPage: React.FC = () => {
                 <tr key={client.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <Building className="h-6 w-6 text-gray-600" />
-                      </div>                      <div className="ml-4">
+                      <div 
+                        className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm"
+                        style={{ 
+                          backgroundColor: stringToColor(client.name),
+                          backgroundImage: `linear-gradient(135deg, ${stringToColor(client.name)}aa, ${stringToColor(client.name)})`,
+                        }}
+                      >
+                        {getInitials(client.name)}
+                      </div><div className="ml-4">
                         <Link 
                           to={`/dashboard/clients/${client.id}`}
                           className="text-sm font-medium text-gray-900 hover:text-purple-600 hover:underline cursor-pointer"
