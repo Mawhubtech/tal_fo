@@ -17,7 +17,7 @@ import DepartmentJobsPage from '../recruitment/organizations/pages/DepartmentJob
 import JobATSPage from '../recruitment/organizations/pages/JobATSPage';
 
 // Candidates Page
-import CandidatesPage from './CandidatesPage'; // Import the new CandidatesPage
+import CandidatesPage from './candidates'; // Import the new CandidatesPage
 
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout

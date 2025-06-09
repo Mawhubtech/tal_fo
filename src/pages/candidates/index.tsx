@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../components/ProfileSidePanel';
+import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
 
 interface PersonalInfo {
   fullName: string;
@@ -70,9 +70,8 @@ const CandidatesPage: React.FC = () => {
     const loadCandidates = async () => {
       try {
         const candidatePromises = [];
-        for (let i = 1; i <= 10; i++) {
-          candidatePromises.push(
-            import(`../data/user${i}.json`).then(module => module.default)
+        for (let i = 1; i <= 10; i++) {          candidatePromises.push(
+            import(`../../data/user${i}.json`).then(module => module.default)
           );
         }
         const loadedCandidates = await Promise.all(candidatePromises);
@@ -315,10 +314,14 @@ const CandidatesPage: React.FC = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </button>
-              <Link to="/dashboard/resume-processing" className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
+              <Link to="/dashboard/resume-processing" className="flex items-center px-4 py-2 bg-white border border-purple-600 rounded-lg hover:bg-gray-50 text-purple-700">
                 <FileText className="h-4 w-4 mr-2" />
                 Bulk Processing
               </Link>
+			<Link to="/dashboard/search" className="flex items-center px-4 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors">
+				<SearchCheckIcon className="h-4 w-4 mr-2" />
+				Search Talents
+			</Link>
               <button className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Candidate
