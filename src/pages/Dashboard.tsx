@@ -4,7 +4,15 @@ import Sidebar from '../components/Sidebar';   // Your Sidebar component
 import TopNavbar from '../components/TopNavbar'; // Your TopNavbar component
 import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
 // Sourcing imports
-import { Search, SearchResults, ContactsPage, EmailSequencesPage } from '../sourcing';
+import { Search, SearchResults, EmailSequencesPage } from '../sourcing';
+import UnifiedContactsPage from '../sourcing/contacts/pages/UnifiedContactsPage'; // Import UnifiedContactsPage
+import { 
+  CandidateOutreachOverview, 
+  CandidateOutreachProspects, 
+  CandidateOutreachCampaigns, 
+  CandidateOutreachTemplates, 
+  CandidateOutreachAnalytics 
+} from '../sourcing/outreach';
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
 // Job Pages - Only keep CreateJobPage for the new flow
 import CreateJobPage from '../recruitment/jobs/pages/CreateJobPage'; // Import CreateJobPage
@@ -18,6 +26,15 @@ import JobATSPage from '../recruitment/organizations/pages/JobATSPage';
 
 // Candidates Page
 import CandidatesPage from './candidates'; // Import the new CandidatesPage
+
+// Client Outreach Pages
+import { 
+  ClientOutreachOverview, 
+  ClientOutreachProspects, 
+  ClientOutreachCampaigns, 
+  ClientOutreachTemplates, 
+  ClientOutreachAnalytics 
+} from './client-outreach'; // Import Client Outreach components
 
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
@@ -64,7 +81,7 @@ const Dashboard: React.FC = () => {
             <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
             <Route path="search-results" element={<SearchResults />} /> {/* Route for SearchResults */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<ContactsPage />} /> {/* Route for ContactsPage */}            {/* Jobs, Candidates, and Clients standalone routes */}
+            <Route path="contacts" element={<UnifiedContactsPage />} /> {/* Route for Unified Contact Management */}            {/* Jobs, Candidates, and Clients standalone routes */}
             <Route path="jobs" element={<OrganizationsPage />} />
             <Route path="candidates" element={<CandidatesPage />} />
             <Route path="clients" element={<ClientManagementPage />} />
@@ -76,10 +93,26 @@ const Dashboard: React.FC = () => {
             <Route path="organizations/:organizationId/departments" element={<DepartmentsPage />} />
             <Route path="organizations/:organizationId/departments/:departmentId/jobs" element={<DepartmentJobsPage />} />
             <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/ats" element={<JobATSPage />} />
-            
-            {/* Job Creation - Integrated with hierarchical flow */}
+              {/* Job Creation - Integrated with hierarchical flow */}
             <Route path="organizations/:organizationId/create-job" element={<CreateJobPage />} />
-            <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={<CreateJobPage />} />{/* Admin Pages with Layout */}            <Route path="admin" element={<AdminLayout />}>
+            <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={<CreateJobPage />} />
+
+            {/* Candidate Outreach Routes (under sourcing) */}
+            <Route path="sourcing/outreach" element={<CandidateOutreachOverview />} />
+            <Route path="sourcing/outreach/prospects" element={<CandidateOutreachProspects />} />
+            <Route path="sourcing/outreach/campaigns" element={<CandidateOutreachCampaigns />} />
+            <Route path="sourcing/outreach/templates" element={<CandidateOutreachTemplates />} />
+            <Route path="sourcing/outreach/analytics" element={<CandidateOutreachAnalytics />} />
+
+            {/* Client Outreach Routes (separate section) */}
+            <Route path="client-outreach" element={<ClientOutreachOverview />} />
+            <Route path="client-outreach/prospects" element={<ClientOutreachProspects />} />
+            <Route path="client-outreach/campaigns" element={<ClientOutreachCampaigns />} />
+            <Route path="client-outreach/templates" element={<ClientOutreachTemplates />} />
+            <Route path="client-outreach/analytics" element={<ClientOutreachAnalytics />} />
+
+            {/* Admin Pages with Layout */}
+            <Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="candidates" element={<CandidateProfilesPage />} />
@@ -87,7 +120,8 @@ const Dashboard: React.FC = () => {
               <Route path="job-boards" element={<JobBoardConfigPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />
-            </Route></Routes>
+            </Route>
+          </Routes>
 
         </main>
       </div>

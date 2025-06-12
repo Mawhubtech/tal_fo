@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Search, Users, MessageSquare, 
   Settings, HelpCircle, ChevronDown, Send, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
-  Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3 // Added for Jobs and Admin
+  Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3, // Added for Jobs and Admin
+  Mail, UserCircle // Added for Outreach
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -12,10 +13,10 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
-  const location = useLocation();
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+  const location = useLocation();  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     sourcing: false,
-    admin: true
+    admin: true,
+    clientOutreach: false
   });
     // Helper function to check if a route is active
   const isActive = (path: string) => {
@@ -74,8 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               </div>
               {isExpanded && <ChevronDown className={`w-4 h-4 transform transition-transform ${openSections['sourcing'] ? 'rotate-180' : ''}`} />}
             </button>
-            
-            {/* Expanded menu */}            {openSections['sourcing'] && isExpanded && (
+              {/* Expanded menu */}            {openSections['sourcing'] && isExpanded && (
               <nav className="pl-8 space-y-1 py-1">
                 <Link to="/dashboard/search" className={`flex items-center py-1 text-sm ${isActive('/dashboard/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                   <Search className="w-3 h-3 mr-2" />
@@ -89,14 +89,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                   <Users className="w-3 h-3 mr-2" />
                   Shortlist
                 </Link>
-                <Link to="/dashboard/contacts" className={`flex items-center py-1 text-sm ${isActive('/dashboard/contacts') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                  <ContactsIcon className="w-3 h-3 mr-2" />
-                  Contacts
-                </Link>
                 <Link to="/dashboard/sequences" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sequences') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                   <Send className="w-3 h-3 mr-2" />
                   Sequences
                 </Link>
+                <div className="border-t border-gray-100 my-1 pt-1">
+                  <div className="text-xs text-gray-500 mb-1 font-medium">Candidate Outreach</div>
+                  <Link to="/dashboard/sourcing/outreach" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach') && !location.pathname.includes('/dashboard/sourcing/outreach/') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <LayoutGrid className="w-3 h-3 mr-2" />
+                    Overview
+                  </Link>
+                  <Link to="/dashboard/sourcing/outreach/prospects" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach/prospects') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <UserCircle className="w-3 h-3 mr-2" />
+                    Prospects
+                  </Link>
+                  <Link to="/dashboard/sourcing/outreach/campaigns" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach/campaigns') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <Mail className="w-3 h-3 mr-2" />
+                    Campaigns
+                  </Link>
+                  <Link to="/dashboard/sourcing/outreach/templates" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach/templates') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <MessageSquare className="w-3 h-3 mr-2" />
+                    Templates
+                  </Link>
+                  <Link to="/dashboard/sourcing/outreach/analytics" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach/analytics') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <BarChart3 className="w-3 h-3 mr-2" />
+                    Analytics
+                  </Link>
+                </div>
               </nav>
             )}
             
@@ -118,10 +137,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     <Link to="/dashboard/shortlist" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/shortlist') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                       <Users className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/shortlist') ? '#7e22ce' : '' }} />
                       Shortlist
-                    </Link>
-                    <Link to="/dashboard/contacts" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/contacts') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                      <ContactsIcon className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/contacts') ? '#7e22ce' : '' }} />
-                      Contacts
                     </Link>
                     <Link to="/dashboard/sequences" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/sequences') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                       <Send className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/sequences') ? '#7e22ce' : '' }} />
@@ -160,8 +175,91 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           >
             <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/clients') ? '#7e22ce' : '#9ca3af' }}>
               <Building className="w-4 h-4" />
+            </div>            {isExpanded && "Clients"}
+          </Link>          {/* Client Outreach Section */}
+          <div className="relative group">
+            <button 
+              onClick={() => isExpanded && toggleSection('clientOutreach')}
+              className={`flex items-center w-full ${isExpanded ? 'px-4 justify-between' : 'px-0 justify-center'} py-2 text-sm font-medium ${location.pathname.includes('/dashboard/client-outreach') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              title={!isExpanded ? "Client Outreach" : ""}
+            >
+              <div className="flex items-center">
+                <div className={isExpanded ? "mr-3" : ""} style={{ color: location.pathname.includes('/dashboard/client-outreach') ? '#7e22ce' : '#9ca3af' }}>
+                  <Mail className="w-4 h-4" />
+                </div>
+                {isExpanded && "Client Outreach"}
+              </div>
+              {isExpanded && <ChevronDown className={`w-4 h-4 transform transition-transform ${openSections['clientOutreach'] ? 'rotate-180' : ''}`} />}
+            </button>
+              {/* Expanded menu */}
+            {openSections['clientOutreach'] && isExpanded && (
+              <nav className="pl-8 space-y-1 py-1">
+                <Link to="/dashboard/client-outreach" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach') && !location.pathname.includes('/dashboard/client-outreach/') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <LayoutGrid className="w-3 h-3 mr-2" />
+                  Overview
+                </Link>
+                <Link to="/dashboard/client-outreach/prospects" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach/prospects') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <Building className="w-3 h-3 mr-2" />
+                  Prospects
+                </Link>
+                <Link to="/dashboard/client-outreach/campaigns" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach/campaigns') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <Mail className="w-3 h-3 mr-2" />
+                  Campaigns
+                </Link>
+                <Link to="/dashboard/client-outreach/templates" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach/templates') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <MessageSquare className="w-3 h-3 mr-2" />
+                  Templates
+                </Link>
+                <Link to="/dashboard/client-outreach/analytics" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach/analytics') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <BarChart3 className="w-3 h-3 mr-2" />
+                  Analytics
+                </Link>
+              </nav>
+            )}
+            
+            {/* Collapsed hover menu */}
+            {!isExpanded && (
+              <div className="absolute left-full top-0 ml-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="p-2">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-2">
+                    Client Outreach
+                  </div>                  <nav className="space-y-1">
+                    <Link to="/dashboard/client-outreach" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach') && !location.pathname.includes('/dashboard/client-outreach/') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      <LayoutGrid className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach') && !location.pathname.includes('/dashboard/client-outreach/') ? '#7e22ce' : '' }} />
+                      Overview
+                    </Link>
+                    <Link to="/dashboard/client-outreach/prospects" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach/prospects') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      <Building className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach/prospects') ? '#7e22ce' : '' }} />
+                      Prospects
+                    </Link>
+                    <Link to="/dashboard/client-outreach/campaigns" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach/campaigns') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      <Mail className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach/campaigns') ? '#7e22ce' : '' }} />
+                      Campaigns
+                    </Link>
+                    <Link to="/dashboard/client-outreach/templates" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach/templates') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach/templates') ? '#7e22ce' : '' }} />
+                      Templates
+                    </Link>
+                    <Link to="/dashboard/client-outreach/analytics" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach/analytics') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      <BarChart3 className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach/analytics') ? '#7e22ce' : '' }} />
+                      Analytics
+                    </Link>
+                  </nav>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Contacts Section */}
+          <Link 
+            to="/dashboard/contacts" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/contacts') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+            title={!isExpanded ? "Contacts" : ""}
+          >
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/contacts') ? '#7e22ce' : '#9ca3af' }}>
+              <ContactsIcon className="w-4 h-4" />
             </div>
-            {isExpanded && "Clients"}
+            {isExpanded && "Contacts"}
           </Link>
 
           {/* Admin Section */}

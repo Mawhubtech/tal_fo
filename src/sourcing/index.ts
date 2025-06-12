@@ -10,11 +10,17 @@ export { default as NaturalLanguageSearch } from './search/components/NaturalLan
 export { default as DataSourcesSearch } from './search/components/DataSourcesSearch';
 export { default as BooleanSearchDialog } from './search/components/BooleanSearchDialog';
 
-// Contacts pages
-export { default as ContactsPage } from './contacts/pages/ContactsPage';
-
 // Email pages
 export { default as EmailSequencesPage } from './email/pages/EmailSequencesPage';
 
 // Email components
 export { default as EmailSequences } from './email/components/EmailSequences';
+
+// Candidate outreach exports
+export { 
+  CandidateOutreachOverview, 
+  CandidateOutreachProspects, 
+  CandidateOutreachCampaigns, 
+  CandidateOutreachTemplates, 
+  CandidateOutreachAnalytics 
+} from './outreach';
