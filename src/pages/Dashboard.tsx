@@ -33,7 +33,8 @@ import {
   ClientOutreachProspects, 
   ClientOutreachCampaigns, 
   ClientOutreachTemplates, 
-  ClientOutreachAnalytics 
+  ClientOutreachAnalytics,
+  ClientOutreachSearch 
 } from './client-outreach'; // Import Client Outreach components
 
 // Admin Pages
@@ -102,14 +103,13 @@ const Dashboard: React.FC = () => {
             <Route path="sourcing/outreach/prospects" element={<CandidateOutreachProspects />} />
             <Route path="sourcing/outreach/campaigns" element={<CandidateOutreachCampaigns />} />
             <Route path="sourcing/outreach/templates" element={<CandidateOutreachTemplates />} />
-            <Route path="sourcing/outreach/analytics" element={<CandidateOutreachAnalytics />} />
-
-            {/* Client Outreach Routes (separate section) */}
+            <Route path="sourcing/outreach/analytics" element={<CandidateOutreachAnalytics />} />            {/* Client Outreach Routes (separate section) */}
             <Route path="client-outreach" element={<ClientOutreachOverview />} />
             <Route path="client-outreach/prospects" element={<ClientOutreachProspects />} />
             <Route path="client-outreach/campaigns" element={<ClientOutreachCampaigns />} />
             <Route path="client-outreach/templates" element={<ClientOutreachTemplates />} />
             <Route path="client-outreach/analytics" element={<ClientOutreachAnalytics />} />
+            <Route path="client-outreach/search" element={<ClientOutreachSearch />} />
 
             {/* Admin Pages with Layout */}
             <Route path="admin" element={<AdminLayout />}>

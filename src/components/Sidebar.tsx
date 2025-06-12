@@ -197,10 +197,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                 <Link to="/dashboard/client-outreach" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach') && !location.pathname.includes('/dashboard/client-outreach/') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                   <LayoutGrid className="w-3 h-3 mr-2" />
                   Overview
-                </Link>
-                <Link to="/dashboard/client-outreach/prospects" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach/prospects') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                </Link>                <Link to="/dashboard/client-outreach/prospects" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach/prospects') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                   <Building className="w-3 h-3 mr-2" />
                   Prospects
+                </Link>
+                <Link to="/dashboard/client-outreach/search" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <Search className="w-3 h-3 mr-2" />
+                  Search
                 </Link>
                 <Link to="/dashboard/client-outreach/campaigns" className={`flex items-center py-1 text-sm ${isActive('/dashboard/client-outreach/campaigns') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                   <Mail className="w-3 h-3 mr-2" />
@@ -227,10 +230,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     <Link to="/dashboard/client-outreach" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach') && !location.pathname.includes('/dashboard/client-outreach/') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                       <LayoutGrid className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach') && !location.pathname.includes('/dashboard/client-outreach/') ? '#7e22ce' : '' }} />
                       Overview
-                    </Link>
-                    <Link to="/dashboard/client-outreach/prospects" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach/prospects') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                    </Link>                    <Link to="/dashboard/client-outreach/prospects" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach/prospects') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                       <Building className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach/prospects') ? '#7e22ce' : '' }} />
                       Prospects
+                    </Link>
+                    <Link to="/dashboard/client-outreach/search" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach/search') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      <Search className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach/search') ? '#7e22ce' : '' }} />
+                      Search
                     </Link>
                     <Link to="/dashboard/client-outreach/campaigns" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach/campaigns') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                       <Mail className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach/campaigns') ? '#7e22ce' : '' }} />

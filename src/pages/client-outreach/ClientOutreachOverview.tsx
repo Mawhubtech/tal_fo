@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Filter, Plus, TrendingUp, Building, Mail, MessageSquare, BarChart3 } from 'lucide-react';
 
 const ClientOutreachOverview: React.FC = () => {
@@ -56,15 +57,17 @@ const ClientOutreachOverview: React.FC = () => {
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center justify-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition-colors">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">          <button className="flex items-center justify-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition-colors">
             <Plus className="w-5 h-5 text-purple-600 mr-2" />
             <span className="text-purple-700 font-medium">Create Campaign</span>
           </button>
-          <button className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors">
+          <Link 
+            to="/dashboard/client-outreach/search"
+            className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors"
+          >
             <Search className="w-5 h-5 text-blue-600 mr-2" />
             <span className="text-blue-700 font-medium">Find Companies</span>
-          </button>
+          </Link>
           <button className="flex items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors">
             <MessageSquare className="w-5 h-5 text-green-600 mr-2" />
             <span className="text-green-700 font-medium">Create Template</span>
