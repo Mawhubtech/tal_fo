@@ -1,5 +1,5 @@
 // Contact Service - Centralized contact management
-import { Contact, ContactType, ContactStatus, ContactFilters, ContactSort, OutreachCampaign } from '../types/contacts';
+import { Contact, ContactType, ContactStatus, ContactFilters } from '../types/contacts';
 
 // Mock data for development - replace with real API calls
 const mockContacts: Contact[] = [
@@ -221,7 +221,6 @@ class ContactService {
     this.contacts.push(newContact);
     return newContact;
   }
-
   // Update contact
   async updateContact(id: string, updates: Partial<Contact>): Promise<Contact | null> {
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -229,7 +228,15 @@ class ContactService {
     const index = this.contacts.findIndex(contact => contact.id === id);
     if (index === -1) return null;
 
-    this.contacts[index] = { ...this.contacts[index], ...updates };
+    // Type-safe update that preserves the contact type
+    const updatedContact = { ...this.contacts[index] } as Contact;
+    Object.keys(updates).forEach(key => {
+      if (updates[key as keyof Contact] !== undefined) {
+        (updatedContact as any)[key] = updates[key as keyof Contact];
+      }
+    });
+    
+    this.contacts[index] = updatedContact;
     return this.contacts[index];
   }
 

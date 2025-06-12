@@ -11,9 +11,8 @@ import { contactService } from '../../../services/contactService';
 const UnifiedContactsPage: React.FC = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [view, setView] = useState<'grid' | 'list'>('list');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
-  const [filters, setFilters] = useState<ContactFilters>({});
+  const [searchTerm, setSearchTerm] = useState('');  const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
+  const [filters] = useState<ContactFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
