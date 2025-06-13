@@ -33,18 +33,18 @@ const Hero: React.FC = () => {
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
-            The <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">AI</span> Platform for<br />
-            the Future
+            Tal: Your <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">AI Co-Pilot</span> for<br />
+            Smarter, Faster Hiring.
           </h1>
           
           {/* Subheadline */}
           <p 
-            className={`text-lg md:text-xl text-gray-600 max-w-2xl mx-auto transition-all duration-700 delay-300 transform ${
+            className={`text-lg md:text-xl text-gray-600 max-w-3xl mx-auto transition-all duration-700 delay-300 transform ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
-            TalGPT, the AI engine that understands what you're<br className="hidden md:block" /> 
-            looking for. Discover and unlock intelligence at scale.
+            From intelligent sourcing and automated screening to personalized reachouts and a seamless ATS, 
+            Tal revolutionizes your entire HR workflow. Hire the best, effortlessly.
           </p>
           
           {/* CTA buttons */}

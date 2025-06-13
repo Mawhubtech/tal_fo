@@ -21,6 +21,7 @@ import OAuthCallback from './components/OAuthCallback';
 import Dashboard from './pages/Dashboard';
 import ResumeProcessingPage from './pages/ResumeProcessingPage';
 import { EmailSequencesPage } from './sourcing'; // Import EmailSequencesPage from sourcing
+import RequestDemoPage from './pages/RequestDemoPage'; // Import RequestDemoPage
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,7 +45,7 @@ function App() {
                 <Navbar />
                 <main className="space-y-16">
                   <Hero />
-                  <PartnersSlider />
+                  {/* <PartnersSlider /> */}
                   <NaturalLanguageSearch />
                   <DataSourcesSearch />
                   <ProfileEvaluation />
@@ -71,6 +72,10 @@ function App() {
                   <Dashboard />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/request-demo"
+              element={<RequestDemoPage />}
             />
             {/* Remove individual /dashboard/resume-processing and /dashboard/sequences routes as they are handled by Dashboard.tsx */}            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>        
