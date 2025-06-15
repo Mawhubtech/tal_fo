@@ -4,16 +4,54 @@ import Button from './Button';
 
 const Hero: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  
+  const cyclingWords = [
+    "Talent Sourcing",
+    "Smart Screening", 
+    "AI Workflows",
+    "Candidate Outreach",
+    "Interview Scheduling",
+    "Pipeline Management",
+    "Team Collaboration",
+    "Performance Analytics"
+  ];
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentWordIndex((prevIndex) => (prevIndex + 1) % cyclingWords.length);
+    }, 2500);
+    
+    return () => clearInterval(interval);
+  }, [cyclingWords.length]);
+
   return (
-    <section className="relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-12 md:pt-16 md:pb-16">
-        <div className="text-center space-y-6 md:space-y-8">
+    <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-purple-50 min-h-screen flex flex-col">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Floating shapes - made larger and more spread out */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob"></div>
+        <div className="absolute -top-16 -right-32 w-80 h-80 bg-pink-100 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-32 left-1/2 transform -translate-x-1/2 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-1/2 -right-48 transform -translate-y-1/2 w-72 h-72 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob animation-delay-6000"></div>
+        <div className="absolute bottom-1/4 -left-48 w-80 h-80 bg-violet-100 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob animation-delay-8000"></div>
+        
+        {/* Floating particles - adjusted positions */}
+        <div className="absolute top-32 left-32 w-2 h-2 bg-purple-300 rounded-full animate-ping animation-delay-1000 opacity-20"></div>
+        <div className="absolute top-48 right-48 w-1 h-1 bg-pink-300 rounded-full animate-ping animation-delay-3000 opacity-30"></div>
+        <div className="absolute bottom-48 left-24 w-1.5 h-1.5 bg-blue-300 rounded-full animate-ping animation-delay-5000 opacity-25"></div>
+        <div className="absolute bottom-64 right-32 w-1 h-1 bg-purple-400 rounded-full animate-ping animation-delay-2000 opacity-20"></div>
+        <div className="absolute top-64 left-1/2 w-1 h-1 bg-indigo-300 rounded-full animate-ping animation-delay-7000 opacity-25"></div>
+      </div>
+
+      {/* Main Content - moved up */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12 lg:pt-16 flex-1 flex flex-col justify-center">
+        <div className="text-center space-y-8 md:space-y-12 mb-16">
           {/* New feature tag */}
           <div 
             className={`inline-flex transition-all duration-700 transform ${
@@ -33,7 +71,7 @@ const Hero: React.FC = () => {
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
-            Tal: Your <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">AI Co-Pilot</span> for<br />
+            Your <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">AI Co-Pilot</span> for<br />
             Smarter, Faster Hiring.
           </h1>
           
@@ -62,6 +100,89 @@ const Hero: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Cycling Text Animation at Bottom */}
+      <div className="relative pb-16 md:pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className={`text-2xl md:text-3xl lg:text-4xl font-medium text-gray-700 transition-all duration-700 delay-600 transform ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}>
+              <span className="text-gray-800">We take care of </span>
+              <span className="inline-block min-w-[280px] md:min-w-[320px] text-left">
+                <span 
+                  key={currentWordIndex}
+                  className="text-purple-600 font-semibold animate-fadeInUp"
+                >
+                  {cyclingWords[currentWordIndex]}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(40px, -60px) scale(1.1);
+          }
+          66% {
+            transform: translate(-30px, 30px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        
+        @keyframes fadeInUp {
+          0% {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-blob {
+          animation: blob 8s infinite;
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.8s ease-out;
+        }
+        
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        .animation-delay-6000 {
+          animation-delay: 6s;
+        }
+        .animation-delay-8000 {
+          animation-delay: 8s;
+        }
+        .animation-delay-1000 {
+          animation-delay: 1s;
+        }
+        .animation-delay-3000 {
+          animation-delay: 3s;
+        }
+        .animation-delay-5000 {
+          animation-delay: 5s;
+        }
+        .animation-delay-7000 {
+          animation-delay: 7s;
+        }
+      `}</style>
     </section>
   );
 };

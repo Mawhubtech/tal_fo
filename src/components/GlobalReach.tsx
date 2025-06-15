@@ -1,40 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import Button from './Button';
 
 const GlobalReach: React.FC = () => {
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!gridRef.current) return;
-
-    // Create grid cells
-    const columns = Math.ceil(window.innerWidth / 64);
-    const rows = Math.ceil(window.innerHeight / 64);
-
-    // Clear existing cells
-    gridRef.current.innerHTML = '';
-
-    // Create new cells
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < columns; j++) {
-        const cell = document.createElement('div');
-        cell.className = 'grid-cell';
-        cell.style.setProperty('--blink-duration', `${3 + Math.random() * 4}s`);
-        cell.style.setProperty('--blink-delay', `${Math.random() * 5}s`);
-        cell.style.left = `${j * 64}px`;
-        cell.style.top = `${i * 64}px`;
-        gridRef.current.appendChild(cell);
-      }
-    }
-  }, []);
-
   return (
-    <section className="relative overflow-hidden bg-slate-50">
-      <div className="absolute inset-0">
-        <div ref={gridRef} className="absolute inset-0 overflow-hidden hidden sm:block"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_100%_200px,rgba(147,197,253,0.1),transparent)]"></div>
-      </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-24 relative">
+    <section className="relative overflow-hidden py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-6">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight px-4 sm:px-0">
             Global reach: 800 million profiles
