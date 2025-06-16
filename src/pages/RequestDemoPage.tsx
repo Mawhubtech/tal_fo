@@ -49,7 +49,7 @@ const RequestDemoPage: React.FC = () => {
                 {/* Left Column: Content */}
                 <div className="p-10 md:p-14 bg-slate-50 flex flex-col justify-center"> 
                   <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-5 leading-tight"> 
-                    Elevate Your Hiring with <span className="text-purple-600">Tal's AI</span>.
+                    Elevate Your Hiring with <span className="text-purple-600">Tal AI</span>.
                   </h1>
                   <p className="text-lg text-gray-700 mb-8"> 
                     Stop juggling countless tools. Start building your dream team, intelligently.
