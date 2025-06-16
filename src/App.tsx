@@ -22,6 +22,7 @@ import Dashboard from './pages/Dashboard';
 import ResumeProcessingPage from './pages/ResumeProcessingPage';
 import { EmailSequencesPage } from './sourcing'; // Import EmailSequencesPage from sourcing
 import RequestDemoPage from './pages/RequestDemoPage'; // Import RequestDemoPage
+import AnimatedSection from './components/AnimatedSection'; // Added this line
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,16 +41,25 @@ function App() {
             <Router>
           <Routes>
             <Route path="/" element={
-              <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 font-sans">
+              <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
+                {/* Removed font-sans from here */}
                 <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
                 <Navbar />
                 <main className="space-y-16">
                   <Hero />
                   {/* <PartnersSlider /> */}
-                  <NaturalLanguageSearch />
-                  <DataSourcesSearch />
-                  <ProfileEvaluation />
-                  <EmailSequences />
+                  <AnimatedSection delay={0.1}>
+                    <NaturalLanguageSearch />
+                  </AnimatedSection>
+                  <AnimatedSection delay={0.2}>
+                    <DataSourcesSearch />
+                  </AnimatedSection>
+                  <AnimatedSection delay={0.3}>
+                    <ProfileEvaluation />
+                  </AnimatedSection>
+                  <AnimatedSection delay={0.4}>
+                    <EmailSequences />
+                  </AnimatedSection>
                   <GlobalReach />
                   <TabFeatures />
                   <Integrations />

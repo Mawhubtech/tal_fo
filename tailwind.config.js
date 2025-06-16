@@ -30,8 +30,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        urbanist: ['Urbanist', 'sans-serif'], // Add Urbanist
+        sans: ['Urbanist', 'Inter', 'system-ui', 'sans-serif'], // Prioritize Urbanist
       },
       transitionDelay: {
         '450': '450ms',
