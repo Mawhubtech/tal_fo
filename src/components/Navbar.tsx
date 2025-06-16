@@ -93,7 +93,7 @@ const Navbar: React.FC = () => {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className={`md:hidden py-2 ${isScrolled ? 'bg-white/95' : 'bg-white'}`}> {/* Mobile menu background consistent */}
+        <div className={`md:hidden py-2 ${isScrolled ? 'bg-white/95' : 'bg-white'} absolute left-0 right-0 top-full shadow-lg`}> {/* Added absolute positioning and shadow */}
           <div className="px-4 pt-2 pb-3 space-y-2">
             <a href="#" className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 rounded-md">
               Product

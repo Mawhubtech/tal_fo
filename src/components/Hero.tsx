@@ -108,7 +108,7 @@ const Hero: React.FC = () => {
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}>
               <span className="text-gray-800">We take care of </span>
-              <span className="inline-block min-w-[280px] md:min-w-[320px] text-left">
+              <span className="inline-block min-w-[280px] md:min-w-[320px] text-center md:text-left"> {/* Changed text-left to text-center md:text-left */}
                 <span 
                   key={currentWordIndex}
                   className="text-purple-600 font-semibold animate-fadeInUp"
