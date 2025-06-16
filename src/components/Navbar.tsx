@@ -17,6 +17,21 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const scrolledNavClasses = 'bg-white/80 backdrop-blur-md shadow-sm';
+  const topNavClasses = 'bg-transparent';
+
+  const linkTextColor = isScrolled ? 'text-slate-700 hover:text-primary-600' : 'text-slate-700 hover:text-primary-600';
+
+  const logoTextColor = 'text-slate-800'; 
+  const logoAccentColor = 'text-primary-600'; // Using primary color for accent
+
+  const outlineButtonClasses = isScrolled 
+    ? 'px-5 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-slate-400 rounded-full transition-colors text-base font-medium'
+    : 'px-5 py-2.5 border border-slate-500 text-slate-700 hover:bg-slate-700/10 hover:border-slate-600 rounded-full transition-colors text-base font-medium';
+  
+  const primaryButtonClasses = "bg-purple-600 hover:bg-purple-700 text-white rounded-full px-5 py-2.5 text-base font-medium transition-colors";
+
+
   return (
     <header className="sticky top-0 z-50 w-full transition-all duration-300 border-b border-black bg-white/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -24,43 +39,51 @@ const Navbar: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <img src="/TALL.png" alt="Tal" className="h-12 md:h-16" />
+              {/* Text logo using Urbanist font */}
+              <div className={`text-2xl md:text-3xl`}> {/* Adjusted size for text logo */}
+                <span className={`mr-2 font-urbanist font-bold tracking-tight ${logoTextColor}`}>TAL</span> {/* TAL is Urbanist, bold, tight tracking */}
+                <span className={`font-sans font-semibold ${logoAccentColor}`}>تال</span> {/* Arabic part remains sans-serif, semibold */}
+              </div>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-6">
             <div className="relative group">
-              <button className="flex items-center space-x-1 text-slate-700 hover:text-primary-600 transition-colors">
+              <button className={`flex items-center space-x-1 transition-colors text-base font-medium ${linkTextColor}`}>
                 <span>Product</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
               {/* Dropdown would go here */}
             </div>
-            <div className="relative group">
-              <button className="flex items-center space-x-1 text-slate-700 hover:text-primary-600 transition-colors">
-                <span>Resources</span>
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              {/* Dropdown would go here */}
-            </div>
-            <a href="/pricing" className="text-slate-700 hover:text-primary-600 transition-colors">
+            <a href="/pricing" className={`transition-colors text-base font-medium ${linkTextColor}`}>
               Pricing
             </a>
-            <Link to="/request-demo" className="text-primary-600 hover:text-primary-700 transition-colors">
+            <Link 
+              to="/request-demo" 
+              className={primaryButtonClasses}
+            >
               Request a demo
             </Link>
-            <Link to="/signin" className="text-slate-700 hover:text-primary-600 transition-colors">
+            <Link 
+              to="/signin" 
+              className={outlineButtonClasses}
+            >
               Sign in
             </Link>
-            <Button variant="primary" size="sm">
+            <Link 
+              to="/try-free" 
+              className={outlineButtonClasses}
+            >
               Try for free
-            </Button>
+            </Link>
           </nav>
 
           {/* Mobile menu button */}
           <button 
-            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            className={`md:hidden p-2 rounded-md transition-colors ${
+              isScrolled ? 'text-slate-600 hover:text-primary-600 hover:bg-slate-100' : 'text-slate-600 hover:text-primary-600 hover:bg-slate-700/10'
+            }`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <Menu className="h-6 w-6" />
@@ -70,28 +93,32 @@ const Navbar: React.FC = () => {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white py-2">
-          <div className="px-4 pt-2 pb-3 space-y-1">
-            <a href="#" className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+        <div className={`md:hidden py-2 ${isScrolled ? 'bg-white/95' : 'bg-white'}`}> {/* Mobile menu background consistent */}
+          <div className="px-4 pt-2 pb-3 space-y-2">
+            <a href="#" className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 rounded-md">
               Product
             </a>
-            <a href="#" className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-              Resources
-            </a>
-            <a href="/pricing" className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+            <a href="/pricing" className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 rounded-md">
               Pricing
             </a>
-            <Link to="/request-demo" className="block px-3 py-2 text-base font-medium text-primary-600 hover:bg-gray-100 rounded-md">
+            <Link 
+              to="/request-demo" 
+              className={`block w-full text-center rounded-full px-5 py-2.5 text-base font-medium transition-colors ${primaryButtonClasses}`}
+            >
               Request a demo
             </Link>
-            <Link to="/signin" className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+            <Link 
+              to="/signin" 
+              className={`block w-full text-center rounded-full px-5 py-2.5 text-base font-medium transition-colors ${outlineButtonClasses}`}
+            >
               Sign in
             </Link>
-            <div className="mt-4 px-3">
-              <Button variant="primary" size="full">
-                Try for free
-              </Button>
-            </div>
+            <Link 
+              to="/try-free" 
+              className={`block w-full text-center rounded-full px-5 py-2.5 text-base font-medium transition-colors ${outlineButtonClasses}`}
+            >
+              Try for free
+            </Link>
           </div>
         </div>
       )}

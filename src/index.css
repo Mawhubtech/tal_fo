@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    font-family: Inter, system-ui, sans-serif;
+    font-family: 'Urbanist', system-ui, sans-serif;
   }
   
   body {
@@ -72,5 +72,12 @@
     bottom: -2px;
     right: -2px;
     opacity: 0.4;
+  }
+
+  .urbanist-custom {
+    font-family: "Urbanist", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400; /* Example weight */
+    font-style: normal;
   }
 }

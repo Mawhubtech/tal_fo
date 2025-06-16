@@ -31,15 +31,14 @@ const Hero: React.FC = () => {
   }, [cyclingWords.length]);
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-purple-50 min-h-screen flex flex-col">
+    <section className="relative overflow-hidden min-h-screen flex flex-col">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Floating shapes - made larger and more spread out */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob"></div>
-        <div className="absolute -top-16 -right-32 w-80 h-80 bg-pink-100 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-32 left-1/2 transform -translate-x-1/2 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob animation-delay-4000"></div>
-        <div className="absolute top-1/2 -right-48 transform -translate-y-1/2 w-72 h-72 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob animation-delay-6000"></div>
-        <div className="absolute bottom-1/4 -left-48 w-80 h-80 bg-violet-100 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob animation-delay-8000"></div>
+        {/* Floating shapes - opacity set to 100% */}
+        <div className="absolute top-1/4 -left-56 w-[32rem] h-[32rem] bg-purple-100 rounded-full mix-blend-multiply filter blur-lg opacity-100 animate-blob"></div> {/* Opacity to 100% */}
+        <div className="absolute bottom-1/4 -right-56 w-[30rem] h-[30rem] bg-pink-100 rounded-full mix-blend-multiply filter blur-lg opacity-100 animate-blob animation-delay-2000"></div> {/* Opacity to 100% */}
+        <div className="absolute top-1/2 -left-40 transform -translate-y-1/2 w-[28rem] h-[28rem] bg-blue-100 rounded-full mix-blend-multiply filter blur-lg opacity-100 animate-blob animation-delay-4000"></div> {/* Opacity to 100% */}
+        <div className="absolute top-1/3 -right-40 w-[32rem] h-[32rem] bg-indigo-100 rounded-full mix-blend-multiply filter blur-lg opacity-100 animate-blob animation-delay-6000"></div> {/* Opacity to 100% */}
         
         {/* Floating particles - adjusted positions */}
         <div className="absolute top-32 left-32 w-2 h-2 bg-purple-300 rounded-full animate-ping animation-delay-1000 opacity-20"></div>
