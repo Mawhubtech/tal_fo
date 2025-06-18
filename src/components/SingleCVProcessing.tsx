@@ -1,11 +1,13 @@
 import React, { useState, useRef } from 'react';
-import { FileText, Upload, CheckCircle, AlertCircle, User, Users } from 'lucide-react';
+import { FileText, Upload, CheckCircle, AlertCircle, User, Users, AlertTriangle } from 'lucide-react';
 import { useCVProcessing } from '../hooks/useCVProcessing';
+import { transformCVDataToCandidate, isDataSufficient, getMissingCriticalData, removeNullValues } from '../utils/cvDataTransformer';
 
 const SingleCVProcessing: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processedData, setProcessedData] = useState<any | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);  const [overrideData, setOverrideData] = useState<any>({
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [overrideData, setOverrideData] = useState<any>({
     personalInfo: { fullName: '', firstName: '', middleName: '', lastName: '', email: '', phone: '', location: '' }
   });
   const [processingStep, setProcessingStep] = useState<'upload' | 'review' | 'create'>('upload');
@@ -20,7 +22,9 @@ const SingleCVProcessing: React.FC = () => {
       setProcessedData(null);
       setProcessingStep('upload');
     }
-  };  const handleProcessCV = async () => {
+  };
+
+  const handleProcessCV = async () => {
     if (!selectedFile) return;
     
     try {
@@ -28,56 +32,53 @@ const SingleCVProcessing: React.FC = () => {
       if (result) {
         setProcessedData(result);
         setProcessingStep('review');
-            // Pre-fill override data with extracted personal info if available
+        
+        // Check if we have sufficient data for candidate creation
+        const hasRequiredData = isDataSufficient(result.structuredData);
+        
+        // Pre-fill override data with cleaned extracted personal info if available
         if (result.structuredData?.personalInfo) {
-          const personalInfo = result.structuredData.personalInfo || {};
+          const cleanedPersonalInfo = removeNullValues(result.structuredData.personalInfo);
           setOverrideData({
             personalInfo: {
-              fullName: personalInfo.fullName || '',
-              firstName: personalInfo.firstName || 'null' === personalInfo.firstName ? '' : personalInfo.firstName || '',
-              middleName: personalInfo.middleName || 'null' === personalInfo.middleName ? '' : personalInfo.middleName || '',
-              lastName: personalInfo.lastName || 'null' === personalInfo.lastName ? '' : personalInfo.lastName || '',
-              email: personalInfo.email || 'null' === personalInfo.email ? '' : personalInfo.email || '',
-              phone: personalInfo.phone || 'null' === personalInfo.phone ? '' : personalInfo.phone || '',
-              location: personalInfo.location || ''
+              fullName: cleanedPersonalInfo?.fullName || '',
+              firstName: cleanedPersonalInfo?.firstName || '',
+              middleName: cleanedPersonalInfo?.middleName || '',
+              lastName: cleanedPersonalInfo?.lastName || '',
+              email: cleanedPersonalInfo?.email || '',
+              phone: cleanedPersonalInfo?.phone || '',
+              location: cleanedPersonalInfo?.location || cleanedPersonalInfo?.city || ''
             }
           });
+        }
+        
+        // Show create form automatically if missing critical data
+        if (!hasRequiredData) {
+          setShowCreateForm(true);
         }
       }
     } catch (err) {
       console.error('Error processing CV:', err);
     }
   };
+
   const handleCreateCandidate = async () => {
     if (!processedData) return;
     
     try {
-      // Make sure the override data structure matches the backend's expected CreateCandidateDto
-      let formattedOverrideData;
-      
-      if (showCreateForm) {
-        formattedOverrideData = {
-          personalInfo: {
-            fullName: overrideData.personalInfo.fullName,
-            firstName: overrideData.personalInfo.firstName,
-            middleName: overrideData.personalInfo.middleName || '',
-            lastName: overrideData.personalInfo.lastName,
-            email: overrideData.personalInfo.email,
-            phone: overrideData.personalInfo.phone,
-            location: overrideData.personalInfo.location,
-          }
-        };
-        
-        console.log('Sending data to backend:', {
-          structuredData: processedData.structuredData,
-          overrideData: formattedOverrideData
-        });
-      }
-      
-      const result = await createFromProcessed(
+      // Transform the structured data to the proper format expected by the backend
+      const transformedData = transformCVDataToCandidate(
         processedData.structuredData,
+        showCreateForm ? overrideData : undefined
+      );
+      
+      console.log('Transformed data for backend:', transformedData);
+      
+      // Send the properly formatted data to the backend
+      const result = await createFromProcessed(
+        transformedData, // Use transformed data instead of raw structuredData
         undefined, // No document ID since we're processing without saving
-        showCreateForm ? formattedOverrideData : undefined
+        undefined  // Override data is already applied in transformation
       );
       
       if (result) {
@@ -86,7 +87,9 @@ const SingleCVProcessing: React.FC = () => {
     } catch (err) {
       console.error('Error creating candidate:', err);
     }
-  };  const handleOverrideChange = (field: string, value: string) => {
+  };
+
+  const handleOverrideChange = (field: string, value: string) => {
     setOverrideData((prev: any) => {
       const updatedPersonalInfo = {
         ...prev.personalInfo,
@@ -220,41 +223,71 @@ const SingleCVProcessing: React.FC = () => {
               <p className="text-sm text-green-700">CV processed successfully! Review the extracted data below.</p>
             </div>
             
+            {/* Data Quality Indicator */}
+            {(() => {
+              const missingData = getMissingCriticalData(processedData.structuredData);
+              if (missingData.length > 0) {
+                return (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 flex items-start">
+                    <AlertTriangle className="w-5 h-5 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-yellow-700 font-medium">Missing Critical Information</p>
+                      <p className="text-sm text-yellow-600 mt-1">
+                        The following required fields are missing: {missingData.join(', ')}. 
+                        Please edit the information below before creating the candidate.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
                 <h3 className="text-sm font-medium text-gray-700">Extracted Information</h3>
               </div>
               <div className="p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">Personal Information</h4>                    <div className="bg-gray-50 p-3 rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700">Personal Information</h4>
+                    <div className="bg-gray-50 p-3 rounded-md">
                       <div className="text-xs text-gray-500">Full Name</div>
-                      <div className="text-sm text-gray-800">{processedData.structuredData.personalInfo?.fullName || 'N/A'}</div>
+                      <div className="text-sm text-gray-800">
+                        {(() => {
+                          const fullName = processedData.structuredData.personalInfo?.fullName;
+                          return (fullName && fullName !== 'null') ? fullName : 'N/A';
+                        })()}
+                      </div>
                     </div>
-                      <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <div className="bg-gray-50 p-3 rounded-md">
                         <div className="text-xs text-gray-500">First Name</div>
                         <div className="text-sm text-gray-800">
-                          {processedData.structuredData.personalInfo?.firstName && processedData.structuredData.personalInfo?.firstName !== 'null'
-                            ? processedData.structuredData.personalInfo.firstName
-                            : 'N/A'}
+                          {(() => {
+                            const firstName = processedData.structuredData.personalInfo?.firstName;
+                            return (firstName && firstName !== 'null') ? firstName : 'N/A';
+                          })()}
                         </div>
                       </div>
                       
                       <div className="bg-gray-50 p-3 rounded-md">
                         <div className="text-xs text-gray-500">Middle Name</div>
                         <div className="text-sm text-gray-800">
-                          {processedData.structuredData.personalInfo?.middleName && processedData.structuredData.personalInfo?.middleName !== 'null'
-                            ? processedData.structuredData.personalInfo.middleName
-                            : 'N/A'}
+                          {(() => {
+                            const middleName = processedData.structuredData.personalInfo?.middleName;
+                            return (middleName && middleName !== 'null') ? middleName : 'N/A';
+                          })()}
                         </div>
                       </div>
                       
                       <div className="bg-gray-50 p-3 rounded-md">
                         <div className="text-xs text-gray-500">Last Name</div>
                         <div className="text-sm text-gray-800">
-                          {processedData.structuredData.personalInfo?.lastName && processedData.structuredData.personalInfo?.lastName !== 'null'
-                            ? processedData.structuredData.personalInfo.lastName
-                            : 'N/A'}
+                          {(() => {
+                            const lastName = processedData.structuredData.personalInfo?.lastName;
+                            return (lastName && lastName !== 'null') ? lastName : 'N/A';
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -262,71 +295,115 @@ const SingleCVProcessing: React.FC = () => {
                     <div className="bg-gray-50 p-3 rounded-md">
                       <div className="text-xs text-gray-500">Email</div>
                       <div className="text-sm text-gray-800">
-                        {processedData.structuredData.personalInfo?.email && processedData.structuredData.personalInfo?.email !== 'null' 
-                          ? processedData.structuredData.personalInfo.email 
-                          : 'N/A'}
+                        {(() => {
+                          const email = processedData.structuredData.personalInfo?.email;
+                          return (email && email !== 'null') ? email : 'N/A';
+                        })()}
                       </div>
                     </div>
                     
                     <div className="bg-gray-50 p-3 rounded-md">
                       <div className="text-xs text-gray-500">Phone</div>
                       <div className="text-sm text-gray-800">
-                        {processedData.structuredData.personalInfo?.phone && processedData.structuredData.personalInfo?.phone !== 'null' 
-                          ? processedData.structuredData.personalInfo.phone 
-                          : 'N/A'}
+                        {(() => {
+                          const phone = processedData.structuredData.personalInfo?.phone;
+                          return (phone && phone !== 'null') ? phone : 'N/A';
+                        })()}
                       </div>
                     </div>
                     
                     <div className="bg-gray-50 p-3 rounded-md">
                       <div className="text-xs text-gray-500">Location</div>
-                      <div className="text-sm text-gray-800">{processedData.structuredData.personalInfo?.location || 'N/A'}</div>
+                      <div className="text-sm text-gray-800">
+                        {(() => {
+                          const location = processedData.structuredData.personalInfo?.location || 
+                                          processedData.structuredData.personalInfo?.city;
+                          return (location && location !== 'null') ? location : 'N/A';
+                        })()}
+                      </div>
                     </div>
                   </div>
-                    <div className="space-y-2">
+                  
+                  <div className="space-y-2">
                     <h4 className="text-sm font-medium text-gray-700">Skills</h4>
                     <div className="bg-gray-50 p-3 rounded-md">
-                      {processedData.structuredData?.skills && 
-                       (processedData.structuredData.skills.technical?.length > 0 || 
-                        processedData.structuredData.skills.soft?.length > 0 || 
-                        processedData.structuredData.skills.other?.length > 0) ? (
-                        <div className="flex flex-wrap gap-1">
-                          {processedData.structuredData.skills.technical?.map((skill: string, index: number) => (
-                            <span key={`tech-${index}`} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                              {skill}
-                            </span>
-                          ))}
-                          {processedData.structuredData.skills.soft?.map((skill: string, index: number) => (
-                            <span key={`soft-${index}`} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                              {skill}
-                            </span>
-                          ))}
-                          {processedData.structuredData.skills.other?.map((skill: string, index: number) => (
-                            <span key={`other-${index}`} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-500">No skills detected</div>
-                      )}
+                      {(() => {
+                        const skills = processedData.structuredData?.skills;
+                        const cleanedSkills = removeNullValues(skills);
+                        
+                        if (!cleanedSkills) {
+                          return <div className="text-sm text-gray-500">No skills detected</div>;
+                        }
+                        
+                        const hasSkills = (cleanedSkills.technical?.length > 0 || 
+                                         cleanedSkills.soft?.length > 0 || 
+                                         cleanedSkills.other?.length > 0 ||
+                                         cleanedSkills.programming?.length > 0 ||
+                                         cleanedSkills.frameworks?.length > 0 ||
+                                         cleanedSkills.tools?.length > 0);
+                        
+                        if (!hasSkills) {
+                          return <div className="text-sm text-gray-500">No skills detected</div>;
+                        }
+                        
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            {cleanedSkills.technical?.map((skill: string, index: number) => (
+                              <span key={`tech-${index}`} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                            {cleanedSkills.programming?.map((skill: string, index: number) => (
+                              <span key={`prog-${index}`} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                            {cleanedSkills.frameworks?.map((skill: string, index: number) => (
+                              <span key={`framework-${index}`} className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                            {cleanedSkills.tools?.map((skill: string, index: number) => (
+                              <span key={`tool-${index}`} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                            {cleanedSkills.soft?.map((skill: string, index: number) => (
+                              <span key={`soft-${index}`} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                            {cleanedSkills.other?.map((skill: string, index: number) => (
+                              <span key={`other-${index}`} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                     
                     <h4 className="text-sm font-medium text-gray-700 mt-4">Experience</h4>
                     <div className="max-h-48 overflow-y-auto space-y-2">
-                      {processedData.structuredData?.workExperience?.length > 0 ? (
-                        processedData.structuredData.workExperience.map((exp: any, index: number) => (
+                      {(() => {
+                        const experience = processedData.structuredData?.workExperience;
+                        const cleanedExperience = removeNullValues(experience);
+                        
+                        if (!cleanedExperience || cleanedExperience.length === 0) {
+                          return <div className="text-sm text-gray-500">No experience details detected</div>;
+                        }
+                        
+                        return cleanedExperience.map((exp: any, index: number) => (
                           <div key={index} className="bg-gray-50 p-3 rounded-md">
-                            <div className="font-medium text-sm">{exp.position || 'Position'}</div>
+                            <div className="font-medium text-sm">{exp.position || exp.jobTitle || 'Position'}</div>
                             <div className="text-sm">{exp.company || 'Company'}</div>
                             <div className="text-xs text-gray-500">
                               {exp.startDate || 'Start'} - {exp.endDate || 'Present'}
                             </div>
                             {exp.duration && <div className="text-xs text-gray-500">{exp.duration}</div>}
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-gray-500">No experience details detected</div>
-                      )}
+                        ));
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -345,7 +422,8 @@ const SingleCVProcessing: React.FC = () => {
                 <label htmlFor="override-data" className="text-sm text-gray-700">Edit candidate information before creating</label>
               </div>
               
-              {showCreateForm && (                <div className="border border-gray-200 rounded-md p-4 mb-4 space-y-3">
+              {showCreateForm && (
+                <div className="border border-gray-200 rounded-md p-4 mb-4 space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                     <input 
@@ -355,7 +433,8 @@ const SingleCVProcessing: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                       <input 

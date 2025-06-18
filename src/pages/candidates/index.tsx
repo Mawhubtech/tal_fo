@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, User, File, Calendar, Edit, Trash, CheckCircle, XCircle, Clock, MoreVertical, Code } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
-import { CandidateQueryParams } from '../../services/candidatesService';
 import { useCandidates, useCandidateStats, useUpdateCandidateStatus, useUpdateCandidateRating } from '../../hooks/useCandidates';
 
 // Enhanced candidate interface with additional professional fields
@@ -50,13 +49,8 @@ const CandidatesPage: React.FC = () => {
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
-
   // State for dropdown menus
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-
-  // State for debug panel
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const [rawApiResponse, setRawApiResponse] = useState<any>(null);
 
   // React Query hooks for data fetching
   const candidatesQuery = useCandidates({
@@ -71,23 +65,10 @@ const CandidatesPage: React.FC = () => {
     // Mutations for data updates
   const updateStatusMutation = useUpdateCandidateStatus();
   const updateRatingMutation = useUpdateCandidateRating();
-  
-  // Use items instead of data.items for compatibility with the transformed response
+    // Use items instead of data.items for compatibility with the transformed response
   const candidates = Array.isArray(candidatesQuery.data?.items) ? candidatesQuery.data.items : [];
   const totalItems = candidatesQuery.data?.total || 0;
   const loading = candidatesQuery.isLoading;
-
-  // Debug log the candidate data
-  useEffect(() => {
-    console.log('Candidate data:', candidates);
-  }, [candidates]);
-
-  // Store raw API response
-  useEffect(() => {
-    if (candidatesQuery.data) {
-      setRawApiResponse(candidatesQuery.data);
-    }
-  }, [candidatesQuery.data]);
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -95,13 +76,12 @@ const CandidatesPage: React.FC = () => {
       if (openDropdownId && !(event.target as Element).closest('.dropdown-container')) {
         setOpenDropdownId(null);
       }
+    };    document.addEventListener('mousedown', handleClickOutside);
+    return () => {      document.removeEventListener('mousedown', handleClickOutside);
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [openDropdownId]);  // Handlers for the profile side panel
+  }, [openDropdownId]);
+  
+  // Handlers for the profile side panel  
   const handleOpenProfilePanel = (userData: any) => {
     // Transform API response data to match the panel's expected structure
     // Note: The useCandidates hook already transforms skillMappings to skills
@@ -117,17 +97,19 @@ const CandidatesPage: React.FC = () => {
         website: userData.website || '',
         avatar: userData.avatar || undefined,
       },
-      summary: userData.summary || '',
-      experience: userData.experience?.map((exp: any) => ({
-        position: exp.position || '',
-        company: exp.company || '',
-        startDate: exp.startDate || '',
-        endDate: exp.endDate || '',
-        location: exp.location || '',
-        description: exp.description || '',
-        responsibilities: exp.responsibilities || [],
-        achievements: exp.achievements || [],
-      })) || [],
+      summary: userData.summary || '',     
+	   experience: Array.isArray(userData.experience) 
+        ? userData.experience.map((exp: any) => ({
+            position: exp.position || '',
+            company: exp.company || '',
+            startDate: exp.startDate || '',
+            endDate: exp.endDate || '',
+            location: exp.location || '',
+            description: exp.description || '',
+            responsibilities: exp.responsibilities || [],
+            achievements: exp.achievements || [],
+          }))
+        : [], // Handle case where experience is a number (years) instead of array
       // Use the already transformed skills array from the hook
       skills: userData.skills || [],
       education: userData.education?.map((edu: any) => ({
@@ -160,9 +142,7 @@ const CandidatesPage: React.FC = () => {
         issuer: award.issuer || '',
         date: award.date || '',
         description: award.description || '',
-      })) || [],
-      interests: userData.interests || [],
-    } as UserStructuredData;
+      })) || [],      interests: userData.interests || [],    } as UserStructuredData;
 
     setSelectedUserDataForPanel(userDataForPanel);
     setPanelState('expanded');
@@ -232,18 +212,6 @@ const CandidatesPage: React.FC = () => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  
-  // Debug pagination
-  console.log('Pagination Debug:', {
-    totalItems,
-    totalPages,
-    currentPage,
-    itemsPerPage,
-    startIndex,
-    endIndex,
-    candidatesLength: candidates?.length || 0,
-    queryState: candidatesQuery.status
-  });
   // Pagination handlers
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -266,10 +234,10 @@ const CandidatesPage: React.FC = () => {
     total: candidates?.length || 0,
     active: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'active').length : 0,
     interviewing: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'interviewing').length : 0,
-    hired: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'hired').length : 0,
-    rejected: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'rejected').length : 0,
+    hired: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'hired').length : 0,    rejected: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'rejected').length : 0,
     inactive: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'inactive').length : 0
   };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     if (dateString === 'Present') return 'Present';
@@ -279,7 +247,9 @@ const CandidatesPage: React.FC = () => {
       console.error('Error formatting date:', e);
       return 'Invalid date';
     }
-  };if (loading) {
+  };
+
+  if (loading) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
@@ -299,7 +269,8 @@ const CandidatesPage: React.FC = () => {
     );
   }
   return (
-    <React.Fragment>      <div className={`min-h-screen bg-gray-50 p-6 transition-all duration-300 ${
+    <React.Fragment>
+      <div className={`min-h-screen bg-gray-50 p-6 transition-all duration-300 ${
         panelState === 'expanded' ? 'mr-[66.666667%] overflow-hidden' : 
         panelState === 'collapsed' ? 'mr-[33.333333%] overflow-hidden' : 
         ''
@@ -369,19 +340,11 @@ const CandidatesPage: React.FC = () => {
                   <option value="mid">Mid (3-5 years)</option>
                   <option value="senior">Senior (5+ years)</option>
                 </select>
-              </div>
-            </div>            <div className="flex gap-3">
-              <button 
-                className={`flex items-center px-4 py-2 ${showDebugPanel ? 'bg-purple-600 text-white' : 'bg-white text-purple-600 border border-purple-300'} rounded-lg hover:bg-purple-500 hover:text-white transition-colors`}
-                onClick={() => setShowDebugPanel(!showDebugPanel)}
-              >
-                <Code className="h-4 w-4 mr-2" />
-                {showDebugPanel ? 'Hide API Debug' : 'Show API Debug'}
-              </button>
+              </div>            </div>            <div className="flex gap-3">
               <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
                 <Upload className="h-4 w-4 mr-2" />
                 Import
-              </button>             
+              </button>
 			   <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
                 <Download className="h-4 w-4 mr-2" />
                 Export
@@ -735,137 +698,9 @@ const CandidatesPage: React.FC = () => {
             userData={selectedUserDataForPanel}
             panelState={panelState}
             onStateChange={handlePanelStateChange}
-          />
-        </>
-      )}      {/* Debug Panel - Raw API Data View */}
-      <DebugPanel
-        data={{
-          rawApiResponse,
-          transformedCandidates: candidates,
-          queryState: candidatesQuery.status,
-          queryFetchStatus: candidatesQuery.fetchStatus,
-          pagination: {
-            currentPage,
-            totalPages,
-            itemsPerPage,
-            totalItems
-          }
-        }}
-        isVisible={showDebugPanel}
-        onClose={() => setShowDebugPanel(false)}
-      />
+          />        </>
+      )}
     </React.Fragment>
-  );
-};
-
-// Debug Panel Component
-interface DebugPanelProps {
-  data: any;
-  isVisible: boolean;
-  onClose: () => void;
-}
-
-const DebugPanel: React.FC<DebugPanelProps> = ({ data, isVisible, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'raw' | 'transformed' | 'query'>('raw');
-  
-  if (!isVisible) return null;
-  
-  return (
-    <div className="fixed bottom-0 right-0 w-1/2 h-2/3 bg-white border-l border-t border-gray-200 shadow-lg z-50 overflow-hidden flex flex-col">
-      <div className="sticky top-0 bg-gray-100 p-3 border-b flex justify-between items-center">
-        <h3 className="font-semibold">API Data Debug View</h3>
-        <button 
-          onClick={onClose}
-          className="p-1 hover:bg-gray-200 rounded-full"
-        >
-          <XCircle className="w-5 h-5" />
-        </button>
-      </div>
-      
-      {/* Tabs */}
-      <div className="flex border-b bg-gray-50">
-        <button 
-          className={`px-4 py-2 font-medium text-sm ${activeTab === 'raw' ? 'bg-white border-b-2 border-purple-600' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('raw')}
-        >
-          Raw API Response
-        </button>
-        <button 
-          className={`px-4 py-2 font-medium text-sm ${activeTab === 'transformed' ? 'bg-white border-b-2 border-purple-600' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('transformed')}
-        >
-          Transformed Data
-        </button>
-        <button 
-          className={`px-4 py-2 font-medium text-sm ${activeTab === 'query' ? 'bg-white border-b-2 border-purple-600' : 'text-gray-600 hover:text-gray-900'}`}
-          onClick={() => setActiveTab('query')}
-        >
-          Query State
-        </button>
-      </div>
-      
-      {/* Content */}      <div className="p-4 overflow-auto flex-grow">
-        {activeTab === 'raw' && (
-          <>
-            <div className="mb-2 text-sm font-semibold text-gray-700">Raw API Response:</div>
-            <div className="mb-3 flex gap-2 items-center">
-              <span className="text-xs text-gray-600">Response Format:</span>
-              <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                {data.rawApiResponse?.responseFormat || 'Unknown'}
-              </span>
-              <span className="text-xs text-gray-600 ml-4">Total Items:</span>
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                {data.rawApiResponse?.total || 0}
-              </span>
-            </div>
-            <pre className="text-xs overflow-auto max-h-full whitespace-pre-wrap bg-gray-50 p-3 rounded border">
-              {JSON.stringify(data.rawApiResponse?.originalResponse || data.rawApiResponse, null, 2)}
-            </pre>
-          </>
-        )}
-        
-        {activeTab === 'transformed' && (
-          <>
-            <div className="mb-2 text-sm font-semibold text-gray-700">Transformed Candidates:</div>
-            {Array.isArray(data.transformedCandidates) && data.transformedCandidates.length > 0 && (
-              <div className="mb-3">
-                <div className="text-xs text-gray-600 mb-1">Select candidate to inspect:</div>
-                <div className="flex flex-wrap gap-2">
-                  {data.transformedCandidates.map((candidate: any, index: number) => (
-                    <button 
-                      key={candidate.id || index}
-                      className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded"                      onClick={() => {
-                        console.log('Candidate details:', candidate);
-                        // Show a more sophisticated inspection modal in the future
-                        alert(`Candidate ID: ${candidate.id}\n\nCheck browser console for full details`);
-                      }}
-                    >
-                      {candidate.fullName || `${candidate.firstName || ''} ${candidate.lastName || ''}` || `Candidate ${index + 1}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <pre className="text-xs overflow-auto max-h-full whitespace-pre-wrap bg-gray-50 p-3 rounded border">
-              {JSON.stringify(data.transformedCandidates, null, 2)}
-            </pre>
-          </>
-        )}
-        
-        {activeTab === 'query' && (
-          <>
-            <div className="mb-2 text-sm font-semibold text-gray-700">Query Information:</div>
-            <pre className="text-xs overflow-auto max-h-full whitespace-pre-wrap bg-gray-50 p-3 rounded border">
-              {JSON.stringify({
-                queryState: data.queryState,
-                queryFetchStatus: data.queryFetchStatus,
-                pagination: data.pagination
-              }, null, 2)}
-            </pre>
-          </>
-        )}
-      </div>
-    </div>
   );
 };
 

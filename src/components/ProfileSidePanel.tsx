@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart } from 'lucide-react'; // Ensure these icons are installed
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone } from 'lucide-react'; // Ensure these icons are installed
 import Button from './Button'; // Adjust path to your Button component if necessary
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
@@ -92,12 +92,11 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs
   const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(true); // For collapsing candidate actions
-  
   if (!userData || panelState === 'closed') {
     return null;
   }
 
-  const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests } = userData;  // Main profile tabs for the 2/3 section
+  const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests } = userData;// Main profile tabs for the 2/3 section
   const profileTabs = [
     { name: 'Experience', icon: Briefcase, index: 0, count: experience?.length || 0 },
     { name: 'Education', icon: GraduationCap, index: 1, count: education?.length || 0 },
@@ -176,22 +175,71 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                         rel="noopener noreferrer"
                         className="text-gray-500 hover:text-purple-600 flex items-center"
                         title="GitHub Profile"
-                      >
-                        <Github size={16} />
+                      >                        <Github size={16} />
                       </a>
                     </>
                   )}
                 </div>
               </div>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="primary" size="sm" className='bg-primary-600 hover:bg-primary-700'>Reveal Email & Phone (1 credit)</Button>
-              <Button variant="primary" size="sm" className="bg-primary-600 text-primary-600 border-primary-600 hover:bg-primary-700 flex items-center">
-                <Plus size={16} className="mr-1" /> Add to Sequence
-              </Button>
-              <Button variant="primary" size="sm" className="bg-primary-600 text-primary-600 border-primary-600 hover:bg-primary-700">Shortlist</Button>
+            
+            {/* Contact Information */}
+            <div className="mt-4 space-y-3">
+              {personalInfo.email && (
+                <div className="flex items-center text-sm">
+                  <Mail className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                  <a 
+                    href={`mailto:${personalInfo.email}`}
+                    className="text-gray-700 hover:text-purple-600 transition-colors"
+                  >
+                    {personalInfo.email}
+                  </a>
+                </div>
+              )}
+              
+              {personalInfo.phone && (
+                <div className="flex items-center text-sm">
+                  <Phone className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                  <a 
+                    href={`tel:${personalInfo.phone}`}
+                    className="text-gray-700 hover:text-purple-600 transition-colors"
+                  >
+                    {personalInfo.phone}
+                  </a>
+                </div>
+              )}
+              
+              {personalInfo.linkedIn && (
+                <div className="flex items-center text-sm">
+                  <Globe className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                  <a 
+                    href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-700 hover:text-purple-600 transition-colors truncate"
+                  >
+                    LinkedIn Profile
+                  </a>
+                </div>
+              )}
+              
+              {personalInfo.website && personalInfo.website.trim() && (
+                <div className="flex items-center text-sm">
+                  <ExternalLink className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                  <a 
+                    href={personalInfo.website.startsWith('http') ? personalInfo.website : `https://${personalInfo.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-700 hover:text-purple-600 transition-colors truncate"
+                  >
+                    {personalInfo.website}
+                  </a>
+                </div>
+              )}
             </div>
-          </div> {/* Scrollable Content Area - Collapsed view with tabs */}
+          </div> 
+
+          {/* Scrollable Content Area - Collapsed view with tabs */}
           <div className="flex-1 overflow-y-auto">
             {/* AI-Powered Spotlight (Using Summary) */}
             {summary && (
@@ -602,21 +650,71 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                       rel="noopener noreferrer"
                       className="text-gray-500 hover:text-purple-600 flex items-center"
                       title="GitHub Profile"
-                    >
-                      <Github size={16} />
+                    >                      <Github size={16} />
                     </a>
                   </>
                 )}
               </div>
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="primary" size="sm" className='bg-primary-600 hover:bg-primary-700'>Reveal Email & Phone (1 credit)</Button>
-            <Button variant="primary" size="sm" className="bg-primary-600 text-primary-600 border-primary-600 hover:bg-primary-700 flex items-center">
-              <Plus size={16} className="mr-1" /> Add to Sequence
-            </Button>
-            <Button variant="primary" size="sm" className="bg-primary-600 text-primary-600 border-primary-600 hover:bg-primary-700">Shortlist</Button>
-          </div>        </div>        {/* Scrollable Content Area - Tabbed Experience, Education, Skills, Projects */}
+          
+          {/* Contact Information */}
+          <div className="mt-4 space-y-3">
+            {personalInfo.email && (
+              <div className="flex items-center text-sm">
+                <Mail className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <a 
+                  href={`mailto:${personalInfo.email}`}
+                  className="text-gray-700 hover:text-purple-600 transition-colors"
+                >
+                  {personalInfo.email}
+                </a>
+              </div>
+            )}
+            
+            {personalInfo.phone && (
+              <div className="flex items-center text-sm">
+                <Phone className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <a 
+                  href={`tel:${personalInfo.phone}`}
+                  className="text-gray-700 hover:text-purple-600 transition-colors"
+                >
+                  {personalInfo.phone}
+                </a>
+              </div>
+            )}
+            
+            {personalInfo.linkedIn && (
+              <div className="flex items-center text-sm">
+                <Globe className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <a 
+                  href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-700 hover:text-purple-600 transition-colors truncate"
+                >
+                  LinkedIn Profile
+                </a>
+              </div>
+            )}
+            
+            {personalInfo.website && personalInfo.website.trim() && (
+              <div className="flex items-center text-sm">
+                <ExternalLink className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <a 
+                  href={personalInfo.website.startsWith('http') ? personalInfo.website : `https://${personalInfo.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-700 hover:text-purple-600 transition-colors truncate"
+                >
+                  {personalInfo.website}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Scrollable Content Area - Tabbed Experience, Education, Skills, Projects */}
         <div className="flex-1 overflow-y-auto">          {/* AI-Powered Spotlight (Using Summary) */}
           {summary && (
             <div className="p-6 border-b border-gray-100">
