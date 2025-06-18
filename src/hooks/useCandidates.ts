@@ -9,9 +9,33 @@ const QUERY_KEYS = {
 };
 
 // Hook to fetch candidates with filters and pagination
-export const useCandidates = (params: CandidateQueryParams) => {  return useQuery({
+export const useCandidates = (params: CandidateQueryParams) => {
+  return useQuery({
     queryKey: [QUERY_KEYS.candidates, params],
-    queryFn: () => candidatesService.getCandidates(params),
+    queryFn: async () => {
+      const response = await candidatesService.getCandidates(params);
+      
+      // Transform the API response to match the component's expected format
+      if (response.items && Array.isArray(response.items)) {
+        const transformedItems = response.items.map((candidate: any) => ({
+          ...candidate,
+          skills: Array.isArray(candidate.skillMappings) 
+            ? candidate.skillMappings.map((sm: any) => sm.skill?.name || '').filter(Boolean)
+            : [],
+          experience: candidate.experience?.length > 0 ? 
+            Math.max(...candidate.experience.map((exp: any) => exp.years || 0)) : 0,
+          lastActivityDate: candidate.lastActivity || null,
+          rating: candidate.rating ? parseFloat(candidate.rating) : 0,
+        }));
+        
+        return {
+          ...response,
+          items: transformedItems,
+        };
+      }
+      
+      return response;
+    },
     placeholderData: (previousData) => previousData, // This replaces keepPreviousData in v5
   });
 };
