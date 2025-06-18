@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, User, File, Calendar, Edit, Trash, CheckCircle, XCircle, Clock, MoreVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
+import { CandidateQueryParams } from '../../services/candidatesService';
+import { useCandidates, useCandidateStats, useUpdateCandidateStatus, useUpdateCandidateRating, useDeleteCandidate } from '../../hooks/useCandidates';
 
 interface PersonalInfo {
   fullName: string;
@@ -40,22 +42,33 @@ interface CandidateData {
 }
 
 // Enhanced candidate interface with additional professional fields
-interface EnhancedCandidate extends CandidateData {
+interface EnhancedCandidate {
   id: string;
+  email: string;
+  phone: string;
+  firstName: string;
+  lastName: string;
+  location: string;
+  currentPosition: string;
+  skills: string[];
+  experience: number;
+  salaryExpectation?: string;
+  linkedInUrl?: string;
+  githubUrl?: string;
+  websiteUrl?: string;
+  resumeUrl?: string;
   status: 'active' | 'inactive' | 'hired' | 'interviewing' | 'rejected';
   rating: number;
   appliedDate: string;
-  lastActivity: string;
-  currentPosition?: string;
-  salaryExpectation?: string;
+  lastActivityDate: string;
+  notes?: string;
+  candidateData?: CandidateData;
 }
 
 const CandidatesPage: React.FC = () => {
-  const [candidates, setCandidates] = useState<EnhancedCandidate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -66,36 +79,24 @@ const CandidatesPage: React.FC = () => {
   // State for dropdown menus
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadCandidates = async () => {
-      try {
-        const candidatePromises = [];
-        for (let i = 1; i <= 10; i++) {          candidatePromises.push(
-            import(`../../data/user${i}.json`).then(module => module.default)
-          );
-        }
-        const loadedCandidates = await Promise.all(candidatePromises);
-        
-        // Enhance candidates with professional data
-        const enhancedCandidates: EnhancedCandidate[] = loadedCandidates.map((candidate, index) => ({
-          ...candidate,
-          id: (index + 1).toString(),
-          status: ['active', 'interviewing', 'hired', 'rejected', 'inactive'][Math.floor(Math.random() * 5)] as any,
-          rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // Rating between 3.0-5.0
-          appliedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          currentPosition: candidate.structuredData.experience[0]?.position,
-          salaryExpectation: `$${Math.floor(Math.random() * 100 + 80)}k - $${Math.floor(Math.random() * 100 + 120)}k`
-        }));
-        
-        setCandidates(enhancedCandidates);
-      } catch (error) {
-        console.error('Error loading candidates:', error);
-      } finally {
-        setLoading(false);
-      }
-    };    loadCandidates();
-  }, []);
+  // React Query hooks for data fetching
+  const candidatesQuery = useCandidates({
+    page: currentPage,
+    limit: itemsPerPage,
+    search: searchTerm || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    experienceLevel: experienceFilter !== 'all' ? experienceFilter : undefined,
+  });
+
+  const statsQuery = useCandidateStats();
+  
+  // Mutations for data updates
+  const updateStatusMutation = useUpdateCandidateStatus();
+  const updateRatingMutation = useUpdateCandidateRating();
+  const deleteCandidateMutation = useDeleteCandidate();
+  const candidates = Array.isArray(candidatesQuery.data?.items) ? candidatesQuery.data.items : [];
+  const totalItems = candidatesQuery.data?.total || 0;
+  const loading = candidatesQuery.isLoading;
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -109,13 +110,55 @@ const CandidatesPage: React.FC = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [openDropdownId]);
+  }, [openDropdownId]);  // Handlers for the profile side panel
+  const handleOpenProfilePanel = (userData: any) => {
+    // Simple conversion to the expected format
+    const userDataForPanel = {
+      personalInfo: {
+        fullName: userData.firstName && userData.lastName ? 
+          `${userData.firstName} ${userData.lastName}` : 
+          userData.structuredData?.personalInfo?.fullName || 'Unknown',
+        email: userData.email || userData.structuredData?.personalInfo?.email || '',
+        phone: userData.phone || userData.structuredData?.personalInfo?.phone || '',
+        location: userData.location || userData.structuredData?.personalInfo?.location || '',
+        linkedIn: userData.linkedInUrl || userData.structuredData?.personalInfo?.linkedIn || '',
+        github: userData.githubUrl || userData.structuredData?.personalInfo?.github || '',
+        website: userData.websiteUrl || userData.structuredData?.personalInfo?.website || '',
+      },
+      summary: userData.structuredData?.summary || '',
+      experience: userData.structuredData?.experience || [],
+      skills: userData.skills || userData.structuredData?.skills || [],
+      education: userData.structuredData?.education || []
+    } as UserStructuredData;
 
-  // Handlers for the profile side panel
-  const handleOpenProfilePanel = (userData: UserStructuredData) => {
-    setSelectedUserDataForPanel(userData);
+    setSelectedUserDataForPanel(userDataForPanel);
     setPanelState('expanded');
     document.body.style.overflow = 'hidden'; // Prevent background scroll
+  };
+
+  // Function to handle status change
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      await updateStatusMutation.mutateAsync({ id, status: newStatus });
+    } catch (error) {
+      console.error('Error updating candidate status:', error);
+      // Display some error notification here
+    }
+  };
+
+  // Function to handle rating change
+  const handleRatingChange = async (id: string, newRating: number) => {
+    if (newRating < 1 || newRating > 5) {
+      console.error('Rating must be between 1 and 5');
+      return;
+    }
+    
+    try {
+      await updateRatingMutation.mutateAsync({ id, rating: newRating });
+    } catch (error) {
+      console.error('Error updating candidate rating:', error);
+      // Display some error notification here
+    }
   };
 
   const handlePanelStateChange = (newState: PanelState) => {
@@ -162,27 +205,11 @@ const CandidatesPage: React.FC = () => {
     }
 
     return <div className="flex items-center space-x-1">{stars}</div>;
-  };
-  const filteredCandidates = candidates.filter(candidate => {
-    const matchesSearch = candidate.structuredData.personalInfo.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.structuredData.personalInfo.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.structuredData.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'all' || candidate.status === statusFilter;
-    const matchesExperience = experienceFilter === 'all' || 
-                             (experienceFilter === 'junior' && candidate.structuredData.experience.length <= 2) ||
-                             (experienceFilter === 'mid' && candidate.structuredData.experience.length >= 3 && candidate.structuredData.experience.length <= 5) ||
-                             (experienceFilter === 'senior' && candidate.structuredData.experience.length > 5);
-    
-    return matchesSearch && matchesStatus && matchesExperience;
-  });
-  // Pagination calculations
-  const totalItems = filteredCandidates.length;
+  };  // We're now using server-side filtering, so this is just a fallback  // Pagination calculations
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedCandidates = filteredCandidates.slice(startIndex, endIndex);
-
+  
   // Debug pagination
   console.log('Pagination Debug:', {
     totalItems,
@@ -191,44 +218,54 @@ const CandidatesPage: React.FC = () => {
     itemsPerPage,
     startIndex,
     endIndex,
-    paginatedCandidatesLength: paginatedCandidates.length,
-    filteredCandidatesLength: filteredCandidates.length
+    candidatesLength: candidates?.length || 0,
+    queryState: candidatesQuery.status
   });
-
   // Pagination handlers
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+      // No need to fetch data here - useEffect will handle it when currentPage changes
     }
   };
 
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1); // Reset to first page when changing items per page
+    // No need to fetch data here - useEffect will handle it when itemsPerPage changes
   };
 
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, experienceFilter]);
-
-  const stats = {
-    total: candidates.length,
-    active: candidates.filter(c => c.status === 'active').length,
-    interviewing: candidates.filter(c => c.status === 'interviewing').length,
-    hired: candidates.filter(c => c.status === 'hired').length,
-    rejected: candidates.filter(c => c.status === 'rejected').length
+  }, [searchTerm, statusFilter, experienceFilter]);  // Get stats from React Query or provide fallback values
+  const stats = statsQuery.data || {
+    total: candidates?.length || 0,
+    active: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'active').length : 0,
+    interviewing: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'interviewing').length : 0,
+    hired: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'hired').length : 0,
+    rejected: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'rejected').length : 0,
+    inactive: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'inactive').length : 0
   };
 
   const formatDate = (dateString: string) => {
     if (dateString === 'Present') return 'Present';
     return new Date(dateString).toLocaleDateString();
-  };
-  if (loading) {
+  };  if (loading) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-600">Loading candidates...</div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (candidatesQuery.error) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-600">Error loading candidates. Please try again later.</div>
         </div>
       </div>
     );
@@ -382,37 +419,40 @@ const CandidatesPage: React.FC = () => {
                     </th>
                   </tr>
                 </thead>                <tbody className="bg-white divide-y divide-gray-100">
-                  {paginatedCandidates.map((candidate) => (
+                  {candidates && Array.isArray(candidates) ? candidates.map((candidate: EnhancedCandidate) => (
                     <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">                        <div className="flex items-center">                          <div className="flex-shrink-0 h-10 w-10">
-                            {candidate.structuredData.personalInfo.avatar ? (
+                      <td className="px-6 py-4 whitespace-nowrap">                        
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            {candidate.resumeUrl ? (
                               <img 
-                                src={candidate.structuredData.personalInfo.avatar} 
-                                alt={candidate.structuredData.personalInfo.fullName}
+                                src={candidate.resumeUrl} 
+                                alt={`${candidate.firstName} ${candidate.lastName}`}
                                 className="h-10 w-10 rounded-full object-cover"
                               />
                             ) : (
                               <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
                                 <span className="text-sm font-medium text-purple-600">
-                                  {candidate.structuredData.personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                  {`${candidate.firstName?.charAt(0) || ''}${candidate.lastName?.charAt(0) || ''}`}
                                 </span>
                               </div>
                             )}
-                          </div><div className="ml-4">
+                          </div>
+                          <div className="ml-4">
                             <button 
                               className="text-sm font-semibold text-purple-600 hover:text-purple-800 hover:underline cursor-pointer transition-colors text-left"
-                              onClick={() => handleOpenProfilePanel(candidate.structuredData)}
+                              onClick={() => handleOpenProfilePanel(candidate)}
                               title="Click to view full profile"
                             >
-                              {candidate.structuredData.personalInfo.fullName}
+                              {`${candidate.firstName} ${candidate.lastName}`}
                             </button>
                             <div className="text-sm text-gray-500 flex items-center">
                               <Mail className="w-3 h-3 mr-1" />
-                              {candidate.structuredData.personalInfo.email}
+                              {candidate.email}
                             </div>
                             <div className="text-sm text-gray-500 flex items-center">
                               <Phone className="w-3 h-3 mr-1" />
-                              {candidate.structuredData.personalInfo.phone}
+                              {candidate.phone}
                             </div>
                           </div>
                         </div>
@@ -420,14 +460,14 @@ const CandidatesPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{candidate.currentPosition}</div>
-                          <div className="text-sm text-gray-500">{candidate.structuredData.experience.length} years experience</div>
+                          <div className="text-sm text-gray-500">{candidate.experience} years experience</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm text-gray-900 flex items-center">
                             <MapPin className="w-3 h-3 mr-1" />
-                            {candidate.structuredData.personalInfo.location}
+                            {candidate.location}
                           </div>
                           <div className="text-sm text-gray-500">{candidate.salaryExpectation}</div>
                         </div>
@@ -444,22 +484,22 @@ const CandidatesPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">                        <div className="flex flex-wrap gap-1 max-w-xs">
-                          {candidate.structuredData.skills.slice(0, 3).map((skill, index) => (
+                          {candidate.skills.slice(0, 3).map((skill: string, index: number) => (
                             <span key={index} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
                               {skill}
                             </span>
                           ))}
-                          {candidate.structuredData.skills.length > 3 && (
-                            <span className="text-xs text-gray-500">+{candidate.structuredData.skills.length - 3} more</span>
+                          {candidate.skills.length > 3 && (
+                            <span className="text-xs text-gray-500">+{candidate.skills.length - 3} more</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm text-gray-900">{formatDate(candidate.appliedDate)}</div>
-                          <div className="text-sm text-gray-500">Last: {formatDate(candidate.lastActivity)}</div>
+                          <div className="text-sm text-gray-500">Last: {formatDate(candidate.lastActivityDate)}</div>
                         </div>
-                      </td>                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      </td><td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="relative dropdown-container">
                           <button 
                             className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 hover:border-purple-300 transition-colors"
@@ -467,34 +507,80 @@ const CandidatesPage: React.FC = () => {
                           >
                             Actions
                             <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${openDropdownId === candidate.id ? 'rotate-180' : ''}`} />
-                          </button>
-                          
-                          {openDropdownId === candidate.id && (
-                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                          </button>                          {openDropdownId === candidate.id && (
+                            <div className="absolute right-0 mt-1 w-52 bg-white rounded-md shadow-lg border border-gray-200 z-50">
                               <div className="py-1">
                                 <button 
                                   className="flex items-center w-full px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
                                   onClick={() => {
-                                    handleOpenProfilePanel(candidate.structuredData);
+                                    handleOpenProfilePanel(candidate);
                                     setOpenDropdownId(null);
                                   }}
                                 >
                                   <Eye className="w-4 h-4 mr-3" />
                                   View Profile
                                 </button>
+                                <a 
+                                  href={candidate.resumeUrl || '#'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                  onClick={() => setOpenDropdownId(null)}
+                                >
+                                  <FileText className="w-4 h-4 mr-3" />
+                                  View Resume
+                                </a>
                                 <button 
                                   className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
-                                  onClick={() => setOpenDropdownId(null)}
+                                  onClick={() => {
+                                    // Add messaging functionality here
+                                    setOpenDropdownId(null);
+                                  }}
                                 >
                                   <MessageSquare className="w-4 h-4 mr-3" />
                                   Send Message
                                 </button>
+                                <div className="border-t border-gray-100 my-1"></div>
+                                <div className="px-4 py-1 text-xs font-semibold text-gray-500">Status</div>
                                 <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
-                                  onClick={() => setOpenDropdownId(null)}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
+                                  onClick={() => {
+                                    handleStatusChange(candidate.id, 'active');
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-3" />
+                                  Active
+                                </button>
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 transition-colors"
+                                  onClick={() => {
+                                    handleStatusChange(candidate.id, 'interviewing');
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  <Clock className="w-4 h-4 mr-3" />
+                                  Interviewing
+                                </button>
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 transition-colors"
+                                  onClick={() => {
+                                    handleStatusChange(candidate.id, 'hired');
+                                    setOpenDropdownId(null);
+                                  }}
                                 >
                                   <UserCheck className="w-4 h-4 mr-3" />
-                                  Mark as Hired
+                                  Hired
+                                </button>
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                  onClick={() => {
+                                    handleStatusChange(candidate.id, 'rejected');
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  <XCircle className="w-4 h-4 mr-3" />
+                                  Rejected
                                 </button>
                                 <div className="border-t border-gray-100 my-1"></div>
                                 <button 
@@ -509,8 +595,13 @@ const CandidatesPage: React.FC = () => {
                           )}
                         </div>
                       </td>
+                    </tr>                  )) : (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                        No candidates found.
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>            </div>
           </div>
