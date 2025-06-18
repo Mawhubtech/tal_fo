@@ -8,6 +8,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import SignIn from './components/SignIn';
 import OAuthCallback from './components/OAuthCallback';
 import LandingPage from './pages/LandingPage';
+import JobBoardPage from './pages/jobSeeker/JobBoardPage';
+import JobSeekerLoginPage from './pages/jobSeeker/JobSeekerLoginPage';
+import JobSeekerRegisterPage from './pages/jobSeeker/JobSeekerRegisterPage';
+import JobSeekerAdminPage from './pages/jobSeeker/admin/JobSeekerAdminPage';
 import Dashboard from './pages/Dashboard';
 import RequestDemoPage from './pages/RequestDemoPage';
 
@@ -24,12 +28,29 @@ function App() {
   return (    <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <AuthProvider>        <Router>
-          <Routes>
+          <AuthProvider>        <Router>          <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/jobs" element={<JobBoardPage />} />
             <Route
               path="/signin"
               element={<SignIn />}
+            />
+            {/* Job Seeker Routes */}
+            <Route
+              path="/job-seeker/login"
+              element={<JobSeekerLoginPage />}
+            />
+            <Route
+              path="/job-seeker/register"
+              element={<JobSeekerRegisterPage />}
+            />
+            <Route 
+              path="/job-seeker/admin" 
+              element={
+                <ProtectedRoute>
+                  <JobSeekerAdminPage />
+                </ProtectedRoute>
+              } 
             />
             <Route
               path="/auth/callback"

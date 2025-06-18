@@ -21,17 +21,17 @@ export const authService = {
       user: response.data.user,
     };
   },
-
-  async googleLogin(): Promise<void> {
+  async googleLogin(source?: string): Promise<void> {
     // Redirect to Google OAuth endpoint
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-    window.location.href = `${baseUrl}/auth/google`;
+    const sourceParam = source ? `&source=${encodeURIComponent(source)}` : '';
+    window.location.href = `${baseUrl}/auth/google?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}${sourceParam}`;
   },
-
-  async linkedinLogin(): Promise<void> {
+  async linkedinLogin(source?: string): Promise<void> {
     // Redirect to LinkedIn OAuth endpoint
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-    window.location.href = `${baseUrl}/auth/linkedin`;
+    const sourceParam = source ? `&source=${encodeURIComponent(source)}` : '';
+    window.location.href = `${baseUrl}/auth/linkedin?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}${sourceParam}`;
   },async getProfile(): Promise<User> {
     const response = await api.get<{ message: string; user: User }>('/auth/profile');
     return response.data.user;

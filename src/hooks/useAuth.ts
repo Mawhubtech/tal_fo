@@ -79,15 +79,15 @@ export const useLogout = () => {
 
 export const useGoogleLogin = () => {
   return {
-    mutate: authService.googleLogin,
-    mutateAsync: authService.googleLogin,
+    mutate: (source?: string) => authService.googleLogin(source),
+    mutateAsync: (source?: string) => authService.googleLogin(source),
   };
 };
 
 export const useLinkedInLogin = () => {
   return {
-    mutate: authService.linkedinLogin,
-    mutateAsync: authService.linkedinLogin,
+    mutate: (source?: string) => authService.linkedinLogin(source),
+    mutateAsync: (source?: string) => authService.linkedinLogin(source),
   };
 };
 

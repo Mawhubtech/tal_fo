@@ -73,11 +73,17 @@
     right: -2px;
     opacity: 0.4;
   }
-
   .urbanist-custom {
     font-family: "Urbanist", sans-serif;
     font-optical-sizing: auto;
     font-weight: 400; /* Example weight */
     font-style: normal;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }

@@ -45,37 +45,44 @@ export function removeNullValues(obj: any): any {
  * @returns ISO date string or undefined if invalid
  */
 function parseAndFormatDate(dateString: string): string | undefined {
-  if (!dateString || dateString === 'null' || dateString.toLowerCase() === 'present') {
+  if (!dateString || typeof dateString !== 'string' || dateString === 'null' || dateString.toLowerCase() === 'present') {
     return undefined;
   }
+
+  // Clean up the date string
+  const cleanDateString = dateString.trim();
 
   // Try to parse the date
   let parsedDate: Date;
 
   // Handle common CV date formats
-  if (dateString.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/i)) {
+  if (cleanDateString.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/i)) {
     // Format: "February 2024" -> assume first day of month
-    parsedDate = new Date(dateString + ' 1');
-  } else if (dateString.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}$/i)) {
+    parsedDate = new Date(cleanDateString + ' 1');
+  } else if (cleanDateString.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}$/i)) {
     // Format: "Feb 2024" -> assume first day of month
-    parsedDate = new Date(dateString + ' 1');
-  } else if (dateString.match(/^\d{4}$/)) {
+    parsedDate = new Date(cleanDateString + ' 1');
+  } else if (cleanDateString.match(/^\d{4}$/)) {
     // Format: "2024" -> assume January 1st
-    parsedDate = new Date(dateString + '-01-01');
-  } else if (dateString.match(/^\d{4}\s*-\s*\d{4}$/)) {
-    // Format: "2015 - 2017" -> take the first year
-    const firstYear = dateString.split(/\s*-\s*/)[0];
-    parsedDate = new Date(firstYear + '-01-01');
-  } else if (dateString.match(/^\d{1,2}\/\d{4}$/)) {
+    parsedDate = new Date(cleanDateString + '-01-01');
+  } else if (cleanDateString.match(/^\d{4}\s*[-–—]\s*\d{4}$/)) {
+    // Format: "1982 - 1987", "2015–2017", "2020—2024" -> take the second year (graduation year)
+    const years = cleanDateString.split(/\s*[-–—]\s*/);
+    const graduationYear = years[1]; // Use the end year as graduation year
+    parsedDate = new Date(graduationYear + '-06-01'); // Assume mid-year graduation
+  } else if (cleanDateString.match(/^\d{1,2}\/\d{4}$/)) {
     // Format: "2/2024" -> assume month/year
-    const [month, year] = dateString.split('/');
+    const [month, year] = cleanDateString.split('/');
     parsedDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-  } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+  } else if (cleanDateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
     // Format: "2024-02-01" -> already in correct format
-    parsedDate = new Date(dateString);
+    parsedDate = new Date(cleanDateString);
+  } else if (cleanDateString.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}$/i)) {
+    // Format: "May 1993", "May 15, 1993" -> standard date format
+    parsedDate = new Date(cleanDateString);
   } else {
-    // Try direct parsing
-    parsedDate = new Date(dateString);
+    // Try direct parsing as last resort
+    parsedDate = new Date(cleanDateString);
   }
 
   // Validate the parsed date
@@ -286,22 +293,56 @@ export function transformCVDataToCandidate(
     if (interests) {
       candidateDto.interests = interests;
     }
-  }
-
-  // Transform references
+  }  // Transform references
   if (cleanedData?.references && Array.isArray(cleanedData.references)) {
     const references = safeArrayExtract(
-      cleanedData.references.map((ref: any) => ({
-        name: ref.name || 'Unknown Reference',
-        title: ref.title || undefined,
-        company: ref.company || undefined,
-        email: ref.email || undefined,
-        phone: ref.phone || undefined,
-        relationship: ref.relationship || undefined,
-      }))
+      cleanedData.references
+        .filter((ref: any) => {
+          // Only include references that have meaningful data
+          // Check for valid name and at least one other meaningful field
+          const hasValidName = ref.name && 
+                              ref.name !== 'null' && 
+                              ref.name !== '' && 
+                              typeof ref.name === 'string' && 
+                              ref.name.trim().length > 0;
+          
+          const hasValidCompany = ref.company && 
+                                 ref.company !== 'null' && 
+                                 ref.company !== '' && 
+                                 typeof ref.company === 'string' && 
+                                 ref.company.trim().length > 0;
+          
+          const hasValidEmail = ref.email && 
+                               ref.email !== 'null' && 
+                               ref.email !== '' && 
+                               typeof ref.email === 'string' && 
+                               ref.email.trim().length > 0 && 
+                               ref.email.includes('@');
+          
+          const hasValidPosition = (ref.title || ref.position) && 
+                                  (ref.title !== 'null' || ref.position !== 'null') && 
+                                  (ref.title !== '' || ref.position !== '') && 
+                                  ((typeof ref.title === 'string' && ref.title.trim().length > 0) || 
+                                   (typeof ref.position === 'string' && ref.position.trim().length > 0));
+          
+          return hasValidName && (hasValidCompany || hasValidEmail || hasValidPosition);
+        })
+        .map((ref: any) => ({
+          name: ref.name.trim(),
+          position: (ref.title && ref.title !== 'null' && ref.title.trim()) || 
+                   (ref.position && ref.position !== 'null' && ref.position.trim()) || 
+                   'Position Not Specified',
+          company: (ref.company && ref.company !== 'null' && ref.company.trim()) || 
+                  'Company Not Specified',
+          email: (ref.email && ref.email !== 'null' && ref.email.trim()) || 
+                'no-email@example.com',
+          phone: (ref.phone && ref.phone !== 'null' && ref.phone.trim()) || undefined,
+          relationship: (ref.relationship && ref.relationship !== 'null' && ref.relationship.trim()) || undefined,
+        }))
     );
     
-    if (references) {
+    // Only add references if we have valid ones
+    if (references && references.length > 0) {
       candidateDto.references = references;
     }
   }

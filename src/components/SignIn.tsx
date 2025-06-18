@@ -5,13 +5,16 @@ import { useAuthContext } from '../contexts/AuthContext';
 import { useGoogleLogin } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
 import AuthModal from './AuthModal';
+import UserTypeSelectModal from './UserTypeSelectModal';
 
 const SignIn: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isUserTypeModalOpen, setIsUserTypeModalOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
   const { isAuthenticated, isLoading } = useAuthContext();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();  const googleLogin = useGoogleLogin();
+  const [searchParams] = useSearchParams();
+  const googleLogin = useGoogleLogin();
   const { addToast } = useToast();
   // Check for OAuth error in URL
   useEffect(() => {
@@ -24,13 +27,17 @@ const SignIn: React.FC = () => {
       });
     }
   }, [searchParams, addToast]);
-
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to dashboard or return URL
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      navigate('/dashboard', { replace: true });
+      const returnTo = searchParams.get('returnTo');
+      if (returnTo) {
+        navigate(returnTo, { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, searchParams]);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -41,20 +48,29 @@ const SignIn: React.FC = () => {
           <p className="mt-2 text-gray-600">Loading...</p>
         </div>
       </div>
-    );  }
-  const handleEmailSignIn = () => {
+    );  }  const handleEmailSignIn = () => {
+    // Show user type selection modal instead of auth modal directly
+    setIsUserTypeModalOpen(true);
+  };
+  
+  const handleGoogleLogin = () => {
+    // Show user type selection modal
+    setIsUserTypeModalOpen(true);
+  };
+  
+  const handleSelectRecruiter = () => {
+    setIsUserTypeModalOpen(false);
     setAuthView('login');
     setIsAuthModalOpen(true);
-  };  const handleGoogleLogin = () => {
-    try {
-      googleLogin.mutate();
-    } catch (error) {
-      addToast({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to initiate Google sign in. Please try again.'
-      });
-    }
+  };
+  
+  const handleSelectJobSeeker = () => {
+    setIsUserTypeModalOpen(false);
+    // Navigate to job seeker login page
+    navigate('/job-seeker/login', { 
+      replace: true, 
+      state: { returnTo: searchParams.get('returnTo') }
+    });
   };
 
   return (
@@ -174,12 +190,19 @@ const SignIn: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-
+      </div>      {/* Auth Modal for Recruiter login/register */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialView={authView}
+      />
+      
+      {/* User Type Selection Modal */}
+      <UserTypeSelectModal
+        isOpen={isUserTypeModalOpen}
+        onClose={() => setIsUserTypeModalOpen(false)}
+        onSelectRecruiter={handleSelectRecruiter}
+        onSelectJobSeeker={handleSelectJobSeeker}
       />
     </div>
   );
