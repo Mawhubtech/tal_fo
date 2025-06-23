@@ -20,18 +20,16 @@ export const authService = {
       refreshToken: response.data.token, // Backend doesn't provide refresh token yet
       user: response.data.user,
     };
-  },
-  async googleLogin(source?: string): Promise<void> {
+  },  async googleLogin(source?: string): Promise<void> {
     // Redirect to Google OAuth endpoint
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-    const sourceParam = source ? `&source=${encodeURIComponent(source)}` : '';
-    window.location.href = `${baseUrl}/auth/google?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}${sourceParam}`;
-  },
-  async linkedinLogin(source?: string): Promise<void> {
+    const sourceParam = source ? `?source=${encodeURIComponent(source)}` : '';
+    window.location.href = `${baseUrl}/auth/google${sourceParam}`;
+  },  async linkedinLogin(source?: string): Promise<void> {
     // Redirect to LinkedIn OAuth endpoint
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-    const sourceParam = source ? `&source=${encodeURIComponent(source)}` : '';
-    window.location.href = `${baseUrl}/auth/linkedin?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}${sourceParam}`;
+    const sourceParam = source ? `?source=${encodeURIComponent(source)}` : '';
+    window.location.href = `${baseUrl}/auth/linkedin${sourceParam}`;
   },async getProfile(): Promise<User> {
     const response = await api.get<{ message: string; user: User }>('/auth/profile');
     return response.data.user;
