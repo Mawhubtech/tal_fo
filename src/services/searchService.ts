@@ -1,16 +1,16 @@
 import { aiService } from './aiService';
 
 // Import user data files
-import user1Data from '../data/user1.json';
-import user2Data from '../data/user2.json';
-import user3Data from '../data/user3.json';
-import user4Data from '../data/user4.json';
-import user5Data from '../data/user5.json';
-import user6Data from '../data/user6.json';
-import user7Data from '../data/user7.json';
-import user8Data from '../data/user8.json';
-import user9Data from '../data/user9.json';
-import user10Data from '../data/user10.json';
+import user1Data from '../Data/user1.json';
+import user2Data from '../Data/user2.json';
+import user3Data from '../Data/user3.json';
+import user4Data from '../Data/user4.json';
+import user5Data from '../Data/user5.json';
+import user6Data from '../Data/user6.json';
+import user7Data from '../Data/user7.json';
+import user8Data from '../Data/user8.json';
+import user9Data from '../Data/user9.json';
+import user10Data from '../Data/user10.json';
 
 // Types
 export interface ExtractedKeywords {

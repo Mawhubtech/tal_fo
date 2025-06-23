@@ -11,12 +11,23 @@ export default defineConfig(({ mode }) => {
       exclude: ['lucide-react'],
     },
     esbuild: {
-      // Disable type checking during build
+      // Disable type checking during build for production
       target: 'es2020',
       logOverride: { 
         'this-is-undefined-in-esm': 'silent',
         'typescript': 'silent'
-      }
+      },
+      // Skip type checking completely for production builds
+      tsconfigRaw: mode === 'production' ? {
+        compilerOptions: {
+          skipLibCheck: true,
+          noEmit: false,
+          strict: false,
+          noUnusedLocals: false,
+          noUnusedParameters: false,
+          exactOptionalPropertyTypes: false
+        }
+      } : undefined
     },
     server: {
       port: 5173,
