@@ -28,8 +28,7 @@ export default defineConfig(({ mode }) => {
           exactOptionalPropertyTypes: false
         }
       } : undefined
-    },
-    server: {
+    },    server: {
       port: 5173,
       host: '0.0.0.0', // Allow external connections
       proxy: {
@@ -39,11 +38,14 @@ export default defineConfig(({ mode }) => {
           secure: false,
           rewrite: (path) => path.replace(/^\/api/, '/api'),
         },
-        '/auth': {
-          target: env.VITE_API_URL || 'http://localhost:3000',
-          changeOrigin: true,
-          secure: false,
-        },
+        // Only proxy /auth in production to avoid conflicts with frontend routing in development
+        ...(mode === 'production' ? {
+          '/auth': {
+            target: env.VITE_API_URL || 'http://localhost:3000',
+            changeOrigin: true,
+            secure: false,
+          },
+        } : {}),
         '/uploads': {
           target: env.VITE_API_URL || 'http://localhost:3000',
           changeOrigin: true,
