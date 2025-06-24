@@ -4,32 +4,34 @@ import {
   ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus
 } from 'lucide-react';
 import { jobApiService } from '../../jobs/services/jobApiService';
+import { jobApplicationApiService } from '../../jobs/services/jobApplicationApiService';
 import type { Job as JobType } from '../../data/types';
+import type { JobApplication } from '../../jobs/services/jobApplicationApiService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
-import { mockCandidatesByJob, mockTasksByJob, mockInterviewsByJob, mockReportsByJob, getMockJobKey } from '../data/mock';
+import { mockTasksByJob, mockInterviewsByJob, mockReportsByJob, getMockJobKey } from '../data/mock';
+import AddCandidateModal from '../components/AddCandidateModal';
 
 const JobATSPage: React.FC = () => {
   const { organizationId, departmentId, jobId } = useParams<{ 
 	organizationId: string; 
 	departmentId: string; 
 	jobId: string; 
-  }>();
-    const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
+  }>();  const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
   const [job, setJob] = useState<JobType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
+  const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
 
   // Pipeline states
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'score'>('date');
-  const [candidates, setCandidates] = useState<any[]>([]);
   // Calendar view states
   const [tasksView, setTasksView] = useState<'list' | 'calendar'>('list');
   const [interviewsView, setInterviewsView] = useState<'list' | 'calendar'>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
-
   useEffect(() => {
-    const loadJob = async () => {
+    const loadJobAndApplications = async () => {
       if (!jobId || !organizationId || !departmentId) {
         setLoading(false);
         return;
@@ -37,44 +39,165 @@ const JobATSPage: React.FC = () => {
       
       try {
         setLoading(true);
-        // Get the specific job by ID
+        
+        // Load job data
         const jobData = await jobApiService.getJobById(jobId);
         
         // Verify it belongs to the correct organization and department
         if (jobData.organizationId === organizationId && jobData.departmentId === departmentId) {
           setJob(jobData);
+          
+          // Load job applications for this job
+          const { applications } = await jobApplicationApiService.getJobApplicationsByJobId(jobId);
+          setJobApplications(applications);
         } else {
           setJob(null);
+          setJobApplications([]);
         }
       } catch (error) {
-        console.error('Error loading job:', error);
+        console.error('Error loading job and applications:', error);
         setJob(null);
+        setJobApplications([]);
       } finally {
         setLoading(false);
       }
     };
-    loadJob();
-  }, [jobId, organizationId, departmentId]);
+    loadJobAndApplications();
+  }, [jobId, organizationId, departmentId]);  // Helper function to map backend stage to frontend stage
+  const mapStageToFrontend = (backendStage: string) => {
+    const stageMap: Record<string, string> = {
+      'Application': 'Applied',
+      'Screening': 'Phone Screen',
+      'Interview': 'Technical Interview',
+      'Decision': 'Final Interview',
+      'Offer': 'Offer',
+      'Hired': 'Hired',
+    };
+    return stageMap[backendStage] || 'Applied';
+  };
+  // Helper function to generate initials from name
+  const getInitials = (fullName: string) => {
+    if (!fullName || fullName.trim() === '') return '?';
+    
+    const names = fullName.trim().split(' ');
+    if (names.length === 1) {
+      return names[0].charAt(0).toUpperCase();
+    }
+    
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
 
-  // Initialize candidates state with mock data
-  useEffect(() => {
-	const mockJobKey = jobId ? getMockJobKey(jobId) : '';
-	const initialCandidates = mockJobKey && mockCandidatesByJob[mockJobKey] ? mockCandidatesByJob[mockJobKey] : [];
-	setCandidates(initialCandidates);
-  }, [jobId]);
+  // Convert job applications to candidates format for the ATS components
+  const candidates = jobApplications.map(application => {
+    console.log('Processing application:', application); // Debug log
+    
+    const candidateName = application.candidate?.fullName || 'Unknown Candidate';
+    
+    return {
+      id: application.candidate?.id || application.candidateId,
+      name: candidateName,
+      avatar: application.candidate?.avatar || '', // Keep empty string if no avatar
+      initials: getInitials(candidateName), // Add initials for fallback
+      email: application.candidate?.email || '',
+      phone: application.candidate?.phone || '',
+      location: application.candidate?.location || '',
+      stage: mapStageToFrontend(application.stage || 'Application'),
+      score: application.score || 0,
+      lastUpdated: application.lastActivityDate || application.updatedAt,
+      tags: [], // Empty array for now since skills aren't being loaded
+      source: application.candidate?.source || 'unknown',
+      appliedDate: application.appliedDate,
+      // Additional properties for compatibility
+      position: application.candidate?.currentPosition || '',
+      status: application.status,
+      notes: application.notes || '',
+      resumeUrl: application.resumeUrl || '',
+      portfolioUrl: application.portfolioUrl || '',
+      applicationId: application.id,
+    };
+  });
 
-  // Get mock data using imported function
+  console.log('Transformed candidates:', candidates); // Debug log
+  // Get mock data using imported function (for tasks, interviews, reports)
   const mockJobKey = jobId ? getMockJobKey(jobId) : '';
   const allTasks = mockJobKey && mockTasksByJob[mockJobKey] ? mockTasksByJob[mockJobKey] : [];
   const allInterviews = mockJobKey && mockInterviewsByJob[mockJobKey] ? mockInterviewsByJob[mockJobKey] : [];
-  const reportData = mockJobKey && mockReportsByJob[mockJobKey] ? mockReportsByJob[mockJobKey] : null;
+  const reportData = mockJobKey && mockReportsByJob[mockJobKey] ? mockReportsByJob[mockJobKey] : null;  // Helper function to map frontend stage back to backend stage
+  const mapStageToBackend = (frontendStage: string) => {
+    const stageMap: Record<string, string> = {
+      'Applied': 'Application',
+      'Phone Screen': 'Screening',
+      'Technical Interview': 'Interview',
+      'Final Interview': 'Decision',
+      'Offer': 'Offer',
+      'Hired': 'Hired',
+    };
+    return stageMap[frontendStage] || 'Application';
+  };  const handleCandidateUpdate = async (updatedCandidate: any) => {
+    // Find the current candidate in our local state
+    const currentApplication = jobApplications.find(app => 
+      app.candidate?.id === updatedCandidate.id || app.candidateId === updatedCandidate.id
+    );
+    
+    if (!currentApplication) {
+      console.error('Could not find application for candidate:', updatedCandidate.id);
+      return;
+    }    // Optimistically update the local state immediately
+    const backendStage = mapStageToBackend(updatedCandidate.stage) as 'Application' | 'Screening' | 'Interview' | 'Decision' | 'Offer' | 'Hired';
+    const optimisticApplications = jobApplications.map(app => {
+      if (app.id === currentApplication.id) {
+        return {
+          ...app,
+          status: updatedCandidate.status || app.status,
+          stage: backendStage,
+          score: updatedCandidate.score !== undefined ? updatedCandidate.score : app.score,
+          notes: updatedCandidate.notes !== undefined ? updatedCandidate.notes : app.notes,
+          lastActivityDate: new Date().toISOString(),
+        } as JobApplication;
+      }
+      return app;
+    });
 
-  const handleCandidateUpdate = (updatedCandidate: any) => {
-	setCandidates(prevCandidates => 
-	  prevCandidates.map(candidate => 
-		candidate.id === updatedCandidate.id ? updatedCandidate : candidate
-	  )
-	);
+    // Update local state immediately for better UX
+    setJobApplications(optimisticApplications);
+
+    try {      // Update the backend
+      await jobApplicationApiService.updateJobApplication(currentApplication.id, {
+        status: updatedCandidate.status,
+        stage: backendStage,
+        score: updatedCandidate.score,
+        notes: updatedCandidate.notes,
+      });
+      
+      // Optionally reload from backend to ensure consistency (but do this silently)
+      setTimeout(async () => {
+        try {
+          const { applications } = await jobApplicationApiService.getJobApplicationsByJobId(jobId!);
+          setJobApplications(applications);
+        } catch (error) {
+          console.error('Error syncing with backend:', error);
+        }
+      }, 1000); // Wait 1 second before syncing
+      
+    } catch (error) {
+      console.error('Error updating candidate:', error);
+      
+      // Revert the optimistic update on error
+      setJobApplications(jobApplications);
+      
+      // Show error message to user
+      alert('Failed to update candidate. Please try again.');
+    }
+  };
+
+  const handleCandidateAdded = async () => {
+    // Reload job applications when a new candidate is added
+    try {
+      const { applications } = await jobApplicationApiService.getJobApplicationsByJobId(jobId!);
+      setJobApplications(applications);
+    } catch (error) {
+      console.error('Error reloading applications:', error);
+    }
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -155,8 +278,10 @@ const JobATSPage: React.FC = () => {
 			<p className="text-gray-600 mt-1">Managing candidates for this specific job</p>
 		  </div>
 		</div>
-		
-		<button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors">
+				<button 
+		  onClick={() => setShowAddCandidateModal(true)}
+		  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors"
+		>
 		  <Plus className="w-4 h-4 mr-2" />
 		  Add Candidate
 		</button>
@@ -261,13 +386,19 @@ const JobATSPage: React.FC = () => {
 		  onNavigateMonth={navigateMonth}
 		  onToday={handleToday}
 		/>
-	  )}
-
-	  {activeTab === 'reports' && reportData && (
+	  )}	  {activeTab === 'reports' && reportData && (
 		<ReportsTab 
 		  reportData={reportData}
 		/>
 	  )}
+
+	  {/* Add Candidate Modal */}
+	  <AddCandidateModal
+		isOpen={showAddCandidateModal}
+		onClose={() => setShowAddCandidateModal(false)}
+		jobId={jobId!}
+		onCandidateAdded={handleCandidateAdded}
+	  />
 	</div>
   );
 };

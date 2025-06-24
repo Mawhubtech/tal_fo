@@ -12,18 +12,37 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
   candidate,
   onClick 
 }) => {
+  // Helper function to generate initials from name
+  const getInitials = (name: string) => {
+    if (!name || name.trim() === '') return '?';
+    
+    const names = name.trim().split(' ');
+    if (names.length === 1) {
+      return names[0].charAt(0).toUpperCase();
+    }
+    
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
   return (
     <div 
       className="bg-white border border-gray-200 rounded-lg p-3 mb-2 hover:shadow-md transition-shadow cursor-pointer"
       onClick={onClick}
-    >
-      {/* Candidate Info */}
+    >      {/* Candidate Info */}
       <div className="flex items-center mb-2">
-        <img 
-          src={candidate.avatar} 
-          alt={candidate.name} 
-          className="w-8 h-8 rounded-full mr-2" 
-        />
+        <div className="w-8 h-8 rounded-full mr-2 flex items-center justify-center bg-purple-100">
+          {candidate.avatar ? (
+            <img 
+              src={candidate.avatar} 
+              alt={candidate.name} 
+              className="w-8 h-8 rounded-full object-cover" 
+            />
+          ) : (
+            <span className="text-purple-600 font-medium text-xs">
+              {getInitials(candidate.name)}
+            </span>
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 truncate">
             {candidate.name}

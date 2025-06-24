@@ -110,11 +110,11 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
           candidates={sortedCandidates}
           onCandidateClick={onCandidateClick}
           onCandidateStageChange={handleCandidateStageChange}
-        />
-      ) : (
+        />      ) : (
         <PipelineListView
           candidates={sortedCandidates}
           onCandidateClick={onCandidateClick}
+          onCandidateStageChange={handleCandidateStageChange}
         />
       )}
 

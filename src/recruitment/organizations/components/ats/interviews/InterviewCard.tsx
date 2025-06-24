@@ -12,6 +12,18 @@ export const InterviewCard: React.FC<InterviewCardProps> = ({
   interview, 
   onClick 
 }) => {
+  // Helper function to generate initials from name
+  const getInitials = (name: string) => {
+    if (!name || name.trim() === '') return '?';
+    
+    const names = name.trim().split(' ');
+    if (names.length === 1) {
+      return names[0].charAt(0).toUpperCase();
+    }
+    
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
   const getFormatIcon = (format: string) => {
     switch (format) {
       case 'Video': return <Video className="w-4 h-4" />;
@@ -26,13 +38,20 @@ export const InterviewCard: React.FC<InterviewCardProps> = ({
       className="px-6 py-4 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0"
       onClick={onClick}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start space-x-3 flex-1">
-          <img 
-            src={interview.candidateAvatar} 
-            alt={interview.candidateName}
-            className="w-10 h-10 rounded-full"
-          />
+      <div className="flex items-start justify-between">        <div className="flex items-start space-x-3 flex-1">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-100">
+            {interview.candidateAvatar ? (
+              <img 
+                src={interview.candidateAvatar} 
+                alt={interview.candidateName}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <span className="text-purple-600 font-medium text-sm">
+                {getInitials(interview.candidateName)}
+              </span>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-sm font-medium text-gray-900">

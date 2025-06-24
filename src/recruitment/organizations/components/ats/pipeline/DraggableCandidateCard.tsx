@@ -16,6 +16,18 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
   onClick,
   isDragging = false
 }) => {
+  // Helper function to generate initials from name
+  const getInitials = (name: string) => {
+    if (!name || name.trim() === '') return '?';
+    
+    const names = name.trim().split(' ');
+    if (names.length === 1) {
+      return names[0].charAt(0).toUpperCase();
+    }
+    
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
   const {
     attributes,
     listeners,
@@ -53,14 +65,21 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
         </div>
 
         {/* Card Content */}
-        <div className="flex-1 min-w-0" onClick={onClick}>
-          {/* Candidate Info */}
+        <div className="flex-1 min-w-0" onClick={onClick}>          {/* Candidate Info */}
           <div className="flex items-center mb-2">
-            <img 
-              src={candidate.avatar} 
-              alt={candidate.name} 
-              className="w-8 h-8 rounded-full mr-2" 
-            />
+            <div className="w-8 h-8 rounded-full mr-2 flex items-center justify-center bg-purple-100">
+              {candidate.avatar ? (
+                <img 
+                  src={candidate.avatar} 
+                  alt={candidate.name} 
+                  className="w-8 h-8 rounded-full object-cover" 
+                />
+              ) : (
+                <span className="text-purple-600 font-medium text-xs">
+                  {getInitials(candidate.name)}
+                </span>
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
                 {candidate.name}

@@ -1,17 +1,39 @@
 import React from 'react';
-import { Calendar, Mail, Phone, Star, Tag, MapPin } from 'lucide-react';
+import { Calendar, Mail, Phone, Star, Tag, MapPin, ChevronDown } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
+import { STAGES } from '../../../data/mock';
 import { getScoreColor, getStageColor } from '../shared';
 
 interface PipelineListViewProps {
   candidates: Candidate[];
   onCandidateClick?: (candidate: Candidate) => void;
+  onCandidateStageChange?: (candidateId: string, newStage: string) => void;
 }
 
 export const PipelineListView: React.FC<PipelineListViewProps> = ({
   candidates,
-  onCandidateClick
+  onCandidateClick,
+  onCandidateStageChange
 }) => {
+  // Helper function to generate initials from name
+  const getInitials = (name: string) => {
+    if (!name || name.trim() === '') return '?';
+    
+    const names = name.trim().split(' ');
+    if (names.length === 1) {
+      return names[0].charAt(0).toUpperCase();
+    }
+    
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
+  // Handle stage change
+  const handleStageChange = (candidateId: string, newStage: string) => {
+    if (onCandidateStageChange) {
+      onCandidateStageChange(candidateId, newStage);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
       <div className="overflow-x-auto">
@@ -47,15 +69,22 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                 key={candidate.id}
                 className="hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => onCandidateClick?.(candidate)}
-              >
-                {/* Candidate */}
+              >                {/* Candidate */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <img
-                      src={candidate.avatar}
-                      alt={candidate.name}
-                      className="w-10 h-10 rounded-full mr-3"
-                    />
+                    <div className="w-10 h-10 rounded-full mr-3 flex items-center justify-center bg-purple-100">
+                      {candidate.avatar ? (
+                        <img
+                          src={candidate.avatar}
+                          alt={candidate.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-purple-600 font-medium text-sm">
+                          {getInitials(candidate.name)}
+                        </span>
+                      )}
+                    </div>
                     <div>
                       <div className="text-sm font-medium text-gray-900">
                         {candidate.name}
@@ -66,13 +95,26 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                       </div>
                     </div>
                   </div>
-                </td>
-
-                {/* Stage */}
+                </td>                {/* Stage */}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border-l-4 ${getStageColor(candidate.stage)}`}>
-                    {candidate.stage}
-                  </span>
+                  <div className="relative">
+                    <select
+                      value={candidate.stage}
+                      onChange={(e) => {
+                        e.stopPropagation(); // Prevent row click
+                        handleStageChange(candidate.id, e.target.value);
+                      }}
+                      className={`appearance-none bg-transparent border-0 pr-8 pl-3 py-1 text-xs font-semibold rounded-full border-l-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${getStageColor(candidate.stage)}`}
+                      onClick={(e) => e.stopPropagation()} // Prevent row click when clicking dropdown
+                    >
+                      {STAGES.map((stage) => (
+                        <option key={stage} value={stage}>
+                          {stage}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                  </div>
                 </td>
 
                 {/* Score */}
