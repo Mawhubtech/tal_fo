@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { jobApiService, type CreateJobData } from '../services/jobApiService';
-import { OrganizationService, DepartmentService } from '../../organizations/data';
-import type { Organization, Department } from '../../organizations/data';
+import { OrganizationApiService, type Organization, type Department } from '../../organizations/services/organizationApiService';
 
 const CreateJobPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ 
@@ -12,16 +11,20 @@ const CreateJobPage: React.FC = () => {
   }>();
   const navigate = useNavigate();
   
+  // API services
+  const organizationApiService = new OrganizationApiService();
+  
   // Context data
   const [organization, setOrganization] = useState<Organization | null>(null);
-  const [department, setDepartment] = useState<Department | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [jobTitle, setJobTitle] = useState('');
-  const [department_form, setDepartment_form] = useState('');
+  const [departmentIdForm, setDepartmentIdForm] = useState('');
   const [location, setLocation] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [employmentType, setEmploymentType] = useState('Full-time');
@@ -39,9 +42,6 @@ const CreateJobPage: React.FC = () => {
   const [requirements, setRequirements] = useState(['']);
   const [responsibilities, setResponsibilities] = useState(['']);
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
-  const organizationService = new OrganizationService();
-  const departmentService = new DepartmentService();
-
   // Load context data when organizationId is present
   useEffect(() => {
     const loadContextData = async () => {
@@ -51,20 +51,31 @@ const CreateJobPage: React.FC = () => {
         setLoading(true);
         
         // Load organization
-        const orgData = await organizationService.getOrganizationById(organizationId);
+        const orgData = await organizationApiService.getOrganizationById(organizationId);
         setOrganization(orgData);
 
-        // Load department if in department context
-        if (departmentId) {
-          const deptData = await departmentService.getDepartmentById(organizationId, departmentId);
-          setDepartment(deptData);
-          // Pre-fill department field
-          if (deptData) {
-            setDepartment_form(deptData.name);
+        if (!orgData) {
+          setError('Organization not found');
+          return;
+        }
+
+        // Load departments for this organization
+        const deptData = await organizationApiService.getDepartmentsByOrganization(organizationId);
+        setDepartments(deptData);
+        
+        // If we're in a department context, pre-select that department
+        if (departmentId && deptData.length > 0) {
+          const selectedDept = deptData.find(dept => dept.id === departmentId);
+          if (selectedDept) {
+            setSelectedDepartment(selectedDept);
+            setDepartmentIdForm(selectedDept.id);
           }
         }
+        
+        setError(null);
       } catch (error) {
         console.error('Error loading context data:', error);
+        setError('Failed to load organization data. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -131,7 +142,7 @@ const CreateJobPage: React.FC = () => {
         return;
       }
 
-      if (!department_form.trim()) {
+      if (!departmentIdForm.trim()) {
         setError('Department is required');
         return;
       }
@@ -150,11 +161,18 @@ const CreateJobPage: React.FC = () => {
         return;
       }
 
+      // Find the selected department to get its name
+      const selectedDept = departments.find(dept => dept.id === departmentIdForm);
+      if (!selectedDept) {
+        setError('Invalid department selected');
+        return;
+      }
+
       const jobData: CreateJobData = {
         title: jobTitle.trim(),
         description: jobDescription.trim() || undefined,
-        department: department_form.trim(),
-        departmentId: departmentId || 'default',
+        department: selectedDept.name,
+        departmentId: departmentIdForm,
         location: location.trim(),
         type: employmentType as any,
         status: publish ? 'Active' : 'Draft',
@@ -179,11 +197,11 @@ const CreateJobPage: React.FC = () => {
 
       const createdJob = await jobApiService.createJob(jobData);
       
-      // Navigate to the job details page or jobs list
-      if (publish) {
-        navigate(`/recruitment/jobs/${createdJob.id}`);
+      // Navigate to the job ATS page within the organization context
+      if (organizationId && createdJob.departmentId) {
+        navigate(`/dashboard/organizations/${organizationId}/departments/${createdJob.departmentId}/jobs/${createdJob.id}/ats`);
       } else {
-        navigate('/recruitment/jobs');
+        navigate('/dashboard/organizations');
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create job. Please try again.');
@@ -191,7 +209,61 @@ const CreateJobPage: React.FC = () => {
     } finally {
       setSubmitLoading(false);
     }
-  };return (    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">      {/* Breadcrumbs */}
+  };
+
+  // Early return if no organizationId
+  if (!organizationId) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Invalid URL</h3>
+          <p className="text-gray-500 mb-4">
+            Organization ID is required to create a job.
+          </p>
+          <Link 
+            to="/dashboard/organizations" 
+            className="text-purple-600 hover:text-purple-700 font-medium"
+          >
+            ← Back to Organizations
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading organization details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !organization) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Organization</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <Link 
+            to="/dashboard/organizations" 
+            className="text-purple-600 hover:text-purple-700 font-medium"
+          >
+            ← Back to Organizations
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">      {/* Breadcrumbs */}
       <div className="bg-white border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-3">
@@ -212,14 +284,13 @@ const CreateJobPage: React.FC = () => {
                   ) : (
                     <span>Loading...</span>
                   )}
-                  <span className="mx-2">/</span>
-                  {departmentId && department ? (
+                  <span className="mx-2">/</span>                  {departmentId && selectedDepartment ? (
                     <>
                       <Link 
                         to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
                         className="hover:text-gray-700"
                       >
-                        {department.name}
+                        {selectedDepartment.name}
                       </Link>
                       <span className="mx-2">/</span>
                     </>
@@ -324,21 +395,29 @@ const CreateJobPage: React.FC = () => {
                   </label>
                   <select
                     id="department"
-                    value={department_form}
-                    onChange={(e) => setDepartment_form(e.target.value)}
+                    value={departmentIdForm}
+                    onChange={(e) => {
+                      setDepartmentIdForm(e.target.value);
+                      const selected = departments.find(dept => dept.id === e.target.value);
+                      setSelectedDepartment(selected || null);
+                    }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
                     required
+                    disabled={loading || departments.length === 0}
                   >
                     <option value="">Select Department</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Product">Product</option>
-                    <option value="Design">Design</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Sales">Sales</option>
-                    <option value="HR">Human Resources</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Operations">Operations</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
                   </select>
+                  {loading && (
+                    <p className="text-xs text-gray-500 mt-1">Loading departments...</p>
+                  )}
+                  {!loading && departments.length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">No departments found for this organization.</p>
+                  )}
                 </div>
               </div>
 
@@ -747,10 +826,9 @@ const CreateJobPage: React.FC = () => {
                 <h2 className="text-xl font-bold text-gray-900 mb-2">
                   {jobTitle || 'Job Title'}
                 </h2>
-                <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-3">
-                  <span className="flex items-center">
+                <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-3">                  <span className="flex items-center">
                     <Building size={14} className="mr-1" />
-                    {department_form || 'Department'}
+                    {selectedDepartment?.name || 'Department'}
                   </span>
                   <span className="flex items-center">
                     <MapPin size={14} className="mr-1" />
@@ -890,11 +968,10 @@ const CreateJobPage: React.FC = () => {
             <h3 className="text-lg font-semibold text-white">📊 Completion</h3>
           </div>
           <div className="p-6">
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
+            <div className="space-y-3">              <div className="flex justify-between text-sm">
                 <span className="text-gray-700">Job Details</span>
-                <span className={`font-medium ${jobTitle && department_form && location ? 'text-green-600' : 'text-gray-400'}`}>
-                  {jobTitle && department_form && location ? '✓' : '○'}
+                <span className={`font-medium ${jobTitle && departmentIdForm && location ? 'text-green-600' : 'text-gray-400'}`}>
+                  {jobTitle && departmentIdForm && location ? '✓' : '○'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -917,10 +994,9 @@ const CreateJobPage: React.FC = () => {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
                 <div 
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"                  style={{
                     width: `${Math.round(
-                      ((jobTitle && department_form && location ? 25 : 0) +
+                      ((jobTitle && departmentIdForm && location ? 25 : 0) +
                        (jobDescription ? 25 : 0) +
                        (requirements.some(req => req.trim()) ? 25 : 0) +
                        (skills.length > 0 ? 25 : 0))
