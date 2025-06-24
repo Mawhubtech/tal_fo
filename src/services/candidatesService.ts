@@ -179,6 +179,114 @@ export const candidatesService = {  // Get candidates with filtering and paginat
       documentId,
       overrideData,
     });
+    return response.data;  },  // Create a new candidate manually
+  async createCandidate(candidateData: any) {
+    // Check if there are files to upload (avatar or documents)
+    const hasDocuments = candidateData.documents && candidateData.documents.length > 0;
+    const hasAvatar = candidateData.avatarFile;
+    
+    if (hasDocuments || hasAvatar) {
+      return this.createCandidateWithFiles(candidateData);
+    }
+
+    // If no files, use regular creation but clean empty avatar
+    const { documents, avatarFile, ...cleanData } = candidateData;
+    
+    // Remove empty avatar field if present
+    if (cleanData.personalInfo && cleanData.personalInfo.avatar === '') {
+      delete cleanData.personalInfo.avatar;
+    }
+    
+    return this.createCandidateWithoutFiles(cleanData);
+  },
+
+  // Helper method for creating candidate without files
+  async createCandidateWithoutFiles(candidateData: any) {
+    const response = await apiClient.post('/candidates', candidateData);
+    return response.data;
+  },
+  // Create candidate with file uploads (documents and/or avatar)
+  async createCandidateWithFiles(candidateData: any) {
+    const formData = new FormData();
+    
+    // Extract files from candidate data
+    const { documents, avatarFile, ...candidateDataWithoutFiles } = candidateData;
+    
+    // Add candidate data as JSON
+    formData.append('candidateData', JSON.stringify(candidateDataWithoutFiles));
+    
+    // Add avatar file if present
+    if (avatarFile) {
+      formData.append('avatar', avatarFile);
+    }
+    
+    // Add each document file if present
+    if (documents && documents.length > 0) {
+      documents.forEach((doc: any, index: number) => {
+        formData.append(`documents`, doc.file);
+        formData.append(`documentTypes`, doc.documentType);
+        formData.append(`isPrimary`, doc.isPrimary ? 'true' : 'false');
+      });
+    }    const response = await apiClient.post('/candidates/with-files', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },    });
+    return response.data;
+  },
+
+  // Update an existing candidate
+  async updateCandidate(id: string, candidateData: any) {
+    // Check if there are files to upload (avatar or documents)
+    const hasDocuments = candidateData.documents && candidateData.documents.length > 0;
+    const hasAvatar = candidateData.avatarFile;
+    
+    if (hasDocuments || hasAvatar) {
+      return this.updateCandidateWithFiles(id, candidateData);
+    }
+
+    // If no files, use regular update but clean empty avatar
+    const { documents, avatarFile, ...cleanData } = candidateData;
+    
+    // Remove empty avatar field if present
+    if (cleanData.personalInfo && cleanData.personalInfo.avatar === '') {
+      delete cleanData.personalInfo.avatar;
+    }
+    
+    return this.updateCandidateWithoutFiles(id, cleanData);
+  },
+  // Helper method for updating candidate without files
+  async updateCandidateWithoutFiles(id: string, candidateData: any) {
+    const response = await apiClient.patch(`/candidates/${id}`, candidateData);
+    return response.data;
+  },
+
+  // Update candidate with file uploads (documents and/or avatar)
+  async updateCandidateWithFiles(id: string, candidateData: any) {
+    const formData = new FormData();
+    
+    // Extract files from candidate data
+    const { documents, avatarFile, ...candidateDataWithoutFiles } = candidateData;
+    
+    // Add candidate data as JSON
+    formData.append('candidateData', JSON.stringify(candidateDataWithoutFiles));
+    
+    // Add avatar file if present
+    if (avatarFile) {
+      formData.append('avatar', avatarFile);
+    }
+    
+    // Add each document file if present
+    if (documents && documents.length > 0) {
+      documents.forEach((doc: any, index: number) => {
+        formData.append(`documents`, doc.file);
+        formData.append(`documentTypes`, doc.documentType);
+        formData.append(`isPrimary`, doc.isPrimary ? 'true' : 'false');
+      });
+    }    const response = await apiClient.patch(`/candidates/${id}/with-files`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

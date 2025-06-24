@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
-import { useCandidates, useCandidateStats, useUpdateCandidateStatus, useUpdateCandidateRating } from '../../hooks/useCandidates';
+import AddCandidateModal from '../../components/AddCandidateModal';
+import { CreateCandidateDto } from '../../types/candidate.types';
+import { useCandidates, useCandidateStats, useUpdateCandidateStatus, useUpdateCandidateRating, useCreateCandidate, useUpdateCandidate } from '../../hooks/useCandidates';
+import { getAvatarUrl } from '../../utils/fileUtils';
 
 // Enhanced candidate interface with additional professional fields
 interface EnhancedCandidate {
@@ -45,12 +48,14 @@ const CandidatesPage: React.FC = () => {
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
   // State for dropdown menus
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);  // State for add candidate modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState<EnhancedCandidate | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // React Query hooks for data fetching
   const candidatesQuery = useCandidates({
@@ -61,10 +66,11 @@ const CandidatesPage: React.FC = () => {
     experienceLevel: experienceFilter !== 'all' ? experienceFilter : undefined,
   });
 
-  const statsQuery = useCandidateStats();
-    // Mutations for data updates
+  const statsQuery = useCandidateStats();    // Mutations for data updates
   const updateStatusMutation = useUpdateCandidateStatus();
   const updateRatingMutation = useUpdateCandidateRating();
+  const createCandidateMutation = useCreateCandidate();
+  const updateCandidateMutation = useUpdateCandidate();
     // Use items instead of data.items for compatibility with the transformed response
   const candidates = Array.isArray(candidatesQuery.data?.items) ? candidatesQuery.data.items : [];
   const totalItems = candidatesQuery.data?.total || 0;
@@ -142,11 +148,9 @@ const CandidatesPage: React.FC = () => {
         issuer: award.issuer || '',
         date: award.date || '',
         description: award.description || '',
-      })) || [],      interests: userData.interests || [],    } as UserStructuredData;
-
-    setSelectedUserDataForPanel(userDataForPanel);
+      })) || [],      interests: userData.interests || [],    } as UserStructuredData;    setSelectedUserDataForPanel(userDataForPanel);
     setPanelState('expanded');
-    document.body.style.overflow = 'hidden'; // Prevent background scroll
+    // Don't prevent background scroll since only the table area is affected
   };
 
   // Function to handle status change
@@ -157,18 +161,50 @@ const CandidatesPage: React.FC = () => {
       console.error('Error updating candidate status:', error);
       // Display some error notification here
     }
-  };
-  // Function to handle rating change that will be used in the future
+  };  // Function to handle rating change that will be used in the future
   const handleRatingChange = (id: string, rating: number) => {
     // Create a star rating component here in the future
     updateRatingMutation.mutate({ id, rating });
+  };  // Function to handle adding a new candidate
+  const handleAddCandidate = async (candidateData: CreateCandidateDto & { avatarFile?: File | null }) => {
+    try {
+      await createCandidateMutation.mutateAsync(candidateData);
+      setIsAddModalOpen(false);
+      // Show success notification here if you have a notification system
+    } catch (error) {
+      console.error('Error creating candidate:', error);
+      // Display error notification here
+    }
   };
 
+  // Function to handle editing a candidate
+  const handleEditCandidate = (candidate: EnhancedCandidate) => {
+    setEditingCandidate(candidate);
+    setIsEditModalOpen(true);
+  };
+
+  // Function to handle updating a candidate
+  const handleUpdateCandidate = async (candidateData: CreateCandidateDto & { avatarFile?: File | null }) => {
+    if (!editingCandidate) return;
+    
+    try {
+      await updateCandidateMutation.mutateAsync({ 
+        id: editingCandidate.id, 
+        candidateData 
+      });
+      setIsEditModalOpen(false);
+      setEditingCandidate(null);
+      // Show success notification here if you have a notification system
+    } catch (error) {
+      console.error('Error updating candidate:', error);
+      // Display error notification here
+    }
+  };
   const handlePanelStateChange = (newState: PanelState) => {
     setPanelState(newState);
     if (newState === 'closed') {
       setSelectedUserDataForPanel(null);
-      document.body.style.overflow = 'auto'; // Restore background scroll
+      // No need to restore scroll since we didn't disable it
     }
   };
 
@@ -267,14 +303,9 @@ const CandidatesPage: React.FC = () => {
         </div>
       </div>
     );
-  }
-  return (
+  }  return (
     <React.Fragment>
-      <div className={`min-h-screen bg-gray-50 p-6 transition-all duration-300 ${
-        panelState === 'expanded' ? 'mr-[66.666667%] overflow-hidden' : 
-        panelState === 'collapsed' ? 'mr-[33.333333%] overflow-hidden' : 
-        ''
-      }`}>
+      <div className="min-h-screen bg-gray-50 p-6">
         <div className="space-y-6">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center text-sm text-gray-500 mb-4">
@@ -355,8 +386,10 @@ const CandidatesPage: React.FC = () => {
 			<Link to="/dashboard/search" className="flex items-center px-4 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors">
 				<SearchCheckIcon className="h-4 w-4 mr-2" />
 				Search Talents
-			</Link>
-              <button className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm">
+			</Link>              <button 
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm"
+                onClick={() => setIsAddModalOpen(true)}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Candidate
               </button>
@@ -389,73 +422,90 @@ const CandidatesPage: React.FC = () => {
             <div className="text-sm text-gray-600 font-medium">Rejected</div>
             <div className="text-xs text-gray-500 mt-1">Not suitable</div>
           </div>
-        </div>        {/* Candidates Table */}
-        <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+        </div>        {/* Candidates Table - This section will be affected by the panel */}
+        <div className={`transition-all duration-300 ${
+          panelState === 'expanded' ? 'mr-[66.666667%]' : 
+          panelState === 'collapsed' ? 'mr-[33.333333%]' : 
+          ''
+        }`}>
+          <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="w-64 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Candidate
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="w-56 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Position & Experience
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="w-44 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Location & Salary
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="w-36 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Status & Rating
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="w-48 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Skills
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="w-32 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Applied Date
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="w-28 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
-                </thead>                <tbody className="bg-white divide-y divide-gray-100">
+                </thead><tbody className="bg-white divide-y divide-gray-100">
                   {candidates && Array.isArray(candidates) ? candidates.map((candidate: EnhancedCandidate) => (
-                    <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">                          <div className="flex items-center">
+                    <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">                      <td className="px-6 py-4">
+                        <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
                             {candidate.avatar ? (
                               <img 
-                                src={candidate.avatar} 
+                                src={getAvatarUrl(candidate.avatar) || ''} 
                                 alt={`${candidate.firstName} ${candidate.lastName}`}
                                 className="h-10 w-10 rounded-full object-cover"
+                                onError={(e) => {
+                                  // Fallback to initials if image fails to load
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const fallback = target.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
                               />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                <span className="text-sm font-medium text-purple-600">
-                                  {`${candidate.firstName?.charAt(0) || ''}${candidate.lastName?.charAt(0) || ''}`}
-                                </span>
-                              </div>
-                            )}
+                            ) : null}
+                            <div 
+                              className={`h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center ${candidate.avatar ? 'hidden' : ''}`}
+                            >
+                              <span className="text-sm font-medium text-purple-600">
+                                {`${candidate.firstName?.charAt(0) || ''}${candidate.lastName?.charAt(0) || ''}`}
+                              </span>
+                            </div>
                           </div>
-                          <div className="ml-4">                            <button 
-                              className="text-sm font-semibold text-purple-600 hover:text-purple-800 hover:underline cursor-pointer transition-colors text-left"
+                          <div className="ml-4 min-w-0 flex-1">
+                            <button 
+                              className="text-sm font-semibold text-purple-600 hover:text-purple-800 hover:underline cursor-pointer transition-colors text-left block truncate"
                               onClick={() => handleOpenProfilePanel(candidate)}
                               title="Click to view full profile"
                             >
                               {candidate.fullName || (candidate.firstName && candidate.lastName ? `${candidate.firstName} ${candidate.lastName}` : 'Unknown')}
                             </button>
-                            <div className="text-sm text-gray-500 flex items-center">
-                              <Mail className="w-3 h-3 mr-1" />
-                              {candidate.email || 'No email'}
+                            <div className="text-sm text-gray-500 flex items-center truncate">
+                              <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
+                              <span className="truncate">{candidate.email || 'No email'}</span>
                             </div>
-                            <div className="text-sm text-gray-500 flex items-center">
-                              <Phone className="w-3 h-3 mr-1" />
-                              {candidate.phone || 'No phone'}
+                            <div className="text-sm text-gray-500 flex items-center truncate">
+                              <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
+                              <span className="truncate">{candidate.phone || 'No phone'}</span>
                             </div>
                           </div>
                         </div>
-                      </td>                      <td className="px-6 py-4 whitespace-nowrap">
+                      </td>                      <td className="px-6 py-4">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 truncate" title={candidate.currentPosition || 
+                             (candidate.experience && Array.isArray(candidate.experience) && candidate.experience.length > 0 
+                              ? candidate.experience[0].position 
+                              : 'No position data')}>
                             {candidate.currentPosition || 
                              (candidate.experience && Array.isArray(candidate.experience) && candidate.experience.length > 0 
                               ? candidate.experience[0].position 
@@ -467,14 +517,15 @@ const CandidatesPage: React.FC = () => {
                               : 'No experience data'}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      </td>                      <td className="px-6 py-4">
                         <div>
-                          <div className="text-sm text-gray-900 flex items-center">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            {candidate.location}
+                          <div className="text-sm text-gray-900 flex items-center truncate">
+                            <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="truncate" title={candidate.location}>{candidate.location}</span>
                           </div>
-                          <div className="text-sm text-gray-500">{candidate.salaryExpectation}</div>
+                          <div className="text-sm text-gray-500 truncate" title={candidate.salaryExpectation || 'No salary data'}>
+                            {candidate.salaryExpectation || 'No salary data'}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -487,25 +538,25 @@ const CandidatesPage: React.FC = () => {
                           </div>
                         </div>
                       </td>                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                          {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.slice(0, 3).map((skill: string, index: number) => (
-                            <span key={index} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+                        <div className="flex flex-wrap gap-1">
+                          {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.slice(0, 2).map((skill: string, index: number) => (
+                            <span key={index} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded truncate max-w-20" title={skill}>
                               {skill}
                             </span>
                           ))}
-                          {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.length > 3 && (
-                            <span className="text-xs text-gray-500">+{candidate.skills.length - 3} more</span>
+                          {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.length > 2 && (
+                            <span className="text-xs text-gray-500 whitespace-nowrap">+{candidate.skills.length - 2}</span>
                           )}
                           {(!candidate.skills || !Array.isArray(candidate.skills) || candidate.skills.length === 0) && (
-                            <span className="text-xs text-gray-500">No skills listed</span>
+                            <span className="text-xs text-gray-500">No skills</span>
                           )}
                         </div>
-                      </td><td className="px-6 py-4 whitespace-nowrap">
+                      </td>                      <td className="px-6 py-4">
                         <div>
-                          <div className="text-sm text-gray-900">{candidate.appliedDate ? formatDate(candidate.appliedDate) : 'N/A'}</div>
-                          <div className="text-sm text-gray-500">Last: {candidate.lastActivity ? formatDate(candidate.lastActivity) : 'N/A'}</div>
+                          <div className="text-sm text-gray-900 truncate">{candidate.appliedDate ? formatDate(candidate.appliedDate) : 'N/A'}</div>
+                          <div className="text-sm text-gray-500 truncate">Last: {candidate.lastActivity ? formatDate(candidate.lastActivity) : 'N/A'}</div>
                         </div>
-                      </td><td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      </td>                      <td className="px-6 py-4 text-sm font-medium">
                         <div className="relative dropdown-container">
                           <button 
                             className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 hover:border-purple-300 transition-colors"
@@ -513,10 +564,9 @@ const CandidatesPage: React.FC = () => {
                           >
                             Actions
                             <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${openDropdownId === candidate.id ? 'rotate-180' : ''}`} />
-                          </button>                          {openDropdownId === candidate.id && (
+                          </button>{openDropdownId === candidate.id && (
                             <div className="absolute right-0 mt-1 w-52 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                              <div className="py-1">
-                                <button 
+                              <div className="py-1">                                <button 
                                   className="flex items-center w-full px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
                                   onClick={() => {
                                     handleOpenProfilePanel(candidate);
@@ -525,7 +575,17 @@ const CandidatesPage: React.FC = () => {
                                 >
                                   <Eye className="w-4 h-4 mr-3" />
                                   View Profile
-                                </button>                                <a 
+                                </button>
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 transition-colors"
+                                  onClick={() => {
+                                    handleEditCandidate(candidate);
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  <Edit className="w-4 h-4 mr-3" />
+                                  Edit Profile
+                                </button><a 
                                   href={candidate.documents && candidate.documents.length > 0 ? candidate.documents[0].url : '#'}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -610,8 +670,7 @@ const CandidatesPage: React.FC = () => {
                 </tbody>
               </table>            </div>
           </div>
-
-        {/* Pagination */}
+        </div> {/* End of table container that gets affected by panel */}        {/* Pagination - This stays fixed and doesn't move with the panel */}
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center justify-between">            <div className="text-sm text-gray-700">
               Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{endIndex}</span> of <span className="font-medium">{totalItems}</span> candidates
@@ -679,8 +738,8 @@ const CandidatesPage: React.FC = () => {
             </div>
           </div>
         </div>
-        </div>
-      </div>
+        </div> {/* End of space-y-6 */}
+      </div> {/* End of main content */}
 
       {/* Side Panel and Overlay */}
       {panelState !== 'closed' && (
@@ -699,7 +758,26 @@ const CandidatesPage: React.FC = () => {
             panelState={panelState}
             onStateChange={handlePanelStateChange}
           />        </>
-      )}
+      )}      {/* Add Candidate Modal */}
+      <AddCandidateModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleAddCandidate}
+        isLoading={createCandidateMutation.isPending}
+      />
+
+      {/* Edit Candidate Modal */}
+      <AddCandidateModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingCandidate(null);
+        }}
+        onSubmit={handleUpdateCandidate}
+        isLoading={updateCandidateMutation.isPending}
+        editingCandidate={editingCandidate}
+        isEditing={true}
+      />
     </React.Fragment>
   );
 };

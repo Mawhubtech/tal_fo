@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { candidatesService, CandidateQueryParams } from '../services/candidatesService';
+import { CreateCandidateDto } from '../types/candidate.types';
 
 // Keys for React Query
 const QUERY_KEYS = {
@@ -95,6 +96,35 @@ export const useDeleteCandidate = () => {
   
   return useMutation({
     mutationFn: (id: string) => candidatesService.deleteCandidate(id),
+    onSuccess: () => {
+      // Invalidate and refetch candidates and stats
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.candidates] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.candidateStats] });
+    },
+  });
+};
+
+// Hook to create a new candidate
+export const useCreateCandidate = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (candidateData: CreateCandidateDto) => candidatesService.createCandidate(candidateData),
+    onSuccess: () => {
+      // Invalidate and refetch candidates and stats
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.candidates] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.candidateStats] });
+    },
+  });
+};
+
+// Hook to update an existing candidate
+export const useUpdateCandidate = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, candidateData }: { id: string; candidateData: CreateCandidateDto }) => 
+      candidatesService.updateCandidate(id, candidateData),
     onSuccess: () => {
       // Invalidate and refetch candidates and stats
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.candidates] });

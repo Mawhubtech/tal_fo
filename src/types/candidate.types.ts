@@ -108,6 +108,47 @@ export interface CreateCandidateCustomFieldDto {
   fieldType?: string;
 }
 
+export enum DocumentType {
+  RESUME = 'resume',
+  CV = 'cv',
+  COVER_LETTER = 'cover_letter',
+  PORTFOLIO = 'portfolio',
+  CERTIFICATE = 'certificate',
+  OTHER = 'other',
+}
+
+export interface CreateCandidateDocumentDto {
+  fileName: string;
+  originalName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  documentType: DocumentType;
+  extractedText?: string;
+  metadata?: Record<string, any>;
+  isPrimary?: boolean;
+}
+
+export interface CandidateFileUpload {
+  file: File;
+  documentType: DocumentType;
+  isPrimary?: boolean;
+}
+
+export interface CandidateExistingDocument {
+  id?: string;
+  fileName: string;
+  originalName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  documentType: DocumentType;
+  isPrimary?: boolean;
+  isExisting?: true; // Flag to identify existing documents
+}
+
+export type CandidateDocument = CandidateFileUpload | CandidateExistingDocument;
+
 export enum CandidateStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
@@ -145,6 +186,7 @@ export interface CreateCandidateDto {
   interests?: CreateCandidateInterestDto[];
   references?: CreateCandidateReferenceDto[];
   customFields?: CreateCandidateCustomFieldDto[];
+  documents?: CandidateDocument[];
 }
 
 // CV Processing Response Types
