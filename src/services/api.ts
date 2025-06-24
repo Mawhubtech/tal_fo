@@ -57,3 +57,46 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+// Client API functions
+export const clientApi = {
+  getAll: async (params?: any) => {
+    const response = await apiClient.get('/clients', { params });
+    return response.data;
+  },
+  
+  getById: async (id: string) => {
+    const response = await apiClient.get(`/clients/${id}`);
+    return response.data;
+  },
+  
+  create: async (data: any) => {
+    const response = await apiClient.post('/clients', data);
+    return response.data;
+  },
+  
+  update: async (id: string, data: any) => {
+    const response = await apiClient.patch(`/clients/${id}`, data);
+    return response.data;
+  },
+  
+  delete: async (id: string) => {
+    const response = await apiClient.delete(`/clients/${id}`);
+    return response.data;
+  },
+  
+  getStats: async () => {
+    const response = await apiClient.get('/clients/stats');
+    return response.data;
+  },
+  
+  updateActivity: async (id: string) => {
+    const response = await apiClient.patch(`/clients/${id}/activity`);
+    return response.data;
+  },
+  
+  updateMetrics: async (id: string, metrics: { openJobs?: number; totalHires?: number }) => {
+    const response = await apiClient.patch(`/clients/${id}/metrics`, metrics);
+    return response.data;
+  }
+};

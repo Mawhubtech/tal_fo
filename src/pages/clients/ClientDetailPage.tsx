@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building, Globe, Mail, Phone, MapPin, Users, Briefcase,
   Calendar, TrendingUp, Edit3, Settings,
-  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle,
-  Plus, Search, Star
+  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle
 } from 'lucide-react';
-import { ClientService } from './data/clientService';
+import { clientApi } from '../../services/api';
 import type { Client } from './data/clientService';
-import { JobService } from '../../recruitment/organizations/data/jobService';
-import { DepartmentService } from '../../recruitment/organizations/data/departmentService';
-import type { Job, Department } from '../../recruitment/organizations/data/types';
+import ClientForm from './components/ClientForm';
+import DeleteClientDialog from './components/DeleteClientDialog';
 
 // Utility function to generate consistent colors based on string
 const stringToColor = (str: string) => {
@@ -42,20 +40,16 @@ const getInitials = (name: string) => {
 
 const ClientDetailPage: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
+  const navigate = useNavigate();
   const [client, setClient] = useState<Client | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingJobs, setLoadingJobs] = useState(false);
-  const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'departments' | 'activity' | 'contracts'>('overview');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const clientService = new ClientService();
-  const jobService = new JobService();
-  const departmentService = new DepartmentService();
-
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts'>('overview');
+  
+  // Form and dialog states
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   // Load client data
   useEffect(() => {
     const loadClient = async () => {
@@ -67,74 +61,35 @@ const ClientDetailPage: React.FC = () => {
 
       try {
         setLoading(true);
-        const clientData = await clientService.getClientById(clientId);
-        
-        if (!clientData) {
-          setError('Client not found');
-          return;
-        }
-
+        const clientData = await clientApi.getById(clientId);
         setClient(clientData);
         setError(null);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error loading client:', err);
-        setError('Failed to load client data. Please try again.');
+        setError(err.response?.data?.message || 'Failed to load client data. Please try again.');
       } finally {
         setLoading(false);
       }
     };    loadClient();
   }, [clientId]);
 
-  // Load jobs when activeTab changes to 'jobs' or when client data is loaded
-  useEffect(() => {
-    const loadJobs = async () => {
-      if (!client || activeTab !== 'jobs') return;
+  // Handle delete client
+  const handleDeleteClient = async () => {
+    if (!client) return;
 
-      try {
-        setLoadingJobs(true);
-        const jobsData = await jobService.getJobsByOrganization(client.id);
-        setJobs(jobsData);
-      } catch (err) {
-        console.error('Error loading jobs:', err);
-      } finally {
-        setLoadingJobs(false);
-      }
-    };    loadJobs();
-  }, [client, activeTab]);
-
-  // Load departments when activeTab changes to 'departments' or when client data is loaded
-  useEffect(() => {
-    const loadDepartments = async () => {
-      if (!client || activeTab !== 'departments') return;
-
-      try {
-        setLoadingDepartments(true);
-        const departmentsData = await departmentService.getDepartmentsByOrganization(client.id);
-        setDepartments(departmentsData);
-      } catch (err) {
-        console.error('Error loading departments:', err);
-      } finally {
-        setLoadingDepartments(false);
-      }
-    };
-
-    loadDepartments();
-  }, [client, activeTab]);
-
-  // Helper functions
-  const getJobStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'bg-green-100 text-green-800';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    try {
+      setDeleteLoading(true);
+      await clientApi.delete(client.id);
+      // Navigate back to clients list after successful deletion
+      navigate('/dashboard/clients');
+    } catch (err: any) {
+      console.error('Error deleting client:', err);
+      // Note: In a real app, you might want to show an error toast here
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteDialog(false);
     }
   };
-
   // Helper functions
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -161,19 +116,15 @@ const ClientDetailPage: React.FC = () => {
         return <Clock className="w-4 h-4 text-gray-600" />;
     }
   };
-
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   };
-
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Building },
-    { id: 'jobs', label: 'Jobs', icon: Briefcase },
-    { id: 'departments', label: 'Departments', icon: Users },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'contracts', label: 'Contracts', icon: Target }
   ];
@@ -255,19 +206,24 @@ const ClientDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(client.status)}`}>
             {getStatusIcon(client.status)}
             <span className="ml-1 capitalize">{client.status}</span>
           </span>
-          <button className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+          <button 
+            onClick={() => setShowEditForm(true)}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
             <Edit3 className="w-4 h-4 mr-2" />
             Edit Client
           </button>
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
+          <button 
+            onClick={() => setShowDeleteDialog(true)}
+            className="inline-flex items-center px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+          >
+            <XCircle className="w-4 h-4 mr-2" />
+            Delete
           </button>
         </div>
       </div>
@@ -371,13 +327,11 @@ const ClientDetailPage: React.FC = () => {
               <Target className="w-5 h-5 text-purple-600" />
             </div>
           </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border">
+        </div>        <div className="bg-white p-4 rounded-lg border">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Member Since</p>
-              <p className="text-lg font-bold text-gray-900">{formatDate(client.createdDate)}</p>
+              <p className="text-lg font-bold text-gray-900">{formatDate(client.createdAt)}</p>
               <p className="text-sm text-gray-500">Client start date</p>
             </div>
             <div className="p-2 bg-yellow-100 rounded-lg">
@@ -390,7 +344,7 @@ const ClientDetailPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Last Activity</p>
-              <p className="text-lg font-bold text-gray-900">{formatDate(client.lastActivity)}</p>
+              <p className="text-lg font-bold text-gray-900">{client.lastActivity ? formatDate(client.lastActivity) : 'No recent activity'}</p>
               <p className="text-sm text-gray-500">Recent engagement</p>
             </div>
             <div className="p-2 bg-red-100 rounded-lg">
@@ -457,289 +411,75 @@ const ClientDetailPage: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                </div>
-
-                {/* Recent Activity */}
+                </div>                {/* Recent Activity */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-white rounded border">
-                      <div className="flex items-center">
-                        <div className="p-2 bg-green-100 rounded-lg mr-3">
-                          <Briefcase className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">New job posted</p>
-                          <p className="text-xs text-gray-500">Senior Developer position</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-400">2 days ago</span>
+                  <div className="text-center py-8">
+                    <div className="p-3 bg-gray-200 rounded-lg inline-block mb-3">
+                      <Activity className="w-6 h-6 text-gray-400" />
                     </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-white rounded border">
-                      <div className="flex items-center">
-                        <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                          <Users className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">New hire completed</p>
-                          <p className="text-xs text-gray-500">Marketing Manager role</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-400">1 week ago</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-white rounded border">
-                      <div className="flex items-center">
-                        <div className="p-2 bg-purple-100 rounded-lg mr-3">
-                          <Activity className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Profile updated</p>
-                          <p className="text-xs text-gray-500">Contact information</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-400">2 weeks ago</span>
-                    </div>
+                    <p className="text-gray-500 text-sm">No recent activity data available</p>
+                    <p className="text-gray-400 text-xs mt-1">Activity tracking will appear here when implemented</p>
                   </div>
                 </div>
-              </div>
-
-              {/* Performance Metrics */}
+              </div>              {/* Performance Metrics */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white p-4 rounded border text-center">
-                    <div className="text-2xl font-bold text-green-600 mb-2">85%</div>
-                    <p className="text-sm text-gray-600">Hire Success Rate</p>
-                    <p className="text-xs text-green-600 mt-1">↑ 5% from last month</p>
+                <div className="text-center py-8">
+                  <div className="p-3 bg-gray-200 rounded-lg inline-block mb-3">
+                    <TrendingUp className="w-6 h-6 text-gray-400" />
                   </div>
-                  <div className="bg-white p-4 rounded border text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-2">12</div>
-                    <p className="text-sm text-gray-600">Avg. Days to Hire</p>
-                    <p className="text-xs text-blue-600 mt-1">↓ 2 days improved</p>
-                  </div>
-                  <div className="bg-white p-4 rounded border text-center">
-                    <div className="text-2xl font-bold text-purple-600 mb-2">4.8</div>
-                    <p className="text-sm text-gray-600">Client Satisfaction</p>
-                    <div className="flex justify-center mt-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star key={star} className={`w-3 h-3 ${star <= 5 ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
-                      ))}
-                    </div>
-                  </div>
+                  <p className="text-gray-500 text-sm">Performance metrics not available</p>
+                  <p className="text-gray-400 text-xs mt-1">Metrics will be calculated based on hire data when available</p>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'jobs' && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Open Positions</h3>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search jobs..."
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <button className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Job
-                  </button>                </div>
-              </div>
-              
-              {/* Filter jobs based on search term */}
-              {(() => {
-                const filteredJobs = jobs.filter(job =>
-                  job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  job.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  job.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
-                );
-
-                return (
-                  <div className="space-y-4">
-                {loadingJobs ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                    <p className="text-gray-500 mt-2">Loading jobs...</p>
-                  </div>
-                ) : filteredJobs.length > 0 ? (
-                  filteredJobs.map((job) => (
-                    <Link
-                      key={job.id}
-                      to={`/dashboard/organizations/${client?.id}/departments/${job.departmentId}/jobs/${job.id}/ats`}
-                      className="block bg-gray-50 rounded-lg p-4 border hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-lg font-medium text-gray-900">{job.title}</h4>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getJobStatusColor(job.status)}`}>
-                              {job.status}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center text-sm text-gray-600 mb-3">
-                            <Building className="w-4 h-4 mr-1" />
-                            <span className="mr-4">{job.department}</span>
-                            <MapPin className="w-4 h-4 mr-1" />
-                            <span className="mr-4">{job.location}</span>
-                            <Clock className="w-4 h-4 mr-1" />
-                            <span className="mr-4">{job.employmentType}</span>
-                            <Users className="w-4 h-4 mr-1" />
-                            <span>{job.applicantCount} applicants</span>
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-500">
-                              Posted: {new Date(job.postedDate).toLocaleDateString()} • Deadline: {new Date(job.applicationDeadline).toLocaleDateString()}
-                            </div>
-                            <div className="text-lg font-semibold text-gray-900">
-                              {job.salary}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>                    <p className="text-gray-500 mb-4">
-                      {searchTerm ? "No jobs match your search criteria." : "This client doesn't have any jobs yet."}
-                    </p>
-                  </div>
-                )}
-              </div>
-                );
-              })()}
-            </div>
-          )}          {activeTab === 'departments' && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Department Structure</h3>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search departments..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {(() => {
-                if (loadingDepartments) {
-                  return (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                      <p className="text-gray-500">Loading departments...</p>
-                    </div>
-                  );
-                }
-
-                const filteredDepartments = departments.filter(dept =>
-                  dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  dept.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  dept.manager.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-
-                return filteredDepartments.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filteredDepartments.map((dept) => (
-                      <Link
-                        key={dept.id}
-                        to={`/dashboard/organizations/${client?.id}/departments/${dept.id}/jobs`}
-                        className="bg-gray-50 rounded-lg p-4 border hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-200 transition-colors">
-                              <Users className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900 group-hover:text-purple-700 transition-colors">{dept.name}</h4>
-                              <p className="text-sm text-gray-500">Manager: {dept.manager}</p>
-                            </div>
-                          </div>
-                          <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{dept.description}</p>
-                        
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Open Jobs: <span className="font-medium text-gray-900">{dept.activeJobs}</span></span>
-                          <span className="text-gray-500">Employees: <span className="font-medium text-gray-900">{dept.totalEmployees}</span></span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No departments found</h3>
-                    <p className="text-gray-500 mb-4">
-                      {searchTerm ? "No departments match your search criteria." : "This client doesn't have any departments yet."}
-                    </p>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          {activeTab === 'activity' && (
+              </div></div>
+          )}          {activeTab === 'activity' && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Timeline</h3>
-              <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <div key={item} className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Activity className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">Job application received</p>
-                      <p className="text-sm text-gray-600">New candidate applied for Senior Developer position</p>
-                      <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-8">
+                <div className="p-3 bg-gray-200 rounded-lg inline-block mb-3">
+                  <Activity className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-sm">No activity timeline available</p>
+                <p className="text-gray-400 text-xs mt-1">Client activity will be tracked here when implemented</p>
               </div>
             </div>
-          )}
-
-          {activeTab === 'contracts' && (
+          )}          {activeTab === 'contracts' && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Contracts & Agreements</h3>
-              <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4 border">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-900">Master Service Agreement</h4>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                      Active
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <p>Start Date: {formatDate('2023-01-15')}</p>
-                    <p>End Date: {formatDate('2024-12-31')}</p>
-                    <p>Terms: Standard recruitment services</p>
-                  </div>
+              <div className="text-center py-8">
+                <div className="p-3 bg-gray-200 rounded-lg inline-block mb-3">
+                  <Target className="w-6 h-6 text-gray-400" />
                 </div>
+                <p className="text-gray-500 text-sm">No contracts available</p>
+                <p className="text-gray-400 text-xs mt-1">Contract information will appear here when implemented</p>
               </div>
-            </div>
-          )}
+            </div>          )}
         </div>
-      </div>
+      </div>      {/* Edit Client Form Modal */}
+      {showEditForm && client && (
+        <ClientForm
+          client={client}
+          isOpen={showEditForm}
+          onClose={() => setShowEditForm(false)}
+          onSave={(updatedClient) => {
+            setClient(updatedClient);
+            setShowEditForm(false);
+          }}
+          mode="edit"
+        />
+      )}
+
+      {/* Delete Client Dialog */}
+      {showDeleteDialog && client && (
+        <DeleteClientDialog
+          isOpen={showDeleteDialog}
+          clientName={client.name}
+          onConfirm={handleDeleteClient}
+          onCancel={() => setShowDeleteDialog(false)}
+          loading={deleteLoading}
+        />
+      )}
     </div>
   );
 };

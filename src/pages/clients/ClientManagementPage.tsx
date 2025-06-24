@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Plus, Edit3, Trash2, Users, MapPin, Globe, Phone, Mail, Calendar, Eye, Home, ChevronRight } from 'lucide-react';
-import { ClientService, type Client } from './data/clientService';
+import { ClientApiService, type Client } from '../../services/clientApiService';
+import ClientForm from './components/ClientForm';
+import DeleteClientDialog from './components/DeleteClientDialog';
 
 // Utility function to generate consistent colors based on string
 const stringToColor = (str: string) => {
@@ -38,24 +40,77 @@ const ClientManagementPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [industryFilter, setIndustryFilter] = useState<string>('all');
   const [sizeFilter, setSizeFilter] = useState<string>('all');
+    // Form and dialog states
+  const [showClientForm, setShowClientForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const clientService = new ClientService();
-
+  const clientService = new ClientApiService();
   useEffect(() => {
     const loadClients = async () => {
       try {
         setLoading(true);
-        const clientData = await clientService.getAllClients();
-        setClients(clientData);
+        const response = await clientService.getAllClients();
+        setClients(response.clients);
       } catch (error) {
         console.error('Error loading clients:', error);
       } finally {
         setLoading(false);
       }
-    };
-
-    loadClients();
+    };    loadClients();
   }, []);
+
+  // Handler functions for CRUD operations
+  const handleAddClient = () => {
+    setEditingClient(null);
+    setShowClientForm(true);
+  };
+
+  const handleEditClient = (client: Client) => {
+    setEditingClient(client);
+    setShowClientForm(true);
+  };
+
+  const handleDeleteClient = (client: Client) => {
+    setClientToDelete(client);
+    setShowDeleteDialog(true);
+  };
+
+  const handleClientSaved = (savedClient: Client) => {
+    if (editingClient) {
+      // Update existing client
+      setClients(prev => prev.map(c => c.id === savedClient.id ? savedClient : c));
+    } else {
+      // Add new client
+      setClients(prev => [savedClient, ...prev]);
+    }
+    setShowClientForm(false);
+    setEditingClient(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!clientToDelete) return;
+
+    setDeleteLoading(true);
+    try {
+      await clientService.deleteClient(clientToDelete.id);
+      setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
+      setShowDeleteDialog(false);
+      setClientToDelete(null);
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      // You might want to show a toast notification here
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
+    setClientToDelete(null);
+  };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -154,7 +209,10 @@ const ClientManagementPage: React.FC = () => {
               <option value="Large">Large (1000+)</option>
             </select>
           </div>
-        </div>        <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
+        </div>        <button 
+          onClick={handleAddClient}
+          className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Client
         </button>
@@ -283,10 +341,9 @@ const ClientManagementPage: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="flex items-center text-sm text-gray-900">
+                    <div>                      <div className="flex items-center text-sm text-gray-900">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(client.createdDate).toLocaleDateString()}
+                        {new Date(client.createdAt).toLocaleDateString()}
                       </div>
                       <div className="text-sm text-gray-500">
                         Last: {new Date(client.lastActivity).toLocaleDateString()}
@@ -300,14 +357,15 @@ const ClientManagementPage: React.FC = () => {
                         title="View client details"
                       >
                         <Eye className="h-4 w-4" />
-                      </Link>
-                      <button 
+                      </Link>                      <button 
+                        onClick={() => handleEditClient(client)}
                         className="text-green-600 hover:text-green-900"
                         title="Edit client"
                       >
                         <Edit3 className="h-4 w-4" />
                       </button>
                       <button 
+                        onClick={() => handleDeleteClient(client)}
                         className="text-red-600 hover:text-red-900"
                         title="Delete client"
                       >
@@ -337,10 +395,30 @@ const ClientManagementPage: React.FC = () => {
             2
           </button>
           <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">
-            Next
-          </button>
+            Next          </button>
         </div>
       </div>
+
+      {/* Client Form Modal */}
+      <ClientForm
+        client={editingClient}
+        isOpen={showClientForm}
+        onClose={() => {
+          setShowClientForm(false);
+          setEditingClient(null);
+        }}
+        onSave={handleClientSaved}
+        mode={editingClient ? 'edit' : 'add'}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteClientDialog
+        isOpen={showDeleteDialog}
+        clientName={clientToDelete?.name || ''}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        loading={deleteLoading}
+      />
     </div>
   );
 };

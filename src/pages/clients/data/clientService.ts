@@ -2,26 +2,25 @@ import { OrganizationService } from '../../../recruitment/organizations/data/org
 import { DepartmentService } from '../../../recruitment/organizations/data/departmentService';
 import type { Organization } from '../../../recruitment/organizations/data/types';
 
-// Client interface with all required fields
+// Client interface matching backend entity
 export interface Client {
   id: string;
   name: string;
   industry: string;
   size: string;
   location: string;
-  website: string;
+  website?: string;
   email: string;
-  phone: string;
+  phone?: string;
   status: 'active' | 'inactive' | 'suspended';
   employees: number;
   openJobs: number;
   totalHires: number;
-  createdDate: string;
-  lastActivity: string;
   description?: string;
   logoUrl?: string;
-  totalOpenJobs?: number;
-  totalEmployees?: number;
+  createdAt: string;
+  updatedAt: string;
+  lastActivity?: string;
 }
 
 // Mock additional client data to supplement organization data
