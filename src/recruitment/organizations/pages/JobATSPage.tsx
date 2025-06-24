@@ -3,8 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus
 } from 'lucide-react';
-import { JobService } from '../data';
-import type { Job as JobType } from '../data';
+import { jobApiService } from '../../jobs/services/jobApiService';
+import type { Job as JobType } from '../../data/types';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
 import { mockCandidatesByJob, mockTasksByJob, mockInterviewsByJob, mockReportsByJob, getMockJobKey } from '../data/mock';
 
@@ -23,35 +23,37 @@ const JobATSPage: React.FC = () => {
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'score'>('date');
   const [candidates, setCandidates] = useState<any[]>([]);
-
   // Calendar view states
   const [tasksView, setTasksView] = useState<'list' | 'calendar'>('list');
   const [interviewsView, setInterviewsView] = useState<'list' | 'calendar'>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const jobService = new JobService();
-
   useEffect(() => {
-	const loadJob = async () => {
-	  if (!jobId || !organizationId || !departmentId) {
-		setLoading(false);
-		return;
-	  }
-	  
-	  try {
-		setLoading(true);
-		// Get all jobs for the organization and filter by department and job ID
-		const jobs = await jobService.getJobsByOrganization(organizationId);
-		const foundJob = jobs.find(j => j.id === jobId && j.departmentId === departmentId);
-		setJob(foundJob || null);
-	  } catch (error) {
-		console.error('Error loading job:', error);
-		setJob(null);
-	  } finally {
-		setLoading(false);
-	  }
-	};
-	loadJob();
+    const loadJob = async () => {
+      if (!jobId || !organizationId || !departmentId) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        // Get the specific job by ID
+        const jobData = await jobApiService.getJobById(jobId);
+        
+        // Verify it belongs to the correct organization and department
+        if (jobData.organizationId === organizationId && jobData.departmentId === departmentId) {
+          setJob(jobData);
+        } else {
+          setJob(null);
+        }
+      } catch (error) {
+        console.error('Error loading job:', error);
+        setJob(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadJob();
   }, [jobId, organizationId, departmentId]);
 
   // Initialize candidates state with mock data
@@ -167,10 +169,9 @@ const JobATSPage: React.FC = () => {
 			<div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
 			  <Briefcase className="w-6 h-6 text-purple-600" />
 			</div>
-			<div className="ml-4">
-			  <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
-			  <p className="text-gray-600">{job.department} • {job.location} • {job.employmentType}</p>
-			  <p className="text-gray-500 text-sm">Status: {job.status} • Experience Level: {job.experience}</p>
+			<div className="ml-4">			  <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
+			  <p className="text-gray-600">{job.department} • {job.location} • {job.type}</p>
+			  <p className="text-gray-500 text-sm">Status: {job.status} • Experience Level: {job.experienceLevel || 'Not specified'}</p>
 			</div>
 		  </div>		  <div className="text-right">
 			<p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
