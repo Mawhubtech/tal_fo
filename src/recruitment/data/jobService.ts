@@ -267,6 +267,12 @@ const mockJobsByOrg: Record<string, Job[]> = {
 
 // Service class for job operations
 export class JobService {
+  // Get all jobs across all organizations
+  static async getAllJobs(): Promise<Job[]> {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return Object.values(mockJobsByOrg).flat();
+  }
+
   // Get all jobs by organization ID
   static async getJobsByOrganization(organizationId: string): Promise<Job[]> {
     await new Promise(resolve => setTimeout(resolve, 100));

@@ -1,22 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Building, Users, Briefcase, ChevronRight, Search } from 'lucide-react';
-import { OrganizationService } from '../data/organizationService';
-import type { Organization } from '../data/types';
+import { OrganizationApiService, type Organization } from '../services/organizationApiService';
 
-const OrganizationsPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+const OrganizationsPage: React.FC = () => {  const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState<string>('all');
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    organizations: 0,
+    departments: 0,
+    activeJobs: 0,
+    employees: 0
+  });
 
-  const organizationService = new OrganizationService();
-
-  useEffect(() => {
+  const organizationApiService = new OrganizationApiService();  useEffect(() => {
     const loadOrganizations = async () => {
       try {
-        const data = await organizationService.getAllOrganizations();
+        const [data, statsData] = await Promise.all([
+          organizationApiService.getAllOrganizations(),
+          organizationApiService.getStats()
+        ]);
         setOrganizations(data);
+        setStats(statsData);
       } catch (error) {
         console.error('Failed to load organizations:', error);
       } finally {
@@ -36,15 +42,9 @@ const OrganizationsPage: React.FC = () => {
     
     return matchesSearch && matchesIndustry;
   });
-
   const industries = [...new Set(organizations.map(org => org.industry))];
 
-  const totalStats = {
-    organizations: organizations.length,
-    departments: organizations.reduce((sum, org) => sum + org.departmentCount, 0),
-    activeJobs: organizations.reduce((sum, org) => sum + org.activeJobs, 0),
-    employees: organizations.reduce((sum, org) => sum + org.totalEmployees, 0)
-  };
+  // Use calculated stats from API instead of local calculation
   if (loading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
@@ -79,7 +79,7 @@ const OrganizationsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Organizations</p>
-              <p className="text-2xl font-bold text-gray-900">{totalStats.organizations}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.organizations}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <Building className="w-5 h-5 text-blue-600" />
@@ -91,7 +91,7 @@ const OrganizationsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Departments</p>
-              <p className="text-2xl font-bold text-gray-900">{totalStats.departments}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.departments}</p>
             </div>
             <div className="p-2 bg-green-100 rounded-lg">
               <Users className="w-5 h-5 text-green-600" />
@@ -103,7 +103,7 @@ const OrganizationsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Jobs</p>
-              <p className="text-2xl font-bold text-gray-900">{totalStats.activeJobs}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.activeJobs}</p>
             </div>
             <div className="p-2 bg-purple-100 rounded-lg">
               <Briefcase className="w-5 h-5 text-purple-600" />
@@ -115,7 +115,7 @@ const OrganizationsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Employees</p>
-              <p className="text-2xl font-bold text-gray-900">{totalStats.employees.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.employees.toLocaleString()}</p>
             </div>
             <div className="p-2 bg-yellow-100 rounded-lg">
               <Users className="w-5 h-5 text-yellow-600" />
@@ -183,12 +183,10 @@ const OrganizationsPage: React.FC = () => {
               <p className="text-sm text-gray-600 mb-4 line-clamp-2">{org.description}</p>
 
               {/* Location */}
-              <p className="text-sm text-gray-500 mb-4">{org.location}</p>
-
-              {/* Stats */}
+              <p className="text-sm text-gray-500 mb-4">{org.location}</p>              {/* Stats */}
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
                 <div className="text-center">
-                  <p className="text-sm font-medium text-gray-900">{org.departmentCount}</p>
+                  <p className="text-sm font-medium text-gray-900">{org.departmentCount || 0}</p>
                   <p className="text-xs text-gray-500">Departments</p>
                 </div>
                 <div className="text-center">

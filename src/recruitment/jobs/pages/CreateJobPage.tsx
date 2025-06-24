@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle } from 'lucide-react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { jobApiService, type CreateJobData } from '../services/jobApiService';
 import { OrganizationService, DepartmentService } from '../../organizations/data';
 import type { Organization, Department } from '../../organizations/data';
 
@@ -9,11 +10,14 @@ const CreateJobPage: React.FC = () => {
     organizationId: string; 
     departmentId: string; 
   }>();
+  const navigate = useNavigate();
   
   // Context data
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [department, setDepartment] = useState<Department | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [jobTitle, setJobTitle] = useState('');
@@ -116,29 +120,77 @@ const CreateJobPage: React.FC = () => {
 
   const removeResponsibility = (index: number) => {
     setResponsibilities(responsibilities.filter((_, i) => i !== index));
-  };
-  const handleSubmit = (publish: boolean) => {
-    console.log('Submitting job...', {
-      jobTitle,
-      department: department_form,
-      location,
-      jobDescription,
-      employmentType,
-      experienceLevel,
-      salaryMin,
-      salaryMax,
-      currency,
-      remote,
-      skills,
-      benefits,
-      applicationDeadline,
-      hiringTeam,
-      requirements: requirements.filter(req => req.trim()),
-      responsibilities: responsibilities.filter(resp => resp.trim()),
-      customQuestions,
-      status: publish ? 'Open' : 'Draft'
-    });
-    // TODO: API call to save/publish job
+  };  const handleSubmit = async (publish: boolean) => {
+    try {
+      setSubmitLoading(true);
+      setError(null);
+
+      // Validate required fields
+      if (!jobTitle.trim()) {
+        setError('Job title is required');
+        return;
+      }
+
+      if (!department_form.trim()) {
+        setError('Department is required');
+        return;
+      }
+
+      if (!location.trim()) {
+        setError('Location is required');
+        return;
+      }
+
+      // Validate salary range
+      const minSalary = salaryMin ? parseFloat(salaryMin) : undefined;
+      const maxSalary = salaryMax ? parseFloat(salaryMax) : undefined;
+      
+      if (minSalary && maxSalary && minSalary > maxSalary) {
+        setError('Minimum salary cannot be greater than maximum salary');
+        return;
+      }
+
+      const jobData: CreateJobData = {
+        title: jobTitle.trim(),
+        description: jobDescription.trim() || undefined,
+        department: department_form.trim(),
+        departmentId: departmentId || 'default',
+        location: location.trim(),
+        type: employmentType as any,
+        status: publish ? 'Active' : 'Draft',
+        experienceLevel: experienceLevel.trim() || undefined,
+        salaryMin: minSalary,
+        salaryMax: maxSalary,
+        currency: currency,
+        remote: remote,
+        skills: skills.length > 0 ? skills : undefined,
+        benefits: benefits.length > 0 ? benefits : undefined,
+        requirements: requirements.filter(req => req.trim()).length > 0 
+          ? requirements.filter(req => req.trim()) 
+          : undefined,
+        responsibilities: responsibilities.filter(resp => resp.trim()).length > 0 
+          ? responsibilities.filter(resp => resp.trim()) 
+          : undefined,
+        hiringTeam: hiringTeam.length > 0 ? hiringTeam : undefined,
+        applicationDeadline: applicationDeadline || undefined,
+        organizationId: organizationId || undefined,
+        customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
+      };
+
+      const createdJob = await jobApiService.createJob(jobData);
+      
+      // Navigate to the job details page or jobs list
+      if (publish) {
+        navigate(`/recruitment/jobs/${createdJob.id}`);
+      } else {
+        navigate('/recruitment/jobs');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to create job. Please try again.');
+      console.error('Error creating job:', err);
+    } finally {
+      setSubmitLoading(false);
+    }
   };return (    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">      {/* Breadcrumbs */}
       <div className="bg-white border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -196,21 +248,45 @@ const CreateJobPage: React.FC = () => {
       </div>      {/* Header */}      <div className="bg-white shadow-sm border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>
-            <div className="flex gap-4">
+            <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>            <div className="flex gap-4">
+              {error && (
+                <div className="flex items-center text-red-600 bg-red-50 px-3 py-2 rounded-lg mr-4">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => handleSubmit(false)}
-                className="px-4 py-2 border-2 border-purple-600 text-purple-700 rounded-lg hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm"
+                disabled={submitLoading}
+                className="px-4 py-2 border-2 border-purple-600 text-purple-700 rounded-lg hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                Save as Draft
+                {submitLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save as Draft
+                  </>
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => handleSubmit(true)}
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm shadow-md"
+                disabled={submitLoading}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                Publish Job
+                {submitLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    Publishing...
+                  </>
+                ) : (
+                  'Publish Job'
+                )}
               </button>
             </div>
           </div>

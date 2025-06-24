@@ -25,17 +25,46 @@ export interface Department {
 export interface Job {
   id: string;
   title: string;
+  description?: string;
   department: string;
   departmentId: string;
   location: string;
   type: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
   status: 'Active' | 'Draft' | 'Paused' | 'Closed';
-  applicants: number;
-  postedDate: string;
   urgency: 'High' | 'Medium' | 'Low';
+  experienceLevel?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  currency: string;
+  remote: boolean;
+  skills?: string[];
+  benefits?: string[];
+  requirements?: string[];
+  responsibilities?: string[];
+  hiringTeam?: string[];
+  applicationDeadline?: Date | string;
+  applicantsCount: number;
+  organizationId?: string;
+  customQuestions?: Array<{
+    question: string;
+    type: 'text' | 'multiple-choice';
+    required: boolean;
+    options?: string[];
+  }>;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  // Legacy fields for compatibility with existing frontend code
+  applicants?: number; // Maps to applicantsCount
+  postedDate?: string; // Computed from createdAt
   salary?: {
-    min: number;
-    max: number;
+    min?: number;
+    max?: number;
     currency: string;
   };
 }

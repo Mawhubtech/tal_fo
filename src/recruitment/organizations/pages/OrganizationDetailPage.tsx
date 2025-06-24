@@ -4,8 +4,8 @@ import {
   ArrowLeft, Plus, Users, Briefcase, Building, 
   MapPin, Search, Grid3X3, List, ChevronDown, ChevronUp, Clock
 } from 'lucide-react';
-import { OrganizationService, DepartmentService, JobService } from '../data';
-import type { Organization, Department, Job } from '../data';
+import { OrganizationApiService, type Organization, type Department } from '../services/organizationApiService';
+import type { Job } from '../../data/types';
 
 const OrganizationDetailPage: React.FC = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -21,10 +21,7 @@ const OrganizationDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const organizationService = new OrganizationService();
-  const departmentService = new DepartmentService();
-  const jobService = new JobService();
+    const organizationApiService = new OrganizationApiService();
 
   // Load data
   useEffect(() => {
@@ -35,11 +32,10 @@ const OrganizationDetailPage: React.FC = () => {
         return;
       }
 
-      try {
-        setLoading(true);
+      try {        setLoading(true);
         
         // Load organization
-        const orgData = await organizationService.getOrganizationById(organizationId);
+        const orgData = await organizationApiService.getOrganizationById(organizationId);
         setOrganization(orgData);
 
         if (!orgData) {
@@ -48,7 +44,7 @@ const OrganizationDetailPage: React.FC = () => {
         }
         
         // Load departments
-        const deptData = await departmentService.getDepartmentsByOrganization(organizationId);
+        const deptData = await organizationApiService.getDepartmentsByOrganization(organizationId);
         setDepartments(deptData);
         
         setError(null);
@@ -66,12 +62,10 @@ const OrganizationDetailPage: React.FC = () => {
   // Load all jobs when showAllJobs is toggled
   useEffect(() => {
     const loadAllJobs = async () => {
-      if (!showAllJobs || !organizationId) return;
-
-      try {
+      if (!showAllJobs || !organizationId) return;      try {
         setLoadingJobs(true);
-        const jobsData = await jobService.getJobsByOrganization(organizationId);
-        setAllJobs(jobsData);
+        const jobsResponse = await organizationApiService.getJobsByOrganization(organizationId);
+        setAllJobs(jobsResponse.data);
       } catch (err) {
         console.error('Error loading jobs:', err);
       } finally {
@@ -87,31 +81,44 @@ const OrganizationDetailPage: React.FC = () => {
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     dept.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
   // Filter jobs
   const filteredJobs = allJobs.filter(job =>
     job.title.toLowerCase().includes(jobsSearchTerm.toLowerCase()) ||
     job.department.toLowerCase().includes(jobsSearchTerm.toLowerCase()) ||
-    job.location.toLowerCase().includes(jobsSearchTerm.toLowerCase())
+    job.location.toLowerCase().includes(jobsSearchTerm.toLowerCase()) ||
+    (job.skills && job.skills.some(skill => skill.toLowerCase().includes(jobsSearchTerm.toLowerCase())))
   );
-
   // Helper function to format job status
   const getJobStatusColor = (status: string) => {
-    switch (status) {
-      case 'open': return 'bg-green-100 text-green-800';
+    switch (status.toLowerCase()) {
+      case 'active': return 'bg-green-100 text-green-800';
       case 'closed': return 'bg-red-100 text-red-800';
       case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'paused': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   // Helper function to format dates
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
-    }).format(date);
+    }).format(dateObj);
+  };
+
+  // Helper function to format salary
+  const formatSalary = (job: Job) => {
+    if (job.salaryMin && job.salaryMax) {
+      return `${job.currency || '$'}${job.salaryMin.toLocaleString()} - ${job.currency || '$'}${job.salaryMax.toLocaleString()}`;
+    } else if (job.salaryMin) {
+      return `${job.currency || '$'}${job.salaryMin.toLocaleString()}+`;
+    } else if (job.salaryMax) {
+      return `Up to ${job.currency || '$'}${job.salaryMax.toLocaleString()}`;
+    }
+    return 'Salary not specified';
   };
 
   if (loading) {
@@ -279,20 +286,21 @@ const OrganizationDetailPage: React.FC = () => {
                               <span className="mr-4">{job.department}</span>
                               <MapPin className="w-4 h-4 mr-1" />
                               <span className="mr-4">{job.location}</span>
-                              <Clock className="w-4 h-4 mr-1" />
-                              <span className="mr-4">{job.employmentType}</span>
+                              <Clock className="w-4 h-4 mr-1" />                              <span className="mr-4">{job.type}</span>
                               <Users className="w-4 h-4 mr-1" />
-                              <span>{job.applicantCount} applicants</span>
+                              <span>{job.applicantsCount} applicants</span>
                             </div>
 
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center text-sm text-gray-500">
-                                <span>Posted: {formatDate(job.postedDate)}</span>
-                                <span className="mx-2">•</span>
-                                <span>Deadline: {formatDate(job.applicationDeadline)}</span>
-                              </div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {job.salary}
+                            <div className="flex items-center justify-between">                              <div className="flex items-center text-sm text-gray-500">
+                                <span>Posted: {formatDate(job.createdAt)}</span>
+                                {job.applicationDeadline && (
+                                  <>
+                                    <span className="mx-2">•</span>
+                                    <span>Deadline: {formatDate(job.applicationDeadline)}</span>
+                                  </>
+                                )}
+                              </div><div className="text-sm font-medium text-gray-900">
+                                {formatSalary(job)}
                               </div>
                             </div>
                           </div>

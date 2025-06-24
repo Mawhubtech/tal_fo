@@ -4,8 +4,8 @@ import {
   ArrowLeft, Briefcase, MapPin, DollarSign, 
   Search, Grid3X3, List, ChevronRight 
 } from 'lucide-react';
-import { OrganizationService, DepartmentService, JobService } from '../data';
-import type { Job, Organization, Department } from '../data';
+import { OrganizationApiService, type Organization, type Department } from '../services/organizationApiService';
+import type { Job } from '../../data/types';
 
 const DepartmentJobsPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ organizationId: string; departmentId: string }>();
@@ -20,10 +20,7 @@ const DepartmentJobsPage: React.FC = () => {
   const [department, setDepartment] = useState<Department | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const organizationService = new OrganizationService();
-  const departmentService = new DepartmentService();
-  const jobService = new JobService();
+  const [error, setError] = useState<string | null>(null);  const organizationApiService = new OrganizationApiService();
 
   // Load data
   useEffect(() => {
@@ -34,19 +31,18 @@ const DepartmentJobsPage: React.FC = () => {
         return;
       }
 
-      try {
-        setLoading(true);
+      try {        setLoading(true);
           // Load organization
-        const orgData = await organizationService.getOrganizationById(organizationId);
+        const orgData = await organizationApiService.getOrganizationById(organizationId);
         setOrganization(orgData);
         
         // Load department
-        const deptData = await departmentService.getDepartmentById(organizationId, departmentId);
+        const deptData = await organizationApiService.getDepartmentById(organizationId, departmentId);
         setDepartment(deptData);
 
         // Load jobs for department
-        const jobsData = await jobService.getJobsByDepartment(departmentId);
-        setJobs(jobsData);
+        const jobsResponse = await organizationApiService.getJobsByDepartment(organizationId, departmentId);
+        setJobs(jobsResponse.data);
         
         setError(null);
       } catch (err) {
@@ -58,20 +54,25 @@ const DepartmentJobsPage: React.FC = () => {
     };
 
     loadData();
-  }, [organizationId, departmentId]);
-  // Filter jobs
+  }, [organizationId, departmentId]);  // Filter jobs
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (job.skills && job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
-    const matchesType = typeFilter === 'all' || job.employmentType === typeFilter;
-    const matchesLevel = levelFilter === 'all' || job.experience === levelFilter;
+    const matchesType = typeFilter === 'all' || job.type === typeFilter;
+    const matchesLevel = levelFilter === 'all' || job.experienceLevel === levelFilter;
     
     return matchesSearch && matchesStatus && matchesType && matchesLevel;
   });
-
-  const formatSalary = (salary: string) => {
-    return salary || 'Salary not specified';
+  const formatSalary = (job: Job) => {
+    if (job.salaryMin && job.salaryMax) {
+      return `${job.currency || '$'}${job.salaryMin.toLocaleString()} - ${job.currency || '$'}${job.salaryMax.toLocaleString()}`;
+    } else if (job.salaryMin) {
+      return `${job.currency || '$'}${job.salaryMin.toLocaleString()}+`;
+    } else if (job.salaryMax) {
+      return `Up to ${job.currency || '$'}${job.salaryMax.toLocaleString()}`;
+    }
+    return 'Salary not specified';
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -273,7 +274,7 @@ const DepartmentJobsPage: React.FC = () => {
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <DollarSign className="w-4 h-4 mr-1" />
-                      {formatSalary(job.salary)}
+                      {formatSalary(job)}
                     </div>
                   </div>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(job.status)}`}>
@@ -285,15 +286,15 @@ const DepartmentJobsPage: React.FC = () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Type:</span>
-                    <span className="font-medium capitalize">{job.employmentType.replace('-', ' ')}</span>
+                    <span className="font-medium capitalize">{job.type.replace('-', ' ')}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Level:</span>
-                    <span className="font-medium capitalize">{job.experience} Level</span>
+                    <span className="font-medium capitalize">{job.experienceLevel} Level</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Applicants:</span>
-                    <span className="font-medium">{job.applicantCount || 0}</span>
+                    <span className="font-medium">{job.applicantsCount || 0}</span>
                   </div>
                 </div>
 
@@ -345,12 +346,12 @@ const DepartmentJobsPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{job.title}</div>
-                        <div className="text-sm text-gray-500">{formatSalary(job.salary)}</div>
+                        <div className="text-sm text-gray-500">{formatSalary(job)}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 capitalize">
-                        {job.employmentType.replace('-', ' ')} • {job.experience} Level
+                        {job.type.replace('-', ' ')} • {job.experienceLevel} Level
                       </div>
                       <div className="text-sm text-gray-500">{job.location}</div>
                     </td>
@@ -360,7 +361,7 @@ const DepartmentJobsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {job.applicantCount || 0}
+                      {job.applicantsCount || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(job.postedDate).toLocaleDateString()}

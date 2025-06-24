@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Building, Users, ChevronRight, Search, ArrowLeft } from 'lucide-react';
-import { OrganizationService, DepartmentService } from '../data';
-import type { Department, Organization } from '../data';
+import { OrganizationApiService, type Organization, type Department } from '../services/organizationApiService';
 
 const DepartmentsPage: React.FC = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -10,18 +9,14 @@ const DepartmentsPage: React.FC = () => {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const organizationService = new OrganizationService();
-  const departmentService = new DepartmentService();
+  const organizationApiService = new OrganizationApiService();
 
   useEffect(() => {
     const loadData = async () => {
-      if (!organizationId) return;
-
-      try {
+      if (!organizationId) return;      try {
         const [orgData, deptData] = await Promise.all([
-          organizationService.getOrganizationById(organizationId),
-          departmentService.getDepartmentsByOrganization(organizationId)
+          organizationApiService.getOrganizationById(organizationId),
+          organizationApiService.getDepartmentsByOrganization(organizationId)
         ]);
 
         setOrganization(orgData);
