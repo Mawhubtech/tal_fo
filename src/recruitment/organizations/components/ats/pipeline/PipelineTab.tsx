@@ -16,6 +16,7 @@ interface PipelineTabProps {
   onSortChange: (sort: 'date' | 'score') => void;
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateUpdate?: (candidate: Candidate) => void;
+  onCandidateRemove?: (candidate: Candidate) => void;
 }
 
 export const PipelineTab: React.FC<PipelineTabProps> = ({
@@ -27,7 +28,8 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
   sortBy,
   onSortChange,
   onCandidateClick,
-  onCandidateUpdate
+  onCandidateUpdate,
+  onCandidateRemove
 }) => {
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
 
@@ -65,7 +67,7 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
   return (
     <>
       {/* Header with View Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-4 mb-6">
         <div className="flex-1">
           <PipelineFilters
             searchQuery={searchQuery}
@@ -78,21 +80,22 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
         </div>
         
         {/* View Toggle */}
-        <div className="flex border border-gray-300 rounded-lg overflow-hidden bg-white">
+        <div className="flex border border-gray-300 rounded-lg overflow-hidden bg-white self-start">
           <button
             onClick={() => setView('kanban')}
-            className={`px-4 py-2 text-sm flex items-center transition-colors ${
+            className={`px-3 py-2 text-sm flex items-center transition-colors ${
               view === 'kanban' 
                 ? 'bg-purple-600 text-white' 
                 : 'bg-white text-gray-700 hover:bg-gray-50'
             }`}
           >
             <LayoutGrid className="w-4 h-4 mr-2" />
-            Kanban
+            <span className="hidden sm:inline">Kanban</span>
+            <span className="sm:hidden">Board</span>
           </button>
           <button
             onClick={() => setView('list')}
-            className={`px-4 py-2 text-sm flex items-center transition-colors ${
+            className={`px-3 py-2 text-sm flex items-center transition-colors ${
               view === 'list' 
                 ? 'bg-purple-600 text-white' 
                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -110,11 +113,13 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
           candidates={sortedCandidates}
           onCandidateClick={onCandidateClick}
           onCandidateStageChange={handleCandidateStageChange}
+          onCandidateRemove={onCandidateRemove}
         />      ) : (
         <PipelineListView
           candidates={sortedCandidates}
           onCandidateClick={onCandidateClick}
           onCandidateStageChange={handleCandidateStageChange}
+          onCandidateRemove={onCandidateRemove}
         />
       )}
 

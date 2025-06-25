@@ -11,7 +11,10 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Loader
+  Loader,
+  Edit3,
+  Trash2,
+  Eye
 } from 'lucide-react';
 import { jobApiService, type JobFilters } from '../services/jobApiService';
 import type { Job } from '../../data/types';
@@ -33,6 +36,11 @@ const AllJobsPage: React.FC = () => {
     page: 1,
     limit: 10
   });
+
+  // Delete dialog states
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Load jobs
   useEffect(() => {
@@ -79,6 +87,42 @@ const AllJobsPage: React.FC = () => {
       ...prev,
       page: newPage
     }));
+  };
+
+  // Handler functions for CRUD operations
+  const handleEditJob = (job: Job) => {
+    // Navigate to create job page with edit mode
+    navigate(`/recruitment/jobs/create?edit=${job.id}`);
+  };
+
+  const handleDeleteJob = (job: Job) => {
+    setJobToDelete(job);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!jobToDelete) return;
+
+    setDeleteLoading(true);
+    try {
+      await jobApiService.deleteJob(jobToDelete.id);
+      // Remove job from local state
+      setJobs(prev => prev.filter(job => job.id !== jobToDelete.id));
+      setShowDeleteDialog(false);
+      setJobToDelete(null);
+      // Update pagination total
+      setPagination(prev => ({ ...prev, total: prev.total - 1 }));
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      setError('Failed to delete job. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
+    setJobToDelete(null);
   };
 
   const getStatusColor = (status: Job['status']) => {
@@ -305,6 +349,22 @@ const AllJobsPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col items-end">
+                    <button
+                      onClick={() => handleEditJob(job)}
+                      className="text-gray-500 hover:text-gray-700 mb-2"
+                    >
+                      <Edit3 className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteJob(job)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -357,7 +417,36 @@ const AllJobsPage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>    </div>
+      </div>    
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && jobToDelete && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Deletion</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete the job "{jobToDelete.title}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleDeleteCancel}
+                className="bg-gray-200 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2"
+                disabled={deleteLoading}
+              >
+                {deleteLoading && <Loader className="h-5 w-5 animate-spin" />}
+                <span>Delete Job</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

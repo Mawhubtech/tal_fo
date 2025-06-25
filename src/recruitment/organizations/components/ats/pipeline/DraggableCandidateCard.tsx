@@ -1,19 +1,21 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Mail, Phone, Star, GripVertical } from 'lucide-react';
+import { Calendar, Mail, Phone, Star, GripVertical, Trash2 } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
 import { getScoreColor } from '../shared';
 
 interface DraggableCandidateCardProps {
   candidate: Candidate;
   onClick?: () => void;
+  onRemove?: () => void;
   isDragging?: boolean;
 }
 
 export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({ 
   candidate,
   onClick,
+  onRemove,
   isDragging = false
 }) => {
   // Helper function to generate initials from name
@@ -54,20 +56,20 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
           : 'hover:shadow-md cursor-pointer'
       }`}
     >
-      <div className="flex items-start">
+      <div className="flex items-start gap-2">
         {/* Drag Handle */}
         <div 
           {...attributes}
           {...listeners}
-          className="text-gray-400 hover:text-gray-600 mr-2 mt-1 cursor-grab active:cursor-grabbing"
+          className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0 mt-1"
         >
           <GripVertical className="w-4 h-4" />
         </div>
 
         {/* Card Content */}
         <div className="flex-1 min-w-0" onClick={onClick}>          {/* Candidate Info */}
-          <div className="flex items-center mb-2">
-            <div className="w-8 h-8 rounded-full mr-2 flex items-center justify-center bg-purple-100">
+          <div className="flex items-center mb-2 gap-2">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
               {candidate.avatar ? (
                 <img 
                   src={candidate.avatar} 
@@ -85,7 +87,7 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
                 {candidate.name}
               </p>
               <div className="flex items-center">
-                <Star className="w-3 h-3 text-yellow-400 mr-1" />
+                <Star className="w-3 h-3 text-yellow-400 mr-1 flex-shrink-0" />
                 <span className={`text-xs font-medium ${getScoreColor(candidate.score)}`}>
                   {candidate.score}
                 </span>
@@ -95,37 +97,43 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
           
           {/* Contact Info */}
           <div className="text-xs text-gray-500 mb-2 space-y-1">
-            <div className="flex items-center">
-              <Mail className="w-3 h-3 mr-1" />
-              <span className="truncate">{candidate.email}</span>
+            <div className="flex items-center gap-1">
+              <Mail className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate flex-1">{candidate.email}</span>
             </div>
-            <div className="flex items-center">
-              <Phone className="w-3 h-3 mr-1" />
-              <span>{candidate.phone}</span>
-            </div>
+            {candidate.phone && (
+              <div className="flex items-center gap-1">
+                <Phone className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{candidate.phone}</span>
+              </div>
+            )}
           </div>
           
           {/* Tags */}
           <div className="flex flex-wrap gap-1 mb-2">
-            {candidate.tags.slice(0, 3).map((tag, index) => (
+            {candidate.tags.slice(0, 2).map((tag, index) => (
               <span
                 key={index}
-                className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
+                className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded truncate max-w-[80px]"
+                title={tag}
               >
                 {tag}
               </span>
             ))}
-            {candidate.tags.length > 3 && (
-              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                +{candidate.tags.length - 3}
+            {candidate.tags.length > 2 && (
+              <span 
+                className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
+                title={candidate.tags.slice(2).join(', ')}
+              >
+                +{candidate.tags.length - 2}
               </span>
             )}
           </div>
           
           {/* Applied Date */}
-          <div className="flex items-center text-xs text-gray-400 mb-2">
-            <Calendar className="w-3 h-3 mr-1" />
-            Applied {new Date(candidate.appliedDate).toLocaleDateString()}
+          <div className="flex items-center text-xs text-gray-400 mb-2 gap-1">
+            <Calendar className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">Applied {new Date(candidate.appliedDate).toLocaleDateString()}</span>
           </div>
           
           {/* Source */}
@@ -133,6 +141,20 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
             Source: {candidate.source}
           </div>
         </div>
+
+        {/* Remove Button */}
+        {onRemove && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent card click
+              onRemove();
+            }}
+            className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors flex-shrink-0 self-start"
+            title="Remove candidate from this job"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle } from 'lucide-react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { jobApiService, type CreateJobData } from '../services/jobApiService';
 import { OrganizationApiService, type Organization, type Department } from '../../organizations/services/organizationApiService';
 
@@ -10,6 +10,11 @@ const CreateJobPage: React.FC = () => {
     departmentId: string; 
   }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Check if we're in edit mode
+  const editJobId = searchParams.get('edit');
+  const isEditMode = !!editJobId;
   
   // API services
   const organizationApiService = new OrganizationApiService();
@@ -21,6 +26,7 @@ const CreateJobPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingJob, setEditingJob] = useState<any>(null);
 
   // Form state
   const [jobTitle, setJobTitle] = useState('');
@@ -83,6 +89,47 @@ const CreateJobPage: React.FC = () => {
 
     loadContextData();
   }, [organizationId, departmentId]);
+  
+  // Load job data when in edit mode
+  useEffect(() => {
+    const loadJobData = async () => {
+      if (!isEditMode || !editJobId) return;
+
+      try {
+        setLoading(true);
+        const jobData = await jobApiService.getJobById(editJobId);
+        setEditingJob(jobData);
+        
+        // Populate form fields with job data
+        setJobTitle(jobData.title || '');
+        setLocation(jobData.location || '');
+        setJobDescription(jobData.description || '');
+        setEmploymentType(jobData.type || 'Full-time');
+        setExperienceLevel(jobData.experienceLevel || '');
+        setSalaryMin(jobData.salaryMin ? jobData.salaryMin.toString() : '');
+        setSalaryMax(jobData.salaryMax ? jobData.salaryMax.toString() : '');
+        setCurrency(jobData.currency || 'USD');
+        setRemote(jobData.remote || false);
+        setSkills(jobData.skills || []);
+        setBenefits(jobData.benefits || []);
+        setApplicationDeadline(jobData.applicationDeadline ? 
+          (typeof jobData.applicationDeadline === 'string' ? jobData.applicationDeadline : jobData.applicationDeadline.toISOString().split('T')[0]) 
+          : '');
+        setRequirements(jobData.requirements || ['']);
+        setResponsibilities(jobData.responsibilities || ['']);
+        setDepartmentIdForm(jobData.departmentId || departmentId || '');
+        
+      } catch (error) {
+        console.error('Error loading job data:', error);
+        setError('Failed to load job data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadJobData();
+  }, [isEditMode, editJobId]);
+
   const addSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
       setSkills([...skills, newSkill.trim()]);
@@ -195,17 +242,24 @@ const CreateJobPage: React.FC = () => {
         customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
       };
 
-      const createdJob = await jobApiService.createJob(jobData);
+      let resultJob;
+      if (isEditMode && editJobId) {
+        // Update existing job
+        resultJob = await jobApiService.updateJob(editJobId, jobData);
+      } else {
+        // Create new job
+        resultJob = await jobApiService.createJob(jobData);
+      }
       
       // Navigate to the job ATS page within the organization context
-      if (organizationId && createdJob.departmentId) {
-        navigate(`/dashboard/organizations/${organizationId}/departments/${createdJob.departmentId}/jobs/${createdJob.id}/ats`);
+      if (organizationId && resultJob.departmentId) {
+        navigate(`/dashboard/organizations/${organizationId}/departments/${resultJob.departmentId}/jobs/${resultJob.id}/ats`);
       } else {
         navigate('/dashboard/organizations');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create job. Please try again.');
-      console.error('Error creating job:', err);
+      setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`);
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} job:`, err);
     } finally {
       setSubmitLoading(false);
     }
@@ -295,13 +349,13 @@ const CreateJobPage: React.FC = () => {
                       <span className="mx-2">/</span>
                     </>
                   ) : null}
-                  <span className="text-gray-900 font-medium">Create Job</span>
+                  <span className="text-gray-900 font-medium">{isEditMode ? 'Edit Job' : 'Create Job'}</span>
                 </>
               ) : (
                 <>
                   <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
                   <span className="mx-2">/</span>
-                  <span className="text-gray-900 font-medium">Create Job</span>
+                  <span className="text-gray-900 font-medium">{isEditMode ? 'Edit Job' : 'Create Job'}</span>
                   <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Legacy View</span>
                 </>
               )}
@@ -340,7 +394,7 @@ const CreateJobPage: React.FC = () => {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save as Draft
+                    {isEditMode ? 'Save Changes' : 'Save as Draft'}
                   </>
                 )}
               </button>
@@ -353,10 +407,10 @@ const CreateJobPage: React.FC = () => {
                 {submitLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    Publishing...
+                    {isEditMode ? 'Updating...' : 'Publishing...'}
                   </>
                 ) : (
-                  'Publish Job'
+                  isEditMode ? 'Update & Publish' : 'Publish Job'
                 )}
               </button>
             </div>

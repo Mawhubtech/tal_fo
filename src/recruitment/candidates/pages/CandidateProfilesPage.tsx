@@ -1,117 +1,73 @@
-import React, { useState } from 'react';
-import { Search, Plus, Download, Upload, Edit3, Eye, Trash2, MapPin, Calendar, DollarSign, Star } from 'lucide-react';
-
-interface CandidateProfile {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  position: string;
-  experience: string;
-  salary: string;
-  status: 'active' | 'inactive' | 'hired' | 'interviewing' | 'rejected';
-  rating: number;
-  skills: string[];
-  appliedDate: string;
-  lastActivity: string;
-  resumeUrl?: string;
-  portfolioUrl?: string;
-  linkedinUrl?: string;
-}
-
-// Mock candidate data
-const mockCandidates: CandidateProfile[] = [
-  {
-    id: '1',
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@email.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    position: 'Senior Frontend Developer',
-    experience: '5+ years',
-    salary: '$120k - $140k',
-    status: 'interviewing',
-    rating: 4.5,
-    skills: ['React', 'TypeScript', 'Node.js', 'GraphQL'],
-    appliedDate: '2024-01-15',
-    lastActivity: '2024-01-20',
-    resumeUrl: '#',
-    portfolioUrl: '#',
-    linkedinUrl: '#'
-  },
-  {
-    id: '2',
-    name: 'Michael Chen',
-    email: 'michael.chen@email.com',
-    phone: '+1 (555) 234-5678',
-    location: 'New York, NY',
-    position: 'Full Stack Engineer',
-    experience: '3+ years',
-    salary: '$100k - $120k',
-    status: 'active',
-    rating: 4.2,
-    skills: ['Python', 'Django', 'PostgreSQL', 'AWS'],
-    appliedDate: '2024-01-18',
-    lastActivity: '2024-01-19',
-    resumeUrl: '#'
-  },
-  {
-    id: '3',
-    name: 'Emily Rodriguez',
-    email: 'emily.rodriguez@email.com',
-    phone: '+1 (555) 345-6789',
-    location: 'Austin, TX',
-    position: 'UX Designer',
-    experience: '4+ years',
-    salary: '$90k - $110k',
-    status: 'hired',
-    rating: 4.8,
-    skills: ['Figma', 'Adobe Creative Suite', 'User Research', 'Prototyping'],
-    appliedDate: '2024-01-10',
-    lastActivity: '2024-01-22',
-    portfolioUrl: '#',
-    linkedinUrl: '#'
-  },
-  {
-    id: '4',
-    name: 'David Kim',
-    email: 'david.kim@email.com',
-    phone: '+1 (555) 456-7890',
-    location: 'Seattle, WA',
-    position: 'DevOps Engineer',
-    experience: '6+ years',
-    salary: '$130k - $150k',
-    status: 'rejected',
-    rating: 3.8,
-    skills: ['Kubernetes', 'Docker', 'Terraform', 'Jenkins'],
-    appliedDate: '2024-01-12',
-    lastActivity: '2024-01-17',
-    resumeUrl: '#'
-  },
-  {
-    id: '5',
-    name: 'Jessica Wang',
-    email: 'jessica.wang@email.com',
-    phone: '+1 (555) 567-8901',
-    location: 'Boston, MA',
-    position: 'Product Manager',
-    experience: '7+ years',
-    salary: '$140k - $160k',
-    status: 'active',
-    rating: 4.6,
-    skills: ['Product Strategy', 'Agile', 'Analytics', 'Leadership'],
-    appliedDate: '2024-01-20',
-    lastActivity: '2024-01-21',
-    linkedinUrl: '#'
-  }
-];
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Download, Upload, Edit3, Eye, Trash2, MapPin, Calendar, DollarSign, Star, Loader } from 'lucide-react';
+import { candidateApiService, type Candidate } from '../services/candidateApiService';
 
 const CandidateProfilesPage: React.FC = () => {
-  const [candidates] = useState<CandidateProfile[]>(mockCandidates);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [positionFilter, setPositionFilter] = useState<string>('all');
+
+  // Edit and delete states
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Load candidates
+  useEffect(() => {
+    loadCandidates();
+  }, []);
+
+  const loadCandidates = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await candidateApiService.getAllCandidates();
+      setCandidates(response.candidates);
+    } catch (err) {
+      setError('Failed to load candidates. Please try again.');
+      console.error('Error loading candidates:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handler functions for CRUD operations
+  const handleEditCandidate = (candidate: Candidate) => {
+    // Navigate to edit candidate page or open edit modal
+    console.log('Edit candidate:', candidate.id);
+    // TODO: Implement edit functionality
+  };
+
+  const handleDeleteCandidate = (candidate: Candidate) => {
+    setCandidateToDelete(candidate);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!candidateToDelete) return;
+
+    setDeleteLoading(true);
+    try {
+      await candidateApiService.deleteCandidate(candidateToDelete.id);
+      // Remove candidate from local state
+      setCandidates(prev => prev.filter(candidate => candidate.id !== candidateToDelete.id));
+      setShowDeleteDialog(false);
+      setCandidateToDelete(null);
+    } catch (error) {
+      console.error('Error deleting candidate:', error);
+      setError('Failed to delete candidate. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
+    setCandidateToDelete(null);
+  };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -152,13 +108,13 @@ const CandidateProfilesPage: React.FC = () => {
   };
 
   const filteredCandidates = candidates.filter(candidate => {
-    const matchesSearch = candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = candidate.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (candidate.currentPosition && candidate.currentPosition.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (candidate.skills && candidate.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));
     
     const matchesStatus = statusFilter === 'all' || candidate.status === statusFilter;
-    const matchesPosition = positionFilter === 'all' || candidate.position.includes(positionFilter);
+    const matchesPosition = positionFilter === 'all' || (candidate.currentPosition && candidate.currentPosition.includes(positionFilter));
     
     return matchesSearch && matchesStatus && matchesPosition;
   });
@@ -170,6 +126,34 @@ const CandidateProfilesPage: React.FC = () => {
     hired: candidates.filter(c => c.status === 'hired').length,
     rejected: candidates.filter(c => c.status === 'rejected').length
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center space-x-2">
+          <Loader className="h-6 w-6 animate-spin" />
+          <span>Loading candidates...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-500 text-lg mb-4">{error}</div>
+          <button
+            onClick={loadCandidates}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Action Bar */}
@@ -283,26 +267,26 @@ const CandidateProfilesPage: React.FC = () => {
                 <tr key={candidate.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{candidate.name}</div>
+                      <div className="text-sm font-medium text-gray-900">{candidate.fullName}</div>
                       <div className="text-sm text-gray-500">{candidate.email}</div>
                       <div className="text-sm text-gray-500">{candidate.phone}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{candidate.position}</div>
-                      <div className="text-sm text-gray-500">{candidate.experience}</div>
+                      <div className="text-sm font-medium text-gray-900">{candidate.currentPosition || 'Not specified'}</div>
+                      <div className="text-sm text-gray-500">{candidate.experience?.length ? `${candidate.experience.length} roles` : 'No experience listed'}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="flex items-center text-sm text-gray-900">
                         <MapPin className="h-4 w-4 mr-1" />
-                        {candidate.location}
+                        {candidate.location || 'Not specified'}
                       </div>
                       <div className="flex items-center text-sm text-gray-500">
                         <DollarSign className="h-4 w-4 mr-1" />
-                        {candidate.salary}
+                        {candidate.salaryExpectation || 'Not specified'}
                       </div>
                     </div>
                   </td>
@@ -319,12 +303,12 @@ const CandidateProfilesPage: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1 max-w-xs">
-                      {candidate.skills.slice(0, 3).map((skill, index) => (
+                      {candidate.skills && candidate.skills.slice(0, 3).map((skill, index) => (
                         <span key={index} className="inline-flex px-2 py-1 text-xs bg-primary-100 text-primary-800 rounded">
                           {skill}
                         </span>
                       ))}
-                      {candidate.skills.length > 3 && (
+                      {candidate.skills && candidate.skills.length > 3 && (
                         <span className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
                           +{candidate.skills.length - 3} more
                         </span>
@@ -335,22 +319,33 @@ const CandidateProfilesPage: React.FC = () => {
                     <div>
                       <div className="flex items-center text-sm text-gray-900">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(candidate.appliedDate).toLocaleDateString()}
+                        {candidate.appliedDate ? new Date(candidate.appliedDate).toLocaleDateString() : new Date(candidate.createdAt).toLocaleDateString()}
                       </div>
                       <div className="text-sm text-gray-500">
-                        Last: {new Date(candidate.lastActivity).toLocaleDateString()}
+                        Last: {candidate.lastActivity ? new Date(candidate.lastActivity).toLocaleDateString() : new Date(candidate.updatedAt).toLocaleDateString()}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      <button className="text-primary-600 hover:text-primary-900">
+                      <button 
+                        className="text-primary-600 hover:text-primary-900"
+                        title="View candidate details"
+                      >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-900">
+                      <button 
+                        onClick={() => handleEditCandidate(candidate)}
+                        className="text-green-600 hover:text-green-900"
+                        title="Edit candidate"
+                      >
                         <Edit3 className="h-4 w-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
+                      <button 
+                        onClick={() => handleDeleteCandidate(candidate)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Delete candidate"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -382,6 +377,35 @@ const CandidateProfilesPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && candidateToDelete && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Deletion</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete "{candidateToDelete.fullName}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleDeleteCancel}
+                className="bg-gray-200 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-300"
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2"
+                disabled={deleteLoading}
+              >
+                {deleteLoading && <Loader className="h-4 w-4 animate-spin" />}
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

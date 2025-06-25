@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Briefcase, MapPin, DollarSign, 
-  Search, Grid3X3, List, ChevronRight 
+  Search, Grid3X3, List, ChevronRight, Plus,
+  Edit3, Trash2, Eye, Loader
 } from 'lucide-react';
 import { OrganizationApiService, type Organization, type Department } from '../services/organizationApiService';
+import { jobApiService } from '../../jobs/services/jobApiService';
 import type { Job } from '../../data/types';
 
 const DepartmentJobsPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ organizationId: string; departmentId: string }>();
+  const navigate = useNavigate();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -20,7 +23,15 @@ const DepartmentJobsPage: React.FC = () => {
   const [department, setDepartment] = useState<Department | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);  const organizationApiService = new OrganizationApiService();
+  const [error, setError] = useState<string | null>(null);
+
+  // Edit and delete states
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const organizationApiService = new OrganizationApiService();
 
   // Load data
   useEffect(() => {
@@ -94,6 +105,62 @@ const DepartmentJobsPage: React.FC = () => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
+  // Handler functions for CRUD operations
+  const handleCreateJob = () => {
+    navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/create-job`);
+  };
+
+  const handleEditJob = (job: Job) => {
+    // For now, let's navigate to the create job page with the job ID as a URL parameter
+    navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/create-job?edit=${job.id}`);
+  };
+
+  const handleDeleteJob = (job: Job) => {
+    setJobToDelete(job);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!jobToDelete) return;
+
+    setDeleteLoading(true);
+    setDeleteError(null); // Clear any previous errors
+    
+    try {
+      await jobApiService.deleteJob(jobToDelete.id);
+      // Remove job from local state
+      setJobs(prev => prev.filter(job => job.id !== jobToDelete.id));
+      // Only close dialog on success
+      setShowDeleteDialog(false);
+      setJobToDelete(null);
+    } catch (error: any) {
+      console.error('Error deleting job:', error);
+      
+      // Extract error message from backend response
+      let errorMessage = 'Failed to delete job. Please try again.';
+      
+      // Handle axios error structure
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setDeleteError(errorMessage);
+      // Don't close dialog on error - let user see the error and try again
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteDialog(false);
+    setJobToDelete(null);
+    setDeleteError(null); // Clear any delete errors when canceling
+  };
+
   if (loading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
@@ -157,8 +224,18 @@ const DepartmentJobsPage: React.FC = () => {
           </div>
         </div>
         
-        {/* View Toggle */}
-        <div className="flex items-center bg-white rounded-lg border p-1">
+        <div className="flex items-center gap-3">
+          {/* Create Job Button */}
+          <button
+            onClick={handleCreateJob}
+            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Job
+          </button>
+          
+          {/* View Toggle */}
+          <div className="flex items-center bg-white rounded-lg border p-1">
           <button
             onClick={() => setView('grid')}
             className={`p-2 rounded-md transition-colors ${view === 'grid' ? 'bg-purple-100 text-purple-600' : 'text-gray-400 hover:text-gray-600'}`}
@@ -171,6 +248,7 @@ const DepartmentJobsPage: React.FC = () => {
           >
             <List className="w-4 h-4" />
           </button>
+          </div>
         </div>
       </div>
 
@@ -303,12 +381,28 @@ const DepartmentJobsPage: React.FC = () => {
                   <div className="text-sm text-gray-500">
                     Posted {new Date(job.postedDate).toLocaleDateString()}
                   </div>
-                  <Link
-                    to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`}
-                    className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center"
-                  >
-                    View ATS <ChevronRight className="w-4 h-4 ml-1" />
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditJob(job)}
+                      className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
+                      title="Edit job"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteJob(job)}
+                      className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                      title="Delete job"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <Link
+                      to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`}
+                      className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center ml-2"
+                    >
+                      View ATS <ChevronRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -367,12 +461,29 @@ const DepartmentJobsPage: React.FC = () => {
                       {new Date(job.postedDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link
-                        to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`}
-                        className="text-purple-600 hover:text-purple-700"
-                      >
-                        View ATS
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEditJob(job)}
+                          className="text-green-600 hover:text-green-700 p-1 hover:bg-green-50 rounded"
+                          title="Edit job"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteJob(job)}
+                          className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                          title="Delete job"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <Link
+                          to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`}
+                          className="text-purple-600 hover:text-purple-700 p-1 hover:bg-purple-50 rounded"
+                          title="View ATS"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -393,12 +504,62 @@ const DepartmentJobsPage: React.FC = () => {
               : "Try adjusting your search or filter criteria."
             }
           </p>
-          <Link
-            to={`/dashboard/organizations/${organizationId}/create-job`}
+          <button
+            onClick={handleCreateJob}
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             Create New Job
-          </Link>
+          </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && jobToDelete && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Deletion</h3>
+            <p className="text-gray-700 mb-4">
+              Are you sure you want to delete the job <span className="font-medium">{jobToDelete.title}</span>? This action cannot be undone.
+            </p>
+            
+            {/* Display delete error if any */}
+            {deleteError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{deleteError}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <Loader className="animate-spin h-5 w-5 mr-2" />
+                ) : (
+                  <Trash2 className="h-5 w-5 mr-2" />
+                )}
+                {deleteLoading ? 'Deleting...' : 'Delete Job'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

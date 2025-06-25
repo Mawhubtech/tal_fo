@@ -19,12 +19,14 @@ interface PipelineKanbanViewProps {
   candidates: Candidate[];
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
+  onCandidateRemove?: (candidate: Candidate) => void;
 }
 
 export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
   candidates,
   onCandidateClick,
-  onCandidateStageChange
+  onCandidateStageChange,
+  onCandidateRemove
 }) => {
   const [activeCandidate, setActiveCandidate] = React.useState<Candidate | null>(null);
 
@@ -75,18 +77,38 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 mb-6 overflow-x-auto min-h-[calc(100vh-400px)]">
-        {STAGES.map((stage) => {
-          const stageCandidates = getCandidatesByStage(stage);
-          return (
-            <DraggableStageColumn
-              key={stage}
-              stage={stage}
-              candidates={stageCandidates}
-              onCandidateClick={onCandidateClick}
-            />
-          );
-        })}
+      <div className="flex flex-col lg:flex-row gap-4 mb-6 min-h-[calc(100vh-400px)]">
+        {/* Mobile & Tablet: Stack columns vertically */}
+        <div className="lg:hidden space-y-4">
+          {STAGES.map((stage) => {
+            const stageCandidates = getCandidatesByStage(stage);
+            return (
+              <DraggableStageColumn
+                key={stage}
+                stage={stage}
+                candidates={stageCandidates}
+                onCandidateClick={onCandidateClick}
+                onCandidateRemove={onCandidateRemove}
+              />
+            );
+          })}
+        </div>
+        
+        {/* Desktop: Horizontal scrollable layout */}
+        <div className="hidden lg:flex gap-4 overflow-x-auto w-full pb-4">
+          {STAGES.map((stage) => {
+            const stageCandidates = getCandidatesByStage(stage);
+            return (
+              <DraggableStageColumn
+                key={stage}
+                stage={stage}
+                candidates={stageCandidates}
+                onCandidateClick={onCandidateClick}
+                onCandidateRemove={onCandidateRemove}
+              />
+            );
+          })}
+        </div>
       </div>
 
       <DragOverlay>

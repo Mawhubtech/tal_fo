@@ -10,6 +10,8 @@ import type { JobApplication } from '../../jobs/services/jobApplicationApiServic
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
 import { mockTasksByJob, mockInterviewsByJob, mockReportsByJob, getMockJobKey } from '../data/mock';
 import AddCandidateModal from '../components/AddCandidateModal';
+import ConfirmationDialog from '../../../components/ConfirmationDialog';
+import ToastContainer, { toast } from '../../../components/ToastContainer';
 
 const JobATSPage: React.FC = () => {
   const { organizationId, departmentId, jobId } = useParams<{ 
@@ -21,6 +23,11 @@ const JobATSPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
+  
+  // Confirmation dialog state
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [candidateToRemove, setCandidateToRemove] = useState<any>(null);
+  const [removing, setRemoving] = useState(false);
 
   // Pipeline states
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -186,7 +193,7 @@ const JobATSPage: React.FC = () => {
       setJobApplications(jobApplications);
       
       // Show error message to user
-      alert('Failed to update candidate. Please try again.');
+      toast.error('Update Failed', 'Failed to update candidate. Please try again.');
     }
   };
 
@@ -198,6 +205,57 @@ const JobATSPage: React.FC = () => {
     } catch (error) {
       console.error('Error reloading applications:', error);
     }
+  };
+
+  const handleCandidateRemove = async (candidate: any) => {
+    // Find the application for this candidate
+    const application = jobApplications.find(app => 
+      app.candidate?.id === candidate.id || app.candidateId === candidate.id
+    );
+    
+    if (!application) {
+      console.error('Could not find application for candidate:', candidate.id);
+      toast.error('Error', 'Failed to find candidate application. Please try again.');
+      return;
+    }
+
+    // Set candidate for removal and show confirmation dialog
+    setCandidateToRemove({ candidate, application });
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!candidateToRemove) return;
+
+    const { candidate, application } = candidateToRemove;
+
+    try {
+      setRemoving(true);
+      
+      // Delete the job application (this removes the candidate from this job)
+      await jobApplicationApiService.deleteJobApplication(application.id);
+      
+      // Remove from local state
+      setJobApplications(prev => prev.filter(app => app.id !== application.id));
+      
+      // Close dialog and reset state
+      setShowDeleteConfirmation(false);
+      setCandidateToRemove(null);
+      
+      // Show success message
+      toast.success('Candidate Removed', `${candidate.name} has been removed from this job.`);
+      
+    } catch (error) {
+      console.error('Error removing candidate:', error);
+      toast.error('Error', 'Failed to remove candidate. Please try again.');
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  const handleCancelRemove = () => {
+    setShowDeleteConfirmation(false);
+    setCandidateToRemove(null);
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -363,6 +421,7 @@ const JobATSPage: React.FC = () => {
 		  sortBy={sortBy}
 		  onSortChange={setSortBy}
 		  onCandidateUpdate={handleCandidateUpdate}
+		  onCandidateRemove={handleCandidateRemove}
 		/>
 	  )}
 
@@ -399,6 +458,26 @@ const JobATSPage: React.FC = () => {
 		jobId={jobId!}
 		onCandidateAdded={handleCandidateAdded}
 	  />
+
+	  {/* Remove Candidate Confirmation Dialog */}
+	  <ConfirmationDialog
+		isOpen={showDeleteConfirmation}
+		onClose={handleCancelRemove}
+		onConfirm={handleConfirmRemove}
+		title="Remove Candidate"
+		message={
+		  candidateToRemove 
+			? `Are you sure you want to remove ${candidateToRemove.candidate.name} from this job? This action cannot be undone.`
+			: "Are you sure you want to remove this candidate?"
+		}
+		confirmText="Remove"
+		cancelText="Cancel"
+		loading={removing}
+		variant="danger"
+	  />
+
+	  {/* Toast Container */}
+	  <ToastContainer position="top-right" />
 	</div>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Mail, Phone, Star, Tag, MapPin, ChevronDown } from 'lucide-react';
+import { Calendar, Mail, Phone, Star, Tag, MapPin, ChevronDown, Trash2 } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
 import { STAGES } from '../../../data/mock';
 import { getScoreColor, getStageColor } from '../shared';
@@ -8,12 +8,14 @@ interface PipelineListViewProps {
   candidates: Candidate[];
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
+  onCandidateRemove?: (candidate: Candidate) => void;
 }
 
 export const PipelineListView: React.FC<PipelineListViewProps> = ({
   candidates,
   onCandidateClick,
-  onCandidateStageChange
+  onCandidateStageChange,
+  onCandidateRemove
 }) => {
   // Helper function to generate initials from name
   const getInitials = (name: string) => {
@@ -60,6 +62,9 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Source
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
               </th>
             </tr>
           </thead>
@@ -166,6 +171,20 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                 {/* Source */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {candidate.source}
+                </td>
+
+                {/* Actions */}
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent row click
+                      onCandidateRemove?.(candidate);
+                    }}
+                    className="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded transition-colors"
+                    title="Remove candidate from this job"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </td>
               </tr>
             ))}

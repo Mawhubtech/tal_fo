@@ -10,12 +10,14 @@ interface DraggableStageColumnProps {
   stage: string;
   candidates: Candidate[];
   onCandidateClick?: (candidate: Candidate) => void;
+  onCandidateRemove?: (candidate: Candidate) => void;
 }
 
 export const DraggableStageColumn: React.FC<DraggableStageColumnProps> = ({
   stage,
   candidates,
-  onCandidateClick
+  onCandidateClick,
+  onCandidateRemove
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: stage,
@@ -26,7 +28,7 @@ export const DraggableStageColumn: React.FC<DraggableStageColumnProps> = ({
   return (
     <div 
       ref={setNodeRef}
-      className={`bg-white rounded-lg shadow-sm min-w-[280px] transition-all duration-200 ${
+      className={`bg-white rounded-lg shadow-sm w-full lg:min-w-[280px] lg:max-w-[320px] lg:flex-shrink-0 transition-all duration-200 ${
         isOver ? 'ring-2 ring-purple-500 ring-opacity-50 bg-purple-50' : ''
       }`}
     >
@@ -47,7 +49,7 @@ export const DraggableStageColumn: React.FC<DraggableStageColumnProps> = ({
       </div>
       
       {/* Drop Zone */}
-      <div className={`p-2 overflow-y-auto max-h-[calc(100vh-450px)] min-h-[200px] transition-colors ${
+      <div className={`p-2 overflow-y-auto max-h-[300px] lg:max-h-[calc(100vh-450px)] min-h-[150px] lg:min-h-[300px] transition-colors ${
         isOver ? 'bg-purple-25' : ''
       }`}>
         <SortableContext items={candidateIds} strategy={verticalListSortingStrategy}>
@@ -56,6 +58,7 @@ export const DraggableStageColumn: React.FC<DraggableStageColumnProps> = ({
               key={candidate.id}
               candidate={candidate}
               onClick={() => onCandidateClick?.(candidate)}
+              onRemove={() => onCandidateRemove?.(candidate)}
             />
           ))}
         </SortableContext>
