@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
 import AddCandidateModal from '../../components/AddCandidateModal';
+import ConfirmationDialog from '../../components/ConfirmationDialog';
 import { CreateCandidateDto } from '../../types/candidate.types';
-import { useCandidates, useCandidateStats, useUpdateCandidateStatus, useUpdateCandidateRating, useCreateCandidate, useUpdateCandidate } from '../../hooks/useCandidates';
+import { useCandidates, useCandidateStats, useUpdateCandidateStatus, useUpdateCandidateRating, useCreateCandidate, useUpdateCandidate, useDeleteCandidate } from '../../hooks/useCandidates';
 import { getAvatarUrl } from '../../utils/fileUtils';
 
 // Enhanced candidate interface with additional professional fields
@@ -56,6 +57,11 @@ const CandidatesPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState<EnhancedCandidate | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // State for delete confirmation
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    candidate: EnhancedCandidate | null;
+  }>({ isOpen: false, candidate: null });
 
   // React Query hooks for data fetching
   const candidatesQuery = useCandidates({
@@ -71,6 +77,7 @@ const CandidatesPage: React.FC = () => {
   const updateRatingMutation = useUpdateCandidateRating();
   const createCandidateMutation = useCreateCandidate();
   const updateCandidateMutation = useUpdateCandidate();
+  const deleteCandidateMutation = useDeleteCandidate();
     // Use items instead of data.items for compatibility with the transformed response
   const candidates = Array.isArray(candidatesQuery.data?.items) ? candidatesQuery.data.items : [];
   const totalItems = candidatesQuery.data?.total || 0;
@@ -199,6 +206,45 @@ const CandidatesPage: React.FC = () => {
       console.error('Error updating candidate:', error);
       // Display error notification here
     }
+  };
+
+  // Function to handle delete confirmation
+  const handleDeleteCandidate = (candidate: EnhancedCandidate) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      candidate
+    });
+  };
+
+  // Function to confirm delete
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmation.candidate) return;
+    
+    try {
+      await deleteCandidateMutation.mutateAsync(deleteConfirmation.candidate.id);
+      setDeleteConfirmation({ isOpen: false, candidate: null });
+      // Show success notification here if you have a notification system
+      console.log('Candidate deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting candidate:', error);
+      
+      // Check for specific error types
+      if (error?.response?.status === 409) {
+        alert('Cannot delete candidate: This candidate has active job applications. Please remove job applications first.');
+      } else if (error?.response?.status === 403) {
+        alert('You do not have permission to delete this candidate.');
+      } else {
+        alert('Failed to delete candidate. Please try again or contact support if the issue persists.');
+      }
+      
+      // Keep the modal open on error
+      // setDeleteConfirmation({ isOpen: false, candidate: null });
+    }
+  };
+
+  // Function to cancel delete
+  const handleCancelDelete = () => {
+    setDeleteConfirmation({ isOpen: false, candidate: null });
   };
   const handlePanelStateChange = (newState: PanelState) => {
     setPanelState(newState);
@@ -655,6 +701,17 @@ const CandidatesPage: React.FC = () => {
                                   <Download className="w-4 h-4 mr-3" />
                                   Download Resume
                                 </button>
+                                <div className="border-t border-gray-100 my-1"></div>
+                                <button 
+                                  className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                  onClick={() => {
+                                    handleDeleteCandidate(candidate);
+                                    setOpenDropdownId(null);
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-3" />
+                                  Delete Candidate
+                                </button>
                               </div>
                             </div>
                           )}
@@ -777,6 +834,19 @@ const CandidatesPage: React.FC = () => {
         isLoading={updateCandidateMutation.isPending}
         editingCandidate={editingCandidate}
         isEditing={true}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={deleteConfirmation.isOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Candidate"
+        message={`Are you sure you want to delete ${deleteConfirmation.candidate?.fullName || 'this candidate'}? This action cannot be undone and all associated data will be permanently removed.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        loading={deleteCandidateMutation.isPending}
+        variant="danger"
       />
     </React.Fragment>
   );
