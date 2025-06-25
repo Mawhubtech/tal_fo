@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Edit3, Trash2, Users, MapPin, Globe, Phone, Mail, Calendar, Eye, Home, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, Users, MapPin, Globe, Phone, Mail, Calendar, Eye, Home, ChevronRight, Building } from 'lucide-react';
 import { ClientApiService, type Client } from '../../services/clientApiService';
 import ClientForm from './components/ClientForm';
 import DeleteClientDialog from './components/DeleteClientDialog';
@@ -209,13 +209,22 @@ const ClientManagementPage: React.FC = () => {
               <option value="Large">Large (1000+)</option>
             </select>
           </div>
-        </div>        <button 
-          onClick={handleAddClient}
-          className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Client
-        </button>
+        </div>        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleAddClient}
+            className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Client
+          </button>
+          <Link 
+            to="/dashboard/clients/create-department"
+            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Building className="h-4 w-4 mr-2" />
+            Create Department
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}

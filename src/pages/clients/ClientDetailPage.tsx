@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Building, Globe, Mail, Phone, MapPin, Users, Briefcase,
-  Calendar, TrendingUp, Edit3, Settings,
+  Calendar, TrendingUp, Edit3, Settings, Trash2, MoreVertical,
   Clock, ExternalLink, Activity, Target, CheckCircle, XCircle
 } from 'lucide-react';
 import { clientApi } from '../../services/api';
 import type { Client } from './data/clientService';
 import ClientForm from './components/ClientForm';
 import DeleteClientDialog from './components/DeleteClientDialog';
+import DepartmentForm from './components/DepartmentForm';
+import DeleteDepartmentDialog from './components/DeleteDepartmentDialog';
+import { DepartmentApiService } from '../../recruitment/organizations/services/departmentApiService';
+import type { Department } from '../../recruitment/organizations/services/departmentApiService';
 
 // Utility function to generate consistent colors based on string
 const stringToColor = (str: string) => {
@@ -41,15 +45,28 @@ const getInitials = (name: string) => {
 const ClientDetailPage: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts' | 'departments'>('overview');
   
   // Form and dialog states
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDepartmentForm, setShowDepartmentForm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  
+  // Department states
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
+  const [showDeleteDepartmentDialog, setShowDeleteDepartmentDialog] = useState(false);
+  const [deleteDepartmentLoading, setDeleteDepartmentLoading] = useState(false);
+  
+  const departmentApiService = new DepartmentApiService();
+  
   // Load client data
   useEffect(() => {
     const loadClient = async () => {
@@ -73,6 +90,36 @@ const ClientDetailPage: React.FC = () => {
     };    loadClient();
   }, [clientId]);
 
+  // Load departments for this client
+  useEffect(() => {
+    const loadDepartments = async () => {
+      if (!clientId) return;
+
+      try {
+        setDepartmentsLoading(true);
+        const departmentsData = await departmentApiService.getDepartmentsByClient(clientId);
+        setDepartments(departmentsData);
+      } catch (err: any) {
+        console.error('Error loading departments:', err);
+        // Don't show error for departments as it's not critical for the page
+      } finally {
+        setDepartmentsLoading(false);
+      }
+    };
+
+    if (client) {
+      loadDepartments();
+    }
+  }, [clientId, client]);
+
+  // Handle tab query parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['overview', 'activity', 'contracts', 'departments'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
+
   // Handle delete client
   const handleDeleteClient = async () => {
     if (!client) return;
@@ -90,6 +137,62 @@ const ClientDetailPage: React.FC = () => {
       setShowDeleteDialog(false);
     }
   };
+  
+  // Handle create department
+  const handleCreateDepartment = (newDepartment: Department) => {
+    setDepartments(prev => [...prev, newDepartment]);
+    setShowDepartmentForm(false);
+  };
+
+  // Handle edit department
+  const handleEditDepartment = (department: Department) => {
+    setEditingDepartment(department);
+    setShowDepartmentForm(true);
+  };
+
+  // Handle update department
+  const handleUpdateDepartment = (updatedDepartment: Department) => {
+    setDepartments(prev => prev.map(dept => 
+      dept.id === updatedDepartment.id ? updatedDepartment : dept
+    ));
+    setShowDepartmentForm(false);
+    setEditingDepartment(null);
+  };
+
+  // Handle delete department
+  const handleDeleteDepartment = async () => {
+    if (!departmentToDelete) return;
+
+    try {
+      setDeleteDepartmentLoading(true);
+      await departmentApiService.deleteDepartment(departmentToDelete.id);
+      setDepartments(prev => prev.filter(dept => dept.id !== departmentToDelete.id));
+      setShowDeleteDepartmentDialog(false);
+      setDepartmentToDelete(null);
+    } catch (err: any) {
+      console.error('Error deleting department:', err);
+      setError(err.response?.data?.message || 'Failed to delete department. Please try again.');
+      // TODO: Show error toast or keep dialog open with error message
+    } finally {
+      setDeleteDepartmentLoading(false);
+    }
+  };
+
+  // Handle department form save (create or update)
+  const handleDepartmentSave = (department: Department) => {
+    if (editingDepartment) {
+      handleUpdateDepartment(department);
+    } else {
+      handleCreateDepartment(department);
+    }
+  };
+
+  // Handle department form close
+  const handleDepartmentFormClose = () => {
+    setShowDepartmentForm(false);
+    setEditingDepartment(null);
+  };
+  
   // Helper functions
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -126,7 +229,8 @@ const ClientDetailPage: React.FC = () => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Building },
     { id: 'activity', label: 'Activity', icon: Activity },
-    { id: 'contracts', label: 'Contracts', icon: Target }
+    { id: 'contracts', label: 'Contracts', icon: Target },
+    { id: 'departments', label: 'Departments', icon: Users }
   ];
 
   // Loading state
@@ -340,15 +444,15 @@ const ClientDetailPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg border">
+        <div className="bg-white p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('departments')}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Last Activity</p>
-              <p className="text-lg font-bold text-gray-900">{client.lastActivity ? formatDate(client.lastActivity) : 'No recent activity'}</p>
-              <p className="text-sm text-gray-500">Recent engagement</p>
+              <p className="text-sm font-medium text-gray-600">Departments</p>
+              <p className="text-2xl font-bold text-gray-900">{departments.length}</p>
+              <p className="text-sm text-purple-600 hover:text-purple-700">View & manage →</p>
             </div>
-            <div className="p-2 bg-red-100 rounded-lg">
-              <Activity className="w-5 h-5 text-red-600" />
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Building className="w-5 h-5 text-purple-600" />
             </div>
           </div>
         </div>
@@ -454,7 +558,102 @@ const ClientDetailPage: React.FC = () => {
                 <p className="text-gray-500 text-sm">No contracts available</p>
                 <p className="text-gray-400 text-xs mt-1">Contract information will appear here when implemented</p>
               </div>
-            </div>          )}
+            </div>
+          )}
+
+          {activeTab === 'departments' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Departments</h3>
+                <button
+                  onClick={() => setShowDepartmentForm(true)}
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <Building className="w-4 h-4 mr-2" />
+                  Add Department
+                </button>
+              </div>
+
+              {departmentsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                  <p className="text-gray-500">Loading departments...</p>
+                </div>
+              ) : departments.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {departments.map((dept) => (
+                    <div key={dept.id} className="bg-white border rounded-lg p-4 hover:shadow-md transition-all duration-200 group relative">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          <div 
+                            className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xl mr-3 shadow-sm"
+                            style={{ backgroundColor: dept.color }}
+                          >
+                            {dept.icon}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900">{dept.name}</h4>
+                            <p className="text-sm text-gray-500">{dept.manager || 'No manager assigned'}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Action buttons - Now always visible on mobile, hover on desktop */}
+                        <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                          <button
+                            onClick={() => handleEditDepartment(dept)}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-150"
+                            title="Edit department"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setDepartmentToDelete(dept);
+                              setShowDeleteDepartmentDialog(true);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-150"
+                            title="Delete department"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {dept.description && (
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{dept.description}</p>
+                      )}
+                      
+                      <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                        <div className="text-center">
+                          <p className="text-lg font-bold text-gray-900">{dept.activeJobs || 0}</p>
+                          <p className="text-xs text-gray-500">Active Jobs</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-lg font-bold text-gray-900">{dept.totalEmployees}</p>
+                          <p className="text-xs text-gray-500">Employees</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="p-3 bg-gray-200 rounded-lg inline-block mb-3">
+                    <Building className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">No departments found</p>
+                  <p className="text-gray-400 text-xs mt-1">Create your first department to get started</p>
+                  <button
+                    onClick={() => setShowDepartmentForm(true)}
+                    className="mt-4 inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Building className="w-4 h-4 mr-2" />
+                    Add Department
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>      {/* Edit Client Form Modal */}
       {showEditForm && client && (
@@ -478,6 +677,33 @@ const ClientDetailPage: React.FC = () => {
           onConfirm={handleDeleteClient}
           onCancel={() => setShowDeleteDialog(false)}
           loading={deleteLoading}
+        />
+      )}
+
+      {/* Department Form Modal */}
+      {showDepartmentForm && client && (
+        <DepartmentForm
+          isOpen={showDepartmentForm}
+          onClose={handleDepartmentFormClose}
+          onSave={handleDepartmentSave}
+          clientId={client.id}
+          clientName={client.name}
+          department={editingDepartment}
+          mode={editingDepartment ? 'edit' : 'create'}
+        />
+      )}
+
+      {/* Delete Department Dialog */}
+      {showDeleteDepartmentDialog && departmentToDelete && (
+        <DeleteDepartmentDialog
+          isOpen={showDeleteDepartmentDialog}
+          departmentName={departmentToDelete.name}
+          onConfirm={handleDeleteDepartment}
+          onCancel={() => {
+            setShowDeleteDepartmentDialog(false);
+            setDepartmentToDelete(null);
+          }}
+          loading={deleteDepartmentLoading}
         />
       )}
     </div>

@@ -42,7 +42,7 @@ import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
 import UserManagementPage from './admin/UserManagementPage'; // Import UserManagementPage
 import CandidateProfilesPage from '../recruitment/candidates/pages/CandidateProfilesPage'; // Import CandidateProfilesPage
-import { ClientManagementPage, ClientDetailPage } from './clients'; // Import ClientManagementPage and ClientDetailPage
+import { ClientManagementPage, ClientDetailPage, CreateDepartmentPage } from './clients'; // Import ClientManagementPage, ClientDetailPage, and CreateDepartmentPage
 import JobBoardConfigPage from '../recruitment/jobs/pages/JobBoardConfigPage'; // Import JobBoardConfigPage
 import AnalyticsPage from './admin/AnalyticsPage'; // Import AnalyticsPage
 import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSettingsPage
@@ -86,6 +86,7 @@ const Dashboard: React.FC = () => {
             <Route path="jobs" element={<OrganizationsPage />} />
             <Route path="candidates" element={<CandidatesPage />} />
             <Route path="clients" element={<ClientManagementPage />} />
+            <Route path="clients/create-department" element={<CreateDepartmentPage />} />
             <Route path="clients/:clientId" element={<ClientDetailPage />} />
             
             {/* New Hierarchical Recruitment Flow */}
@@ -117,6 +118,7 @@ const Dashboard: React.FC = () => {
               <Route path="users" element={<UserManagementPage />} />
               <Route path="candidates" element={<CandidateProfilesPage />} />
               <Route path="clients" element={<ClientManagementPage />} />
+              <Route path="clients/create-department" element={<CreateDepartmentPage />} />
               <Route path="job-boards" element={<JobBoardConfigPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />
