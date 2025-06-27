@@ -7,10 +7,10 @@ import { jobApiService } from '../../jobs/services/jobApiService';
 import { jobApplicationApiService } from '../../jobs/services/jobApplicationApiService';
 import { useTaskStats } from '../../../hooks/useTasks';
 import { useInterviews } from '../../../hooks/useInterviews';
+import { useJobReport } from '../../../hooks/useReports';
 import type { Job as JobType } from '../../data/types';
 import type { JobApplication } from '../../jobs/services/jobApplicationApiService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
-import { mockReportsByJob, getMockJobKey } from '../data/mock';
 import AddCandidateModal from '../components/AddCandidateModal';
 import ConfirmationDialog from '../../../components/ConfirmationDialog';
 import ToastContainer, { toast } from '../../../components/ToastContainer';
@@ -30,9 +30,10 @@ const JobATSPage: React.FC = () => {
   const { data: taskStats } = useTaskStats(jobId || '');
   
   // Use React Query hook for interview stats
-  const { data: interviewsData } = useInterviews(
-    jobId ? { jobApplicationId: jobId } : {}
-  );
+  const { data: interviewsData } = useInterviews(jobId ? { jobId } : undefined);
+  
+  // Use React Query hook for job reports
+  const { data: reportData, isLoading: reportLoading, error: reportError } = useJobReport(jobId || '');
   
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -136,9 +137,7 @@ const JobATSPage: React.FC = () => {
 
   console.log('Transformed candidates:', candidates); // Debug log
   
-  // Get mock data using imported function (for reports only)
-  const mockJobKey = jobId ? getMockJobKey(jobId) : '';
-  const reportData = mockJobKey && mockReportsByJob[mockJobKey] ? mockReportsByJob[mockJobKey] : null;  // Helper function to map frontend stage back to backend stage
+  // Helper function to map frontend stage back to backend stage
   const mapStageToBackend = (frontendStage: string) => {
     const stageMap: Record<string, string> = {
       'Applied': 'Application',
@@ -406,7 +405,7 @@ const JobATSPage: React.FC = () => {
 			}`}
 		  >
 			<Calendar className="w-4 h-4 mr-2" />
-			Interviews ({interviewsData?.total || 0})
+			Interviews ({interviewsData?.interviews?.length || 0})
 		  </button>
 		  <button
 			onClick={() => setActiveTab('reports')}
@@ -458,11 +457,11 @@ const JobATSPage: React.FC = () => {
 	  </div>
 
 	  <div style={{ display: activeTab === 'reports' ? 'block' : 'none' }}>
-		{reportData && (
-		  <ReportsTab 
-			reportData={reportData}
-		  />
-		)}
+		<ReportsTab 
+		  reportData={reportData || null}
+		  loading={reportLoading}
+		  error={reportError}
+		/>
 	  </div>
 
 	  {/* Add Candidate Modal */}

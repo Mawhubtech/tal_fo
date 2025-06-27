@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrendingUp, Users, Clock, Target } from 'lucide-react';
-import type { ReportMetrics } from '../../../data/mock';
+import type { ReportMetrics } from '../../../services/reportsApiService';
 
 interface ReportsOverviewProps {
   metrics: ReportMetrics;
@@ -47,7 +47,7 @@ export const ReportsOverview: React.FC<ReportsOverviewProps> = ({ metrics }) => 
           <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
             <TrendingUp className="w-6 h-6 text-purple-600" />
           </div>
-          <span className="text-2xl font-bold text-gray-900">{metrics.offerAcceptanceRate}%</span>
+          <span className="text-2xl font-bold text-gray-900">{metrics.offerAcceptanceRate.toFixed(1)}%</span>
         </div>
         <h3 className="text-sm font-medium text-gray-600 mb-1">Offer Acceptance Rate</h3>
         <p className="text-xs text-gray-500">Percentage of accepted offers</p>

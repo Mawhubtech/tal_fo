@@ -1,8 +1,8 @@
 import React from 'react';
-import type { ReportMetrics } from '../../../data/mock';
+import type { SourceBreakdown } from '../../../services/reportsApiService';
 
 interface SourceBreakdownChartProps {
-  sourceBreakdown: ReportMetrics['sourceBreakdown'];
+  sourceBreakdown: SourceBreakdown[];
 }
 
 export const SourceBreakdownChart: React.FC<SourceBreakdownChartProps> = ({ 
