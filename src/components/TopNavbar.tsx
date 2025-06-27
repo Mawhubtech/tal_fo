@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useLogout } from '../hooks/useAuth';
+import { AccountSettingsModal } from './AccountSettingsModal';
 import Button from './Button';
 
 interface TopNavbarProps {
@@ -12,6 +13,7 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
   const { user } = useAuthContext();
   const logout = useLogout();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
 
   const handleLogout = () => {
     logout.mutate();
@@ -62,93 +64,112 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
           
           {/* User dropdown menu */}
           {showUserDropdown && (
-            <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-200 shadow-md z-20 rounded-md">
-              <div className="p-3 text-sm">
-                <div className="flex items-center gap-3 mb-2 pb-2 border-b border-gray-100">
-                  {user?.avatar ? (
-                    <img 
-                      src={user.avatar} 
-                      alt={`${user.firstName} ${user.lastName}`}
-                      className="w-12 h-12 rounded-full object-cover" 
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                      <User className="w-6 h-6 text-gray-600" />
-                    </div>
-                  )}
-                  
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-800">{user?.firstName} {user?.lastName}</p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
-                    {user?.provider && user.provider !== 'local' && (
-                      <p className="text-xs text-blue-500 mt-0.5">
-                        Via {user.provider.charAt(0).toUpperCase() + user.provider.slice(1)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                {/* User roles and status info */}
-                <div className="mb-2 px-1">
-                  <div className="bg-gray-50 rounded-md p-2 mb-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium">Status</span>
-                      <span className="text-xs font-medium text-green-600">{user?.status}</span>
-                    </div>
-                    {user?.roles && user.roles.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {user.roles.map(role => (
-                          <span 
-                            key={role.id} 
-                            className={`text-xs rounded-full px-2 py-0.5 ${getRoleBadgeColor(role.name)}`}
-                          >
-                            {role.name}
-                          </span>
-                        ))}
+            <>
+              {/* Backdrop to close dropdown */}
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setShowUserDropdown(false)}
+              />
+              <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-200 shadow-md z-20 rounded-md">
+                <div className="p-3 text-sm">
+                  <div className="flex items-center gap-3 mb-2 pb-2 border-b border-gray-100">
+                    {user?.avatar ? (
+                      <img 
+                        src={user.avatar} 
+                        alt={`${user.firstName} ${user.lastName}`}
+                        className="w-12 h-12 rounded-full object-cover" 
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                        <User className="w-6 h-6 text-gray-600" />
                       </div>
                     )}
                     
-                    {user?.isEmailVerified && (
-                      <div className="flex items-center mt-1 text-xs text-green-700">
-                        <Check className="w-3 h-3 mr-1" />
-                        Email verified
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      {user?.provider && user.provider !== 'local' && (
+                        <p className="text-xs text-blue-500 mt-0.5">
+                          Via {user.provider.charAt(0).toUpperCase() + user.provider.slice(1)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* User roles and status info */}
+                  <div className="mb-2 px-1">
+                    <div className="bg-gray-50 rounded-md p-2 mb-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium">Status</span>
+                        <span className="text-xs font-medium text-green-600">{user?.status}</span>
                       </div>
-                    )}
+                      {user?.roles && user.roles.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {user.roles.map(role => (
+                            <span 
+                              key={role.id} 
+                              className={`text-xs rounded-full px-2 py-0.5 ${getRoleBadgeColor(role.name)}`}
+                            >
+                              {role.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {user?.isEmailVerified && (
+                        <div className="flex items-center mt-1 text-xs text-green-700">
+                          <Check className="w-3 h-3 mr-1" />
+                          Email verified
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-0.5">
+                    <button 
+                      onClick={() => {
+                        setShowAccountSettings(true);
+                        setShowUserDropdown(false);
+                      }}
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+                    >
+                      <Settings className="w-4 h-4 mr-3" />
+                      Account Settings
+                    </button>
+                    
+                    <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md">
+                      <Shield className="w-4 h-4 mr-3" />
+                      Privacy Settings
+                    </a>
+                    
+                    <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md">
+                      <Info className="w-4 h-4 mr-3" />
+                      Help & Support
+                    </a>
                   </div>
                 </div>
                 
-                <div className="flex flex-col gap-0.5">
-                  <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md">
-                    <Settings className="w-4 h-4 mr-3" />
-                    Account Settings
-                  </a>
-                  
-                  <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md">
-                    <Shield className="w-4 h-4 mr-3" />
-                    Privacy Settings
-                  </a>
-                  
-                  <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md">
-                    <Info className="w-4 h-4 mr-3" />
-                    Help & Support
-                  </a>
+                <div className="border-t border-gray-200 p-1">
+                  <button 
+                    className="flex w-full items-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md"
+                    onClick={handleLogout}
+                    disabled={logout.isPending}
+                  >
+                    <LogOut className="w-4 h-4 mr-3" />
+                    {logout.isPending ? 'Logging out...' : 'Logout'}
+                  </button>
                 </div>
               </div>
-              
-              <div className="border-t border-gray-200 p-1">
-                <button 
-                  className="flex w-full items-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md"
-                  onClick={handleLogout}
-                  disabled={logout.isPending}
-                >
-                  <LogOut className="w-4 h-4 mr-3" />
-                  {logout.isPending ? 'Logging out...' : 'Logout'}
-                </button>
-              </div>
-            </div>
+            </>
           )}
         </div>
       </div>
+      
+      {/* Account Settings Modal */}
+      <AccountSettingsModal 
+        isOpen={showAccountSettings}
+        onClose={() => setShowAccountSettings(false)}
+      />
     </div>
   );
 };

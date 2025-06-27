@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, Clock, MapPin, Video, Phone, Users, User, ExternalLink, 
   Mail, MessageSquare, FileText, Star, Edit, Save, XCircle, CheckCircle,
-  AlertCircle, Send, Plus, Minus
+  AlertCircle, Send, Plus, Minus, Settings
 } from 'lucide-react';
 import type { Interview, InterviewFeedback } from '../../../../../types/interview.types';
 import { useUpdateInterview } from '../../../../../hooks/useInterviews';
+import { useEmailService } from '../../../../../hooks/useEmailService';
 import { toast } from '../../../../../components/ToastContainer';
 import { EditInterviewForm } from './EditInterviewForm';
 
@@ -118,6 +119,14 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
 
   // Use the mutation hook for automatic query invalidation
   const updateInterviewMutation = useUpdateInterview();
+  
+  // Use email service for Gmail integration - only when email tab is active
+  const { 
+    emailSettings, 
+    isLoadingSettings, 
+    sendEmail, 
+    isSendingEmail 
+  } = useEmailService(activeTab === 'email');
 
   useEffect(() => {
     if (interview) {
@@ -189,26 +198,36 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   };
 
   const handleSendEmail = async () => {
-    if (!interview || !onSendEmail) return;
+    if (!interview) return;
     
     try {
-      await onSendEmail(
-        interview,
-        emailForm.type,
-        emailForm.recipients,
-        emailForm.subject,
-        emailForm.body
-      );
+      // Use the new email service instead of the prop
+      await sendEmail({
+        interviewId: interview.id,
+        emailType: emailForm.type,
+        recipients: emailForm.recipients,
+        subject: emailForm.subject,
+        body: emailForm.body
+      });
       
-      // Reset form
+      toast.success('Email Sent', 'Interview email has been sent successfully.');
+      
+      // Reset form and switch back to details tab
       setEmailForm(prev => ({
         ...prev,
         subject: '',
         body: '',
         customRecipient: ''
       }));
+      
+      // Switch back to details tab to show confirmation
+      setActiveTab('details');
+      
+      // Repopulate default template for next use
+      populateEmailTemplate(emailTemplates.interview_invitation);
     } catch (error) {
       console.error('Failed to send email:', error);
+      toast.error('Email Failed', 'Failed to send email. Please check your email configuration.');
     }
   };
 
@@ -219,36 +238,67 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     const job = interview.jobApplication?.job;
     const scheduler = interview.scheduler;
     
-    let subject = template.subject
-      .replace('{{jobTitle}}', job?.title || 'Unknown Position')
-      .replace('{{candidateName}}', candidate?.fullName || 'Candidate')
-      .replace('{{interviewerName}}', 'Team Member'); // This will be replaced for feedback requests
-    
-    let body = template.body
-      .replace('{{candidateName}}', candidate?.fullName || 'Candidate')
-      .replace('{{jobTitle}}', job?.title || 'Unknown Position')
-      .replace('{{dateTime}}', formatDateTime(interview.scheduledAt))
-      .replace('{{duration}}', interview.durationMinutes?.toString() || '60')
-      .replace('{{mode}}', interview.mode)
-      .replace('{{meetingLink}}', interview.meetingLink || '')
-      .replace('{{location}}', interview.location || '')
-      .replace('{{agenda}}', interview.agenda || '')
-      .replace('{{schedulerName}}', `${scheduler?.firstName} ${scheduler?.lastName}`.trim() || 'HR Team')
-      .replace('{{interviewerName}}', 'Team Member'); // This will be replaced for feedback requests
-    
-    // Clean up conditional blocks
-    body = body.replace(/{{#if \w+}}.*?{{\/if}}/g, (match) => {
-      if (match.includes('meetingLink') && interview.meetingLink) {
-        return match.replace(/{{#if meetingLink}}|{{\/if}}/g, '');
+    console.log('Populating email template with data:', {
+      candidate,
+      job,
+      scheduler,
+      interview: {
+        scheduledAt: interview.scheduledAt,
+        durationMinutes: interview.durationMinutes,
+        mode: interview.mode,
+        meetingLink: interview.meetingLink,
+        location: interview.location,
+        agenda: interview.agenda
       }
-      if (match.includes('location') && interview.location) {
-        return match.replace(/{{#if location}}|{{\/if}}/g, '');
-      }
-      if (match.includes('agenda') && interview.agenda) {
-        return match.replace(/{{#if agenda}}|{{\/if}}/g, '');
-      }
-      return '';
     });
+    
+    // Create replacement data
+    const replacements = {
+      '{{jobTitle}}': job?.title || 'Unknown Position',
+      '{{candidateName}}': candidate?.fullName || `${candidate?.firstName || ''} ${candidate?.lastName || ''}`.trim() || 'Candidate',
+      '{{interviewerName}}': 'Team Member', // This will be replaced for feedback requests
+      '{{dateTime}}': formatDateTime(interview.scheduledAt),
+      '{{duration}}': interview.durationMinutes?.toString() || '60',
+      '{{mode}}': interview.mode || 'In-person',
+      '{{meetingLink}}': interview.meetingLink || '',
+      '{{location}}': interview.location || '',
+      '{{agenda}}': interview.agenda || '',
+      '{{schedulerName}}': `${scheduler?.firstName || ''} ${scheduler?.lastName || ''}`.trim() || 'HR Team'
+    };
+    
+    console.log('Template replacements:', replacements);
+    
+    // Replace variables in subject
+    let subject = template.subject;
+    Object.entries(replacements).forEach(([key, value]) => {
+      subject = subject.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value);
+    });
+    
+    // Replace variables in body
+    let body = template.body;
+    Object.entries(replacements).forEach(([key, value]) => {
+      body = body.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value);
+    });
+    
+    console.log('Before conditional processing:', { subject, body });
+    
+    // Handle conditional blocks (simple implementation)
+    body = body.replace(/{{#if meetingLink}}(.*?){{\/if}}/g, (match, content) => {
+      return interview.meetingLink ? content : '';
+    });
+    
+    body = body.replace(/{{#if location}}(.*?){{\/if}}/g, (match, content) => {
+      return interview.location ? content : '';
+    });
+    
+    body = body.replace(/{{#if agenda}}(.*?){{\/if}}/g, (match, content) => {
+      return interview.agenda ? content : '';
+    });
+    
+    // Clean up any remaining template syntax
+    body = body.replace(/{{#if.*?}}|{{\/if}}/g, '');
+    
+    console.log('Final template result:', { subject, body });
     
     setEmailForm(prev => ({ ...prev, subject, body }));
   };
@@ -729,7 +779,38 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
           {activeTab === 'email' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4">Send Email</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Send Email</h3>
+                  {/* Email configuration status indicator */}
+                  <div className="flex items-center space-x-2 text-sm">
+                    {isLoadingSettings ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                        <span className="text-gray-500">Loading...</span>
+                      </div>
+                    ) : emailSettings?.isGmailConnected ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-gray-600">Gmail connected</span>
+                        {emailSettings.gmailEmail && (
+                          <span className="text-gray-500">({emailSettings.gmailEmail})</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span className="text-gray-600">Gmail not connected</span>
+                        <button
+                          onClick={() => toast.info('Settings Required', 'Please configure Gmail in Account Settings to send emails')}
+                          className="text-purple-600 hover:text-purple-700 flex items-center text-xs"
+                        >
+                          Configure
+                          <Settings className="w-3 h-3 ml-1" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -825,16 +906,31 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
 
                   <button
                     onClick={handleSendEmail}
-                    disabled={!emailForm.subject || !emailForm.body || emailForm.recipients.length === 0}
+                    disabled={!emailForm.subject || !emailForm.body || emailForm.recipients.length === 0 || !emailSettings?.isGmailConnected || isSendingEmail}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Send className="w-4 h-4 mr-2" />
-                    Send Email
+                    {isSendingEmail ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Send Email
+                      </>
+                    )}
                   </button>
                   
                   {(!emailForm.subject || !emailForm.body || emailForm.recipients.length === 0) && (
                     <p className="text-sm text-red-600 mt-2">
                       Please ensure you have recipients, subject, and message content before sending.
+                    </p>
+                  )}
+                  
+                  {!emailSettings?.isGmailConnected && (
+                    <p className="text-sm text-red-600 mt-2">
+                      Gmail not connected. Please configure Gmail in Account Settings to send emails.
                     </p>
                   )}
                 </div>
