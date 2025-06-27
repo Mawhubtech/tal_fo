@@ -425,7 +425,7 @@ const CandidatesPage: React.FC = () => {
                 </select>
               </div>            </div>            <div className="flex gap-3">
               <button 
-                className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                className="flex items-center px-4 py-2 bg-white border border-purple-600 rounded-lg hover:bg-purple-100 text-purple-700"
                 onClick={() => setIsBulkImportModalOpen(true)}
               >
                 <Upload className="h-4 w-4 mr-2" />

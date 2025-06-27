@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone } from 'lucide-react'; // Ensure these icons are installed
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages } from 'lucide-react'; // Ensure these icons are installed
 import Button from './Button'; // Adjust path to your Button component if necessary
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
@@ -61,6 +61,18 @@ export interface Award {
   description?: string;
 }
 
+export interface Language {
+  language: string;
+  proficiency: string;
+  speakingLevel?: string;
+  writingLevel?: string;
+  readingLevel?: string;
+  isNative?: boolean;
+  certificationName?: string;
+  certificationScore?: string;
+  certificationDate?: string;
+}
+
 export interface UserStructuredData {
   personalInfo: PersonalInfo;
   summary?: string;
@@ -71,6 +83,7 @@ export interface UserStructuredData {
   certifications?: Certification[];
   awards?: Award[];
   interests?: string[];
+  languages?: Language[];
 }
 
 export interface UserData { // If UserData is also needed elsewhere
@@ -96,7 +109,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     return null;
   }
 
-  const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests } = userData;// Main profile tabs for the 2/3 section
+  const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages } = userData;// Main profile tabs for the 2/3 section
   const profileTabs = [
     { name: 'Experience', icon: Briefcase, index: 0, count: experience?.length || 0 },
     { name: 'Education', icon: GraduationCap, index: 1, count: education?.length || 0 },
@@ -104,7 +117,8 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     { name: 'Projects', icon: FolderOpen, index: 3, count: projects?.length || 0 },
     { name: 'Certifications', icon: FileBadge2, index: 4, count: certifications?.length || 0 },
     { name: 'Awards', icon: Award, index: 5, count: awards?.length || 0 },
-    { name: 'Interests', icon: Heart, index: 6, count: interests?.length || 0 },
+    { name: 'Languages', icon: Languages, index: 6, count: languages?.length || 0 },
+    { name: 'Interests', icon: Heart, index: 7, count: interests?.length || 0 },
   ];
 
   // Side panel tabs for the 1/3 section (candidate management)
@@ -570,8 +584,72 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                 </div>
               )}
 
-              {/* Interests Tab */}
+              {/* Languages Tab */}
               {activeTab === 6 && (
+                <div>
+                  {languages && languages.length > 0 ? (
+                    <div className="space-y-4">
+                      {languages.map((language, index) => (
+                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                          <div className="flex items-start">
+                            <div className="mr-3 mt-1">
+                              <Languages className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{language.language}</h4>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                  {language.proficiency}
+                                </span>
+                                {language.isNative && (
+                                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                    Native
+                                  </span>
+                                )}
+                              </div>
+                              {(language.speakingLevel || language.writingLevel || language.readingLevel) && (
+                                <div className="mt-2 space-y-1">
+                                  {language.speakingLevel && (
+                                    <div className="text-xs text-gray-600">
+                                      <span className="font-medium">Speaking:</span> {language.speakingLevel}
+                                    </div>
+                                  )}
+                                  {language.writingLevel && (
+                                    <div className="text-xs text-gray-600">
+                                      <span className="font-medium">Writing:</span> {language.writingLevel}
+                                    </div>
+                                  )}
+                                  {language.readingLevel && (
+                                    <div className="text-xs text-gray-600">
+                                      <span className="font-medium">Reading:</span> {language.readingLevel}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {language.certificationName && (
+                                <div className="mt-2 text-xs text-gray-600">
+                                  <span className="font-medium">Certification:</span> {language.certificationName}
+                                  {language.certificationScore && (
+                                    <span> (Score: {language.certificationScore})</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Languages className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No languages information available</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Interests Tab */}
+              {activeTab === 7 && (
                 <div>
                   {interests && interests.length > 0 ? (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
@@ -1046,8 +1124,72 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                 </div>
               )}
 
-              {/* Interests Tab */}
+              {/* Languages Tab */}
               {activeTab === 6 && (
+                <div>
+                  {languages && languages.length > 0 ? (
+                    <div className="space-y-4">
+                      {languages.map((language, index) => (
+                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                          <div className="flex items-start">
+                            <div className="mr-3 mt-1">
+                              <Languages className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{language.language}</h4>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                  {language.proficiency}
+                                </span>
+                                {language.isNative && (
+                                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                    Native
+                                  </span>
+                                )}
+                              </div>
+                              {(language.speakingLevel || language.writingLevel || language.readingLevel) && (
+                                <div className="mt-2 space-y-1">
+                                  {language.speakingLevel && (
+                                    <div className="text-xs text-gray-600">
+                                      <span className="font-medium">Speaking:</span> {language.speakingLevel}
+                                    </div>
+                                  )}
+                                  {language.writingLevel && (
+                                    <div className="text-xs text-gray-600">
+                                      <span className="font-medium">Writing:</span> {language.writingLevel}
+                                    </div>
+                                  )}
+                                  {language.readingLevel && (
+                                    <div className="text-xs text-gray-600">
+                                      <span className="font-medium">Reading:</span> {language.readingLevel}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {language.certificationName && (
+                                <div className="mt-2 text-xs text-gray-600">
+                                  <span className="font-medium">Certification:</span> {language.certificationName}
+                                  {language.certificationScore && (
+                                    <span> (Score: {language.certificationScore})</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Languages className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No languages information available</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Interests Tab */}
+              {activeTab === 7 && (
                 <div>
                   {interests && interests.length > 0 ? (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
