@@ -3,9 +3,11 @@ import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquar
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
 import AddCandidateModal from '../../components/AddCandidateModal';
+import BulkImportModal from '../../components/BulkImportModal';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
 import { CreateCandidateDto } from '../../types/candidate.types';
 import { useCandidates, useCandidateStats, useUpdateCandidateStatus, useUpdateCandidateRating, useCreateCandidate, useUpdateCandidate, useDeleteCandidate } from '../../hooks/useCandidates';
+import { useQueryClient } from '@tanstack/react-query';
 import { getAvatarUrl } from '../../utils/fileUtils';
 
 // Enhanced candidate interface with additional professional fields
@@ -44,6 +46,7 @@ interface EnhancedCandidate {
 }
 
 const CandidatesPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
@@ -53,10 +56,13 @@ const CandidatesPage: React.FC = () => {
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
   // State for dropdown menus
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);  // State for add candidate modal
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  // State for add candidate modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState<EnhancedCandidate | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // State for bulk import modal
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   // State for delete confirmation
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -418,7 +424,10 @@ const CandidatesPage: React.FC = () => {
                   <option value="senior">Senior (5+ years)</option>
                 </select>
               </div>            </div>            <div className="flex gap-3">
-              <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
+              <button 
+                className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                onClick={() => setIsBulkImportModalOpen(true)}
+              >
                 <Upload className="h-4 w-4 mr-2" />
                 Import
               </button>
@@ -847,6 +856,18 @@ const CandidatesPage: React.FC = () => {
         cancelText="Cancel"
         loading={deleteCandidateMutation.isPending}
         variant="danger"
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={isBulkImportModalOpen}
+        onClose={() => setIsBulkImportModalOpen(false)}
+        onImportComplete={() => {
+          // Refresh the candidates list and stats after successful import
+          queryClient.invalidateQueries({ queryKey: ['candidates'] });
+          queryClient.invalidateQueries({ queryKey: ['candidateStats'] });
+          setIsBulkImportModalOpen(false);
+        }}
       />
     </React.Fragment>
   );
