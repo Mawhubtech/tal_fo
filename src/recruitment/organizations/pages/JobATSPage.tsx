@@ -6,10 +6,11 @@ import {
 import { jobApiService } from '../../jobs/services/jobApiService';
 import { jobApplicationApiService } from '../../jobs/services/jobApplicationApiService';
 import { useTaskStats } from '../../../hooks/useTasks';
+import { useInterviews } from '../../../hooks/useInterviews';
 import type { Job as JobType } from '../../data/types';
 import type { JobApplication } from '../../jobs/services/jobApplicationApiService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
-import { mockInterviewsByJob, mockReportsByJob, getMockJobKey } from '../data/mock';
+import { mockReportsByJob, getMockJobKey } from '../data/mock';
 import AddCandidateModal from '../components/AddCandidateModal';
 import ConfirmationDialog from '../../../components/ConfirmationDialog';
 import ToastContainer, { toast } from '../../../components/ToastContainer';
@@ -28,6 +29,11 @@ const JobATSPage: React.FC = () => {
   // Use React Query hook for task stats
   const { data: taskStats } = useTaskStats(jobId || '');
   
+  // Use React Query hook for interview stats
+  const { data: interviewsData } = useInterviews(
+    jobId ? { jobApplicationId: jobId } : {}
+  );
+  
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [candidateToRemove, setCandidateToRemove] = useState<any>(null);
@@ -37,9 +43,9 @@ const JobATSPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'score'>('date');
-  // Calendar view states
+  
+  // Calendar view states (for tasks only)
   const [tasksView, setTasksView] = useState<'list' | 'calendar'>('list');
-  const [interviewsView, setInterviewsView] = useState<'list' | 'calendar'>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
   useEffect(() => {
     const loadJobAndApplications = async () => {
@@ -129,9 +135,9 @@ const JobATSPage: React.FC = () => {
   });
 
   console.log('Transformed candidates:', candidates); // Debug log
-  // Get mock data using imported function (for interviews, reports)
+  
+  // Get mock data using imported function (for reports only)
   const mockJobKey = jobId ? getMockJobKey(jobId) : '';
-  const allInterviews = mockJobKey && mockInterviewsByJob[mockJobKey] ? mockInterviewsByJob[mockJobKey] : [];
   const reportData = mockJobKey && mockReportsByJob[mockJobKey] ? mockReportsByJob[mockJobKey] : null;  // Helper function to map frontend stage back to backend stage
   const mapStageToBackend = (frontendStage: string) => {
     const stageMap: Record<string, string> = {
@@ -400,7 +406,7 @@ const JobATSPage: React.FC = () => {
 			}`}
 		  >
 			<Calendar className="w-4 h-4 mr-2" />
-			Interviews ({allInterviews.length})
+			Interviews ({interviewsData?.total || 0})
 		  </button>
 		  <button
 			onClick={() => setActiveTab('reports')}
@@ -443,12 +449,11 @@ const JobATSPage: React.FC = () => {
 
 	  <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
 		<InterviewsTab 
-		  interviews={allInterviews}
-		  interviewsView={interviewsView}
-		  onInterviewsViewChange={setInterviewsView}
-		  currentDate={currentDate}
-		  onNavigateMonth={navigateMonth}
-		  onToday={handleToday}
+		  jobId={jobId!}
+		  onInterviewClick={(interview) => {
+			console.log('Interview clicked:', interview);
+			// Handle interview click if needed
+		  }}
 		/>
 	  </div>
 
