@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, User, AlertCircle } from 'lucide-react';
-import type { Task } from '../../../data/mock';
+import type { Task } from '../../../services/taskApiService';
 import { getPriorityColor, getStatusColor } from '../shared';
 
 interface TaskCardProps {
@@ -9,7 +9,7 @@ interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
-  const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'Completed';
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'Completed';
   
   return (
     <div 
@@ -30,19 +30,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
             )}
           </div>
           
-          <p className="text-sm text-gray-600 mb-2">{task.description}</p>
+          <p className="text-sm text-gray-600 mb-2">{task.description || 'No description'}</p>
           
           <div className="flex items-center text-xs text-gray-500 space-x-4">
-            <div className="flex items-center">
-              <User className="w-3 h-3 mr-1" />
-              <span>{task.candidateName}</span>
-            </div>
-            <div className="flex items-center">
-              <Clock className="w-3 h-3 mr-1" />
-              <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
-                {new Date(task.dueDate).toLocaleDateString()} at {new Date(task.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
+            {task.candidateName && (
+              <div className="flex items-center">
+                <User className="w-3 h-3 mr-1" />
+                <span>{task.candidateName}</span>
+              </div>
+            )}
+            {task.dueDate && (
+              <div className="flex items-center">
+                <Clock className="w-3 h-3 mr-1" />
+                <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+                  {new Date(task.dueDate).toLocaleDateString()} at {new Date(task.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         
@@ -50,7 +54,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)} mb-2`}>
             {task.status}
           </span>
-          <span className="text-xs text-gray-500">{task.assignedTo}</span>
+          <span className="text-xs text-gray-500">
+            {task.assignedUser ? `${task.assignedUser.firstName} ${task.assignedUser.lastName}` : 'Unassigned'}
+          </span>
         </div>
       </div>
     </div>

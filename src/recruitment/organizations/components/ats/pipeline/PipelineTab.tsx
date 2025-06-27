@@ -80,30 +80,32 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
         </div>
         
         {/* View Toggle */}
-        <div className="flex border border-gray-300 rounded-lg overflow-hidden bg-white self-start">
-          <button
-            onClick={() => setView('kanban')}
-            className={`px-3 py-2 text-sm flex items-center transition-colors ${
-              view === 'kanban' 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Kanban</span>
-            <span className="sm:hidden">Board</span>
-          </button>
-          <button
-            onClick={() => setView('list')}
-            className={`px-3 py-2 text-sm flex items-center transition-colors ${
-              view === 'list' 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <List className="w-4 h-4 mr-2" />
-            List
-          </button>
+        <div className="flex justify-between items-center">
+          <div className="flex border border-gray-300 rounded-lg overflow-hidden bg-white">
+            <button
+              onClick={() => setView('kanban')}
+              className={`px-3 py-2 text-sm flex items-center transition-colors ${
+                view === 'kanban' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Kanban</span>
+              <span className="sm:hidden">Board</span>
+            </button>
+            <button
+              onClick={() => setView('list')}
+              className={`px-3 py-2 text-sm flex items-center transition-colors ${
+                view === 'list' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <List className="w-4 h-4 mr-2" />
+              List
+            </button>
+          </div>
         </div>
       </div>
 

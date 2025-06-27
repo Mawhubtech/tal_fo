@@ -5,10 +5,11 @@ import {
 } from 'lucide-react';
 import { jobApiService } from '../../jobs/services/jobApiService';
 import { jobApplicationApiService } from '../../jobs/services/jobApplicationApiService';
+import { useTaskStats } from '../../../hooks/useTasks';
 import type { Job as JobType } from '../../data/types';
 import type { JobApplication } from '../../jobs/services/jobApplicationApiService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
-import { mockTasksByJob, mockInterviewsByJob, mockReportsByJob, getMockJobKey } from '../data/mock';
+import { mockInterviewsByJob, mockReportsByJob, getMockJobKey } from '../data/mock';
 import AddCandidateModal from '../components/AddCandidateModal';
 import ConfirmationDialog from '../../../components/ConfirmationDialog';
 import ToastContainer, { toast } from '../../../components/ToastContainer';
@@ -23,6 +24,9 @@ const JobATSPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
+  
+  // Use React Query hook for task stats
+  const { data: taskStats } = useTaskStats(jobId || '');
   
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -125,9 +129,8 @@ const JobATSPage: React.FC = () => {
   });
 
   console.log('Transformed candidates:', candidates); // Debug log
-  // Get mock data using imported function (for tasks, interviews, reports)
+  // Get mock data using imported function (for interviews, reports)
   const mockJobKey = jobId ? getMockJobKey(jobId) : '';
-  const allTasks = mockJobKey && mockTasksByJob[mockJobKey] ? mockTasksByJob[mockJobKey] : [];
   const allInterviews = mockJobKey && mockInterviewsByJob[mockJobKey] ? mockInterviewsByJob[mockJobKey] : [];
   const reportData = mockJobKey && mockReportsByJob[mockJobKey] ? mockReportsByJob[mockJobKey] : null;  // Helper function to map frontend stage back to backend stage
   const mapStageToBackend = (frontendStage: string) => {
@@ -338,11 +341,12 @@ const JobATSPage: React.FC = () => {
 		</div>
 				<button 
 		  onClick={() => setShowAddCandidateModal(true)}
-		  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors"
+		  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors mr-3"
 		>
 		  <Plus className="w-4 h-4 mr-2" />
 		  Add Candidate
 		</button>
+		
 	  </div>
 
 	  {/* Job Info Card */}
@@ -385,7 +389,7 @@ const JobATSPage: React.FC = () => {
 			}`}
 		  >
 			<CheckCircle className="w-4 h-4 mr-2" />
-			Tasks ({allTasks.length})
+			Tasks ({taskStats?.total || 0})
 		  </button>
 		  <button
 			onClick={() => setActiveTab('interviews')}
@@ -410,8 +414,9 @@ const JobATSPage: React.FC = () => {
 			Reports
 		  </button>
 		</div>
-	  </div>	  {/* Tab Content */}
-	  {activeTab === 'pipeline' && (
+	  </div>	 
+	   {/* Tab Content */}
+	  <div style={{ display: activeTab === 'pipeline' ? 'block' : 'none' }}>
 		<PipelineTab 
 		  candidates={candidates}
 		  searchQuery={searchQuery}
@@ -423,20 +428,20 @@ const JobATSPage: React.FC = () => {
 		  onCandidateUpdate={handleCandidateUpdate}
 		  onCandidateRemove={handleCandidateRemove}
 		/>
-	  )}
+	  </div>
 
-	  {activeTab === 'tasks' && (
+	  <div style={{ display: activeTab === 'tasks' ? 'block' : 'none' }}>
 		<TasksTab 
-		  tasks={allTasks}
+		  jobId={jobId!}
 		  tasksView={tasksView}
 		  onTasksViewChange={setTasksView}
 		  currentDate={currentDate}
 		  onNavigateMonth={navigateMonth}
 		  onToday={handleToday}
 		/>
-	  )}
+	  </div>
 
-	  {activeTab === 'interviews' && (
+	  <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
 		<InterviewsTab 
 		  interviews={allInterviews}
 		  interviewsView={interviewsView}
@@ -445,11 +450,15 @@ const JobATSPage: React.FC = () => {
 		  onNavigateMonth={navigateMonth}
 		  onToday={handleToday}
 		/>
-	  )}	  {activeTab === 'reports' && reportData && (
-		<ReportsTab 
-		  reportData={reportData}
-		/>
-	  )}
+	  </div>
+
+	  <div style={{ display: activeTab === 'reports' ? 'block' : 'none' }}>
+		{reportData && (
+		  <ReportsTab 
+			reportData={reportData}
+		  />
+		)}
+	  </div>
 
 	  {/* Add Candidate Modal */}
 	  <AddCandidateModal

@@ -1,6 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -15,20 +13,11 @@ import JobSeekerAdminPage from './pages/jobSeeker/admin/JobSeekerAdminPage';
 import Dashboard from './pages/Dashboard';
 import RequestDemoPage from './pages/RequestDemoPage';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
-
 function App() {
-  return (    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <AuthProvider>        <Router>          <Routes>
+  return (
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>        <Router>          <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/jobs" element={<JobBoardPage />} />
             <Route
@@ -75,8 +64,6 @@ function App() {
         </Router>
         </AuthProvider>
         </ToastProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
     </ErrorBoundary>
   );
 }

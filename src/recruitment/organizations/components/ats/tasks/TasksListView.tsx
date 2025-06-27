@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Task } from '../../../data/mock';
+import type { Task } from '../../../services/taskApiService';
 import { TaskCard } from './TaskCard';
 
 interface TasksListViewProps {
