@@ -138,7 +138,13 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
           recipients.push(p.email);
         }
       });
-      setEmailForm(prev => ({ ...prev, recipients: recipients.filter(Boolean) }));
+      setEmailForm(prev => ({ 
+        ...prev, 
+        recipients: recipients.filter(Boolean)
+      }));
+      
+      // Populate default email template
+      populateEmailTemplate(emailTemplates.interview_invitation);
     }
   }, [interview, interview?.updatedAt]); // Add updatedAt to dependency to respond to updates
 
@@ -215,7 +221,8 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     
     let subject = template.subject
       .replace('{{jobTitle}}', job?.title || 'Unknown Position')
-      .replace('{{candidateName}}', candidate?.fullName || 'Candidate');
+      .replace('{{candidateName}}', candidate?.fullName || 'Candidate')
+      .replace('{{interviewerName}}', 'Team Member'); // This will be replaced for feedback requests
     
     let body = template.body
       .replace('{{candidateName}}', candidate?.fullName || 'Candidate')
@@ -226,7 +233,22 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
       .replace('{{meetingLink}}', interview.meetingLink || '')
       .replace('{{location}}', interview.location || '')
       .replace('{{agenda}}', interview.agenda || '')
-      .replace('{{schedulerName}}', `${scheduler?.firstName} ${scheduler?.lastName}`.trim() || 'HR Team');
+      .replace('{{schedulerName}}', `${scheduler?.firstName} ${scheduler?.lastName}`.trim() || 'HR Team')
+      .replace('{{interviewerName}}', 'Team Member'); // This will be replaced for feedback requests
+    
+    // Clean up conditional blocks
+    body = body.replace(/{{#if \w+}}.*?{{\/if}}/g, (match) => {
+      if (match.includes('meetingLink') && interview.meetingLink) {
+        return match.replace(/{{#if meetingLink}}|{{\/if}}/g, '');
+      }
+      if (match.includes('location') && interview.location) {
+        return match.replace(/{{#if location}}|{{\/if}}/g, '');
+      }
+      if (match.includes('agenda') && interview.agenda) {
+        return match.replace(/{{#if agenda}}|{{\/if}}/g, '');
+      }
+      return '';
+    });
     
     setEmailForm(prev => ({ ...prev, subject, body }));
   };
@@ -727,6 +749,15 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                         <option value="feedback_request">Feedback Request</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Actions</label>
+                      <button
+                        onClick={() => populateEmailTemplate(emailTemplates[emailForm.type as keyof typeof emailTemplates])}
+                        className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                      >
+                        Reset Template
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mb-4">
@@ -773,6 +804,9 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="Email subject..."
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Edit the subject line as needed before sending
+                    </p>
                   </div>
 
                   <div className="mb-4">
@@ -780,10 +814,13 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                     <textarea
                       value={emailForm.body}
                       onChange={(e) => setEmailForm(prev => ({ ...prev, body: e.target.value }))}
-                      rows={10}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      rows={12}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
                       placeholder="Email message..."
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Review and edit the email content. Template variables have been automatically populated with interview details.
+                    </p>
                   </div>
 
                   <button
@@ -794,6 +831,12 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                     <Send className="w-4 h-4 mr-2" />
                     Send Email
                   </button>
+                  
+                  {(!emailForm.subject || !emailForm.body || emailForm.recipients.length === 0) && (
+                    <p className="text-sm text-red-600 mt-2">
+                      Please ensure you have recipients, subject, and message content before sending.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
