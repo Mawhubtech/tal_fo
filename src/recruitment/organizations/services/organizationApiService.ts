@@ -22,6 +22,7 @@ export interface Department {
   description: string;
   manager: string;
   activeJobs: number;
+  totalJobs: number;
   totalEmployees: number;
   color: string;
   icon: string;
@@ -109,13 +110,15 @@ export class OrganizationApiService {
       // Map backend department data to frontend interface
       const departments: Department[] = await Promise.all(
         backendDepartments.map(async (dept) => {
-          // Get active jobs count for this department
+          // Get jobs count for this department
           let activeJobs = 0;
+          let totalJobs = 0;
           try {
             const jobsResponse = await jobApiService.getAllJobs({ 
               organizationId,
               departmentId: dept.id
             });
+            totalJobs = jobsResponse.data.length;
             activeJobs = jobsResponse.data.filter(job => job.status === 'Active').length;
           } catch (error) {
             console.error('Error getting jobs count for department:', error);
@@ -127,6 +130,7 @@ export class OrganizationApiService {
             description: dept.description || `${dept.name} department`,
             manager: dept.manager || 'Department Manager',
             activeJobs,
+            totalJobs,
             totalEmployees: dept.totalEmployees,
             color: dept.color || this.getDepartmentColor(backendDepartments.indexOf(dept)),
             icon: dept.icon || this.getDepartmentIcon(dept.name)
@@ -177,6 +181,7 @@ export class OrganizationApiService {
         description: `${data.name} department`,
         manager: 'Department Manager', // Mock data for now
         activeJobs: data.jobs.filter(job => job.status === 'Active').length,
+        totalJobs: data.jobs.length,
         totalEmployees: Math.floor(Math.random() * 50) + 10, // Mock data for now
         color: this.getDepartmentColor(index),
         icon: this.getDepartmentIcon(data.name)
@@ -195,13 +200,15 @@ export class OrganizationApiService {
     try {
       const backendDept = await this.departmentApiService.getDepartmentById(departmentId);
       
-      // Get active jobs count for this department
+      // Get jobs count for this department
       let activeJobs = 0;
+      let totalJobs = 0;
       try {
         const jobsResponse = await jobApiService.getAllJobs({ 
           organizationId,
           departmentId: backendDept.id
         });
+        totalJobs = jobsResponse.data.length;
         activeJobs = jobsResponse.data.filter(job => job.status === 'Active').length;
       } catch (error) {
         console.error('Error getting jobs count for department:', error);
@@ -213,6 +220,7 @@ export class OrganizationApiService {
         description: backendDept.description || `${backendDept.name} department`,
         manager: backendDept.manager || 'Department Manager',
         activeJobs,
+        totalJobs,
         totalEmployees: backendDept.totalEmployees,
         color: backendDept.color || this.getDepartmentColor(0),
         icon: backendDept.icon || this.getDepartmentIcon(backendDept.name)

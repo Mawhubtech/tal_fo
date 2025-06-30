@@ -32,7 +32,7 @@ const OrganizationDetailPage: React.FC = () => {
     data: allJobsResponse, 
     isLoading: jobsLoading, 
     error: jobsError 
-  } = useOrganizationJobs(organizationId || '', { enabled: showAllJobs });
+  } = useOrganizationJobs(organizationId || '');
 
   const allJobs = allJobsResponse?.data || [];
   const loading = organizationLoading || departmentsLoading;
@@ -172,7 +172,7 @@ const OrganizationDetailPage: React.FC = () => {
           </div>
           <div className="flex items-center text-gray-600">
             <Briefcase className="w-4 h-4 mr-2" />
-            <span>{organization.activeJobs} Active Jobs</span>
+            <span>{allJobs.length} Total Jobs</span>
           </div>
           <div className="flex items-center text-gray-600">
             <Users className="w-4 h-4 mr-2" />
@@ -191,7 +191,7 @@ const OrganizationDetailPage: React.FC = () => {
             <div className="flex items-center">
               <Briefcase className="w-5 h-5 text-purple-600 mr-3" />
               <h2 className="text-xl font-semibold text-gray-900">
-                All Jobs ({showAllJobs && allJobs.length > 0 ? allJobs.length : organization.activeJobs})
+                All Jobs ({allJobs.length})
               </h2>
             </div>
             {showAllJobs ? (
@@ -347,7 +347,7 @@ const OrganizationDetailPage: React.FC = () => {
                   <p className="text-sm text-gray-600 mb-3 line-clamp-2">{dept.description}</p>
                   
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Jobs: <span className="font-medium text-gray-900">{dept.activeJobs}</span></span>
+                    <span className="text-gray-500">Jobs: <span className="font-medium text-gray-900">{dept.totalJobs}</span></span>
                     <span className="text-gray-500">Employees: <span className="font-medium text-gray-900">{dept.totalEmployees}</span></span>
                   </div>
                 </Link>
@@ -393,7 +393,7 @@ const OrganizationDetailPage: React.FC = () => {
                         {dept.manager}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {dept.activeJobs}
+                        {dept.totalJobs}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {dept.totalEmployees}

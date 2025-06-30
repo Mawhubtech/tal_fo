@@ -32,7 +32,7 @@ const DepartmentsPage: React.FC = () => {
 
   const totalStats = {
     departments: departments.length,
-    activeJobs: departments.reduce((sum, dept) => sum + dept.activeJobs, 0),
+    activeJobs: departments.reduce((sum, dept) => sum + dept.totalJobs, 0),
     totalEmployees: departments.reduce((sum, dept) => sum + dept.totalEmployees, 0)
   };
 
@@ -111,7 +111,7 @@ const DepartmentsPage: React.FC = () => {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{totalStats.activeJobs}</p>
-              <p className="text-sm text-gray-500">Active Jobs</p>
+              <p className="text-sm text-gray-500">Total Jobs</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{totalStats.totalEmployees.toLocaleString()}</p>
@@ -169,8 +169,8 @@ const DepartmentsPage: React.FC = () => {
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                 <div className="text-center">
-                  <p className="text-lg font-bold text-gray-900">{dept.activeJobs}</p>
-                  <p className="text-xs text-gray-500">Active Jobs</p>
+                  <p className="text-lg font-bold text-gray-900">{dept.totalJobs}</p>
+                  <p className="text-xs text-gray-500">Total Jobs</p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-bold text-gray-900">{dept.totalEmployees}</p>
