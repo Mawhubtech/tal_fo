@@ -16,7 +16,7 @@ import {
   Trash2,
   Eye
 } from 'lucide-react';
-import { jobApiService, type JobFilters } from '../services/jobApiService';
+import { jobApiService, type JobFilters } from '../../../services/jobApiService';
 import type { Job } from '../../data/types';
 
 const AllJobsPage: React.FC = () => {

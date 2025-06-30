@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus
 } from 'lucide-react';
-import { jobApiService } from '../../jobs/services/jobApiService';
-import { jobApplicationApiService } from '../../jobs/services/jobApplicationApiService';
+import { useJob } from '../../../hooks/useJobs';
+import { useJobApplicationsByJob, useUpdateJobApplication, useDeleteJobApplication } from '../../../hooks/useJobApplications';
 import { useTaskStats } from '../../../hooks/useTasks';
 import { useInterviews } from '../../../hooks/useInterviews';
 import { useJobReport } from '../../../hooks/useReports';
@@ -20,25 +20,35 @@ const JobATSPage: React.FC = () => {
 	organizationId: string; 
 	departmentId: string; 
 	jobId: string; 
-  }>();  const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
-  const [job, setJob] = useState<JobType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
+  }>();
+
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   
-  // Use React Query hook for task stats
+  // Use React Query hooks
+  const { 
+    data: job, 
+    isLoading: jobLoading, 
+    error: jobError 
+  } = useJob(jobId || '');
+  
+  const { 
+    data: jobApplicationsData, 
+    isLoading: applicationsLoading, 
+    error: applicationsError,
+    refetch: refetchApplications
+  } = useJobApplicationsByJob(jobId || '');
+  
+  const updateJobApplicationMutation = useUpdateJobApplication();
+  const deleteJobApplicationMutation = useDeleteJobApplication();
+  
   const { data: taskStats } = useTaskStats(jobId || '');
-  
-  // Use React Query hook for interview stats
   const { data: interviewsData } = useInterviews(jobId ? { jobId } : undefined);
-  
-  // Use React Query hook for job reports
   const { data: reportData, isLoading: reportLoading, error: reportError } = useJobReport(jobId || '');
   
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [candidateToRemove, setCandidateToRemove] = useState<any>(null);
-  const [removing, setRemoving] = useState(false);
 
   // Pipeline states
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -48,40 +58,12 @@ const JobATSPage: React.FC = () => {
   // Calendar view states (for tasks only)
   const [tasksView, setTasksView] = useState<'list' | 'calendar'>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
-  useEffect(() => {
-    const loadJobAndApplications = async () => {
-      if (!jobId || !organizationId || !departmentId) {
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        
-        // Load job data
-        const jobData = await jobApiService.getJobById(jobId);
-        
-        // Verify it belongs to the correct organization and department
-        if (jobData.organizationId === organizationId && jobData.departmentId === departmentId) {
-          setJob(jobData);
-          
-          // Load job applications for this job
-          const { applications } = await jobApplicationApiService.getJobApplicationsByJobId(jobId);
-          setJobApplications(applications);
-        } else {
-          setJob(null);
-          setJobApplications([]);
-        }
-      } catch (error) {
-        console.error('Error loading job and applications:', error);
-        setJob(null);
-        setJobApplications([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadJobAndApplications();
-  }, [jobId, organizationId, departmentId]);  // Helper function to map backend stage to frontend stage
+  
+  // Get job applications from React Query data
+  const jobApplications = jobApplicationsData?.applications || [];
+  
+  // Loading state
+  const loading = jobLoading || applicationsLoading;  // Helper function to map backend stage to frontend stage
   const mapStageToFrontend = (backendStage: string) => {
     const stageMap: Record<string, string> = {
       'Application': 'Applied',
@@ -149,7 +131,7 @@ const JobATSPage: React.FC = () => {
     };
     return stageMap[frontendStage] || 'Application';
   };  const handleCandidateUpdate = async (updatedCandidate: any) => {
-    // Find the current candidate in our local state
+    // Find the current candidate in our local data
     const currentApplication = jobApplications.find(app => 
       app.candidate?.id === updatedCandidate.id || app.candidateId === updatedCandidate.id
     );
@@ -157,62 +139,33 @@ const JobATSPage: React.FC = () => {
     if (!currentApplication) {
       console.error('Could not find application for candidate:', updatedCandidate.id);
       return;
-    }    // Optimistically update the local state immediately
+    }
+
+    // Map frontend stage to backend stage
     const backendStage = mapStageToBackend(updatedCandidate.stage) as 'Application' | 'Screening' | 'Interview' | 'Decision' | 'Offer' | 'Hired';
-    const optimisticApplications = jobApplications.map(app => {
-      if (app.id === currentApplication.id) {
-        return {
-          ...app,
-          status: updatedCandidate.status || app.status,
+    
+    try {
+      // Update using React Query mutation
+      await updateJobApplicationMutation.mutateAsync({
+        id: currentApplication.id,
+        data: {
+          status: updatedCandidate.status,
           stage: backendStage,
-          score: updatedCandidate.score !== undefined ? updatedCandidate.score : app.score,
-          notes: updatedCandidate.notes !== undefined ? updatedCandidate.notes : app.notes,
-          lastActivityDate: new Date().toISOString(),
-        } as JobApplication;
-      }
-      return app;
-    });
-
-    // Update local state immediately for better UX
-    setJobApplications(optimisticApplications);
-
-    try {      // Update the backend
-      await jobApplicationApiService.updateJobApplication(currentApplication.id, {
-        status: updatedCandidate.status,
-        stage: backendStage,
-        score: updatedCandidate.score,
-        notes: updatedCandidate.notes,
+          score: updatedCandidate.score,
+          notes: updatedCandidate.notes,
+        }
       });
       
-      // Optionally reload from backend to ensure consistency (but do this silently)
-      setTimeout(async () => {
-        try {
-          const { applications } = await jobApplicationApiService.getJobApplicationsByJobId(jobId!);
-          setJobApplications(applications);
-        } catch (error) {
-          console.error('Error syncing with backend:', error);
-        }
-      }, 1000); // Wait 1 second before syncing
-      
+      // React Query will automatically update the cache
     } catch (error) {
       console.error('Error updating candidate:', error);
-      
-      // Revert the optimistic update on error
-      setJobApplications(jobApplications);
-      
-      // Show error message to user
       toast.error('Update Failed', 'Failed to update candidate. Please try again.');
     }
   };
 
   const handleCandidateAdded = async () => {
-    // Reload job applications when a new candidate is added
-    try {
-      const { applications } = await jobApplicationApiService.getJobApplicationsByJobId(jobId!);
-      setJobApplications(applications);
-    } catch (error) {
-      console.error('Error reloading applications:', error);
-    }
+    // Refetch job applications when a new candidate is added
+    refetchApplications();
   };
 
   const handleCandidateRemove = async (candidate: any) => {
@@ -238,13 +191,8 @@ const JobATSPage: React.FC = () => {
     const { candidate, application } = candidateToRemove;
 
     try {
-      setRemoving(true);
-      
-      // Delete the job application (this removes the candidate from this job)
-      await jobApplicationApiService.deleteJobApplication(application.id);
-      
-      // Remove from local state
-      setJobApplications(prev => prev.filter(app => app.id !== application.id));
+      // Delete using React Query mutation
+      await deleteJobApplicationMutation.mutateAsync(application.id);
       
       // Close dialog and reset state
       setShowDeleteConfirmation(false);
@@ -256,8 +204,6 @@ const JobATSPage: React.FC = () => {
     } catch (error) {
       console.error('Error removing candidate:', error);
       toast.error('Error', 'Failed to remove candidate. Please try again.');
-    } finally {
-      setRemoving(false);
     }
   };
 
@@ -485,7 +431,7 @@ const JobATSPage: React.FC = () => {
 		}
 		confirmText="Remove"
 		cancelText="Cancel"
-		loading={removing}
+		loading={deleteJobApplicationMutation.isPending}
 		variant="danger"
 	  />
 

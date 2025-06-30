@@ -1,5 +1,5 @@
-import apiClient from '../../../services/api';
-import type { Job, ApiResponse, PaginatedResponse } from '../../data/types';
+import apiClient from './api';
+import type { Job, ApiResponse, PaginatedResponse } from '../recruitment/data/types';
 
 export interface CreateJobData {
   title: string;

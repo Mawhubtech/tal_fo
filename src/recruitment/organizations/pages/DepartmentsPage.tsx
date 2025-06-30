@@ -1,35 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Building, Users, ChevronRight, Search, ArrowLeft } from 'lucide-react';
-import { OrganizationApiService, type Organization, type Department } from '../services/organizationApiService';
+import { useOrganization } from '../../../hooks/useOrganizations';
+import { useDepartmentsByOrganization } from '../../../hooks/useDepartments';
 
 const DepartmentsPage: React.FC = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
   const [searchTerm, setSearchTerm] = useState('');
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
-  const organizationApiService = new OrganizationApiService();
+  
+  // Use React Query hooks
+  const { 
+    data: organization, 
+    isLoading: organizationLoading, 
+    error: organizationError 
+  } = useOrganization(organizationId || '');
+  
+  const { 
+    data: departments = [], 
+    isLoading: departmentsLoading, 
+    error: departmentsError 
+  } = useDepartmentsByOrganization(organizationId || '');
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!organizationId) return;      try {
-        const [orgData, deptData] = await Promise.all([
-          organizationApiService.getOrganizationById(organizationId),
-          organizationApiService.getDepartmentsByOrganization(organizationId)
-        ]);
-
-        setOrganization(orgData);
-        setDepartments(deptData);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [organizationId]);
+  const loading = organizationLoading || departmentsLoading;
+  const error = organizationError || departmentsError;
 
   const filteredDepartments = departments.filter(dept =>
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

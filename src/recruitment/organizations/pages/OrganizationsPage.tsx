@@ -1,56 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Building, Users, Briefcase, ChevronRight, Search } from 'lucide-react';
-import { OrganizationApiService, type Organization } from '../services/organizationApiService';
+import { type Organization } from '../services/organizationApiService';
+import { useOrganizations, useOrganizationStats, usePrefetchOrganization } from '../../../hooks/useOrganizations';
 
-const OrganizationsPage: React.FC = () => {  const [searchTerm, setSearchTerm] = useState('');
+const OrganizationsPage: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState<string>('all');
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    organizations: 0,
-    departments: 0,
-    activeJobs: 0,
-    employees: 0
-  });
+  
+  // React Query hooks
+  const { 
+    data: organizations = [], 
+    isLoading: organizationsLoading, 
+    error: organizationsError 
+  } = useOrganizations();
+  
+  const { 
+    data: stats = { organizations: 0, departments: 0, activeJobs: 0, employees: 0 }, 
+    isLoading: statsLoading 
+  } = useOrganizationStats();
+  
+  const prefetchOrganization = usePrefetchOrganization();
 
-  const organizationApiService = new OrganizationApiService();  useEffect(() => {
-    const loadOrganizations = async () => {
-      try {
-        const [data, statsData] = await Promise.all([
-          organizationApiService.getAllOrganizations(),
-          organizationApiService.getStats()
-        ]);
-        setOrganizations(data);
-        setStats(statsData);
-      } catch (error) {
-        console.error('Failed to load organizations:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Memoized filtered organizations
+  const filteredOrganizations = useMemo(() => {
+    return organizations.filter(org => {
+      const matchesSearch = org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           org.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           org.location.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesIndustry = industryFilter === 'all' || org.industry === industryFilter;
+      
+      return matchesSearch && matchesIndustry;
+    });
+  }, [organizations, searchTerm, industryFilter]);
 
-    loadOrganizations();
-  }, []);
+  // Memoized industries
+  const industries = useMemo(() => {
+    return [...new Set(organizations.map(org => org.industry))];
+  }, [organizations]);
 
-  const filteredOrganizations = organizations.filter(org => {
-    const matchesSearch = org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         org.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         org.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesIndustry = industryFilter === 'all' || org.industry === industryFilter;
-    
-    return matchesSearch && matchesIndustry;
-  });
-  const industries = [...new Set(organizations.map(org => org.industry))];
+  // Handle organization hover for prefetching
+  const handleOrganizationHover = (organizationId: string) => {
+    prefetchOrganization(organizationId);
+  };
 
-  // Use calculated stats from API instead of local calculation
+  const loading = organizationsLoading || statsLoading;
+
   if (loading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
           <p className="text-gray-500 mt-4">Loading organizations...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (organizationsError) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Organizations</h3>
+          <p className="text-gray-500 mb-4">Failed to load organizations. Please try again.</p>
         </div>
       </div>
     );
@@ -162,6 +176,7 @@ const OrganizationsPage: React.FC = () => {  const [searchTerm, setSearchTerm] =
           <Link
             key={org.id}
             to={`/dashboard/organizations/${org.id}`}
+            onMouseEnter={() => handleOrganizationHover(org.id)}
             className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200"
           >
             <div className="p-6">
@@ -183,7 +198,8 @@ const OrganizationsPage: React.FC = () => {  const [searchTerm, setSearchTerm] =
               <p className="text-sm text-gray-600 mb-4 line-clamp-2">{org.description}</p>
 
               {/* Location */}
-              <p className="text-sm text-gray-500 mb-4">{org.location}</p>              {/* Stats */}
+              <p className="text-sm text-gray-500 mb-4">{org.location}</p>             
+			   {/* Stats */}
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
                 <div className="text-center">
                   <p className="text-sm font-medium text-gray-900">{org.departmentCount || 0}</p>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { jobApiService, type CreateJobData } from '../services/jobApiService';
+import { jobApiService, type CreateJobData } from '../../../services/jobApiService';
 import { OrganizationApiService, type Organization, type Department } from '../../organizations/services/organizationApiService';
 
 const CreateJobPage: React.FC = () => {

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Briefcase, MapPin, DollarSign, 
   Search, Grid3X3, List, ChevronRight, Plus,
   Edit3, Trash2, Eye, Loader
 } from 'lucide-react';
-import { OrganizationApiService, type Organization, type Department } from '../services/organizationApiService';
-import { jobApiService } from '../../jobs/services/jobApiService';
+import { useOrganization } from '../../../hooks/useOrganizations';
+import { useDepartment, useJobsByDepartment } from '../../../hooks/useDepartments';
+import { useDeleteJob } from '../../../hooks/useJobs';
 import type { Job } from '../../data/types';
 
 const DepartmentJobsPage: React.FC = () => {
@@ -18,54 +19,35 @@ const DepartmentJobsPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   
-  // State for data
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [department, setDepartment] = useState<Department | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use React Query hooks
+  const { 
+    data: organization, 
+    isLoading: organizationLoading, 
+    error: organizationError 
+  } = useOrganization(organizationId || '');
+  
+  const { 
+    data: department, 
+    isLoading: departmentLoading, 
+    error: departmentError 
+  } = useDepartment(organizationId || '', departmentId || '');
+  
+  const { 
+    data: jobsData, 
+    isLoading: jobsLoading, 
+    error: jobsError 
+  } = useJobsByDepartment(organizationId || '', departmentId || '');
+  
+  const deleteJobMutation = useDeleteJob();
 
   // Edit and delete states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const organizationApiService = new OrganizationApiService();
-
-  // Load data
-  useEffect(() => {
-    const loadData = async () => {
-      if (!organizationId || !departmentId) {
-        setError('Missing organization or department ID');
-        setLoading(false);
-        return;
-      }
-
-      try {        setLoading(true);
-          // Load organization
-        const orgData = await organizationApiService.getOrganizationById(organizationId);
-        setOrganization(orgData);
-        
-        // Load department
-        const deptData = await organizationApiService.getDepartmentById(organizationId, departmentId);
-        setDepartment(deptData);
-
-        // Load jobs for department
-        const jobsResponse = await organizationApiService.getJobsByDepartment(organizationId, departmentId);
-        setJobs(jobsResponse.data);
-        
-        setError(null);
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError('Failed to load data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [organizationId, departmentId]);  // Filter jobs
+  const loading = organizationLoading || departmentLoading || jobsLoading;
+  const error = organizationError || departmentError || jobsError;
+  const jobs = jobsData?.data || [];  // Filter jobs
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (job.skills && job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));
@@ -123,13 +105,11 @@ const DepartmentJobsPage: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (!jobToDelete) return;
 
-    setDeleteLoading(true);
     setDeleteError(null); // Clear any previous errors
     
     try {
-      await jobApiService.deleteJob(jobToDelete.id);
-      // Remove job from local state
-      setJobs(prev => prev.filter(job => job.id !== jobToDelete.id));
+      await deleteJobMutation.mutateAsync(jobToDelete.id);
+      // React Query will automatically update the cache
       // Only close dialog on success
       setShowDeleteDialog(false);
       setJobToDelete(null);
@@ -150,8 +130,6 @@ const DepartmentJobsPage: React.FC = () => {
       
       setDeleteError(errorMessage);
       // Don't close dialog on error - let user see the error and try again
-    } finally {
-      setDeleteLoading(false);
     }
   };
 
@@ -173,15 +151,18 @@ const DepartmentJobsPage: React.FC = () => {
   }
 
   if (error || !organization || !department) {
+    const errorMessage = error?.message || error || 'Page not found';
+    const errorDescription = error?.message || error || "The organization or department you're looking for doesn't exist.";
+    
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
           <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {error || 'Page not found'}
+            {typeof errorMessage === 'string' ? errorMessage : 'Page not found'}
           </h3>
           <p className="text-gray-500 mb-4">
-            {error || "The organization or department you're looking for doesn't exist."}
+            {typeof errorDescription === 'string' ? errorDescription : "The organization or department you're looking for doesn't exist."}
           </p>
           <Link 
             to="/dashboard/organizations" 
@@ -542,21 +523,21 @@ const DepartmentJobsPage: React.FC = () => {
               <button
                 onClick={handleDeleteCancel}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                disabled={deleteLoading}
+                disabled={deleteJobMutation.isPending}
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={deleteLoading}
+                disabled={deleteJobMutation.isPending}
               >
-                {deleteLoading ? (
+                {deleteJobMutation.isPending ? (
                   <Loader className="animate-spin h-5 w-5 mr-2" />
                 ) : (
                   <Trash2 className="h-5 w-5 mr-2" />
                 )}
-                {deleteLoading ? 'Deleting...' : 'Delete Job'}
+                {deleteJobMutation.isPending ? 'Deleting...' : 'Delete Job'}
               </button>
             </div>
           </div>

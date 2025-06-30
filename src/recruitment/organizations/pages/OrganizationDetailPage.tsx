@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Plus, Users, Briefcase, Building, 
   MapPin, Search, Grid3X3, List, ChevronDown, ChevronUp, Clock
 } from 'lucide-react';
-import { OrganizationApiService, type Organization, type Department } from '../services/organizationApiService';
+import { useOrganization, useOrganizationDepartments, useOrganizationJobs } from '../../../hooks/useOrganizations';
+import type { Organization, Department } from '../services/organizationApiService';
 import type { Job } from '../../data/types';
 
 const OrganizationDetailPage: React.FC = () => {
@@ -14,67 +15,29 @@ const OrganizationDetailPage: React.FC = () => {
   const [showAllJobs, setShowAllJobs] = useState(false);
   const [jobsSearchTerm, setJobsSearchTerm] = useState('');
   
-  // State for data
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [allJobs, setAllJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingJobs, setLoadingJobs] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-    const organizationApiService = new OrganizationApiService();
+  // React Query hooks
+  const { 
+    data: organization, 
+    isLoading: organizationLoading, 
+    error: organizationError 
+  } = useOrganization(organizationId || '');
+  
+  const { 
+    data: departments = [], 
+    isLoading: departmentsLoading, 
+    error: departmentsError 
+  } = useOrganizationDepartments(organizationId || '');
+  
+  const { 
+    data: allJobsResponse, 
+    isLoading: jobsLoading, 
+    error: jobsError 
+  } = useOrganizationJobs(organizationId || '', { enabled: showAllJobs });
 
-  // Load data
-  useEffect(() => {
-    const loadData = async () => {
-      if (!organizationId) {
-        setError('Missing organization ID');
-        setLoading(false);
-        return;
-      }
-
-      try {        setLoading(true);
-        
-        // Load organization
-        const orgData = await organizationApiService.getOrganizationById(organizationId);
-        setOrganization(orgData);
-
-        if (!orgData) {
-          setError('Organization not found');
-          return;
-        }
-        
-        // Load departments
-        const deptData = await organizationApiService.getDepartmentsByOrganization(organizationId);
-        setDepartments(deptData);
-        
-        setError(null);
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError('Failed to load data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [organizationId]);
-
-  // Load all jobs when showAllJobs is toggled
-  useEffect(() => {
-    const loadAllJobs = async () => {
-      if (!showAllJobs || !organizationId) return;      try {
-        setLoadingJobs(true);
-        const jobsResponse = await organizationApiService.getJobsByOrganization(organizationId);
-        setAllJobs(jobsResponse.data);
-      } catch (err) {
-        console.error('Error loading jobs:', err);
-      } finally {
-        setLoadingJobs(false);
-      }
-    };
-
-    loadAllJobs();
-  }, [showAllJobs, organizationId]);
+  const allJobs = allJobsResponse?.data || [];
+  const loading = organizationLoading || departmentsLoading;
+  const loadingJobs = jobsLoading;
+  const errorMessage = organizationError?.message || departmentsError?.message;
 
   // Filter departments
   const filteredDepartments = departments.filter(dept =>
@@ -132,16 +95,16 @@ const OrganizationDetailPage: React.FC = () => {
     );
   }
 
-  if (error || !organization) {
+  if (errorMessage || !organization) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
           <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {error || 'Organization not found'}
+            {errorMessage || 'Organization not found'}
           </h3>
           <p className="text-gray-500 mb-4">
-            {error || "The organization you're looking for doesn't exist."}
+            {errorMessage || "The organization you're looking for doesn't exist."}
           </p>
           <Link 
             to="/dashboard/organizations" 
@@ -228,7 +191,7 @@ const OrganizationDetailPage: React.FC = () => {
             <div className="flex items-center">
               <Briefcase className="w-5 h-5 text-purple-600 mr-3" />
               <h2 className="text-xl font-semibold text-gray-900">
-                All Jobs ({organization.activeJobs})
+                All Jobs ({showAllJobs && allJobs.length > 0 ? allJobs.length : organization.activeJobs})
               </h2>
             </div>
             {showAllJobs ? (

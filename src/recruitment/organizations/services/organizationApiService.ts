@@ -1,5 +1,5 @@
 import { ClientApiService, Client, ClientQueryParams, ClientsResponse } from '../../../services/clientApiService';
-import { jobApiService } from '../../jobs/services/jobApiService';
+import { jobApiService } from '../../../services/jobApiService';
 import { DepartmentApiService, Department as BackendDepartment } from './departmentApiService';
 
 // Type mapping interface - clients ARE organizations
@@ -35,6 +35,7 @@ export class OrganizationApiService {
    */
   private async mapClientToOrganization(client: Client, includeDepartmentCount: boolean = false): Promise<Organization> {
     let departmentCount = 0;
+    let activeJobs = 0;
     
     if (includeDepartmentCount) {
       try {
@@ -44,13 +45,23 @@ export class OrganizationApiService {
         console.error('Error getting department count:', error);
       }
     }
+
+    // Get actual active jobs count from jobs table instead of using client.openJobs
+    try {
+      const jobStats = await jobApiService.getJobStats(client.id);
+      activeJobs = jobStats.active;
+    } catch (error) {
+      console.error('Error getting active jobs count:', error);
+      // Fallback to client.openJobs if job stats API fails
+      activeJobs = client.openJobs;
+    }
     
     return {
       id: client.id,
       name: client.name,
       description: client.description || '',
       departmentCount,
-      activeJobs: client.openJobs,
+      activeJobs,
       totalEmployees: client.employees,
       logoUrl: client.logoUrl,
       industry: client.industry,
@@ -258,16 +269,23 @@ export class OrganizationApiService {
 
     // Count unique departments across all organizations
     const departmentSet = new Set<string>();
+    // Count actual active jobs from jobs table
+    let activeJobsCount = 0;
+    
     allJobsResponse.data.forEach(job => {
       if (job.organizationId && (job.departmentId || job.department)) {
         departmentSet.add(`${job.organizationId}-${job.departmentId || job.department}`);
+      }
+      // Count active jobs
+      if (job.status.toLowerCase() === 'active') {
+        activeJobsCount++;
       }
     });
 
     return {
       organizations: clientStats.total,
       departments: departmentSet.size,
-      activeJobs: clientStats.totalOpenJobs,
+      activeJobs: activeJobsCount,
       employees: 0, // Sum from individual clients if needed
     };
   }
