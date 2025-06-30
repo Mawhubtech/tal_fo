@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
@@ -16,14 +16,12 @@ import {
   Trash2,
   Eye
 } from 'lucide-react';
-import { jobApiService, type JobFilters } from '../../../services/jobApiService';
+import { useJobs, useDeleteJob } from '../../../hooks/useJobs';
+import type { JobFilters } from '../../../services/jobApiService';
 import type { Job } from '../../data/types';
 
 const AllJobsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<JobFilters>({
     page: 1,
@@ -31,40 +29,31 @@ const AllJobsPage: React.FC = () => {
     sortBy: 'createdAt',
     sortOrder: 'DESC'
   });
-  const [pagination, setPagination] = useState({
-    total: 0,
-    page: 1,
-    limit: 10
-  });
 
   // Delete dialog states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Load jobs
-  useEffect(() => {
-    loadJobs();
-  }, [filters]);
+  // Use hooks for data fetching
+  const { 
+    data: jobsResponse,
+    isLoading: loading,
+    error: queryError,
+    refetch: loadJobs
+  } = useJobs(filters);
 
-  const loadJobs = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await jobApiService.getAllJobs(filters);
-      setJobs(response.data);
-      setPagination({
-        total: response.total,
-        page: response.page,
-        limit: response.limit
-      });
-    } catch (err) {
-      setError('Failed to load jobs. Please try again.');
-      console.error('Error loading jobs:', err);
-    } finally {
-      setLoading(false);
-    }
+  const deleteJobMutation = useDeleteJob();
+
+  // Extract data from response or use defaults
+  const jobs = jobsResponse?.data || [];
+  const pagination = {
+    total: jobsResponse?.total || 0,
+    page: jobsResponse?.page || 1,
+    limit: jobsResponse?.limit || 10
   };
+  
+  // Convert error to string format
+  const error = queryError ? 'Failed to load jobs. Please try again.' : null;
 
   const handleSearch = () => {
     setFilters(prev => ({
@@ -103,20 +92,13 @@ const AllJobsPage: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (!jobToDelete) return;
 
-    setDeleteLoading(true);
     try {
-      await jobApiService.deleteJob(jobToDelete.id);
-      // Remove job from local state
-      setJobs(prev => prev.filter(job => job.id !== jobToDelete.id));
+      await deleteJobMutation.mutateAsync(jobToDelete.id);
       setShowDeleteDialog(false);
       setJobToDelete(null);
-      // Update pagination total
-      setPagination(prev => ({ ...prev, total: prev.total - 1 }));
     } catch (error) {
       console.error('Error deleting job:', error);
-      setError('Failed to delete job. Please try again.');
-    } finally {
-      setDeleteLoading(false);
+      // Error handling is managed by React Query, but we could add a toast here
     }
   };
 
@@ -185,7 +167,7 @@ const AllJobsPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Jobs</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={loadJobs}
+            onClick={() => loadJobs()}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
             Try Again
@@ -198,18 +180,20 @@ const AllJobsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">All Jobs</h1>
-          <p className="text-gray-600">Manage all job openings across your organization</p>
+      <div className="bg-white border-2 border-purple-500 rounded-lg p-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">All Jobs</h1>
+            <p className="text-gray-600">Manage all job openings across your organization</p>
+          </div>
+          <Link
+            to="/recruitment/jobs/create"
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2 border border-purple-600"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create Job</span>
+          </Link>
         </div>
-        <Link
-          to="/recruitment/jobs/create"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Create Job</span>
-        </Link>
       </div>
 
       {/* Search and Filters */}
@@ -437,9 +421,9 @@ const AllJobsPage: React.FC = () => {
               <button
                 onClick={handleDeleteConfirm}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2"
-                disabled={deleteLoading}
+                disabled={deleteJobMutation.isPending}
               >
-                {deleteLoading && <Loader className="h-5 w-5 animate-spin" />}
+                {deleteJobMutation.isPending && <Loader className="h-5 w-5 animate-spin" />}
                 <span>Delete Job</span>
               </button>
             </div>

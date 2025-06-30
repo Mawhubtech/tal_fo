@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { jobApiService, type CreateJobData } from '../../../services/jobApiService';
-import { OrganizationApiService, type Organization, type Department } from '../../organizations/services/organizationApiService';
+import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
+import { useOrganization, useOrganizationDepartments } from '../../../hooks/useOrganizations';
+import type { CreateJobData } from '../../../services/jobApiService';
+import type { Department } from '../../organizations/services/organizationApiService';
 
 const CreateJobPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ 
@@ -16,19 +18,31 @@ const CreateJobPage: React.FC = () => {
   const editJobId = searchParams.get('edit');
   const isEditMode = !!editJobId;
   
-  // API services
-  const organizationApiService = new OrganizationApiService();
-  
-  // Context data
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [editingJob, setEditingJob] = useState<any>(null);
+  // Use hooks for data fetching
+  const {
+    data: organization,
+    isLoading: organizationLoading,
+    error: organizationError
+  } = useOrganization(organizationId || '');
 
+  const {
+    data: departments = [],
+    isLoading: departmentsLoading,
+    error: departmentsError
+  } = useOrganizationDepartments(organizationId || '');
+
+  const {
+    data: editingJob,
+    isLoading: jobLoading,
+    error: jobError
+  } = useJob(editJobId || '');
+
+  const createJobMutation = useCreateJob();
+  const updateJobMutation = useUpdateJob();
+  
   // Form state
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [jobTitle, setJobTitle] = useState('');
   const [departmentIdForm, setDepartmentIdForm] = useState('');
   const [location, setLocation] = useState('');
@@ -48,87 +62,56 @@ const CreateJobPage: React.FC = () => {
   const [requirements, setRequirements] = useState(['']);
   const [responsibilities, setResponsibilities] = useState(['']);
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
+
+  // Calculate loading states
+  const loading = organizationLoading || departmentsLoading || (isEditMode && jobLoading);
+  const submitLoading = createJobMutation.isPending || updateJobMutation.isPending;
+
+  // Set selected department when departmentId is available or when departments change
+  useEffect(() => {
+    if (departmentId && departments.length > 0) {
+      const selectedDept = departments.find(dept => dept.id === departmentId);
+      if (selectedDept) {
+        setSelectedDepartment(selectedDept);
+        setDepartmentIdForm(selectedDept.id);
+      }
+    }
+  }, [departmentId, departments]);
+
+  // Populate form fields when editing job data is loaded
+  useEffect(() => {
+    if (editingJob && isEditMode) {
+      setJobTitle(editingJob.title || '');
+      setLocation(editingJob.location || '');
+      setJobDescription(editingJob.description || '');
+      setEmploymentType(editingJob.type || 'Full-time');
+      setExperienceLevel(editingJob.experienceLevel || '');
+      setSalaryMin(editingJob.salaryMin ? editingJob.salaryMin.toString() : '');
+      setSalaryMax(editingJob.salaryMax ? editingJob.salaryMax.toString() : '');
+      setCurrency(editingJob.currency || 'USD');
+      setRemote(editingJob.remote || false);
+      setSkills(editingJob.skills || []);
+      setBenefits(editingJob.benefits || []);
+      setApplicationDeadline(editingJob.applicationDeadline ? 
+        (typeof editingJob.applicationDeadline === 'string' ? editingJob.applicationDeadline : editingJob.applicationDeadline.toISOString().split('T')[0]) 
+        : '');
+      setRequirements(editingJob.requirements || ['']);
+      setResponsibilities(editingJob.responsibilities || ['']);
+      setDepartmentIdForm(editingJob.departmentId || departmentId || '');
+    }
+  }, [editingJob, isEditMode, departmentId]);
   // Load context data when organizationId is present
   useEffect(() => {
-    const loadContextData = async () => {
-      if (!organizationId) return;
-
-      try {
-        setLoading(true);
-        
-        // Load organization
-        const orgData = await organizationApiService.getOrganizationById(organizationId);
-        setOrganization(orgData);
-
-        if (!orgData) {
-          setError('Organization not found');
-          return;
-        }
-
-        // Load departments for this organization
-        const deptData = await organizationApiService.getDepartmentsByOrganization(organizationId);
-        setDepartments(deptData);
-        
-        // If we're in a department context, pre-select that department
-        if (departmentId && deptData.length > 0) {
-          const selectedDept = deptData.find(dept => dept.id === departmentId);
-          if (selectedDept) {
-            setSelectedDepartment(selectedDept);
-            setDepartmentIdForm(selectedDept.id);
-          }
-        }
-        
-        setError(null);
-      } catch (error) {
-        console.error('Error loading context data:', error);
-        setError('Failed to load organization data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadContextData();
-  }, [organizationId, departmentId]);
-  
-  // Load job data when in edit mode
-  useEffect(() => {
-    const loadJobData = async () => {
-      if (!isEditMode || !editJobId) return;
-
-      try {
-        setLoading(true);
-        const jobData = await jobApiService.getJobById(editJobId);
-        setEditingJob(jobData);
-        
-        // Populate form fields with job data
-        setJobTitle(jobData.title || '');
-        setLocation(jobData.location || '');
-        setJobDescription(jobData.description || '');
-        setEmploymentType(jobData.type || 'Full-time');
-        setExperienceLevel(jobData.experienceLevel || '');
-        setSalaryMin(jobData.salaryMin ? jobData.salaryMin.toString() : '');
-        setSalaryMax(jobData.salaryMax ? jobData.salaryMax.toString() : '');
-        setCurrency(jobData.currency || 'USD');
-        setRemote(jobData.remote || false);
-        setSkills(jobData.skills || []);
-        setBenefits(jobData.benefits || []);
-        setApplicationDeadline(jobData.applicationDeadline ? 
-          (typeof jobData.applicationDeadline === 'string' ? jobData.applicationDeadline : jobData.applicationDeadline.toISOString().split('T')[0]) 
-          : '');
-        setRequirements(jobData.requirements || ['']);
-        setResponsibilities(jobData.responsibilities || ['']);
-        setDepartmentIdForm(jobData.departmentId || departmentId || '');
-        
-      } catch (error) {
-        console.error('Error loading job data:', error);
-        setError('Failed to load job data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadJobData();
-  }, [isEditMode, editJobId]);
+    if (organizationError) {
+      setError('Failed to load organization data. Please try again.');
+    } else if (departmentsError) {
+      setError('Failed to load departments. Please try again.');
+    } else if (jobError && isEditMode) {
+      setError('Failed to load job data. Please try again.');
+    } else {
+      setError(null);
+    }
+  }, [organizationError, departmentsError, jobError, isEditMode]);
 
   const addSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
@@ -180,7 +163,6 @@ const CreateJobPage: React.FC = () => {
     setResponsibilities(responsibilities.filter((_, i) => i !== index));
   };  const handleSubmit = async (publish: boolean) => {
     try {
-      setSubmitLoading(true);
       setError(null);
 
       // Validate required fields
@@ -245,10 +227,10 @@ const CreateJobPage: React.FC = () => {
       let resultJob;
       if (isEditMode && editJobId) {
         // Update existing job
-        resultJob = await jobApiService.updateJob(editJobId, jobData);
+        resultJob = await updateJobMutation.mutateAsync({ id: editJobId, data: jobData });
       } else {
         // Create new job
-        resultJob = await jobApiService.createJob(jobData);
+        resultJob = await createJobMutation.mutateAsync(jobData);
       }
       
       // Navigate to the job ATS page within the organization context
@@ -260,8 +242,6 @@ const CreateJobPage: React.FC = () => {
     } catch (err: any) {
       setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`);
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} job:`, err);
-    } finally {
-      setSubmitLoading(false);
     }
   };
 
@@ -299,13 +279,13 @@ const CreateJobPage: React.FC = () => {
   }
 
   // Show error state
-  if (error && !organization) {
+  if ((organizationError || departmentsError) && !organization) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
           <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Organization</h3>
-          <p className="text-gray-500 mb-4">{error}</p>
+          <p className="text-gray-500 mb-4">{error || 'Failed to load organization data'}</p>
           <Link 
             to="/dashboard/organizations" 
             className="text-purple-600 hover:text-purple-700 font-medium"
@@ -402,7 +382,7 @@ const CreateJobPage: React.FC = () => {
                 type="button"
                 onClick={() => handleSubmit(true)}
                 disabled={submitLoading}
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-4 py-2 bg-purple-600 border border-purple-600 text-white rounded-lg hover:bg-purple-700 hover:border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {submitLoading ? (
                   <>
@@ -421,11 +401,11 @@ const CreateJobPage: React.FC = () => {
           <div className="overflow-y-auto lg:pr-4 h-full pb-20">
             <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
           {/* Job Overview */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
               <div className="flex items-center">
-                <Building className="text-white mr-3" size={24} />
-                <h2 className="text-xl font-semibold text-white">Job Overview</h2>
+                <Building className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Job Overview</h2>
               </div>
             </div>
             <div className="p-6 space-y-6">
@@ -561,11 +541,11 @@ const CreateJobPage: React.FC = () => {
           </div>
 
           {/* Compensation */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
               <div className="flex items-center">
-                <DollarSign className="text-white mr-3" size={24} />
-                <h2 className="text-xl font-semibold text-white">Compensation</h2>
+                <DollarSign className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Compensation</h2>
               </div>
             </div>
             <div className="p-6">
@@ -615,11 +595,11 @@ const CreateJobPage: React.FC = () => {
               </div>
             </div>
           </div>          {/* Job Description */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
               <div className="flex items-center">
-                <FileText className="text-white mr-3" size={24} />
-                <h2 className="text-xl font-semibold text-white">Job Description</h2>
+                <FileText className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Job Description</h2>
               </div>
             </div>
             <div className="p-6 space-y-6">
@@ -711,11 +691,11 @@ const CreateJobPage: React.FC = () => {
           </div>
 
           {/* Skills & Benefits */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
               <div className="flex items-center">
-                <Settings className="text-white mr-3" size={24} />
-                <h2 className="text-xl font-semibold text-white">Skills & Benefits</h2>
+                <Settings className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Skills & Benefits</h2>
               </div>
             </div>
             <div className="p-6 space-y-6">
@@ -794,7 +774,7 @@ const CreateJobPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={addBenefit}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    className="px-6 py-3 bg-purple-600 border border-purple-600 text-white rounded-lg hover:bg-purple-700 hover:border-purple-700 transition-colors font-medium"
                   >
                     Add
                   </button>
@@ -802,11 +782,11 @@ const CreateJobPage: React.FC = () => {
               </div>
             </div>
           </div>          {/* Hiring Process */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
               <div className="flex items-center">
-                <Users className="text-white mr-3" size={24} />
-                <h2 className="text-xl font-semibold text-white">Hiring Process</h2>
+                <Users className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Hiring Process</h2>
               </div>
             </div>
             <div className="p-6 space-y-6">
@@ -871,8 +851,8 @@ const CreateJobPage: React.FC = () => {
       </div>        {/* Sidebar - Takes up 1/2 space on large screens, full width on smaller */}      
 	  <div className="h-full">
         {/* Live Job Preview */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden h-full flex flex-col relative">          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex-shrink-0 sticky top-0 z-10">
-            <h3 className="text-lg font-semibold text-white">📋 Live Preview</h3>
+        <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden h-full flex flex-col relative">          <div className="bg-white border-b-2 border-purple-600 px-6 py-4 flex-shrink-0 sticky top-0 z-10">
+            <h3 className="text-lg font-semibold text-purple-600">📋 Live Preview</h3>
           </div>
           <div className="p-6 overflow-y-auto overflow-x-hidden flex-grow max-h-[calc(100vh-200px)]">
             <div className="space-y-6">{/* Job Title */}
@@ -1017,9 +997,9 @@ const CreateJobPage: React.FC = () => {
               </div>
             </div>      </div>
         </div>        {/* Progress Indicator - Hidden on larger screens since sidebar is already full height */}
-        <div className="lg:hidden bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-6 mb-24">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-            <h3 className="text-lg font-semibold text-white">📊 Completion</h3>
+        <div className="lg:hidden bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden mt-6 mb-24">
+          <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
+            <h3 className="text-lg font-semibold text-purple-600">📊 Completion</h3>
           </div>
           <div className="p-6">
             <div className="space-y-3">              <div className="flex justify-between text-sm">
@@ -1048,7 +1028,7 @@ const CreateJobPage: React.FC = () => {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
                 <div 
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"                  style={{
+                  className="bg-purple-600 h-2 rounded-full transition-all duration-300"                  style={{
                     width: `${Math.round(
                       ((jobTitle && departmentIdForm && location ? 25 : 0) +
                        (jobDescription ? 25 : 0) +
@@ -1059,7 +1039,9 @@ const CreateJobPage: React.FC = () => {
                 ></div>
               </div>
             </div>
-          </div>        </div>      </div>        
+          </div>       
+		   </div>     
+		    </div>        
         </div>
       </div>
     </div>
