@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { 
-  Users, UserPlus, Building, Target, BarChart3, Settings, 
+  Users, UserPlus, Building, Target, BarChart3, Settings, GitBranch,
    Bell, Search, Shield, ChevronRight,
   Activity, Database, Lock,
   LayoutDashboard
@@ -29,6 +29,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/dashboard/admin/user-management',
       icon: Users,
       description: 'Manage system users and permissions'
+    },
+    {
+      id: 'pipelines',
+      label: 'Pipelines',
+      path: '/dashboard/admin/pipelines',
+      icon: GitBranch,
+      description: 'Create and manage recruitment pipelines'
     },
     {
       id: 'candidate-profiles',
