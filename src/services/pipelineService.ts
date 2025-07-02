@@ -86,6 +86,33 @@ export const pipelineService = {
     return data.pipelines || data; // Handle both response formats
   },
 
+  async getUserDefaultPipeline(): Promise<Pipeline | null> {
+    const response = await fetch(`${config.apiBaseUrl}/pipelines?isDefault=true&status=active&createdByMe=true`, {
+      headers: getAuthHeaders(),
+    });
+    
+    const data = await handleResponse(response);
+    const pipelines = data.pipelines || data;
+    
+    if (!Array.isArray(pipelines)) {
+      return null;
+    }
+
+    // Backend handles user filtering via createdByMe=true parameter
+    // Find the default pipeline from the user's own pipelines
+    const userDefault = pipelines.find((p: Pipeline) => p.isDefault && p.status === 'active');
+    return userDefault || null;
+  },
+
+  async getPipelinesByUser(userId: string): Promise<Pipeline[]> {
+    const response = await fetch(`${config.apiBaseUrl}/pipelines?createdById=${userId}&status=active`, {
+      headers: getAuthHeaders(),
+    });
+    
+    const data = await handleResponse(response);
+    return data.pipelines || data || [];
+  },
+
   async createPipeline(pipelineData: CreatePipelineDto): Promise<Pipeline> {
     const response = await fetch(`${config.apiBaseUrl}/pipelines`, {
       method: 'POST',

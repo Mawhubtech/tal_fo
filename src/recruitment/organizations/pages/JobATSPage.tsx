@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
-  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus
+  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle
 } from 'lucide-react';
 import { useJob } from '../../../hooks/useJobs';
 import { usePipeline } from '../../../hooks/usePipelines';
+import { useDefaultPipeline } from '../../../hooks/useDefaultPipeline';
 import { useJobApplicationsByJob, useUpdateJobApplication, useDeleteJobApplication } from '../../../hooks/useJobApplications';
 import { useStageMovement } from '../../../hooks/useStageMovement';
 import { useOptimisticStageMovement } from '../../../hooks/useOptimisticStageMovement';
@@ -36,12 +37,23 @@ const JobATSPage: React.FC = () => {
     error: jobError 
   } = useJob(jobId || '');
   
-  // Get the pipeline for this job
+  // Get the pipeline for this job, or use default if none specified
   const {
     data: jobPipeline,
     isLoading: pipelineLoading,
     error: pipelineError
   } = usePipeline(job?.pipelineId || '');
+
+  // Get or create default pipeline if no pipeline is assigned to job
+  const {
+    defaultPipeline,
+    isLoading: defaultPipelineLoading,
+    createDefaultPipeline,
+    isCreating: isCreatingDefault
+  } = useDefaultPipeline();
+
+  // Determine which pipeline to use
+  const effectivePipeline = job?.pipelineId ? jobPipeline : defaultPipeline;
   
   const { 
     data: jobApplicationsData, 
@@ -78,7 +90,17 @@ const JobATSPage: React.FC = () => {
   const jobApplications = jobApplicationsData?.applications || [];
   
   // Loading state
-  const loading = jobLoading || applicationsLoading || pipelineLoading;  // Helper function to map backend stage to frontend stage
+  const loading = jobLoading || applicationsLoading || pipelineLoading || defaultPipelineLoading;
+
+  // Handler for creating default pipeline
+  const handleCreateDefaultPipeline = async () => {
+    try {
+      await createDefaultPipeline();
+      toast.success('Pipeline Created', 'Default recruitment pipeline has been created successfully.');
+    } catch (error) {
+      toast.error('Creation Failed', 'Failed to create default pipeline. Please try again.');
+    }
+  };  // Helper function to map backend stage to frontend stage
   const mapStageToFrontend = (backendStage: string) => {
     const stageMap: Record<string, string> = {
       'Application': 'Applied',
@@ -169,10 +191,10 @@ const JobATSPage: React.FC = () => {
       : mapStageToFrontend(currentApplication.stage || 'Application');
     const isStageChange = currentStage !== updatedCandidate.stage;
 
-    if (isStageChange && jobPipeline) {
+    if (isStageChange && effectivePipeline) {
       // Handle stage change with proper tracking
       const newStageBackend = mapStageToBackend(updatedCandidate.stage);
-      const newStage = jobPipeline.stages?.find(s => s.name === updatedCandidate.stage);
+      const newStage = effectivePipeline.stages?.find(s => s.name === updatedCandidate.stage);
       
       if (newStage) {
         try {
@@ -306,7 +328,7 @@ const JobATSPage: React.FC = () => {
       app.candidate?.id === candidateId || app.candidateId === candidateId
     );
     
-    if (!currentApplication || !jobPipeline) {
+    if (!currentApplication || !effectivePipeline) {
       console.error('Could not find application or pipeline for candidate:', candidateId);
       toast.error('Move Failed', 'Could not find candidate or pipeline information.');
       return;
@@ -316,7 +338,7 @@ const JobATSPage: React.FC = () => {
     const currentStage = currentApplication.currentPipelineStageName 
       ? currentApplication.currentPipelineStageName 
       : mapStageToFrontend(currentApplication.stage || 'Application');
-    const newStageData = jobPipeline.stages?.find(s => s.name === newStage);
+    const newStageData = effectivePipeline.stages?.find(s => s.name === newStage);
     
     if (!newStageData) {
       console.error('Could not find stage in pipeline:', newStage);
@@ -410,13 +432,15 @@ const JobATSPage: React.FC = () => {
 			<p className="text-gray-600 mt-1">Managing candidates for this specific job</p>
 		  </div>
 		</div>
-				<button 
-		  onClick={() => setShowAddCandidateModal(true)}
-		  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors mr-3"
-		>
-		  <Plus className="w-4 h-4 mr-2" />
-		  Add Candidate
-		</button>
+				{effectivePipeline && (
+				  <button 
+					onClick={() => setShowAddCandidateModal(true)}
+					className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors mr-3"
+				  >
+					<Plus className="w-4 h-4 mr-2" />
+					Add Candidate
+				  </button>
+				)}
 		
 	  </div>
 
@@ -429,11 +453,10 @@ const JobATSPage: React.FC = () => {
 			</div>
 			<div className="ml-4">
 			  <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
-			  <p className="text-gray-600">{job.department} • {job.location} • {job.type}</p>
-			  <p className="text-gray-500 text-sm">
-			    Status: {job.status} • Experience Level: {job.experienceLevel || 'Not specified'}
-			    {jobPipeline && <span> • Pipeline: {jobPipeline.name}</span>}
-			  </p>
+			  <p className="text-gray-600">{job.department} • {job.location} • {job.type}</p>		  <p className="text-gray-500 text-sm">
+		    Status: {job.status} • Experience Level: {job.experienceLevel || 'Not specified'}
+		    {effectivePipeline && <span> • Pipeline: {effectivePipeline.name}</span>}
+		  </p>
 			</div>
 		  </div>		  <div className="text-right">
 			<p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
@@ -441,6 +464,42 @@ const JobATSPage: React.FC = () => {
 		  </div>
 		</div>
 	  </div>
+
+	  {/* No Pipeline Warning */}
+	  {job && !job.pipelineId && !effectivePipeline && !defaultPipelineLoading && (
+		<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+		  <div className="flex items-center justify-between">
+			<div className="flex items-center">
+			  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+				<AlertCircle className="w-6 h-6 text-yellow-600" />
+			  </div>
+			  <div className="ml-4">
+				<h3 className="text-lg font-medium text-yellow-800">No Pipeline Assigned</h3>
+				<p className="text-yellow-700">
+				  This job doesn't have a recruitment pipeline assigned. Create a default pipeline to start managing candidates.
+				</p>
+			  </div>
+			</div>
+			<button
+			  onClick={handleCreateDefaultPipeline}
+			  disabled={isCreatingDefault}
+			  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md flex items-center transition-colors disabled:opacity-50"
+			>
+			  {isCreatingDefault ? (
+				<>
+				  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+				  Creating...
+				</>
+			  ) : (
+				<>
+				  <Plus className="w-4 h-4 mr-2" />
+				  Create Default Pipeline
+				</>
+			  )}
+			</button>
+		  </div>
+		</div>
+	  )}
 
 	  {/* Tab Navigation */}
 	  <div className="bg-white rounded-lg shadow-sm border mb-6">
@@ -491,60 +550,74 @@ const JobATSPage: React.FC = () => {
 		</div>
 	  </div>	 
 	   {/* Tab Content */}
-	  <div style={{ display: activeTab === 'pipeline' ? 'block' : 'none' }}>
-		<PipelineTab 
-		  candidates={candidates}
-		  pipeline={jobPipeline}
-		  searchQuery={searchQuery}
-		  onSearchChange={setSearchQuery}
-		  selectedStage={selectedStage}
-		  onStageChange={setSelectedStage}
-		  sortBy={sortBy}
-		  onSortChange={setSortBy}
-		  onCandidateUpdate={handleCandidateUpdate}
-		  onCandidateRemove={handleCandidateRemove}
-		  onCandidateStageChange={handleCandidateStageChange}
-		/>
-	  </div>
+	  {effectivePipeline ? (
+		<>
+		  <div style={{ display: activeTab === 'pipeline' ? 'block' : 'none' }}>
+			<PipelineTab 
+			  candidates={candidates}
+			  pipeline={effectivePipeline}
+			  searchQuery={searchQuery}
+			  onSearchChange={setSearchQuery}
+			  selectedStage={selectedStage}
+			  onStageChange={setSelectedStage}
+			  sortBy={sortBy}
+			  onSortChange={setSortBy}
+			  onCandidateUpdate={handleCandidateUpdate}
+			  onCandidateRemove={handleCandidateRemove}
+			  onCandidateStageChange={handleCandidateStageChange}
+			/>
+		  </div>
 
-	  <div style={{ display: activeTab === 'tasks' ? 'block' : 'none' }}>
-		<TasksTab 
-		  jobId={jobId!}
-		  tasksView={tasksView}
-		  onTasksViewChange={setTasksView}
-		  currentDate={currentDate}
-		  onNavigateMonth={navigateMonth}
-		  onToday={handleToday}
-		  pipelineId={jobPipeline?.id}
-		/>
-	  </div>
+		  <div style={{ display: activeTab === 'tasks' ? 'block' : 'none' }}>
+			<TasksTab 
+			  jobId={jobId!}
+			  tasksView={tasksView}
+			  onTasksViewChange={setTasksView}
+			  currentDate={currentDate}
+			  onNavigateMonth={navigateMonth}
+			  onToday={handleToday}
+			  pipelineId={effectivePipeline?.id}
+			/>
+		  </div>
 
-	  <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
-		<InterviewsTab 
-		  jobId={jobId!}
-		  onInterviewClick={(interview) => {
-			// Handle interview click if needed
-		  }}
-		  pipelineId={jobPipeline?.id}
-		/>
-	  </div>
+		  <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
+			<InterviewsTab 
+			  jobId={jobId!}
+			  onInterviewClick={(interview) => {
+				// Handle interview click if needed
+			  }}
+			  pipelineId={effectivePipeline?.id}
+			/>
+		  </div>
 
-	  <div style={{ display: activeTab === 'reports' ? 'block' : 'none' }}>
-		<ReportsTab 
-		  reportData={reportData || null}
-		  loading={reportLoading}
-		  error={reportError}
-		/>
-	  </div>
+		  <div style={{ display: activeTab === 'reports' ? 'block' : 'none' }}>
+			<ReportsTab 
+			  reportData={reportData || null}
+			  loading={reportLoading}
+			  error={reportError}
+			/>
+		  </div>
+		</>
+	  ) : (
+		<div className="text-center py-12">
+		  <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+		  <h3 className="text-lg font-medium text-gray-900 mb-2">Pipeline Required</h3>
+		  <p className="text-gray-500 mb-4">
+			Please create a default pipeline to start managing candidates for this job.
+		  </p>
+		</div>
+	  )}
 
 	  {/* Add Candidate Modal */}
-	  <AddCandidateModal
-		isOpen={showAddCandidateModal}
-		onClose={() => setShowAddCandidateModal(false)}
-		jobId={jobId!}
-		onCandidateAdded={handleCandidateAdded}
-		pipeline={jobPipeline}
-	  />
+	  {effectivePipeline && (
+		<AddCandidateModal
+		  isOpen={showAddCandidateModal}
+		  onClose={() => setShowAddCandidateModal(false)}
+		  jobId={jobId!}
+		  onCandidateAdded={handleCandidateAdded}
+		  pipeline={effectivePipeline}
+		/>
+	  )}
 
 	  {/* Remove Candidate Confirmation Dialog */}
 	  <ConfirmationDialog
