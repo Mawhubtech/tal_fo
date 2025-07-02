@@ -58,5 +58,4 @@ export interface ReportData {
   metrics: ReportMetrics;
 }
 
-export const STAGES = ['Applied', 'Phone Screen', 'Technical Interview', 'Final Interview', 'Offer', 'Hired', 'Rejected'] as const;
-export type Stage = typeof STAGES[number];
+

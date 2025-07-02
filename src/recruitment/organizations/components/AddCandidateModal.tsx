@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, Plus, User } from 'lucide-react';
 import { candidateApiService, type Candidate } from '../../candidates/services/candidateApiService';
 import { jobApplicationApiService } from '../../jobs/services/jobApplicationApiService';
+import { useStageMovement } from '../../../hooks/useStageMovement';
+import { StageChangeReason } from '../../../types/stageMovement.types';
+import type { Pipeline } from '../../../services/pipelineService';
 
 interface AddCandidateModalProps {
   isOpen: boolean;
   onClose: () => void;
   jobId: string;
   onCandidateAdded: () => void;
+  pipeline?: Pipeline | null; // Add pipeline prop
 }
 
 const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
@@ -15,12 +19,16 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   onClose,
   jobId,
   onCandidateAdded,
+  pipeline,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [addingCandidateId, setAddingCandidateId] = useState<string | null>(null);
   const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
+  
+  // Stage movement hook for tracking initial application
+  const stageMovement = useStageMovement();
 
   useEffect(() => {
     if (isOpen) {
@@ -75,13 +83,47 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   const addCandidateToJob = async (candidateId: string) => {
     try {
       setAddingCandidateId(candidateId);
-      await jobApplicationApiService.createJobApplication({
+      
+      // Get the first stage from the pipeline (sorted by order)
+      const firstStage = pipeline?.stages
+        ?.filter(stage => stage.isActive)
+        ?.sort((a, b) => a.order - b.order)?.[0];
+      
+      // Create the job application with proper pipeline stage tracking
+      const newApplication = await jobApplicationApiService.createJobApplication({
         jobId,
         candidateId,
         status: 'Applied',
-        stage: 'Application',
+        stage: firstStage ? 'Application' : 'Application', // Use fallback enum value for backward compatibility
         appliedDate: new Date().toISOString().split('T')[0],
+        // New pipeline-based fields
+        currentPipelineStageId: firstStage?.id,
+        currentPipelineStageName: firstStage?.name,
+        pipelineId: pipeline?.id,
       });
+      
+      // Track the initial stage movement (application submission)
+      if (firstStage && newApplication.id) {
+        try {
+          await stageMovement.moveWithDefaults(
+            newApplication.id,
+            firstStage.id,
+            {
+              reason: StageChangeReason.APPLICATION_SUBMITTED,
+              notes: `Candidate applied and entered ${firstStage.name} stage`,
+              metadata: {
+                moveType: 'initial_application',
+                trigger: 'candidate_application',
+                initialStage: firstStage.name,
+                applicationDate: newApplication.appliedDate,
+              }
+            }
+          );
+        } catch (stageError) {
+          console.error('Error tracking initial stage movement:', stageError);
+          // Don't fail the application creation if stage tracking fails
+        }
+      }
       
       setSelectedCandidates(prev => new Set([...prev, candidateId]));
       onCandidateAdded();

@@ -32,16 +32,52 @@ export const getItemsForDate = <T extends { dueDate?: string; date?: string }>(
   });
 };
 
-export const getStageColor = (stage: string): string => {
-  switch (stage) {
-    case 'Applied': return 'border-blue-500';
-    case 'Phone Screen': return 'border-indigo-500';
-    case 'Technical Interview': return 'border-purple-500';
-    case 'Final Interview': return 'border-pink-500';
-    case 'Offer': return 'border-orange-500';
-    case 'Hired': return 'border-green-500';
-    case 'Rejected': return 'border-red-500';
-    default: return 'border-gray-500';
+export const getStageColor = (stage: string, pipeline?: any): string => {
+  // If pipeline is provided, try to get color from stage data
+  if (pipeline?.stages) {
+    const stageData = pipeline.stages.find((s: any) => s.name === stage);
+    if (stageData?.color) {
+      // Map common hex colors to Tailwind border classes
+      const colorMap: Record<string, string> = {
+        '#3B82F6': 'border-blue-500',
+        '#6366F1': 'border-indigo-500', 
+        '#8B5CF6': 'border-purple-500',
+        '#EC4899': 'border-pink-500',
+        '#F59E0B': 'border-orange-500',
+        '#10B981': 'border-green-500',
+        '#EF4444': 'border-red-500',
+        '#DC2626': 'border-red-600',
+        '#6B7280': 'border-gray-500',
+        '#059669': 'border-emerald-600',
+        '#84CC16': 'border-lime-500',
+        '#06B6D4': 'border-cyan-500',
+      };
+      
+      return colorMap[stageData.color] || 'border-gray-500';
+    }
+  }
+  
+  // Fallback to default colors for common stage names
+  switch (stage.toLowerCase()) {
+    case 'applied':
+    case 'application': 
+      return 'border-blue-500';
+    case 'phone screen':
+    case 'screening': 
+      return 'border-indigo-500';
+    case 'technical interview':
+    case 'interview': 
+      return 'border-purple-500';
+    case 'final interview': 
+      return 'border-pink-500';
+    case 'offer': 
+      return 'border-orange-500';
+    case 'hired': 
+      return 'border-green-500';
+    case 'rejected': 
+      return 'border-red-500';
+    default: 
+      return 'border-gray-500';
   }
 };
 

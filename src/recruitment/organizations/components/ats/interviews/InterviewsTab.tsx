@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Filter, Users, Calendar, Clock, CheckCircle } from 'lucide-react';
 import { useInterviews, useInterviewStats, useInterviewFilters, useUpdateInterview, useAddInterviewFeedback } from '../../../../../hooks/useInterviews';
-import type { Interview, InterviewFilters } from '../../../../../types/interview.types';
+import { useStageMovement } from '../../../../../hooks/useStageMovement';
+import { useJobApplicationsByJob } from '../../../../../hooks/useJobApplications';
+import { usePipeline } from '../../../../../hooks/usePipelines';
+import type { Interview, InterviewFilters, InterviewStatus } from '../../../../../types/interview.types';
 import { InterviewsListView } from './InterviewsListView';
 import { InterviewsCalendarView } from './InterviewsCalendarView';
 import { ScheduleInterviewForm } from './ScheduleInterviewForm';
@@ -14,13 +17,15 @@ interface InterviewsTabProps {
   onInterviewClick?: (interview: Interview) => void;
   onNewInterview?: () => void;
   selectedCandidateId?: string;
+  pipelineId?: string; // Add pipeline ID for stage movement
 }
 
 export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   jobId,
   onInterviewClick,
   onNewInterview,
-  selectedCandidateId
+  selectedCandidateId,
+  pipelineId
 }) => {
   const [interviewsView, setInterviewsView] = useState<'list' | 'calendar'>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -30,7 +35,7 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Debug logging
-  console.log('InterviewsTab props:', { jobId, selectedCandidateId, showScheduleForm });
+  // Component props for tracking interviews
 
   const {
     filters,
@@ -48,6 +53,11 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   const { data: stats } = useInterviewStats();
   const updateInterviewMutation = useUpdateInterview();
   const addFeedbackMutation = useAddInterviewFeedback();
+  
+  // Stage movement integration
+  const stageMovement = useStageMovement();
+  const { data: jobApplicationsData } = useJobApplicationsByJob(jobId || '');
+  const { data: pipeline } = usePipeline(pipelineId || '');
 
   const interviews = interviewsData?.interviews || [];
   const totalInterviews = interviewsData?.total || 0;
@@ -72,7 +82,6 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   };
 
   const handleNewInterview = () => {
-    console.log('Schedule interview clicked:', { jobId, showScheduleForm });
     if (onNewInterview) {
       onNewInterview();
     } else {
@@ -115,6 +124,12 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
         id: interview.id,
         data: updates as any
       });
+      
+      // Check if interview was completed and handle potential stage advancement
+      if (updates.status === 'Completed') {
+        await handleInterviewCompletion(interview, updates);
+      }
+      
       toast.success('Interview Updated', 'Interview details have been updated successfully.');
       // No need to call refetch() - query invalidation handles this automatically
     } catch (error) {
@@ -123,10 +138,91 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
     }
   };
 
+  const handleInterviewCompletion = async (interview: Interview, updates: Partial<Interview>) => {
+    if (!pipeline || !jobId) {
+      return; // No pipeline or job context
+    }
+
+    // Find the job application for this interview
+    const jobApplications = jobApplicationsData?.applications || [];
+    const application = jobApplications.find(app => 
+      app.id === interview.jobApplicationId ||
+      app.candidateId === interview.jobApplication?.candidateId ||
+      app.candidate?.id === interview.jobApplication?.candidate?.id
+    );
+
+    if (!application) {
+      return;
+    }
+
+    // Check if this interview completion should trigger stage advancement
+    const shouldAdvance = await checkIfShouldAdvanceStageAfterInterview(interview, application, updates);
+    
+    if (shouldAdvance) {
+      try {
+        // Find the next stage in the pipeline
+        const currentPipelineStage = pipeline.stages?.find(s => 
+          s.name.toLowerCase().includes(application.stage.toLowerCase()) ||
+          application.stage.toLowerCase().includes(s.name.toLowerCase())
+        );
+        
+        const sortedStages = pipeline.stages?.sort((a, b) => a.order - b.order) || [];
+        const currentIndex = sortedStages.findIndex(s => s.id === currentPipelineStage?.id);
+        
+        if (currentIndex !== -1 && currentIndex < sortedStages.length - 1) {
+          const nextStage = sortedStages[currentIndex + 1];
+          
+          await stageMovement.moveAfterInterview(
+            application.id,
+            nextStage.id,
+            updates.overallRating as number || undefined,
+            `Automatically moved to ${nextStage.name} after completing ${interview.type} interview`
+          );
+
+          toast.success(
+            'Stage Advanced', 
+            `Candidate automatically moved to ${nextStage.name} after interview completion`
+          );
+        }
+      } catch (error) {
+        console.error('Error advancing stage after interview completion:', error);
+        // Don't show error toast for stage advancement failures
+        // as the interview was still completed successfully
+      }
+    }
+  };
+
+  const checkIfShouldAdvanceStageAfterInterview = async (
+    interview: Interview, 
+    application: any, 
+    updates: Partial<Interview>
+  ): Promise<boolean> => {
+    // Define logic for when interview completion should trigger stage advancement
+    
+    // For example, advance stage if:
+    // 1. Interview has a positive score/outcome
+    // 2. It's a final interview round
+    // 3. All required interviews for current stage are completed
+    
+    // Check for positive rating (if provided)
+    if (updates.overallRating !== undefined && updates.overallRating < 3) {
+      return false; // Don't advance for low ratings (assuming 1-5 scale)
+    }
+
+    // Check interview type - advance for these types
+    const advancingInterviewTypes = [
+      'Phone Screen',
+      'Technical',
+      'Final',
+      'Panel'
+    ];
+
+    return advancingInterviewTypes.includes(interview.type);
+  };
+
   const handleSendEmail = async (interview: Interview, emailType: string, recipients: string[], subject: string, body: string) => {
     try {
       // This would be implemented with actual email service
-      console.log('Sending email:', { interview: interview.id, emailType, recipients, subject, body });
       toast.success('Email Sent', 'Email has been sent successfully.');
     } catch (error) {
       console.error('Failed to send email:', error);

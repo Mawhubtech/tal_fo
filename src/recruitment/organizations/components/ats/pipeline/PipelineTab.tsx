@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LayoutGrid, List } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
+import type { Pipeline } from '../../../../../services/pipelineService';
 import { PipelineFilters } from './PipelineFilters';
 import { PipelineStats } from './PipelineStats';
 import { PipelineListView } from './PipelineListView';
@@ -8,6 +9,7 @@ import { PipelineKanbanView } from './PipelineKanbanView';
 
 interface PipelineTabProps {
   candidates: Candidate[];
+  pipeline?: Pipeline | null;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedStage: string;
@@ -17,10 +19,12 @@ interface PipelineTabProps {
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateUpdate?: (candidate: Candidate) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
+  onCandidateStageChange?: (candidateId: string, newStage: string) => void;
 }
 
 export const PipelineTab: React.FC<PipelineTabProps> = ({
   candidates,
+  pipeline,
   searchQuery,
   onSearchChange,
   selectedStage,
@@ -29,7 +33,8 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
   onSortChange,
   onCandidateClick,
   onCandidateUpdate,
-  onCandidateRemove
+  onCandidateRemove,
+  onCandidateStageChange
 }) => {
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
 
@@ -57,10 +62,16 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
   };
 
   const handleCandidateStageChange = (candidateId: string, newStage: string) => {
-    const candidate = candidates.find(c => c.id === candidateId);
-    if (candidate && onCandidateUpdate) {
-      const updatedCandidate = { ...candidate, stage: newStage };
-      onCandidateUpdate(updatedCandidate);
+    // Use the specific stage change handler if provided (for proper tracking)
+    if (onCandidateStageChange) {
+      onCandidateStageChange(candidateId, newStage);
+    } else if (onCandidateUpdate) {
+      // Fallback to general candidate update (legacy behavior)
+      const candidate = candidates.find(c => c.id === candidateId);
+      if (candidate) {
+        const updatedCandidate = { ...candidate, stage: newStage };
+        onCandidateUpdate(updatedCandidate);
+      }
     }
   };
 
@@ -76,6 +87,7 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
             onStageChange={onStageChange}
             sortBy={sortBy}
             onSortChange={onSortChange}
+            pipeline={pipeline}
           />
         </div>
         
@@ -113,12 +125,14 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
       {view === 'kanban' ? (
         <PipelineKanbanView
           candidates={sortedCandidates}
+          pipeline={pipeline}
           onCandidateClick={onCandidateClick}
           onCandidateStageChange={handleCandidateStageChange}
           onCandidateRemove={onCandidateRemove}
         />      ) : (
         <PipelineListView
           candidates={sortedCandidates}
+          pipeline={pipeline}
           onCandidateClick={onCandidateClick}
           onCandidateStageChange={handleCandidateStageChange}
           onCandidateRemove={onCandidateRemove}

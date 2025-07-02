@@ -14,6 +14,10 @@ export interface JobApplication {
   resumeUrl?: string;
   portfolioUrl?: string;
   customFields?: Record<string, any>;
+  // Pipeline stage tracking fields
+  currentPipelineStageId?: string;
+  currentPipelineStageName?: string;
+  pipelineId?: string;
   job?: any;
   candidate?: any;
   createdAt: string;
@@ -32,6 +36,10 @@ export interface CreateJobApplicationData {
   resumeUrl?: string;
   portfolioUrl?: string;
   customFields?: Record<string, any>;
+  // Pipeline stage tracking fields
+  currentPipelineStageId?: string;
+  currentPipelineStageName?: string;
+  pipelineId?: string;
 }
 
 export interface JobApplicationFilters {

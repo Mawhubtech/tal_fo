@@ -1,5 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { pipelineService, Pipeline, CreatePipelineDto } from '../services/pipelineService';
+
+// Get a specific pipeline by ID
+export const usePipeline = (pipelineId: string) => {
+  return useQuery<Pipeline | null>({
+    queryKey: ['pipeline', pipelineId],
+    queryFn: async () => {
+      if (!pipelineId) return null;
+      try {
+        const pipelines = await pipelineService.getAllPipelines();
+        return pipelines.find(p => p.id === pipelineId) || null;
+      } catch (error) {
+        console.error('Error fetching pipeline:', error);
+        return null;
+      }
+    },
+    enabled: !!pipelineId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
 
 export const usePipelines = () => {
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);

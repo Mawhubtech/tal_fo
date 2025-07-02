@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -11,12 +11,13 @@ import {
   DragOverEvent,
 } from '@dnd-kit/core';
 import type { Candidate } from '../../../data/mock';
-import { STAGES } from '../../../data/mock';
+import type { Pipeline } from '../../../../../services/pipelineService';
 import { DraggableStageColumn } from './DraggableStageColumn';
 import { DraggableCandidateCard } from './DraggableCandidateCard';
 
 interface PipelineKanbanViewProps {
   candidates: Candidate[];
+  pipeline?: Pipeline | null;
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
@@ -24,11 +25,27 @@ interface PipelineKanbanViewProps {
 
 export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
   candidates,
+  pipeline,
   onCandidateClick,
   onCandidateStageChange,
   onCandidateRemove
 }) => {
-  const [activeCandidate, setActiveCandidate] = React.useState<Candidate | null>(null);
+  const [activeCandidate, setActiveCandidate] = useState<Candidate | null>(null);
+  // Track pending moves for visual feedback and prevent flickering
+  const [pendingMoves, setPendingMoves] = useState<Set<string>>(new Set());
+  // Track candidates that are currently being moved (with loading state)
+  const [movingCandidates, setMovingCandidates] = useState<Map<string, { originalStage: string; targetStage: string }>>(new Map());
+
+  // Update optimistic candidates when prop candidates change, but preserve pending moves
+  useEffect(() => {
+    // Component updated - tracking for potential future debugging
+  }, [candidates, pendingMoves, movingCandidates]);
+
+  // Get stages from pipeline, sorted by order
+  const stages = pipeline?.stages
+    ?.filter(stage => stage.isActive)
+    ?.sort((a, b) => a.order - b.order)
+    ?.map(stage => stage.name) || [];
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -39,7 +56,14 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
   );
 
   const getCandidatesByStage = (stage: string) => {
-    return candidates.filter(candidate => candidate.stage === stage);
+    return candidates.filter(candidate => {
+      // If candidate is being moved, show it in the target stage
+      const movingInfo = movingCandidates.get(candidate.id);
+      if (movingInfo) {
+        return movingInfo.targetStage === stage;
+      }
+      return candidate.stage === stage;
+    });
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -51,7 +75,7 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
     // Optional: Add visual feedback during drag over
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveCandidate(null);
 
@@ -61,10 +85,52 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
     const newStage = over.id as string;
 
     // Check if we're dropping over a stage column
-    if (STAGES.includes(newStage as any)) {
+    if (stages.includes(newStage)) {
       const candidate = candidates.find(c => c.id === candidateId);
       if (candidate && candidate.stage !== newStage) {
-        onCandidateStageChange?.(candidateId, newStage);
+        // Immediately move candidate to target stage visually and track as moving
+        setMovingCandidates(prev => new Map(prev.set(candidateId, {
+          originalStage: candidate.stage,
+          targetStage: newStage
+        })));
+        
+        // Track this move as pending for additional visual feedback
+        setPendingMoves(prev => new Set([...prev, candidateId]));
+        
+        try {
+          // Call the actual stage change handler and await it
+          if (onCandidateStageChange) {
+            await onCandidateStageChange(candidateId, newStage);
+          }
+          
+          // Clear states after successful move
+          setTimeout(() => {
+            setMovingCandidates(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(candidateId);
+              return newMap;
+            });
+            setPendingMoves(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(candidateId);
+              return newSet;
+            });
+          }, 500); // Longer delay to ensure server updates are reflected
+        } catch (error) {
+          // Revert to original position on error
+          setMovingCandidates(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(candidateId);
+            return newMap;
+          });
+          setPendingMoves(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(candidateId);
+            return newSet;
+          });
+          
+          console.error('Failed to move candidate:', error);
+        }
       }
     }
   };
@@ -80,15 +146,18 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
       <div className="flex flex-col lg:flex-row gap-4 mb-6 min-h-[calc(100vh-400px)]">
         {/* Mobile & Tablet: Stack columns vertically */}
         <div className="lg:hidden space-y-4">
-          {STAGES.map((stage) => {
+          {stages.map((stage) => {
             const stageCandidates = getCandidatesByStage(stage);
             return (
               <DraggableStageColumn
                 key={stage}
                 stage={stage}
                 candidates={stageCandidates}
+                pipeline={pipeline}
                 onCandidateClick={onCandidateClick}
                 onCandidateRemove={onCandidateRemove}
+                pendingMoves={pendingMoves}
+                movingCandidates={movingCandidates}
               />
             );
           })}
@@ -96,15 +165,18 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
         
         {/* Desktop: Horizontal scrollable layout */}
         <div className="hidden lg:flex gap-4 overflow-x-auto w-full pb-4">
-          {STAGES.map((stage) => {
+          {stages.map((stage) => {
             const stageCandidates = getCandidatesByStage(stage);
             return (
               <DraggableStageColumn
                 key={stage}
                 stage={stage}
                 candidates={stageCandidates}
+                pipeline={pipeline}
                 onCandidateClick={onCandidateClick}
                 onCandidateRemove={onCandidateRemove}
+                pendingMoves={pendingMoves}
+                movingCandidates={movingCandidates}
               />
             );
           })}

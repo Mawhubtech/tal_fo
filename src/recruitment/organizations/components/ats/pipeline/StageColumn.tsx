@@ -1,24 +1,27 @@
 import React from 'react';
 import { MoreHorizontal, Users } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
+import type { Pipeline } from '../../../../../services/pipelineService';
 import { getStageColor } from '../shared';
 import { CandidateCard } from './CandidateCard';
 
 interface StageColumnProps {
   stage: string;
   candidates: Candidate[];
+  pipeline?: Pipeline | null;
   onCandidateClick?: (candidate: Candidate) => void;
 }
 
 export const StageColumn: React.FC<StageColumnProps> = ({
   stage,
   candidates,
+  pipeline,
   onCandidateClick
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm min-w-[280px]">
       {/* Stage Header */}
-      <div className={`px-4 py-3 border-t-4 rounded-t-lg flex justify-between items-center ${getStageColor(stage)}`}>
+      <div className={`px-4 py-3 border-t-4 rounded-t-lg flex justify-between items-center ${getStageColor(stage, pipeline)}`}>
         <div>
           <h2 className="font-semibold text-gray-800">{stage}</h2>
           <p className="text-xs text-gray-500">{candidates.length} candidates</p>

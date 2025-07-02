@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown } from 'lucide-react';
+import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
 import { useOrganization, useOrganizationDepartments } from '../../../hooks/useOrganizations';
@@ -7,6 +7,7 @@ import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import type { CreateJobData } from '../../../services/jobApiService';
 import type { Department } from '../../organizations/services/organizationApiService';
 import type { Pipeline } from '../../../services/pipelineService';
+import AIJobGeneratorDialog from '../components/AIJobGeneratorDialog';
 
 const CreateJobPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ 
@@ -71,6 +72,7 @@ const CreateJobPage: React.FC = () => {
   const [responsibilities, setResponsibilities] = useState(['']);
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
+  const [showAIDialog, setShowAIDialog] = useState(false);
 
   // Calculate loading states
   const loading = organizationLoading || departmentsLoading || pipelinesLoading || (isEditMode && jobLoading);
@@ -86,6 +88,16 @@ const CreateJobPage: React.FC = () => {
       }
     }
   }, [departmentId, departments]);
+
+  // Preselect default pipeline when pipelines are loaded
+  useEffect(() => {
+    if (activePipelines.length > 0 && !selectedPipelineId && !isEditMode) {
+      const defaultPipeline = activePipelines.find(pipeline => pipeline.isDefault);
+      if (defaultPipeline) {
+        setSelectedPipelineId(defaultPipeline.id);
+      }
+    }
+  }, [activePipelines, selectedPipelineId, isEditMode]);
 
   // Populate form fields when editing job data is loaded
   useEffect(() => {
@@ -193,6 +205,11 @@ const CreateJobPage: React.FC = () => {
         return;
       }
 
+      if (!selectedPipelineId.trim()) {
+        setError('Hiring pipeline is required');
+        return;
+      }
+
       // Validate salary range
       const minSalary = salaryMin ? parseFloat(salaryMin) : undefined;
       const maxSalary = salaryMax ? parseFloat(salaryMax) : undefined;
@@ -234,7 +251,7 @@ const CreateJobPage: React.FC = () => {
         applicationDeadline: applicationDeadline || undefined,
         organizationId: organizationId || undefined,
         customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
-        pipelineId: selectedPipelineId || undefined,
+        pipelineId: selectedPipelineId,
       };
 
       let resultJob;
@@ -256,6 +273,38 @@ const CreateJobPage: React.FC = () => {
       setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`);
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} job:`, err);
     }
+  };
+
+  // AI generation handler
+  const handleAIGeneration = (aiData: {
+    jobTitle: string;
+    jobDescription: string;
+    experienceLevel: string;
+    responsibilities: string[];
+    requirements: string[];
+    skills: string[];
+    benefits: string[];
+  }) => {
+    // Update job title
+    setJobTitle(aiData.jobTitle);
+    
+    // Update experience level
+    setExperienceLevel(aiData.experienceLevel);
+    
+    // Clear and update job description
+    setJobDescription(aiData.jobDescription);
+    
+    // Clear and update responsibilities (filter out empty ones)
+    setResponsibilities(aiData.responsibilities.filter(resp => resp.trim()));
+    
+    // Clear and update requirements (filter out empty ones)
+    setRequirements(aiData.requirements.filter(req => req.trim()));
+    
+    // Clear and update skills (replace existing with new ones)
+    setSkills(aiData.skills.filter(skill => skill.trim()));
+    
+    // Clear and update benefits (replace existing with new ones)
+    setBenefits(aiData.benefits.filter(benefit => benefit.trim()));
   };
 
   // Early return if no organizationId
@@ -416,9 +465,20 @@ const CreateJobPage: React.FC = () => {
           {/* Job Overview */}
           <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
             <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
-              <div className="flex items-center">
-                <Building className="text-purple-600 mr-3" size={24} />
-                <h2 className="text-xl font-semibold text-purple-600">Job Overview</h2>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Building className="text-purple-600 mr-3" size={24} />
+                  <h2 className="text-xl font-semibold text-purple-600">Job Overview</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAIDialog(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 group"
+                  title="Generate job content with AI"
+                >
+                  <Sparkles className="h-4 w-4 animate-pulse group-hover:animate-spin" />
+                  <span className="text-sm font-medium">AI Generate</span>
+                </button>
               </div>
             </div>
             <div className="p-6 space-y-6">
@@ -841,7 +901,7 @@ const CreateJobPage: React.FC = () => {
               {/* Pipeline Selection */}
               <div>
                 <label htmlFor="pipeline" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Hiring Pipeline
+                  Hiring Pipeline *
                 </label>
                 <select
                   id="pipeline"
@@ -849,8 +909,9 @@ const CreateJobPage: React.FC = () => {
                   onChange={(e) => setSelectedPipelineId(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
                   disabled={pipelinesLoading}
+                  required
                 >
-                  <option value="">Select a pipeline</option>
+                  <option value="">Select a pipeline *</option>
                   {activePipelines.map((pipeline) => (
                     <option key={pipeline.id} value={pipeline.id}>
                       {pipeline.name} {pipeline.isDefault ? '(Default)' : ''}
@@ -861,7 +922,7 @@ const CreateJobPage: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-1">Loading pipelines...</p>
                 )}
                 {!pipelinesLoading && activePipelines.length === 0 && (
-                  <p className="text-xs text-red-500 mt-1">No active pipelines found. Please create a pipeline first.</p>
+                  <p className="text-xs text-red-500 mt-1">No active pipelines found. Please create a pipeline first before creating jobs.</p>
                 )}
                 
                 {/* Show selected pipeline stages */}
@@ -941,7 +1002,8 @@ const CreateJobPage: React.FC = () => {
                     }
                   </p>
                 </div>
-              )}              {/* Job Description */}
+              )}              
+			  {/* Job Description */}
               {jobDescription && (
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-2">About the Role</p>
@@ -1114,6 +1176,20 @@ const CreateJobPage: React.FC = () => {
 		    </div>        
         </div>
       </div>
+
+      {/* AI Job Generator Dialog */}
+      <AIJobGeneratorDialog
+        isOpen={showAIDialog}
+        onClose={() => setShowAIDialog(false)}
+        onGenerate={handleAIGeneration}
+        currentData={{
+          jobTitle,
+          location,
+          employmentType,
+          experienceLevel,
+          departmentName: selectedDepartment?.name
+        }}
+      />
     </div>
   );
 };

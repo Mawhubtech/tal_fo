@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, CheckSquare, Clock, AlertCircle, User, Filter, Edit, Trash2, MoreVertical, Check, X, CalendarDays } from 'lucide-react';
 import { useTasksByJobId, useDeleteTask, useUpdateTask } from '../../../../../hooks/useTasks';
+import { useStageMovement } from '../../../../../hooks/useStageMovement';
+import { useJobApplicationsByJob } from '../../../../../hooks/useJobApplications';
+import { usePipeline } from '../../../../../hooks/usePipelines';
+import { StageChangeReason } from '../../../../../types/stageMovement.types';
 import CreateTaskModal from '../../CreateTaskModal';
 import { Task } from '../../../services/taskApiService';
 import { TasksCalendarView } from './TasksCalendarView';
 import { TasksByDateModal } from './TasksByDateModal';
+import { toast } from '../../../../../components/ToastContainer';
 
 interface TasksTabProps {
   jobId: string;
@@ -13,6 +18,7 @@ interface TasksTabProps {
   currentDate: Date;
   onNavigateMonth: (direction: 'prev' | 'next') => void;
   onToday: () => void;
+  pipelineId?: string; // Add pipeline ID for stage movement
 }
 
 export const TasksTab: React.FC<TasksTabProps> = ({ 
@@ -21,7 +27,8 @@ export const TasksTab: React.FC<TasksTabProps> = ({
   onTasksViewChange,
   currentDate,
   onNavigateMonth,
-  onToday 
+  onToday,
+  pipelineId
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -37,6 +44,11 @@ export const TasksTab: React.FC<TasksTabProps> = ({
   const { data: tasks, isLoading, error, refetch } = useTasksByJobId(jobId);
   const deleteTaskMutation = useDeleteTask();
   const updateTaskMutation = useUpdateTask();
+  
+  // Stage movement integration
+  const stageMovement = useStageMovement();
+  const { data: jobApplicationsData } = useJobApplicationsByJob(jobId);
+  const { data: pipeline } = usePipeline(pipelineId || '');
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -104,6 +116,12 @@ export const TasksTab: React.FC<TasksTabProps> = ({
         taskId,
         taskData: { status: newStatus as any }
       });
+      
+      // Check if task was completed and handle potential stage advancement
+      if (newStatus === 'Completed') {
+        await handleTaskCompletion(taskId);
+      }
+      
       refetch();
       // Update the selected date tasks if the modal is open
       if (showDateModal && selectedDate) {
@@ -114,7 +132,96 @@ export const TasksTab: React.FC<TasksTabProps> = ({
       }
     } catch (error) {
       console.error('Error updating task status:', error);
+      toast.error('Update Failed', 'Failed to update task status. Please try again.');
     }
+  };
+
+  const handleTaskCompletion = async (taskId: string) => {
+    const task = actualTasks?.find(t => t.id === taskId);
+    
+    if (!task || !task.candidateId || !pipeline) {
+      return; // No candidate associated or no pipeline
+    }
+
+    // Find the job application for this candidate
+    const jobApplications = jobApplicationsData?.applications || [];
+    const application = jobApplications.find(app => 
+      app.candidateId === task.candidateId || 
+      app.candidate?.id === task.candidateId
+    );
+
+    if (!application) {
+      console.log('No job application found for candidate:', task.candidateId);
+      return;
+    }
+
+    // Check if this task completion should trigger stage advancement
+    const shouldAdvance = await checkIfShouldAdvanceStage(task, application);
+    
+    if (shouldAdvance) {
+      try {
+        // Find the next stage in the pipeline
+        // Map the application stage to pipeline stage
+        const currentPipelineStage = pipeline.stages?.find(s => 
+          s.name.toLowerCase().includes(application.stage.toLowerCase()) ||
+          application.stage.toLowerCase().includes(s.name.toLowerCase())
+        );
+        
+        const sortedStages = pipeline.stages?.sort((a, b) => a.order - b.order) || [];
+        const currentIndex = sortedStages.findIndex(s => s.id === currentPipelineStage?.id);
+        
+        if (currentIndex !== -1 && currentIndex < sortedStages.length - 1) {
+          const nextStage = sortedStages[currentIndex + 1];
+          
+          await stageMovement.moveWithDefaults(
+            application.id,
+            nextStage.id,
+            {
+              reason: StageChangeReason.TASK_COMPLETED,
+              notes: `Automatically moved to ${nextStage.name} after completing task: ${task.title}`,
+              metadata: {
+                moveType: 'automated',
+                trigger: 'task_completion',
+                taskId: task.id,
+                taskTitle: task.title,
+                taskType: task.type,
+                fromStage: currentPipelineStage?.name,
+                toStage: nextStage.name,
+              }
+            }
+          );
+
+          toast.success(
+            'Stage Advanced', 
+            `Candidate automatically moved to ${nextStage.name} after task completion`
+          );
+        }
+      } catch (error) {
+        console.error('Error advancing stage after task completion:', error);
+        // Don't show error toast for stage advancement failures
+        // as the task was still completed successfully
+      }
+    }
+  };
+
+  const checkIfShouldAdvanceStage = async (task: Task, application: any): Promise<boolean> => {
+    // Define logic for when task completion should trigger stage advancement
+    
+    // For example, advance stage if:
+    // 1. Task is marked as "stage-critical" or has a specific type
+    // 2. All required tasks for current stage are completed
+    // 3. Task is explicitly configured to advance stage
+    
+    // For now, let's advance for these task types:
+    const advancingTaskTypes = [
+      'screening_review',
+      'technical_assessment',
+      'background_check',
+      'reference_check',
+      'interview_preparation'
+    ];
+
+    return advancingTaskTypes.includes(task.type?.toLowerCase() || '');
   };
 
   const handleCloseModal = () => {

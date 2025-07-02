@@ -4,10 +4,14 @@ import {
   ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus
 } from 'lucide-react';
 import { useJob } from '../../../hooks/useJobs';
+import { usePipeline } from '../../../hooks/usePipelines';
 import { useJobApplicationsByJob, useUpdateJobApplication, useDeleteJobApplication } from '../../../hooks/useJobApplications';
+import { useStageMovement } from '../../../hooks/useStageMovement';
+import { useOptimisticStageMovement } from '../../../hooks/useOptimisticStageMovement';
 import { useTaskStats } from '../../../hooks/useTasks';
 import { useInterviews } from '../../../hooks/useInterviews';
 import { useJobReport } from '../../../hooks/useReports';
+import { StageChangeReason } from '../../../types/stageMovement.types';
 import type { Job as JobType } from '../../data/types';
 import type { JobApplication } from '../../jobs/services/jobApplicationApiService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
@@ -32,6 +36,13 @@ const JobATSPage: React.FC = () => {
     error: jobError 
   } = useJob(jobId || '');
   
+  // Get the pipeline for this job
+  const {
+    data: jobPipeline,
+    isLoading: pipelineLoading,
+    error: pipelineError
+  } = usePipeline(job?.pipelineId || '');
+  
   const { 
     data: jobApplicationsData, 
     isLoading: applicationsLoading, 
@@ -41,6 +52,10 @@ const JobATSPage: React.FC = () => {
   
   const updateJobApplicationMutation = useUpdateJobApplication();
   const deleteJobApplicationMutation = useDeleteJobApplication();
+  
+  // Stage movement hook for tracking candidate movements
+  const stageMovement = useStageMovement();
+  const optimisticStageMovement = useOptimisticStageMovement(jobId || '');
   
   const { data: taskStats } = useTaskStats(jobId || '');
   const { data: interviewsData } = useInterviews(jobId ? { jobId } : undefined);
@@ -63,7 +78,7 @@ const JobATSPage: React.FC = () => {
   const jobApplications = jobApplicationsData?.applications || [];
   
   // Loading state
-  const loading = jobLoading || applicationsLoading;  // Helper function to map backend stage to frontend stage
+  const loading = jobLoading || applicationsLoading || pipelineLoading;  // Helper function to map backend stage to frontend stage
   const mapStageToFrontend = (backendStage: string) => {
     const stageMap: Record<string, string> = {
       'Application': 'Applied',
@@ -89,9 +104,14 @@ const JobATSPage: React.FC = () => {
 
   // Convert job applications to candidates format for the ATS components
   const candidates = jobApplications.map(application => {
-    console.log('Processing application:', application); // Debug log
     
     const candidateName = application.candidate?.fullName || 'Unknown Candidate';
+    
+    // Use pipeline stage name if available, otherwise fall back to mapped stage
+    const candidateStage = application.currentPipelineStageName 
+      ? application.currentPipelineStageName 
+      : mapStageToFrontend(application.stage || 'Application');
+    
     
     return {
       id: application.candidate?.id || application.candidateId,
@@ -101,7 +121,7 @@ const JobATSPage: React.FC = () => {
       email: application.candidate?.email || '',
       phone: application.candidate?.phone || '',
       location: application.candidate?.location || '',
-      stage: mapStageToFrontend(application.stage || 'Application'),
+      stage: candidateStage,
       score: application.score || 0,
       lastUpdated: application.lastActivityDate || application.updatedAt,
       tags: [], // Empty array for now since skills aren't being loaded
@@ -114,10 +134,12 @@ const JobATSPage: React.FC = () => {
       resumeUrl: application.resumeUrl || '',
       portfolioUrl: application.portfolioUrl || '',
       applicationId: application.id,
+      // Pipeline tracking information
+      currentPipelineStageId: application.currentPipelineStageId,
+      pipelineId: application.pipelineId,
     };
   });
 
-  console.log('Transformed candidates:', candidates); // Debug log
   
   // Helper function to map frontend stage back to backend stage
   const mapStageToBackend = (frontendStage: string) => {
@@ -141,25 +163,74 @@ const JobATSPage: React.FC = () => {
       return;
     }
 
-    // Map frontend stage to backend stage
-    const backendStage = mapStageToBackend(updatedCandidate.stage) as 'Application' | 'Screening' | 'Interview' | 'Decision' | 'Offer' | 'Hired';
-    
-    try {
-      // Update using React Query mutation
-      await updateJobApplicationMutation.mutateAsync({
-        id: currentApplication.id,
-        data: {
-          status: updatedCandidate.status,
-          stage: backendStage,
-          score: updatedCandidate.score,
-          notes: updatedCandidate.notes,
-        }
-      });
+    // Check if this is a stage change - use pipeline stage name if available
+    const currentStage = currentApplication.currentPipelineStageName 
+      ? currentApplication.currentPipelineStageName 
+      : mapStageToFrontend(currentApplication.stage || 'Application');
+    const isStageChange = currentStage !== updatedCandidate.stage;
+
+    if (isStageChange && jobPipeline) {
+      // Handle stage change with proper tracking
+      const newStageBackend = mapStageToBackend(updatedCandidate.stage);
+      const newStage = jobPipeline.stages?.find(s => s.name === updatedCandidate.stage);
       
-      // React Query will automatically update the cache
-    } catch (error) {
-      console.error('Error updating candidate:', error);
-      toast.error('Update Failed', 'Failed to update candidate. Please try again.');
+      if (newStage) {
+        try {
+          await stageMovement.moveWithDefaults(
+            currentApplication.id,
+            newStage.id,
+            {
+              reason: StageChangeReason.MANUAL_MOVE,
+              notes: `Moved from "${currentStage}" to "${updatedCandidate.stage}" manually`,
+              metadata: {
+                moveType: 'manual',
+                fromStage: currentStage,
+                toStage: updatedCandidate.stage,
+              }
+            }
+          );
+          
+          // Explicitly refetch job applications to ensure UI updates
+          await refetchApplications();
+          
+          // Show success message
+          toast.success('Stage Updated', `${updatedCandidate.name} moved to ${updatedCandidate.stage}`);
+          
+        } catch (error) {
+          console.error('Error moving candidate stage:', error);
+          toast.error('Move Failed', 'Failed to move candidate. Please try again.');
+          return;
+        }
+      }
+    }
+
+    // Handle other property updates (score, notes, status) that aren't stage changes
+    const hasOtherUpdates = 
+      updatedCandidate.score !== (currentApplication.score || 0) ||
+      updatedCandidate.notes !== (currentApplication.notes || '') ||
+      updatedCandidate.status !== currentApplication.status;
+
+    if (hasOtherUpdates) {
+      try {
+        await updateJobApplicationMutation.mutateAsync({
+          id: currentApplication.id,
+          data: {
+            status: updatedCandidate.status,
+            stage: isStageChange ? mapStageToBackend(updatedCandidate.stage) as 'Application' | 'Screening' | 'Interview' | 'Decision' | 'Offer' | 'Hired' : currentApplication.stage,
+            score: updatedCandidate.score,
+            notes: updatedCandidate.notes,
+          }
+        });
+        
+        // Show success message for non-stage updates
+        if (!isStageChange) {
+          toast.success('Candidate Updated', 'Candidate information has been updated successfully.');
+        }
+        
+      } catch (error) {
+        console.error('Error updating candidate:', error);
+        toast.error('Update Failed', 'Failed to update candidate. Please try again.');
+      }
     }
   };
 
@@ -226,6 +297,55 @@ const JobATSPage: React.FC = () => {
 
   const handleToday = () => {
 	setCurrentDate(new Date());
+  };
+
+  // Handle drag-and-drop stage changes specifically
+  const handleCandidateStageChange = async (candidateId: string, newStage: string) => {
+    // Find the current candidate in our local data
+    const currentApplication = jobApplications.find(app => 
+      app.candidate?.id === candidateId || app.candidateId === candidateId
+    );
+    
+    if (!currentApplication || !jobPipeline) {
+      console.error('Could not find application or pipeline for candidate:', candidateId);
+      toast.error('Move Failed', 'Could not find candidate or pipeline information.');
+      return;
+    }
+
+    // Get current and new stages - use pipeline stage name if available
+    const currentStage = currentApplication.currentPipelineStageName 
+      ? currentApplication.currentPipelineStageName 
+      : mapStageToFrontend(currentApplication.stage || 'Application');
+    const newStageData = jobPipeline.stages?.find(s => s.name === newStage);
+    
+    if (!newStageData) {
+      console.error('Could not find stage in pipeline:', newStage);
+      toast.error('Move Failed', 'Could not find the target stage.');
+      return;
+    }
+
+    if (currentStage === newStage) {
+      // No change needed
+      return;
+    }
+
+    try {
+      await optimisticStageMovement.mutateAsync({
+        candidateId: candidateId,
+        applicationId: currentApplication.id,
+        newStageId: newStageData.id,
+        currentStage: currentStage,
+        newStage: newStage
+      });
+      
+      // Note: optimistic hook handles all cache updates automatically
+      // Show success message
+      toast.success('Stage Updated', `Candidate moved to ${newStage}`);
+      
+    } catch (error) {
+      console.error('Error moving candidate via drag and drop:', error);
+      toast.error('Move Failed', 'Failed to move candidate. Please try again.');
+    }
   };
 
   if (loading) {
@@ -307,9 +427,13 @@ const JobATSPage: React.FC = () => {
 			<div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
 			  <Briefcase className="w-6 h-6 text-purple-600" />
 			</div>
-			<div className="ml-4">			  <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
+			<div className="ml-4">
+			  <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
 			  <p className="text-gray-600">{job.department} • {job.location} • {job.type}</p>
-			  <p className="text-gray-500 text-sm">Status: {job.status} • Experience Level: {job.experienceLevel || 'Not specified'}</p>
+			  <p className="text-gray-500 text-sm">
+			    Status: {job.status} • Experience Level: {job.experienceLevel || 'Not specified'}
+			    {jobPipeline && <span> • Pipeline: {jobPipeline.name}</span>}
+			  </p>
 			</div>
 		  </div>		  <div className="text-right">
 			<p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
@@ -370,6 +494,7 @@ const JobATSPage: React.FC = () => {
 	  <div style={{ display: activeTab === 'pipeline' ? 'block' : 'none' }}>
 		<PipelineTab 
 		  candidates={candidates}
+		  pipeline={jobPipeline}
 		  searchQuery={searchQuery}
 		  onSearchChange={setSearchQuery}
 		  selectedStage={selectedStage}
@@ -378,6 +503,7 @@ const JobATSPage: React.FC = () => {
 		  onSortChange={setSortBy}
 		  onCandidateUpdate={handleCandidateUpdate}
 		  onCandidateRemove={handleCandidateRemove}
+		  onCandidateStageChange={handleCandidateStageChange}
 		/>
 	  </div>
 
@@ -389,6 +515,7 @@ const JobATSPage: React.FC = () => {
 		  currentDate={currentDate}
 		  onNavigateMonth={navigateMonth}
 		  onToday={handleToday}
+		  pipelineId={jobPipeline?.id}
 		/>
 	  </div>
 
@@ -396,9 +523,9 @@ const JobATSPage: React.FC = () => {
 		<InterviewsTab 
 		  jobId={jobId!}
 		  onInterviewClick={(interview) => {
-			console.log('Interview clicked:', interview);
 			// Handle interview click if needed
 		  }}
+		  pipelineId={jobPipeline?.id}
 		/>
 	  </div>
 
@@ -416,6 +543,7 @@ const JobATSPage: React.FC = () => {
 		onClose={() => setShowAddCandidateModal(false)}
 		jobId={jobId!}
 		onCandidateAdded={handleCandidateAdded}
+		pipeline={jobPipeline}
 	  />
 
 	  {/* Remove Candidate Confirmation Dialog */}

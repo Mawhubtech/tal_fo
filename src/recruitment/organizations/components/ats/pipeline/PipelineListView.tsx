@@ -1,11 +1,12 @@
 import React from 'react';
 import { Calendar, Mail, Phone, Star, Tag, MapPin, ChevronDown, Trash2 } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
-import { STAGES } from '../../../data/mock';
+import type { Pipeline } from '../../../../../services/pipelineService';
 import { getScoreColor, getStageColor } from '../shared';
 
 interface PipelineListViewProps {
   candidates: Candidate[];
+  pipeline?: Pipeline | null;
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
@@ -13,10 +14,17 @@ interface PipelineListViewProps {
 
 export const PipelineListView: React.FC<PipelineListViewProps> = ({
   candidates,
+  pipeline,
   onCandidateClick,
   onCandidateStageChange,
   onCandidateRemove
 }) => {
+  // Get stages from pipeline, sorted by order
+  const stages = pipeline?.stages
+    ?.filter(stage => stage.isActive)
+    ?.sort((a, b) => a.order - b.order)
+    ?.map(stage => stage.name) || [];
+
   // Helper function to generate initials from name
   const getInitials = (name: string) => {
     if (!name || name.trim() === '') return '?';
@@ -109,10 +117,10 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                         e.stopPropagation(); // Prevent row click
                         handleStageChange(candidate.id, e.target.value);
                       }}
-                      className={`appearance-none bg-transparent border-0 pr-8 pl-3 py-1 text-xs font-semibold rounded-full border-l-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${getStageColor(candidate.stage)}`}
+                      className={`appearance-none bg-transparent border-0 pr-8 pl-3 py-1 text-xs font-semibold rounded-full border-l-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 ${getStageColor(candidate.stage, pipeline)}`}
                       onClick={(e) => e.stopPropagation()} // Prevent row click when clicking dropdown
                     >
-                      {STAGES.map((stage) => (
+                      {stages.map((stage) => (
                         <option key={stage} value={stage}>
                           {stage}
                         </option>

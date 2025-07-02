@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, Filter } from 'lucide-react';
-import { STAGES } from '../../../data/mock';
+import type { Pipeline } from '../../../../../services/pipelineService';
 
 interface PipelineFiltersProps {
   searchQuery: string;
@@ -9,6 +9,7 @@ interface PipelineFiltersProps {
   onStageChange: (stage: string) => void;
   sortBy: 'date' | 'score';
   onSortChange: (sort: 'date' | 'score') => void;
+  pipeline?: Pipeline | null;
 }
 
 export const PipelineFilters: React.FC<PipelineFiltersProps> = ({
@@ -17,8 +18,15 @@ export const PipelineFilters: React.FC<PipelineFiltersProps> = ({
   selectedStage,
   onStageChange,
   sortBy,
-  onSortChange
+  onSortChange,
+  pipeline
 }) => {
+  // Get stages from pipeline, sorted by order
+  const stages = pipeline?.stages
+    ?.filter(stage => stage.isActive)
+    ?.sort((a, b) => a.order - b.order)
+    ?.map(stage => stage.name) || [];
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
       <div className="flex flex-col md:flex-row gap-4">
@@ -44,7 +52,7 @@ export const PipelineFilters: React.FC<PipelineFiltersProps> = ({
             onChange={(e) => onStageChange(e.target.value)}
           >
             <option value="all">All Stages</option>
-            {STAGES.map(stage => (
+            {stages.map(stage => (
               <option key={stage} value={stage}>{stage}</option>
             ))}
           </select>

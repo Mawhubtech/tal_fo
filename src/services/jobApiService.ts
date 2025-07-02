@@ -56,8 +56,6 @@ export interface JobStats {
 }
 
 class JobApiService {
-  private baseURL: string = '/jobs';
-
   async getAllJobs(filters: JobFilters = {}): Promise<PaginatedResponse<Job>> {
     try {
       const params = new URLSearchParams();
@@ -68,7 +66,7 @@ class JobApiService {
         }
       });
 
-      const response = await apiClient.get(`${this.baseURL}?${params.toString()}`);
+      const response = await apiClient.get(`/jobs?${params.toString()}`);
 
       return {
         data: response.data.jobs,
@@ -83,7 +81,7 @@ class JobApiService {
   }
   async getJobById(id: string): Promise<Job> {
     try {
-      const response = await apiClient.get(`${this.baseURL}/${id}`);
+      const response = await apiClient.get(`/jobs/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching job:', error);
@@ -93,7 +91,7 @@ class JobApiService {
 
   async createJob(jobData: CreateJobData): Promise<Job> {
     try {
-      const response = await apiClient.post(this.baseURL, jobData);
+      const response = await apiClient.post('/jobs', jobData);
       return response.data;
     } catch (error) {
       console.error('Error creating job:', error);
@@ -103,7 +101,7 @@ class JobApiService {
 
   async updateJob(id: string, jobData: Partial<CreateJobData>): Promise<Job> {
     try {
-      const response = await apiClient.patch(`${this.baseURL}/${id}`, jobData);
+      const response = await apiClient.patch(`/jobs/${id}`, jobData);
       return response.data;
     } catch (error) {
       console.error('Error updating job:', error);
@@ -113,7 +111,7 @@ class JobApiService {
 
   async deleteJob(id: string): Promise<void> {
     try {
-      await apiClient.delete(`${this.baseURL}/${id}`);
+      await apiClient.delete(`/jobs/${id}`);
     } catch (error) {
       console.error('Error deleting job:', error);
       throw error;
@@ -129,7 +127,7 @@ class JobApiService {
         }
       });
 
-      const response = await apiClient.get(`${this.baseURL}/department/${departmentId}?${params.toString()}`);
+      const response = await apiClient.get(`/jobs/department/${departmentId}?${params.toString()}`);
 
       return response.data;
     } catch (error) {
@@ -148,7 +146,7 @@ class JobApiService {
         }
       });
 
-      const response = await apiClient.get(`${this.baseURL}/organization/${organizationId}?${params.toString()}`);
+      const response = await apiClient.get(`/jobs/organization/${organizationId}?${params.toString()}`);
 
       return response.data;
     } catch (error) {
@@ -160,7 +158,7 @@ class JobApiService {
   async getJobStats(organizationId?: string): Promise<JobStats> {
     try {
       const params = organizationId ? `?organizationId=${organizationId}` : '';
-      const response = await apiClient.get(`${this.baseURL}/stats${params}`);
+      const response = await apiClient.get(`/jobs/stats${params}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching job stats:', error);
@@ -170,7 +168,7 @@ class JobApiService {
 
   async incrementApplicantCount(id: string): Promise<Job> {
     try {
-      const response = await apiClient.patch(`${this.baseURL}/${id}/applicant-count`, {});
+      const response = await apiClient.patch(`/jobs/${id}/applicant-count`, {});
       return response.data;
     } catch (error) {
       console.error('Error incrementing applicant count:', error);

@@ -10,13 +10,15 @@ interface DraggableCandidateCardProps {
   onClick?: () => void;
   onRemove?: () => void;
   isDragging?: boolean;
+  isPending?: boolean; // Add pending state prop
 }
 
 export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({ 
   candidate,
   onClick,
   onRemove,
-  isDragging = false
+  isDragging = false,
+  isPending = false
 }) => {
   // Helper function to generate initials from name
   const getInitials = (name: string) => {
@@ -54,8 +56,17 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
         isBeingDragged || isDragging
           ? 'shadow-lg ring-2 ring-purple-500 ring-opacity-50 opacity-90 cursor-grabbing' 
           : 'hover:shadow-md cursor-pointer'
+      } ${
+        isPending 
+          ? 'opacity-75 pointer-events-none relative overflow-hidden' 
+          : ''
       }`}
     >
+      {/* Pending indicator */}
+      {isPending && (
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-50 animate-pulse" />
+      )}
+      
       <div className="flex items-start gap-2">
         {/* Drag Handle */}
         <div 
@@ -67,7 +78,8 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
         </div>
 
         {/* Card Content */}
-        <div className="flex-1 min-w-0" onClick={onClick}>          {/* Candidate Info */}
+        <div className="flex-1 min-w-0" onClick={onClick}>
+          {/* Candidate Info */}
           <div className="flex items-center mb-2 gap-2">
             <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
               {candidate.avatar ? (

@@ -3,21 +3,28 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { MoreHorizontal, Users, Plus } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
+import type { Pipeline } from '../../../../../services/pipelineService';
 import { getStageColor } from '../shared';
 import { DraggableCandidateCard } from './DraggableCandidateCard';
 
 interface DraggableStageColumnProps {
   stage: string;
   candidates: Candidate[];
+  pipeline?: Pipeline | null;
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
+  pendingMoves?: Set<string>; // Add pending moves prop
+  movingCandidates?: Map<string, { originalStage: string; targetStage: string }>; // Add moving candidates prop
 }
 
 export const DraggableStageColumn: React.FC<DraggableStageColumnProps> = ({
   stage,
   candidates,
+  pipeline,
   onCandidateClick,
-  onCandidateRemove
+  onCandidateRemove,
+  pendingMoves = new Set(),
+  movingCandidates = new Map()
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: stage,
@@ -33,7 +40,7 @@ export const DraggableStageColumn: React.FC<DraggableStageColumnProps> = ({
       }`}
     >
       {/* Stage Header */}
-      <div className={`px-4 py-3 border-t-4 rounded-t-lg flex justify-between items-center ${getStageColor(stage)}`}>
+      <div className={`px-4 py-3 border-t-4 rounded-t-lg flex justify-between items-center ${getStageColor(stage, pipeline)}`}>
         <div>
           <h2 className="font-semibold text-gray-800">{stage}</h2>
           <p className="text-xs text-gray-500">{candidates.length} candidates</p>
@@ -53,14 +60,20 @@ export const DraggableStageColumn: React.FC<DraggableStageColumnProps> = ({
         isOver ? 'bg-purple-25' : ''
       }`}>
         <SortableContext items={candidateIds} strategy={verticalListSortingStrategy}>
-          {candidates.map((candidate) => (
-            <DraggableCandidateCard
-              key={candidate.id}
-              candidate={candidate}
-              onClick={() => onCandidateClick?.(candidate)}
-              onRemove={() => onCandidateRemove?.(candidate)}
-            />
-          ))}
+          {candidates.map((candidate) => {
+            const isMoving = movingCandidates.has(candidate.id);
+            const isPending = pendingMoves.has(candidate.id);
+            
+            return (
+              <DraggableCandidateCard
+                key={candidate.id}
+                candidate={candidate}
+                onClick={() => onCandidateClick?.(candidate)}
+                onRemove={() => onCandidateRemove?.(candidate)}
+                isPending={isPending || isMoving}
+              />
+            );
+          })}
         </SortableContext>
         
         {/* Empty State for Stage */}
