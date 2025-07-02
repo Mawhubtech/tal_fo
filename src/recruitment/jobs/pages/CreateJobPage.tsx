@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle } from 'lucide-react';
+import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
 import { useOrganization, useOrganizationDepartments } from '../../../hooks/useOrganizations';
+import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import type { CreateJobData } from '../../../services/jobApiService';
 import type { Department } from '../../organizations/services/organizationApiService';
+import type { Pipeline } from '../../../services/pipelineService';
 
 const CreateJobPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ 
@@ -30,6 +32,12 @@ const CreateJobPage: React.FC = () => {
     isLoading: departmentsLoading,
     error: departmentsError
   } = useOrganizationDepartments(organizationId || '');
+
+  const {
+    data: activePipelines = [],
+    isLoading: pipelinesLoading,
+    error: pipelinesError
+  } = useActivePipelines();
 
   const {
     data: editingJob,
@@ -62,9 +70,10 @@ const CreateJobPage: React.FC = () => {
   const [requirements, setRequirements] = useState(['']);
   const [responsibilities, setResponsibilities] = useState(['']);
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
 
   // Calculate loading states
-  const loading = organizationLoading || departmentsLoading || (isEditMode && jobLoading);
+  const loading = organizationLoading || departmentsLoading || pipelinesLoading || (isEditMode && jobLoading);
   const submitLoading = createJobMutation.isPending || updateJobMutation.isPending;
 
   // Set selected department when departmentId is available or when departments change
@@ -98,6 +107,7 @@ const CreateJobPage: React.FC = () => {
       setRequirements(editingJob.requirements || ['']);
       setResponsibilities(editingJob.responsibilities || ['']);
       setDepartmentIdForm(editingJob.departmentId || departmentId || '');
+      setSelectedPipelineId(editingJob.pipelineId || '');
     }
   }, [editingJob, isEditMode, departmentId]);
   // Load context data when organizationId is present
@@ -106,12 +116,14 @@ const CreateJobPage: React.FC = () => {
       setError('Failed to load organization data. Please try again.');
     } else if (departmentsError) {
       setError('Failed to load departments. Please try again.');
+    } else if (pipelinesError) {
+      setError('Failed to load pipelines. Please try again.');
     } else if (jobError && isEditMode) {
       setError('Failed to load job data. Please try again.');
     } else {
       setError(null);
     }
-  }, [organizationError, departmentsError, jobError, isEditMode]);
+  }, [organizationError, departmentsError, pipelinesError, jobError, isEditMode]);
 
   const addSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
@@ -222,6 +234,7 @@ const CreateJobPage: React.FC = () => {
         applicationDeadline: applicationDeadline || undefined,
         organizationId: organizationId || undefined,
         customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
+        pipelineId: selectedPipelineId || undefined,
       };
 
       let resultJob;
@@ -825,26 +838,53 @@ const CreateJobPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Pipeline Stages */}
+              {/* Pipeline Selection */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="pipeline" className="block text-sm font-semibold text-gray-700 mb-2">
                   Hiring Pipeline
                 </label>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex flex-wrap gap-2">
-                    {['Applied', 'Phone Screen', 'Technical Interview', 'Final Interview', 'Offer', 'Hired'].map((stage, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-                      >
-                        {stage}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-3">
-                    Default pipeline stages. Custom pipeline configuration will be available in a future update.
-                  </p>
-                </div>
+                <select
+                  id="pipeline"
+                  value={selectedPipelineId}
+                  onChange={(e) => setSelectedPipelineId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                  disabled={pipelinesLoading}
+                >
+                  <option value="">Select a pipeline</option>
+                  {activePipelines.map((pipeline) => (
+                    <option key={pipeline.id} value={pipeline.id}>
+                      {pipeline.name} {pipeline.isDefault ? '(Default)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {pipelinesLoading && (
+                  <p className="text-xs text-gray-500 mt-1">Loading pipelines...</p>
+                )}
+                {!pipelinesLoading && activePipelines.length === 0 && (
+                  <p className="text-xs text-red-500 mt-1">No active pipelines found. Please create a pipeline first.</p>
+                )}
+                
+                {/* Show selected pipeline stages */}
+                {selectedPipelineId && (() => {
+                  const selectedPipeline = activePipelines.find(p => p.id === selectedPipelineId);
+                  return selectedPipeline ? (
+                    <div className="mt-3 bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Pipeline Stages:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPipeline.stages
+                          .sort((a, b) => a.order - b.order)
+                          .map((stage) => (
+                            <span
+                              key={stage.id}
+                              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                            >
+                              {stage.order}. {stage.name}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
           </div>          </form>
@@ -977,6 +1017,29 @@ const CreateJobPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Selected Pipeline */}
+              {selectedPipelineId && (() => {
+                const selectedPipeline = activePipelines.find(p => p.id === selectedPipelineId);
+                return selectedPipeline ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm font-medium text-blue-800 mb-2">Hiring Process</p>
+                    <p className="text-sm text-blue-900 mb-2">{selectedPipeline.name}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedPipeline.stages
+                        .sort((a, b) => a.order - b.order)
+                        .map((stage) => (
+                          <span
+                            key={stage.id}
+                            className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
+                          >
+                            {stage.order}. {stage.name}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
               {/* Application Deadline */}
               {applicationDeadline && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
@@ -1026,14 +1089,21 @@ const CreateJobPage: React.FC = () => {
                   {skills.length > 0 ? '✓' : '○'}
                 </span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Pipeline</span>
+                <span className={`font-medium ${selectedPipelineId ? 'text-green-600' : 'text-gray-400'}`}>
+                  {selectedPipelineId ? '✓' : '○'}
+                </span>
+              </div>
               <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
                 <div 
                   className="bg-purple-600 h-2 rounded-full transition-all duration-300"                  style={{
                     width: `${Math.round(
-                      ((jobTitle && departmentIdForm && location ? 25 : 0) +
-                       (jobDescription ? 25 : 0) +
-                       (requirements.some(req => req.trim()) ? 25 : 0) +
-                       (skills.length > 0 ? 25 : 0))
+                      ((jobTitle && departmentIdForm && location ? 20 : 0) +
+                       (jobDescription ? 20 : 0) +
+                       (requirements.some(req => req.trim()) ? 20 : 0) +
+                       (skills.length > 0 ? 20 : 0) +
+                       (selectedPipelineId ? 20 : 0))
                     )}%`
                   }}
                 ></div>

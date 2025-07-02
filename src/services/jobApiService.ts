@@ -28,6 +28,7 @@ export interface CreateJobData {
     required: boolean;
     options?: string[];
   }>;
+  pipelineId?: string;
 }
 
 export interface JobFilters {

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { OrganizationApiService, type Organization } from '../services/organizationApiService';
 
 const organizationApiService = new OrganizationApiService();
@@ -21,7 +22,8 @@ export function useOrganizations() {
   return useQuery({
     queryKey: organizationKeys.lists(),
     queryFn: () => organizationApiService.getAllOrganizations(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes - organizations don't change frequently
+    gcTime: 1000 * 60 * 15, // 15 minutes garbage collection
   });
 }
 
@@ -31,7 +33,8 @@ export function useOrganization(organizationId: string) {
     queryKey: organizationKeys.detail(organizationId),
     queryFn: () => organizationApiService.getOrganizationById(organizationId),
     enabled: !!organizationId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    gcTime: 1000 * 60 * 15,
   });
 }
 
@@ -40,7 +43,8 @@ export function useOrganizationStats() {
   return useQuery({
     queryKey: organizationKeys.stats(),
     queryFn: () => organizationApiService.getStats(),
-    staleTime: 1000 * 60 * 2, // 2 minutes (stats change more frequently)
+    staleTime: 1000 * 60 * 5, // 5 minutes - stats can change more frequently
+    gcTime: 1000 * 60 * 10,
   });
 }
 

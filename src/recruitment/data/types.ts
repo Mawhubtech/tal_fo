@@ -51,6 +51,16 @@ export interface Job {
     required: boolean;
     options?: string[];
   }>;
+  pipelineId?: string;
+  pipeline?: {
+    id: string;
+    name: string;
+    stages: Array<{
+      id: string;
+      name: string;
+      order: number;
+    }>;
+  };
   createdAt: Date | string;
   updatedAt: Date | string;
   createdBy?: {

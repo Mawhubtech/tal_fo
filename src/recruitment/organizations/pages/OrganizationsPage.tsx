@@ -1,24 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Building, Users, Briefcase, ChevronRight, Search } from 'lucide-react';
 import { type Organization } from '../services/organizationApiService';
-import { useOrganizations, useOrganizationStats, usePrefetchOrganization } from '../../../hooks/useOrganizations';
+import { useOrganizationPageData, usePrefetchOrganization } from '../../../hooks/useOrganizations';
 
 const OrganizationsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState<string>('all');
   
-  // React Query hooks
+  // Single optimized API call for all organization page data
   const { 
-    data: organizations = [], 
-    isLoading: organizationsLoading, 
-    error: organizationsError 
-  } = useOrganizations();
+    data: pageData,
+    isLoading,
+    error 
+  } = useOrganizationPageData();
   
-  const { 
-    data: stats = { organizations: 0, departments: 0, activeJobs: 0, employees: 0 }, 
-    isLoading: statsLoading 
-  } = useOrganizationStats();
+  // Extract data from the single response
+  const organizations = pageData?.organizations || [];
+  const stats = pageData?.stats || { organizations: 0, departments: 0, activeJobs: 0, employees: 0 };
+  const industries = pageData?.industries || [];
   
   const prefetchOrganization = usePrefetchOrganization();
 
@@ -35,19 +35,16 @@ const OrganizationsPage: React.FC = () => {
     });
   }, [organizations, searchTerm, industryFilter]);
 
-  // Memoized industries
-  const industries = useMemo(() => {
-    return [...new Set(organizations.map(org => org.industry))];
-  }, [organizations]);
+  // Handle organization hover for prefetching (temporarily disabled to prevent cascade of API calls)
+  const handleOrganizationHover = useCallback((organizationId: string) => {
+    // Temporarily disable prefetching to prevent excessive API calls
+    // Each prefetch was triggering department and job stats calls
+    // prefetchOrganization(organizationId);
+  }, []);
 
-  // Handle organization hover for prefetching
-  const handleOrganizationHover = (organizationId: string) => {
-    prefetchOrganization(organizationId);
-  };
+  // Use the loading state from the single API call
 
-  const loading = organizationsLoading || statsLoading;
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
@@ -58,7 +55,7 @@ const OrganizationsPage: React.FC = () => {
     );
   }
 
-  if (organizationsError) {
+  if (error) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
@@ -172,7 +169,8 @@ const OrganizationsPage: React.FC = () => {
       </div>
 
       {/* Organizations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">        {filteredOrganizations.map((org) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredOrganizations.map((org) => (
           <Link
             key={org.id}
             to={`/dashboard/organizations/${org.id}`}

@@ -1,6 +1,7 @@
 import { ClientApiService, Client, ClientQueryParams, ClientsResponse } from '../../../services/clientApiService';
 import { jobApiService } from '../../../services/jobApiService';
 import { DepartmentApiService, Department as BackendDepartment } from './departmentApiService';
+import apiClient from '../../../services/api';
 
 // Type mapping interface - clients ARE organizations
 export interface Organization {
@@ -13,6 +14,20 @@ export interface Organization {
   logoUrl?: string;
   industry: string;
   location: string;
+}
+
+// New interfaces for the organization page data endpoint
+export interface OrganizationPageStats {
+  organizations: number;
+  departments: number;
+  activeJobs: number;
+  employees: number;
+}
+
+export interface OrganizationPageData {
+  organizations: Organization[];
+  stats: OrganizationPageStats;
+  industries: string[];
 }
 
 // Department interface - now uses backend data
@@ -36,25 +51,23 @@ export class OrganizationApiService {
    */
   private async mapClientToOrganization(client: Client, includeDepartmentCount: boolean = false): Promise<Organization> {
     let departmentCount = 0;
-    let activeJobs = 0;
+    let activeJobs = client.openJobs; // Use client data as default
     
+    // Only make additional API calls when specifically requested (e.g., for detail view)
     if (includeDepartmentCount) {
       try {
         const departments = await this.getDepartmentsByOrganization(client.id);
         departmentCount = departments.length;
+        
+        // Only get job stats for detail view, not for listing
+        const jobStats = await jobApiService.getJobStats(client.id);
+        activeJobs = jobStats.active;
       } catch (error) {
-        console.error('Error getting department count:', error);
+        console.error('Error getting detailed organization data:', error);
+        // Fallback to client data
+        departmentCount = 0;
+        activeJobs = client.openJobs;
       }
-    }
-
-    // Get actual active jobs count from jobs table instead of using client.openJobs
-    try {
-      const jobStats = await jobApiService.getJobStats(client.id);
-      activeJobs = jobStats.active;
-    } catch (error) {
-      console.error('Error getting active jobs count:', error);
-      // Fallback to client.openJobs if job stats API fails
-      activeJobs = client.openJobs;
     }
     
     return {
@@ -74,7 +87,8 @@ export class OrganizationApiService {
    */
   async getAllOrganizations(): Promise<Organization[]> {
     const response = await this.clientApiService.getAllClients();
-    return Promise.all(response.clients.map(client => this.mapClientToOrganization(client, true)));
+    // Don't include department count for listing view to avoid excessive API calls
+    return Promise.all(response.clients.map(client => this.mapClientToOrganization(client, false)));
   }
   /**
    * Get organization by ID
@@ -100,7 +114,22 @@ export class OrganizationApiService {
   async getOrganizationsByIndustry(industry: string): Promise<Organization[]> {
     const response = await this.clientApiService.getAllClients({ industry });
     return Promise.all(response.clients.map(client => this.mapClientToOrganization(client)));
-  }  /**
+  }  
+  
+  /**
+   * Get all organization page data in a single request
+   */
+  async getOrganizationPageData(): Promise<OrganizationPageData> {
+    try {
+      const response = await apiClient.get('/clients/organization-page-data');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching organization page data:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get departments for an organization using the backend API
    */
   async getDepartmentsByOrganization(organizationId: string): Promise<Department[]> {
@@ -270,32 +299,26 @@ export class OrganizationApiService {
     activeJobs: number;
     employees: number;
   }> {
-    const [clientStats, allJobsResponse] = await Promise.all([
-      this.clientApiService.getClientStats(),
-      jobApiService.getAllJobs()
-    ]);
-
-    // Count unique departments across all organizations
-    const departmentSet = new Set<string>();
-    // Count actual active jobs from jobs table
-    let activeJobsCount = 0;
-    
-    allJobsResponse.data.forEach(job => {
-      if (job.organizationId && (job.departmentId || job.department)) {
-        departmentSet.add(`${job.organizationId}-${job.departmentId || job.department}`);
-      }
-      // Count active jobs
-      if (job.status.toLowerCase() === 'active') {
-        activeJobsCount++;
-      }
-    });
-
-    return {
-      organizations: clientStats.total,
-      departments: departmentSet.size,
-      activeJobs: activeJobsCount,
-      employees: 0, // Sum from individual clients if needed
-    };
+    try {
+      // Get basic client stats (this should be lightweight)
+      const clientStats = await this.clientApiService.getClientStats();
+      
+      return {
+        organizations: clientStats.total,
+        departments: 0, // Calculate from organizations data we already have
+        activeJobs: clientStats.totalOpenJobs || 0, // Use client stats instead of fetching all jobs
+        employees: 0, // Calculate if needed
+      };
+    } catch (error) {
+      console.error('Error getting organization stats:', error);
+      // Return fallback stats
+      return {
+        organizations: 0,
+        departments: 0,
+        activeJobs: 0,
+        employees: 0,
+      };
+    }
   }
 
   /**

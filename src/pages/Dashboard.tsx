@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom'; // Import Routes and Route
+import { Routes, Route, Navigate } from 'react-router-dom'; // Import Routes and Route
 import Sidebar from '../components/Sidebar';   // Your Sidebar component
 import TopNavbar from '../components/TopNavbar'; // Your TopNavbar component
 import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
@@ -83,8 +83,10 @@ const Dashboard: React.FC = () => {
             <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
             <Route path="search-results" element={<SearchResults />} /> {/* Route for SearchResults */}
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<UnifiedContactsPage />} /> {/* Route for Unified Contact Management */}            {/* Jobs, Candidates, and Clients standalone routes */}
-            <Route path="jobs" element={<OrganizationsPage />} />
+            <Route path="contacts" element={<UnifiedContactsPage />} /> {/* Route for Unified Contact Management */}            {/* Jobs redirect to organizations - hierarchical approach */}
+            <Route path="jobs" element={<Navigate to="/dashboard/organizations" replace />} />
+            
+            {/* Candidates and Clients standalone routes */}
             <Route path="candidates" element={<CandidatesPage />} />
             <Route path="clients" element={<ClientManagementPage />} />
             <Route path="clients/create-department" element={<CreateDepartmentPage />} />

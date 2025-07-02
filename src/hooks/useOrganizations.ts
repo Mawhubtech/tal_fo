@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { OrganizationApiService, type Organization } from '../recruitment/organizations/services/organizationApiService';
 
 const organizationApiService = new OrganizationApiService();
@@ -21,7 +22,18 @@ export function useOrganizations() {
   return useQuery({
     queryKey: organizationKeys.lists(),
     queryFn: () => organizationApiService.getAllOrganizations(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes - organizations don't change frequently
+    gcTime: 1000 * 60 * 15, // 15 minutes garbage collection
+  });
+}
+
+// Get all organization page data in a single optimized request
+export function useOrganizationPageData() {
+  return useQuery({
+    queryKey: [...organizationKeys.all, 'page-data'],
+    queryFn: () => organizationApiService.getOrganizationPageData(),
+    staleTime: 1000 * 60 * 10, // 10 minutes - page data doesn't change frequently
+    gcTime: 1000 * 60 * 15, // 15 minutes garbage collection
   });
 }
 
@@ -31,16 +43,39 @@ export function useOrganization(organizationId: string) {
     queryKey: organizationKeys.detail(organizationId),
     queryFn: () => organizationApiService.getOrganizationById(organizationId),
     enabled: !!organizationId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    gcTime: 1000 * 60 * 15,
   });
 }
 
 // Get organization statistics
 export function useOrganizationStats() {
+  const { data: organizations = [] } = useOrganizations(); // Reuse organizations data
+  
   return useQuery({
     queryKey: organizationKeys.stats(),
-    queryFn: () => organizationApiService.getStats(),
-    staleTime: 1000 * 60 * 2, // 2 minutes (stats change more frequently)
+    queryFn: async () => {
+      // Try to get stats from API
+      try {
+        const apiStats = await organizationApiService.getStats();
+        return apiStats;
+      } catch (error) {
+        // Fallback: calculate from organizations data we already have
+        const totalEmployees = organizations.reduce((sum, org) => sum + (org.totalEmployees || 0), 0);
+        const totalActiveJobs = organizations.reduce((sum, org) => sum + (org.activeJobs || 0), 0);
+        const totalDepartments = organizations.reduce((sum, org) => sum + (org.departmentCount || 0), 0);
+        
+        return {
+          organizations: organizations.length,
+          departments: totalDepartments,
+          activeJobs: totalActiveJobs,
+          employees: totalEmployees,
+        };
+      }
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes - stats don't change frequently
+    gcTime: 1000 * 60 * 15,
+    enabled: organizations.length > 0, // Only run when we have organizations data
   });
 }
 
@@ -50,7 +85,8 @@ export function useOrganizationDepartments(organizationId: string) {
     queryKey: organizationKeys.departments(organizationId),
     queryFn: () => organizationApiService.getDepartmentsByOrganization(organizationId),
     enabled: !!organizationId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    gcTime: 1000 * 60 * 15,
   });
 }
 
@@ -60,7 +96,8 @@ export function useOrganizationJobs(organizationId: string, options?: { enabled?
     queryKey: organizationKeys.jobs(organizationId),
     queryFn: () => organizationApiService.getJobsByOrganization(organizationId),
     enabled: !!organizationId && (options?.enabled !== false),
-    staleTime: 1000 * 60 * 3, // 3 minutes
+    staleTime: 1000 * 60 * 8, // 8 minutes
+    gcTime: 1000 * 60 * 12,
   });
 }
 
@@ -133,11 +170,20 @@ export function useInvalidateOrganizations() {
 export function usePrefetchOrganization() {
   const queryClient = useQueryClient();
   
-  return (organizationId: string) => {
+  return useCallback((organizationId: string) => {
+    // Only prefetch if data is not already in cache or is stale
+    const existingData = queryClient.getQueryData(organizationKeys.detail(organizationId));
+    const queryState = queryClient.getQueryState(organizationKeys.detail(organizationId));
+    
+    // Skip prefetch if data exists and is fresh
+    if (existingData && queryState && queryState.dataUpdatedAt > Date.now() - (1000 * 60 * 5)) {
+      return;
+    }
+    
     queryClient.prefetchQuery({
       queryKey: organizationKeys.detail(organizationId),
       queryFn: () => organizationApiService.getOrganizationById(organizationId),
-      staleTime: 1000 * 60 * 5,
+      staleTime: 1000 * 60 * 10,
     });
-  };
+  }, [queryClient]);
 }
