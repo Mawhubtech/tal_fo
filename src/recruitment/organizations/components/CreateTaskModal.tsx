@@ -3,7 +3,7 @@ import { X, Calendar, User, Flag, Folder, Search } from 'lucide-react';
 import { useCreateTask, useUpdateTask } from '../../../hooks/useTasks';
 import { useAssignableUsers } from '../../../hooks/useUsers';
 import { CreateTaskData, UpdateTaskData, Task } from '../services/taskApiService';
-import { jobApplicationApiService } from '../../jobs/services/jobApplicationApiService';
+import { jobApplicationApiService } from '../../../services/jobApplicationApiService';
 
 interface CreateTaskModalProps {
   isOpen: boolean;

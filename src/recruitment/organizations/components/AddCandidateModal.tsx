@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Plus, User } from 'lucide-react';
 import { candidateApiService, type Candidate } from '../../candidates/services/candidateApiService';
-import { jobApplicationApiService } from '../../jobs/services/jobApplicationApiService';
+import { jobApplicationApiService } from '../../../services/jobApplicationApiService';
 import { useStageMovement } from '../../../hooks/useStageMovement';
 import { StageChangeReason } from '../../../types/stageMovement.types';
 import type { Pipeline } from '../../../services/pipelineService';

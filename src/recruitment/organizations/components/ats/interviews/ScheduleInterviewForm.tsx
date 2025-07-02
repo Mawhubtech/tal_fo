@@ -9,7 +9,7 @@ import {
   CreateInterviewRequest,
 } from '../../../../../types/interview.types';
 import { useCreateInterview } from '../../../../../hooks/useInterviews';
-import { jobApplicationApiService } from '../../../../jobs/services/jobApplicationApiService';
+import { jobApplicationApiService } from '../../../../../services/jobApplicationApiService';
 
 interface ScheduleInterviewFormProps {
   jobId: string;

@@ -4,10 +4,13 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
 import { useOrganization, useOrganizationDepartments } from '../../../hooks/useOrganizations';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
+import { usePipelines } from '../../../hooks/usePipelines';
+import { usePipelineModal } from '../../../hooks/usePipelineModal';
 import type { CreateJobData } from '../../../services/jobApiService';
 import type { Department } from '../../organizations/services/organizationApiService';
-import type { Pipeline } from '../../../services/pipelineService';
+import type { Pipeline, CreatePipelineDto } from '../../../services/pipelineService';
 import AIJobGeneratorDialog from '../components/AIJobGeneratorDialog';
+import PipelineModal from '../../../components/PipelineModal';
 
 const CreateJobPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ 
@@ -37,7 +40,8 @@ const CreateJobPage: React.FC = () => {
   const {
     data: activePipelines = [],
     isLoading: pipelinesLoading,
-    error: pipelinesError
+    error: pipelinesError,
+    refetch: refetchActivePipelines
   } = useActivePipelines();
 
   const {
@@ -73,6 +77,15 @@ const CreateJobPage: React.FC = () => {
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
   const [showAIDialog, setShowAIDialog] = useState(false);
+
+  // Pipeline creation functionality
+  const { createPipeline } = usePipelines();
+  const {
+    showCreateModal: showPipelineModal,
+    openCreateModal: openPipelineModal,
+    closeModal: closePipelineModal,
+    modalLoading: pipelineModalLoading,
+  } = usePipelineModal();
 
   // Calculate loading states
   const loading = organizationLoading || departmentsLoading || pipelinesLoading || (isEditMode && jobLoading);
@@ -305,6 +318,27 @@ const CreateJobPage: React.FC = () => {
     
     // Clear and update benefits (replace existing with new ones)
     setBenefits(aiData.benefits.filter(benefit => benefit.trim()));
+  };
+
+  // Pipeline creation handler
+  const handleCreatePipeline = async (data: CreatePipelineDto) => {
+    try {
+      await createPipeline(data);
+      // Refetch active pipelines to include the newly created one
+      await refetchActivePipelines();
+      closePipelineModal();
+      
+      // Find the newly created pipeline and set it as selected
+      // Since we can't get the exact ID from createPipeline, we'll refetch and find by name
+      const updatedPipelines = await refetchActivePipelines();
+      const newPipeline = updatedPipelines.data?.find(p => p.name === data.name);
+      if (newPipeline) {
+        setSelectedPipelineId(newPipeline.id);
+      }
+    } catch (err) {
+      console.error('Error creating pipeline:', err);
+      // Error handling is managed by the usePipelines hook
+    }
   };
 
   // Early return if no organizationId
@@ -900,9 +934,20 @@ const CreateJobPage: React.FC = () => {
 
               {/* Pipeline Selection */}
               <div>
-                <label htmlFor="pipeline" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Hiring Pipeline *
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="pipeline" className="block text-sm font-semibold text-gray-700">
+                    Hiring Pipeline *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={openPipelineModal}
+                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    title="Create new pipeline"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Create Pipeline</span>
+                  </button>
+                </div>
                 <select
                   id="pipeline"
                   value={selectedPipelineId}
@@ -1189,6 +1234,14 @@ const CreateJobPage: React.FC = () => {
           experienceLevel,
           departmentName: selectedDepartment?.name
         }}
+      />
+
+      {/* Pipeline Creation Dialog */}
+      <PipelineModal
+        isOpen={showPipelineModal}
+        onClose={closePipelineModal}
+        onSubmit={handleCreatePipeline}
+        isLoading={pipelineModalLoading}
       />
     </div>
   );

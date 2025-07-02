@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { jobApplicationApiService, type JobApplication } from '../recruitment/jobs/services/jobApplicationApiService';
+import { jobApplicationApiService, type JobApplication } from '../services/jobApplicationApiService';
 
 // Query Keys
 export const jobApplicationKeys = {

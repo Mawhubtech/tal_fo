@@ -13,7 +13,7 @@ import { useInterviews } from '../../../hooks/useInterviews';
 import { useJobReport } from '../../../hooks/useReports';
 import { StageChangeReason } from '../../../types/stageMovement.types';
 import type { Job as JobType } from '../../data/types';
-import type { JobApplication } from '../../jobs/services/jobApplicationApiService';
+import type { JobApplication } from '../../../services/jobApplicationApiService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
 import AddCandidateModal from '../components/AddCandidateModal';
 import ConfirmationDialog from '../../../components/ConfirmationDialog';

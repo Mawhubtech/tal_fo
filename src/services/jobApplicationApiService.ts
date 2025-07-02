@@ -1,4 +1,4 @@
-import apiClient from '../../../services/api';
+import apiClient from './api';
 
 export interface JobApplication {
   id: string;
@@ -58,7 +58,7 @@ class JobApplicationApiService {
 
   async createJobApplication(data: CreateJobApplicationData): Promise<JobApplication> {
     try {
-      const response = await apiClient.post(this.baseURL, data);
+      const response = await apiClient.post('/job-applications', data);
       return response.data;
     } catch (error) {
       console.error('Error creating job application:', error);
@@ -76,7 +76,7 @@ class JobApplicationApiService {
         }
       });
 
-      const response = await apiClient.get(`${this.baseURL}?${params.toString()}`);
+      const response = await apiClient.get(`/job-applications?${params.toString()}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching job applications:', error);
@@ -86,7 +86,7 @@ class JobApplicationApiService {
 
   async getJobApplicationById(id: string): Promise<JobApplication> {
     try {
-      const response = await apiClient.get(`${this.baseURL}/${id}`);
+      const response = await apiClient.get(`/job-applications/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching job application:', error);
@@ -104,7 +104,7 @@ class JobApplicationApiService {
         }
       });
 
-      const response = await apiClient.get(`${this.baseURL}/job/${jobId}?${params.toString()}`);
+      const response = await apiClient.get(`/job-applications/job/${jobId}?${params.toString()}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching job applications by job ID:', error);
@@ -122,7 +122,7 @@ class JobApplicationApiService {
         }
       });
 
-      const response = await apiClient.get(`${this.baseURL}/candidate/${candidateId}?${params.toString()}`);
+      const response = await apiClient.get(`/job-applications/candidate/${candidateId}?${params.toString()}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching job applications by candidate ID:', error);
@@ -132,7 +132,7 @@ class JobApplicationApiService {
 
   async updateJobApplication(id: string, data: Partial<CreateJobApplicationData>): Promise<JobApplication> {
     try {
-      const response = await apiClient.patch(`${this.baseURL}/${id}`, data);
+      const response = await apiClient.patch(`/job-applications/${id}`, data);
       return response.data;
     } catch (error) {
       console.error('Error updating job application:', error);
@@ -142,7 +142,7 @@ class JobApplicationApiService {
 
   async deleteJobApplication(id: string): Promise<void> {
     try {
-      await apiClient.delete(`${this.baseURL}/${id}`);
+      await apiClient.delete(`/job-applications/${id}`);
     } catch (error) {
       console.error('Error deleting job application:', error);
       throw error;
@@ -152,7 +152,7 @@ class JobApplicationApiService {
   async getJobApplicationStats(jobId?: string): Promise<any> {
     try {
       const params = jobId ? `?jobId=${jobId}` : '';
-      const response = await apiClient.get(`${this.baseURL}/stats${params}`);
+      const response = await apiClient.get(`/job-applications/stats${params}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching job application stats:', error);
