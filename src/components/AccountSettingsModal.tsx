@@ -4,7 +4,7 @@ import {
   Shield, ExternalLink, RefreshCw 
 } from 'lucide-react';
 import { useEmailService } from '../hooks/useEmailService';
-import { toast } from './ToastContainer';
+import { useToast } from '../contexts/ToastContext';
 
 interface AccountSettingsModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   onClose
 }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('email');
+  const { addToast } = useToast();
   const {
     emailSettings,
     isLoadingSettings,
@@ -42,12 +43,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           if (event.data.type === 'GMAIL_OAUTH_SUCCESS') {
             // OAuth successful, refetch settings
             refetchSettings().then(() => {
-              toast.success('Gmail Connected', 'Your Gmail account has been connected successfully.');
+              addToast({ type: 'success', title: 'Gmail Connected', message: 'Your Gmail account has been connected successfully.' });
             });
             oauthWindow?.close();
             window.removeEventListener('message', handleMessage);
           } else if (event.data.type === 'GMAIL_OAUTH_ERROR') {
-            toast.error('Connection Failed', 'Failed to connect Gmail. Please try again.');
+            addToast({ type: 'error', title: 'Connection Failed', message: 'Failed to connect Gmail. Please try again.' });
             oauthWindow?.close();
             window.removeEventListener('message', handleMessage);
           }
@@ -75,13 +76,13 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           window.removeEventListener('message', handleMessage);
           if (oauthWindow && !oauthWindow.closed) {
             oauthWindow.close();
-            toast.error('Timeout', 'Gmail connection timed out. Please try again.');
+            addToast({ type: 'error', title: 'Timeout', message: 'Gmail connection timed out. Please try again.' });
           }
         }, 300000);
       }
     } catch (error) {
       console.error('Failed to connect Gmail:', error);
-      toast.error('Connection Failed', 'Failed to connect Gmail. Please try again.');
+      addToast({ type: 'error', title: 'Connection Failed', message: 'Failed to connect Gmail. Please try again.' });
     }
   };
 
@@ -90,20 +91,20 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       await disconnectGmail();
       // Refetch settings to update the UI
       await refetchSettings();
-      toast.success('Gmail Disconnected', 'Your Gmail account has been disconnected.');
+      addToast({ type: 'success', title: 'Gmail Disconnected', message: 'Your Gmail account has been disconnected.' });
     } catch (error) {
       console.error('Failed to disconnect Gmail:', error);
-      toast.error('Disconnection Failed', 'Failed to disconnect Gmail. Please try again.');
+      addToast({ type: 'error', title: 'Disconnection Failed', message: 'Failed to disconnect Gmail. Please try again.' });
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-[60]">
       <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
       
-      <div className="absolute right-0 top-0 h-full w-full max-w-4xl bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto">
+      <div className="absolute right-0 top-0 h-full w-full max-w-4xl bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto overflow-x-hidden">
         {/* Header */}
         <div className="bg-purple-600 text-white p-6 sticky top-0 z-10">
           <div className="flex items-center justify-between">
