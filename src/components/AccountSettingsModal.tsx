@@ -88,6 +88,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const handleDisconnectGmail = async () => {
     try {
       await disconnectGmail();
+      // Refetch settings to update the UI
+      await refetchSettings();
       toast.success('Gmail Disconnected', 'Your Gmail account has been disconnected.');
     } catch (error) {
       console.error('Failed to disconnect Gmail:', error);
