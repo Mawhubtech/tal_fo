@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { 
   Users, UserPlus, Building, Target, BarChart3, Settings, GitBranch,
-   Bell, Search, Shield, ChevronRight,
+   Bell, Search, Shield, ChevronRight, ChevronDown,
   Activity, Database, Lock,
   LayoutDashboard
 } from 'lucide-react';
@@ -14,6 +14,7 @@ interface AdminLayoutProps {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
   const [notifications] = useState(3); // Mock notification count
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
   const adminNavigationItems = [
     {
@@ -26,9 +27,23 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     {
       id: 'user-management',
       label: 'User Management',
-      path: '/dashboard/admin/user-management',
+      path: '/dashboard/admin/users',
       icon: Users,
-      description: 'Manage system users and permissions'
+      description: 'Manage system users and permissions',
+      submenu: [
+        {
+          id: 'users',
+          label: 'Users',
+          path: '/dashboard/admin/users',
+          description: 'Manage system users'
+        },
+        {
+          id: 'user-clients',
+          label: 'User-Client Access',
+          path: '/dashboard/admin/user-clients',
+          description: 'Manage user access to organizations'
+        }
+      ]
     },
     {
       id: 'pipelines',
@@ -86,6 +101,25 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
+  };
+
+  const isSubmenuActive = (item: any) => {
+    if (!item.submenu) return false;
+    return item.submenu.some((subItem: any) => isActive(subItem.path));
+  };
+
+  const toggleMenu = (menuId: string) => {
+    const newExpanded = new Set(expandedMenus);
+    if (newExpanded.has(menuId)) {
+      newExpanded.delete(menuId);
+    } else {
+      newExpanded.add(menuId);
+    }
+    setExpandedMenus(newExpanded);
+  };
+
+  const isMenuExpanded = (menuId: string) => {
+    return expandedMenus.has(menuId) || isSubmenuActive(adminNavigationItems.find(item => item.id === menuId));
   };
 
   const getCurrentPageTitle = () => {

@@ -187,3 +187,6 @@ export function usePrefetchOrganization() {
     });
   }, [queryClient]);
 }
+
+// Alias for organizations (since clients are organizations in this system)
+export const useClients = useOrganizations;

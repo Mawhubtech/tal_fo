@@ -1,0 +1,918 @@
+import React, { useState } from 'react';
+import { 
+  Plus, Search, Filter, MoreHorizontal, Edit, Copy, Trash2, 
+  Eye, Users, Lock, Globe, Building, Settings, ChevronRight,
+  CheckCircle, Clock, User, Palette, AlertCircle, X, Crown, UserCheck,
+  Archive, Download, Star, StarOff
+} from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { 
+  useHiringTeams, 
+  useCreateHiringTeam, 
+  useUpdateHiringTeam, 
+  useDeleteHiringTeam 
+} from '../../hooks/useHiringTeam';
+import { useOrganization } from '../../hooks/useOrganizations';
+import { useUserClients } from '../../hooks/useUser';
+import type { HiringTeam, CreateHiringTeamData, UpdateHiringTeamData } from '../../services/hiringTeamApiService';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import ToastContainer, { toast } from '../../components/ToastContainer';
+
+const HiringTeamsPage: React.FC = () => {
+  const { organizationId } = useParams<{ organizationId: string }>();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'archived'>('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<HiringTeam | null>(null);
+  const [deleteConfirmTeam, setDeleteConfirmTeam] = useState<HiringTeam | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [bulkActionMode, setBulkActionMode] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState<CreateHiringTeamData>({
+    name: '',
+    description: '',
+    visibility: 'organization',
+    status: 'active',
+    isDefault: false,
+    color: '#6366f1',
+    organizationIds: organizationId ? [organizationId] : []
+  });
+
+  // API hooks
+  const { data: organization } = useOrganization(organizationId || '');
+  const { data: userClients = [], isLoading: loadingClients } = useUserClients();
+  
+  // Use user's accessible clients if no specific organizationId is provided
+  const teamOrganizationIds = organizationId 
+    ? [organizationId] 
+    : userClients.map(client => client.id);
+    
+  const { data: hiringTeams = [], isLoading, error } = useHiringTeams(
+    teamOrganizationIds.length > 0 ? teamOrganizationIds : undefined
+  );
+  const createTeamMutation = useCreateHiringTeam();
+  const updateTeamMutation = useUpdateHiringTeam();
+  const deleteTeamMutation = useDeleteHiringTeam();
+
+  // Filter teams based on search and status
+  const filteredTeams = hiringTeams.filter(team => {
+    const matchesSearch = team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         team.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || team.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleCreateTeam = async () => {
+    try {
+      const teamData = {
+        ...formData,
+        // Use the same organization IDs logic as for fetching teams
+        organizationIds: teamOrganizationIds,
+        // Remove the single organizationId field to avoid validation error
+        organizationId: undefined,
+      };
+      
+      await createTeamMutation.mutateAsync(teamData);
+      toast.success('Hiring team created successfully!');
+      setShowCreateModal(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error creating team:', error);
+      toast.error('Failed to create hiring team. Please try again.');
+    }
+  };
+
+  const handleUpdateTeam = async () => {
+    if (!editingTeam) return;
+    try {
+      await updateTeamMutation.mutateAsync({
+        teamId: editingTeam.id,
+        data: formData as UpdateHiringTeamData
+      });
+      toast.success('Hiring team updated successfully!');
+      setEditingTeam(null);
+      resetForm();
+    } catch (error) {
+      toast.error('Failed to update hiring team. Please try again.');
+    }
+  };
+
+  const handleDeleteTeam = async () => {
+    if (!deleteConfirmTeam) return;
+    try {
+      await deleteTeamMutation.mutateAsync(deleteConfirmTeam.id);
+      toast.success('Hiring team deleted successfully!');
+      setDeleteConfirmTeam(null);
+    } catch (error) {
+      toast.error('Failed to delete hiring team. Please try again.');
+    }
+  };
+
+  const handleDuplicateTeam = async (team: HiringTeam) => {
+    try {
+      const duplicateData = {
+        name: `${team.name} (Copy)`,
+        description: team.description,
+        visibility: team.visibility,
+        status: 'active' as const,
+        isDefault: false,
+        color: team.color,
+        organizationIds: teamOrganizationIds,
+      };
+      
+      await createTeamMutation.mutateAsync(duplicateData);
+      toast.success('Team duplicated successfully!');
+      setActiveDropdown(null);
+    } catch (error) {
+      console.error('Error duplicating team:', error);
+      toast.error('Failed to duplicate team. Please try again.');
+    }
+  };
+
+  const handleToggleDefault = async (team: HiringTeam) => {
+    try {
+      await updateTeamMutation.mutateAsync({
+        teamId: team.id,
+        data: { isDefault: !team.isDefault }
+      });
+      toast.success(`Team ${team.isDefault ? 'removed from' : 'set as'} default successfully!`);
+      setActiveDropdown(null);
+    } catch (error) {
+      console.error('Error toggling default status:', error);
+      toast.error('Failed to update default status. Please try again.');
+    }
+  };
+
+  const handleArchiveTeam = async (team: HiringTeam) => {
+    try {
+      const newStatus = team.status === 'archived' ? 'active' : 'archived';
+      await updateTeamMutation.mutateAsync({
+        teamId: team.id,
+        data: { status: newStatus }
+      });
+      toast.success(`Team ${newStatus === 'archived' ? 'archived' : 'unarchived'} successfully!`);
+      setActiveDropdown(null);
+    } catch (error) {
+      console.error('Error archiving team:', error);
+      toast.error('Failed to archive team. Please try again.');
+    }
+  };
+
+  const handleExportTeam = (team: HiringTeam) => {
+    try {
+      const teamData = {
+        id: team.id,
+        name: team.name,
+        description: team.description,
+        visibility: team.visibility,
+        status: team.status,
+        isDefault: team.isDefault,
+        color: team.color,
+        memberCount: team.members?.length || 0,
+        organizations: team.organizations?.map(org => ({
+          id: org.id,
+          name: org.name,
+          industry: org.industry
+        })),
+        createdBy: team.createdBy,
+        createdAt: team.createdAt,
+        updatedAt: team.updatedAt
+      };
+
+      const dataStr = JSON.stringify(teamData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `hiring-team-${team.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      toast.success('Team data exported successfully!');
+      setActiveDropdown(null);
+    } catch (error) {
+      console.error('Error exporting team:', error);
+      toast.error('Failed to export team data. Please try again.');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      visibility: 'organization',
+      status: 'active',
+      isDefault: false,
+      color: '#6366f1',
+      organizationIds: teamOrganizationIds
+    });
+  };
+
+  const openEditModal = (team: HiringTeam) => {
+    setFormData({
+      name: team.name,
+      description: team.description || '',
+      visibility: team.visibility,
+      status: team.status,
+      isDefault: team.isDefault,
+      color: team.color || '#6366f1',
+      organizationIds: team.organizations ? team.organizations.map(org => org.id) : (team.organizationId ? [team.organizationId] : [])
+    });
+    setEditingTeam(team);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'inactive': return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'archived': return <AlertCircle className="h-4 w-4 text-gray-500" />;
+      default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getVisibilityIcon = (visibility: string) => {
+    switch (visibility) {
+      case 'public': return <Globe className="h-4 w-4" />;
+      case 'private': return <Lock className="h-4 w-4" />;
+      case 'organization': return <Building className="h-4 w-4" />;
+      default: return <Building className="h-4 w-4" />;
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTeams.length === 0) return;
+    
+    try {
+      const promises = selectedTeams.map(teamId => deleteTeamMutation.mutateAsync(teamId));
+      await Promise.all(promises);
+      toast.success(`Successfully deleted ${selectedTeams.length} team${selectedTeams.length > 1 ? 's' : ''}!`);
+      setSelectedTeams([]);
+      setBulkActionMode(false);
+    } catch (error) {
+      console.error('Error in bulk delete:', error);
+      toast.error('Failed to delete some teams. Please try again.');
+    }
+  };
+
+  const handleBulkArchive = async (archive: boolean = true) => {
+    if (selectedTeams.length === 0) return;
+    
+    try {
+      const promises = selectedTeams.map(teamId => 
+        updateTeamMutation.mutateAsync({
+          teamId,
+          data: { status: archive ? 'archived' : 'active' }
+        })
+      );
+      await Promise.all(promises);
+      toast.success(`Successfully ${archive ? 'archived' : 'unarchived'} ${selectedTeams.length} team${selectedTeams.length > 1 ? 's' : ''}!`);
+      setSelectedTeams([]);
+      setBulkActionMode(false);
+    } catch (error) {
+      console.error('Error in bulk archive:', error);
+      toast.error('Failed to archive some teams. Please try again.');
+    }
+  };
+
+  const handleSelectTeam = (teamId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTeams([...selectedTeams, teamId]);
+    } else {
+      setSelectedTeams(selectedTeams.filter(id => id !== teamId));
+    }
+  };
+
+  const handleSelectAllTeams = (checked: boolean) => {
+    if (checked) {
+      setSelectedTeams(filteredTeams.map(team => team.id));
+    } else {
+      setSelectedTeams([]);
+    }
+  };
+
+  // Handle error case - if it's a 404 or no teams found, allow creation instead of showing error
+  const showCreateInsteadOfError = error && (
+    error.message?.includes('404') || 
+    error.message?.includes('Not Found') ||
+    hiringTeams.length === 0
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center mb-2">
+            <Link 
+              to={`/admin/organizations/${organizationId}`}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              {organization?.name || 'Organization'}
+            </Link>
+            <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+            <span className="text-gray-900 font-medium">Hiring Teams</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Hiring Teams</h1>
+              <p className="text-gray-600 mt-1">
+                Manage teams responsible for hiring across your organization
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setBulkActionMode(!bulkActionMode)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  bulkActionMode 
+                    ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                    : 'text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <Settings className="h-4 w-4" />
+                <span>{bulkActionMode ? 'Exit Bulk Mode' : 'Bulk Actions'}</span>
+              </button>
+              
+              {bulkActionMode && selectedTeams.length > 0 && (
+                <>
+                  <button
+                    onClick={() => handleBulkArchive(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                  >
+                    <Archive className="h-4 w-4" />
+                    <span>Archive ({selectedTeams.length})</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleBulkDelete}
+                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span>Delete ({selectedTeams.length})</span>
+                  </button>
+                </>
+              )}
+              
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Create Team</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search teams..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Teams Grid */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          </div>
+        ) : error && !showCreateInsteadOfError ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Hiring Teams</h3>
+            <p className="text-gray-600 mb-6">Failed to load hiring teams. Please refresh the page.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors mx-auto"
+            >
+              <span>Refresh Page</span>
+            </button>
+          </div>
+        ) : filteredTeams.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {searchTerm || statusFilter !== 'all' ? 'No teams match your search' : 'No hiring teams yet'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Try adjusting your search criteria or filters.'
+                : 'Create your first hiring team to get started with organized recruitment.'
+              }
+            </p>
+            {(!searchTerm && statusFilter === 'all') || showCreateInsteadOfError ? (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors mx-auto"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Create Your First Team</span>
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <div>
+            {bulkActionMode && (
+              <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedTeams.length === filteredTeams.length && filteredTeams.length > 0}
+                      onChange={(e) => handleSelectAllTeams(e.target.checked)}
+                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Select All ({filteredTeams.length} teams)
+                    </span>
+                  </div>
+                  {selectedTeams.length > 0 && (
+                    <span className="text-sm text-gray-600">
+                      {selectedTeams.length} team{selectedTeams.length > 1 ? 's' : ''} selected
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredTeams.map((team) => (
+                <div
+                  key={team.id}
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                >
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start space-x-3">
+                      {bulkActionMode && (
+                        <input
+                          type="checkbox"
+                          checked={selectedTeams.includes(team.id)}
+                          onChange={(e) => handleSelectTeam(team.id, e.target.checked)}
+                          className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                        />
+                      )}
+                      <div className="flex items-center space-x-3">
+                        <div 
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
+                          style={{ backgroundColor: team.color || '#6366f1' }}
+                        >
+                        <Users className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 flex items-center">
+                          {team.name}
+                          {team.isDefault && (
+                            <Crown className="h-4 w-4 text-yellow-500 ml-2" />
+                          )}
+                        </h3>
+                        <div className="flex items-center space-x-2 mt-1">
+                          {getStatusIcon(team.status)}
+                          <span className="text-sm text-gray-600 capitalize">{team.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <button
+                        onClick={() => setActiveDropdown(activeDropdown === team.id ? null : team.id)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                      </button>
+                      {activeDropdown === team.id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                          <div className="py-1">
+                            <Link
+                              to={`/admin/organizations/${organizationId}/hiring-teams/${team.id}`}
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <Eye className="h-4 w-4 mr-3" />
+                              View Details
+                            </Link>
+                            <button
+                              onClick={() => {
+                                openEditModal(team);
+                                setActiveDropdown(null);
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <Edit className="h-4 w-4 mr-3" />
+                              Edit Team
+                            </button>
+                            <Link
+                              to={`/admin/organizations/${organizationId}/hiring-teams/${team.id}/members`}
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <Users className="h-4 w-4 mr-3" />
+                              Manage Members
+                            </Link>
+                            <div className="border-t border-gray-100">
+                              <button
+                                onClick={() => handleDuplicateTeam(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <Copy className="h-4 w-4 mr-3" />
+                                Duplicate Team
+                              </button>
+                              <button
+                                onClick={() => handleToggleDefault(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                {team.isDefault ? (
+                                  <>
+                                    <StarOff className="h-4 w-4 mr-3" />
+                                    Remove as Default
+                                  </>
+                                ) : (
+                                  <>
+                                    <Star className="h-4 w-4 mr-3" />
+                                    Set as Default
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleExportTeam(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <Download className="h-4 w-4 mr-3" />
+                                Export Data
+                              </button>
+                              <button
+                                onClick={() => handleArchiveTeam(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <Archive className="h-4 w-4 mr-3" />
+                                {team.status === 'archived' ? 'Unarchive' : 'Archive'} Team
+                              </button>
+                            </div>
+                            <div className="border-t border-gray-100">
+                              <button
+                                onClick={() => {
+                                  setDeleteConfirmTeam(team);
+                                  setActiveDropdown(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4 mr-3" />
+                                Delete Team
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {team.description && (
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{team.description}</p>
+                  )}
+
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-1 text-gray-500">
+                        {getVisibilityIcon(team.visibility)}
+                        <span className="capitalize">{team.visibility}</span>
+                      </div>
+                      <div className="flex items-center space-x-1 text-gray-500">
+                        <User className="h-4 w-4" />
+                        <span>{team.members?.length || 0} members</span>
+                      </div>
+                    </div>
+                    
+                    {/* Quick action buttons */}
+                    <div className="flex items-center space-x-2">
+                      {team.isDefault && (
+                        <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                          <Crown className="h-3 w-3" />
+                          <span>Default</span>
+                        </div>
+                      )}
+                      
+                      <Link
+                        to={`/admin/organizations/${organizationId}/hiring-teams/${team.id}`}
+                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                      
+                      <button
+                        onClick={() => openEditModal(team)}
+                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                        title="Edit Team"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      
+                      <Link
+                        to={`/admin/organizations/${organizationId}/hiring-teams/${team.id}/members`}
+                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                        title="Manage Members"
+                      >
+                        <Users className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Create/Edit Modal */}
+        {(showCreateModal || editingTeam) && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {editingTeam ? 'Edit Hiring Team' : 'Create Hiring Team'}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setEditingTeam(null);
+                      resetForm();
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-6 py-6">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Team Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="e.g. Engineering Hiring Team"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Brief description of this team's responsibilities..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Visibility
+                      </label>
+                      <select
+                        value={formData.visibility}
+                        onChange={(e) => {
+                          const newVisibility = e.target.value as any;
+                          setFormData({ 
+                            ...formData, 
+                            visibility: newVisibility,
+                            // Clear organizations for public/private teams
+                            organizationIds: newVisibility === 'public' || newVisibility === 'private' 
+                              ? [] 
+                              : formData.organizationIds
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="organization">Organization</option>
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formData.visibility === 'public' && 'Visible to everyone'}
+                        {formData.visibility === 'private' && 'Only visible to team members'}
+                        {formData.visibility === 'organization' && 'Visible within selected organizations'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Status
+                      </label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="archived">Archived</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Organization Selection - Only show for organization visibility */}
+                  {formData.visibility === 'organization' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Organizations *
+                      </label>
+                      <div className="space-y-2">
+                        {loadingClients ? (
+                          <div className="p-3 text-center text-gray-500">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mx-auto"></div>
+                            <p className="text-sm mt-2">Loading organizations...</p>
+                          </div>
+                        ) : userClients && userClients.length > 0 ? (
+                          <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2">
+                            {userClients.map((client) => (
+                              <label key={client.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.organizationIds?.includes(client.id) || false}
+                                  onChange={(e) => {
+                                    const currentIds = formData.organizationIds || [];
+                                    if (e.target.checked) {
+                                      setFormData({
+                                        ...formData,
+                                        organizationIds: [...currentIds, client.id]
+                                      });
+                                    } else {
+                                      setFormData({
+                                        ...formData,
+                                        organizationIds: currentIds.filter(id => id !== client.id)
+                                      });
+                                    }
+                                  }}
+                                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                />
+                                <Building className="h-4 w-4 text-gray-500" />
+                                <div className="flex-1">
+                                  <span className="text-gray-900 text-sm">{client.name}</span>
+                                  {client.industry && (
+                                    <span className="text-xs text-gray-500 ml-2">({client.industry})</span>
+                                  )}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        ) : organizationId ? (
+                          <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                            <Building className="h-4 w-4 text-gray-500" />
+                            <span className="text-gray-900">{organization?.name || 'Current Organization'}</span>
+                            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">Selected</span>
+                          </div>
+                        ) : (
+                          <div className="p-3 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                            <Building className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm">No organizations available</p>
+                            <p className="text-xs">Contact your administrator to get access to organizations</p>
+                          </div>
+                        )}
+                        
+                        {formData.organizationIds && formData.organizationIds.length > 0 && (
+                          <div className="text-xs text-gray-600">
+                            {formData.organizationIds.length} organization{formData.organizationIds.length > 1 ? 's' : ''} selected
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notice for public/private teams */}
+                  {(formData.visibility === 'public' || formData.visibility === 'private') && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <div className="text-blue-600 mt-0.5">
+                          {formData.visibility === 'public' ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-800 font-medium">
+                            {formData.visibility === 'public' ? 'Public Team' : 'Private Team'}
+                          </p>
+                          <p className="text-xs text-blue-700">
+                            {formData.visibility === 'public' 
+                              ? 'This team will be visible to all users and not tied to any specific organization.' 
+                              : 'This team will only be visible to its members and not tied to any organization.'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Team Color
+                      </label>
+                      <input
+                        type="color"
+                        value={formData.color}
+                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                        className="w-16 h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="flex items-center pt-6">
+                      <input
+                        type="checkbox"
+                        id="isDefault"
+                        checked={formData.isDefault}
+                        onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="isDefault" className="ml-2 text-sm text-gray-700">
+                        Set as default team
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingTeam(null);
+                    resetForm();
+                  }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={editingTeam ? handleUpdateTeam : handleCreateTeam}
+                  disabled={
+                    !formData.name.trim() || 
+                    (formData.visibility === 'organization' && (!formData.organizationIds || formData.organizationIds.length === 0)) ||
+                    createTeamMutation.isPending || 
+                    updateTeamMutation.isPending
+                  }
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {createTeamMutation.isPending || updateTeamMutation.isPending ? 'Saving...' : (editingTeam ? 'Update Team' : 'Create Team')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation */}
+        <ConfirmDialog
+          isOpen={!!deleteConfirmTeam}
+          onClose={() => setDeleteConfirmTeam(null)}
+          onConfirm={handleDeleteTeam}
+          title="Delete Hiring Team"
+          message={`Are you sure you want to delete "${deleteConfirmTeam?.name}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          isDestructive={true}
+        />
+      </div>
+
+      {/* Click outside to close dropdown */}
+      {activeDropdown && (
+        <div 
+          className="fixed inset-0 z-0" 
+          onClick={() => setActiveDropdown(null)}
+        />
+      )}
+
+      <ToastContainer />
+    </div>
+  );
+};
+
+export default HiringTeamsPage;

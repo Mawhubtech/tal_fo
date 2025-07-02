@@ -14,6 +14,7 @@ export interface Organization {
   logoUrl?: string;
   industry: string;
   location: string;
+  status: 'active' | 'inactive' | 'suspended';
 }
 
 // New interfaces for the organization page data endpoint
@@ -80,6 +81,7 @@ export class OrganizationApiService {
       logoUrl: client.logoUrl,
       industry: client.industry,
       location: client.location,
+      status: client.status,
     };
   }
   /**

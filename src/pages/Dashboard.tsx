@@ -41,7 +41,10 @@ import {
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
 import UserManagementPage from './admin/UserManagementPage'; // Import UserManagementPage
+import UserClientsPage from './admin/UserClientsPage'; // Import UserClientsPage
 import PipelinesPage from './admin/PipelinesPage'; // Import PipelinesPage
+import HiringTeamsPage from './admin/HiringTeamsPage'; // Import HiringTeamsPage
+import HiringTeamMembersPage from './admin/HiringTeamMembersPage'; // Import HiringTeamMembersPage
 import CandidateProfilesPage from '../recruitment/candidates/pages/CandidateProfilesPage'; // Import CandidateProfilesPage
 import { ClientManagementPage, ClientDetailPage, CreateDepartmentPage } from './clients'; // Import ClientManagementPage, ClientDetailPage, and CreateDepartmentPage
 import JobBoardConfigPage from '../recruitment/jobs/pages/JobBoardConfigPage'; // Import JobBoardConfigPage
@@ -101,6 +104,9 @@ const Dashboard: React.FC = () => {
               {/* Job Creation - Integrated with hierarchical flow */}
             <Route path="organizations/:organizationId/create-job" element={<CreateJobPage />} />
             <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={<CreateJobPage />} />
+            
+            {/* Organization-specific hiring teams */}
+            <Route path="organizations/:organizationId/hiring-teams" element={<HiringTeamsPage />} />
 
             {/* Candidate Outreach Routes (under sourcing) */}
             <Route path="sourcing/outreach" element={<CandidateOutreachOverview />} />
@@ -119,7 +125,11 @@ const Dashboard: React.FC = () => {
             <Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
+              <Route path="user-clients" element={<UserClientsPage />} />
               <Route path="pipelines" element={<PipelinesPage />} />
+              <Route path="hiring-teams" element={<HiringTeamsPage />} />
+              <Route path="organizations/:organizationId/hiring-teams" element={<HiringTeamsPage />} />
+              <Route path="organizations/:organizationId/hiring-teams/:teamId/members" element={<HiringTeamMembersPage />} />
               <Route path="candidates" element={<CandidateProfilesPage />} />
               <Route path="clients" element={<ClientManagementPage />} />
               <Route path="clients/create-department" element={<CreateDepartmentPage />} />

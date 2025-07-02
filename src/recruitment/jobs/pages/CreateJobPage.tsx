@@ -4,6 +4,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
 import { useOrganization, useOrganizationDepartments } from '../../../hooks/useOrganizations';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
+import { useHiringTeams } from '../../../hooks/useHiringTeam';
 import { usePipelines } from '../../../hooks/usePipelines';
 import { usePipelineModal } from '../../../hooks/usePipelineModal';
 import type { CreateJobData } from '../../../services/jobApiService';
@@ -45,6 +46,12 @@ const CreateJobPage: React.FC = () => {
   } = useActivePipelines();
 
   const {
+    data: hiringTeams = [],
+    isLoading: hiringTeamsLoading,
+    error: hiringTeamsError
+  } = useHiringTeams(organizationId);
+
+  const {
     data: editingJob,
     isLoading: jobLoading,
     error: jobError
@@ -71,7 +78,7 @@ const CreateJobPage: React.FC = () => {
   const [benefits, setBenefits] = useState<string[]>([]);
   const [newBenefit, setNewBenefit] = useState('');
   const [applicationDeadline, setApplicationDeadline] = useState('');
-  const [hiringTeam, setHiringTeam] = useState<string[]>([]);
+  const [selectedHiringTeamId, setSelectedHiringTeamId] = useState<string>('');
   const [requirements, setRequirements] = useState(['']);
   const [responsibilities, setResponsibilities] = useState(['']);
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
@@ -88,7 +95,7 @@ const CreateJobPage: React.FC = () => {
   } = usePipelineModal();
 
   // Calculate loading states
-  const loading = organizationLoading || departmentsLoading || pipelinesLoading || (isEditMode && jobLoading);
+  const loading = organizationLoading || departmentsLoading || pipelinesLoading || hiringTeamsLoading || (isEditMode && jobLoading);
   const submitLoading = createJobMutation.isPending || updateJobMutation.isPending;
 
   // Set selected department when departmentId is available or when departments change
@@ -112,6 +119,16 @@ const CreateJobPage: React.FC = () => {
     }
   }, [activePipelines, selectedPipelineId, isEditMode]);
 
+  // Preselect default hiring team when teams are loaded
+  useEffect(() => {
+    if (hiringTeams.length > 0 && !selectedHiringTeamId && !isEditMode) {
+      const defaultTeam = hiringTeams.find(team => team.isDefault);
+      if (defaultTeam) {
+        setSelectedHiringTeamId(defaultTeam.id);
+      }
+    }
+  }, [hiringTeams, selectedHiringTeamId, isEditMode]);
+
   // Populate form fields when editing job data is loaded
   useEffect(() => {
     if (editingJob && isEditMode) {
@@ -133,6 +150,7 @@ const CreateJobPage: React.FC = () => {
       setResponsibilities(editingJob.responsibilities || ['']);
       setDepartmentIdForm(editingJob.departmentId || departmentId || '');
       setSelectedPipelineId(editingJob.pipelineId || '');
+      setSelectedHiringTeamId(editingJob.hiringTeamId || '');
     }
   }, [editingJob, isEditMode, departmentId]);
   // Load context data when organizationId is present
@@ -143,6 +161,8 @@ const CreateJobPage: React.FC = () => {
       setError('Failed to load departments. Please try again.');
     } else if (pipelinesError) {
       setError('Failed to load pipelines. Please try again.');
+    } else if (hiringTeamsError && !hiringTeamsError.message?.includes('404') && !hiringTeamsError.message?.includes('Not Found')) {
+      setError('Failed to load hiring teams. Please try again.');
     } else if (jobError && isEditMode) {
       setError('Failed to load job data. Please try again.');
     } else {
@@ -223,6 +243,12 @@ const CreateJobPage: React.FC = () => {
         return;
       }
 
+      // Only require hiring team if teams are available
+      if (hiringTeams.length > 0 && !selectedHiringTeamId.trim()) {
+        setError('Please select a hiring team or create one in the admin section');
+        return;
+      }
+
       // Validate salary range
       const minSalary = salaryMin ? parseFloat(salaryMin) : undefined;
       const maxSalary = salaryMax ? parseFloat(salaryMax) : undefined;
@@ -260,7 +286,7 @@ const CreateJobPage: React.FC = () => {
         responsibilities: responsibilities.filter(resp => resp.trim()).length > 0 
           ? responsibilities.filter(resp => resp.trim()) 
           : undefined,
-        hiringTeam: hiringTeam.length > 0 ? hiringTeam : undefined,
+        hiringTeamId: selectedHiringTeamId || undefined,
         applicationDeadline: applicationDeadline || undefined,
         organizationId: organizationId || undefined,
         customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
@@ -897,22 +923,6 @@ const CreateJobPage: React.FC = () => {
               </div>
             </div>
             <div className="p-6 space-y-6">
-              {/* Hiring Team */}
-              <div>
-                <label htmlFor="hiringManager" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Hiring Team
-                </label>
-                <input
-                  type="text"
-                  id="hiringManager"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
-                  placeholder="Add team members who will be involved in the hiring process"
-                />
-                <p className="text-sm text-gray-500 mt-2">
-                  Note: Full hiring team management will be implemented in a future update
-                </p>
-              </div>
-
               {/* Application Questions */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -992,8 +1002,75 @@ const CreateJobPage: React.FC = () => {
                   ) : null;
                 })()}
               </div>
+
+              {/* Hiring Team Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="hiringTeam" className="block text-sm font-semibold text-gray-700">
+                    Hiring Team {hiringTeams.length > 0 ? '*' : '(Optional)'}
+                  </label>
+                  <Link
+                    to={`/admin/organizations/${organizationId}/hiring-teams`}
+                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    title="Manage hiring teams"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Manage Teams</span>
+                  </Link>
+                </div>
+                <select
+                  id="hiringTeam"
+                  value={selectedHiringTeamId}
+                  onChange={(e) => setSelectedHiringTeamId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                  disabled={hiringTeamsLoading}
+                  required={hiringTeams.length > 0}
+                >
+                  <option value="">Select a hiring team *</option>
+                  {hiringTeams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name} {team.isDefault ? '(Default)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {hiringTeamsLoading && (
+                  <p className="text-xs text-gray-500 mt-1">Loading hiring teams...</p>
+                )}
+                {!hiringTeamsLoading && hiringTeams.length === 0 && (
+                  <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800 mb-2">No hiring teams found for this organization.</p>
+                    <Link
+                      to={`/admin/organizations/${organizationId}/hiring-teams`}
+                      className="inline-flex items-center text-sm text-yellow-700 hover:text-yellow-900 font-medium"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Create hiring teams in admin section
+                    </Link>
+                  </div>
+                )}
+                
+                {/* Show selected hiring team details */}
+                {selectedHiringTeamId && (() => {
+                  const selectedTeam = hiringTeams.find(t => t.id === selectedHiringTeamId);
+                  return selectedTeam ? (
+                    <div className="mt-3 bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Team Members ({selectedTeam.members?.length || 0}):</p>
+                      {selectedTeam.description && (
+                        <p className="text-sm text-gray-600 mb-2">{selectedTeam.description}</p>
+                      )}
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Users className="h-4 w-4 mr-1" />
+                        <span>You can manage team members in the admin section</span>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
             </div>
           </div>          </form>
+
+            {/* Hiring Team Management - Only show in edit mode */}
+            {/* Teams are now managed in admin section */}
       </div>        {/* Sidebar - Takes up 1/2 space on large screens, full width on smaller */}      
 	  <div className="h-full">
         {/* Live Job Preview */}
@@ -1202,15 +1279,22 @@ const CreateJobPage: React.FC = () => {
                   {selectedPipelineId ? '✓' : '○'}
                 </span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Hiring Team</span>
+                <span className={`font-medium ${selectedHiringTeamId || hiringTeams.length === 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {selectedHiringTeamId || hiringTeams.length === 0 ? '✓' : '○'}
+                </span>
+              </div>
               <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
                 <div 
                   className="bg-purple-600 h-2 rounded-full transition-all duration-300"                  style={{
                     width: `${Math.round(
-                      ((jobTitle && departmentIdForm && location ? 20 : 0) +
-                       (jobDescription ? 20 : 0) +
-                       (requirements.some(req => req.trim()) ? 20 : 0) +
-                       (skills.length > 0 ? 20 : 0) +
-                       (selectedPipelineId ? 20 : 0))
+                      ((jobTitle && departmentIdForm && location ? 17 : 0) +
+                       (jobDescription ? 17 : 0) +
+                       (requirements.some(req => req.trim()) ? 17 : 0) +
+                       (skills.length > 0 ? 17 : 0) +
+                       (selectedPipelineId ? 16 : 0) +
+                       (selectedHiringTeamId || hiringTeams.length === 0 ? 16 : 0))
                     )}%`
                   }}
                 ></div>

@@ -41,7 +41,7 @@ export interface Job {
   benefits?: string[];
   requirements?: string[];
   responsibilities?: string[];
-  hiringTeam?: string[];
+  hiringTeamId?: string;
   applicationDeadline?: Date | string;
   applicantsCount: number;
   organizationId?: string;

@@ -19,7 +19,7 @@ export interface CreateJobData {
   benefits?: string[];
   requirements?: string[];
   responsibilities?: string[];
-  hiringTeam?: string[];
+  hiringTeamId?: string;
   applicationDeadline?: string;
   organizationId?: string;
   customQuestions?: Array<{
