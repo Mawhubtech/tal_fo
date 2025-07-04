@@ -49,7 +49,7 @@ const CreateJobPage: React.FC = () => {
     data: hiringTeams = [],
     isLoading: hiringTeamsLoading,
     error: hiringTeamsError
-  } = useHiringTeams(organizationId);
+  } = useHiringTeams(organizationId ? [organizationId] : undefined);
 
   const {
     data: editingJob,
@@ -115,6 +115,9 @@ const CreateJobPage: React.FC = () => {
       const defaultPipeline = activePipelines.find(pipeline => pipeline.isDefault);
       if (defaultPipeline) {
         setSelectedPipelineId(defaultPipeline.id);
+      } else if (activePipelines.length > 0) {
+        // If no default pipeline is marked, select the first one
+        setSelectedPipelineId(activePipelines[0].id);
       }
     }
   }, [activePipelines, selectedPipelineId, isEditMode]);
@@ -125,6 +128,9 @@ const CreateJobPage: React.FC = () => {
       const defaultTeam = hiringTeams.find(team => team.isDefault);
       if (defaultTeam) {
         setSelectedHiringTeamId(defaultTeam.id);
+      } else if (hiringTeams.length > 0) {
+        // If no default team is marked, select the first one
+        setSelectedHiringTeamId(hiringTeams[0].id);
       }
     }
   }, [hiringTeams, selectedHiringTeamId, isEditMode]);
@@ -160,15 +166,15 @@ const CreateJobPage: React.FC = () => {
     } else if (departmentsError) {
       setError('Failed to load departments. Please try again.');
     } else if (pipelinesError) {
-      setError('Failed to load pipelines. Please try again.');
+      setError('Failed to load hiring pipelines. Please check your pipelines configuration.');
     } else if (hiringTeamsError && !hiringTeamsError.message?.includes('404') && !hiringTeamsError.message?.includes('Not Found')) {
-      setError('Failed to load hiring teams. Please try again.');
+      setError('Failed to load hiring teams. Please check your teams configuration.');
     } else if (jobError && isEditMode) {
       setError('Failed to load job data. Please try again.');
     } else {
       setError(null);
     }
-  }, [organizationError, departmentsError, pipelinesError, jobError, isEditMode]);
+  }, [organizationError, departmentsError, pipelinesError, hiringTeamsError, jobError, isEditMode]);
 
   const addSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
@@ -243,9 +249,9 @@ const CreateJobPage: React.FC = () => {
         return;
       }
 
-      // Only require hiring team if teams are available
+      // Only require hiring team if teams are available for this organization
       if (hiringTeams.length > 0 && !selectedHiringTeamId.trim()) {
-        setError('Please select a hiring team or create one in the admin section');
+        setError('Please select a hiring team. If no teams are available, create one in the admin section first.');
         return;
       }
 
@@ -292,6 +298,14 @@ const CreateJobPage: React.FC = () => {
         customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
         pipelineId: selectedPipelineId,
       };
+
+      // Debug logging to ensure hiring team and pipeline are being saved
+      console.log('Creating job with:', {
+        hiringTeamId: jobData.hiringTeamId,
+        pipelineId: jobData.pipelineId,
+        selectedHiringTeam: hiringTeams.find(t => t.id === selectedHiringTeamId),
+        selectedPipeline: activePipelines.find(p => p.id === selectedPipelineId)
+      });
 
       let resultJob;
       if (isEditMode && editJobId) {
