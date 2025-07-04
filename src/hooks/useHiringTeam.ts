@@ -46,7 +46,8 @@ export function useTeamMembers(teamId: string) {
     queryKey: hiringTeamKeys.teamMembers(teamId),
     queryFn: () => hiringTeamApiService.getTeamMembers(teamId),
     enabled: !!teamId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 30, // Reduced to 30 seconds for better responsiveness
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 }
 
@@ -161,6 +162,20 @@ export function useInviteExternalMember() {
       // Invalidate team members and team details
       queryClient.invalidateQueries({ queryKey: hiringTeamKeys.teamMembers(variables.teamId) });
       queryClient.invalidateQueries({ queryKey: hiringTeamKeys.team(variables.teamId) });
+    },
+  });
+}
+
+// Resend invitation mutation
+export function useResendInvitation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (memberId: string) => hiringTeamApiService.resendInvitation(memberId),
+    onSuccess: (updatedMember) => {
+      // Invalidate team members and team details
+      queryClient.invalidateQueries({ queryKey: hiringTeamKeys.teamMembers(updatedMember.teamId) });
+      queryClient.invalidateQueries({ queryKey: hiringTeamKeys.team(updatedMember.teamId) });
     },
   });
 }

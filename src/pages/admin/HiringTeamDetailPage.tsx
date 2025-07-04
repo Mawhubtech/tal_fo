@@ -1,0 +1,354 @@
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft, Edit, Users, Settings, Archive, Trash2,
+  Globe, Lock, Building, Crown, CheckCircle, Clock,
+  AlertCircle, Share, Copy, Download, Activity,
+  FileText, Calendar, MapPin, Mail, Phone
+} from 'lucide-react';
+import { useHiringTeam, useUpdateHiringTeam, useDeleteHiringTeam } from '../../hooks/useHiringTeam';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import ToastContainer, { toast } from '../../components/ToastContainer';
+
+const HiringTeamDetailPage: React.FC = () => {
+  const { teamId } = useParams<{ teamId: string }>();
+  const navigate = useNavigate();
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const { data: team, isLoading: teamLoading, error: teamError } = useHiringTeam(teamId || '');
+  const updateTeamMutation = useUpdateHiringTeam();
+  const deleteTeamMutation = useDeleteHiringTeam();
+
+  const handleArchiveTeam = async () => {
+    if (!team) return;
+    try {
+      const newStatus = team.status === 'archived' ? 'active' : 'archived';
+      await updateTeamMutation.mutateAsync({
+        teamId: team.id,
+        data: { status: newStatus }
+      });
+      toast.success(`Team ${newStatus === 'archived' ? 'archived' : 'restored'} successfully!`);
+    } catch (err) {
+      console.error('Error archiving team:', err);
+      toast.error('Failed to update team status. Please try again.');
+    }
+  };
+
+  const handleDeleteTeam = async () => {
+    if (!team) return;
+    try {
+      await deleteTeamMutation.mutateAsync(team.id);
+      toast.success('Team deleted successfully!');
+      navigate(`/dashboard/admin/hiring-teams`);
+    } catch (err) {
+      console.error('Error deleting team:', err);
+      toast.error('Failed to delete team. Please try again.');
+    }
+  };
+
+  const handleShareTeam = async () => {
+    try {
+      const shareUrl = `${window.location.origin}/dashboard/admin/hiring-teams/${teamId}`;
+      
+      if (navigator.share) {
+        await navigator.share({
+          title: `Hiring Team: ${team?.name}`,
+          text: team?.description || `Check out the ${team?.name} hiring team`,
+          url: shareUrl,
+        });
+        toast.success('Team shared successfully!');
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Team link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error sharing team:', err);
+      toast.error('Failed to share team. Please try again.');
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active': return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'inactive': return <Clock className="h-5 w-5 text-yellow-500" />;
+      case 'archived': return <Archive className="h-5 w-5 text-gray-500" />;
+      default: return <AlertCircle className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const getVisibilityIcon = (visibility: string) => {
+    switch (visibility) {
+      case 'public': return <Globe className="h-5 w-5" />;
+      case 'private': return <Lock className="h-5 w-5" />;
+      case 'organization': return <Building className="h-5 w-5" />;
+      default: return <Building className="h-5 w-5" />;
+    }
+  };
+
+  if (teamLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  if (teamError || !team) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Team Not Found</h3>
+          <p className="text-gray-600 mb-6">The hiring team you're looking for doesn't exist or has been deleted.</p>
+          <Link
+            to={`/dashboard/admin/hiring-teams`}
+            className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Teams</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4">
+            <Link
+              to={`/dashboard/admin/hiring-teams`}
+              className="inline-flex items-center text-gray-500 hover:text-gray-700 transition-colors mr-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Teams
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-4">
+                <div
+                  className="w-16 h-16 rounded-lg flex items-center justify-center text-white"
+                  style={{ backgroundColor: team.color || '#6366f1' }}
+                >
+                  <Users className="h-8 w-8" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-3">
+                    <h1 className="text-2xl font-bold text-gray-900">{team.name}</h1>
+                    {team.isDefault && (
+                      <div className="flex items-center" title="Default Team">
+                        <Crown className="h-6 w-6 text-yellow-500" />
+                      </div>
+                    )}
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                      team.status === 'active' ? 'bg-green-100 text-green-800' :
+                      team.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {team.status}
+                    </span>
+                  </div>
+                  {team.description && (
+                    <p className="text-gray-600 mt-2 max-w-2xl">{team.description}</p>
+                  )}
+                  <div className="flex items-center space-x-6 mt-4 text-sm text-gray-500">
+                    <div className="flex items-center space-x-1">
+                      {getVisibilityIcon(team.visibility)}
+                      <span className="capitalize">{team.visibility}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Users className="h-4 w-4" />
+                      <span>{team.members?.length || 0} members</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>Created {new Date(team.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleShareTeam}
+                  className="inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Share className="h-4 w-4" />
+                  <span>Share</span>
+                </button>
+                <Link
+                  to={`/dashboard/admin/hiring-teams/${teamId}/edit`}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <Edit className="h-4 w-4" />
+                  <span>Edit Team</span>
+                </Link>
+                <button
+                  onClick={handleArchiveTeam}
+                  className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    team.status === 'archived'
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                  }`}
+                >
+                  <Archive className="h-4 w-4" />
+                  <span>{team.status === 'archived' ? 'Restore' : 'Archive'}</span>
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(true)}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Team Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Team Members */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
+                <Link
+                  to={`/dashboard/admin/hiring-teams/${teamId}/members`}
+                  className="inline-flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Manage Members</span>
+                </Link>
+              </div>
+              
+              {team.members && team.members.length > 0 ? (
+                <div className="space-y-4">
+                  {team.members.slice(0, 5).map((member, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-gray-600">
+                          {member.user?.firstName?.[0]}{member.user?.lastName?.[0]}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {member.user?.firstName} {member.user?.lastName}
+                        </p>
+                        <p className="text-sm text-gray-500">{member.teamRole}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {team.members.length > 5 && (
+                    <p className="text-sm text-gray-500">
+                      And {team.members.length - 5} more members...
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Members Yet</h3>
+                  <p className="text-gray-600 mb-4">This team doesn't have any members assigned.</p>
+                  <Link
+                    to={`/dashboard/admin/hiring-teams/${teamId}/members`}
+                    className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Add Members</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h2>
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Recent Activity</h3>
+                <p className="text-gray-600">Team activity will appear here as it happens.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Team Stats */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Statistics</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Members</span>
+                  <span className="font-semibold">{team.members?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Status</span>
+                  <span className="font-semibold capitalize">{team.status}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Visibility</span>
+                  <span className="font-semibold capitalize">{team.visibility}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Default Team</span>
+                  <span className="font-semibold">{team.isDefault ? 'Yes' : 'No'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+              <div className="space-y-3">
+                <Link
+                  to={`/dashboard/admin/hiring-teams/${teamId}/members`}
+                  className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Users className="h-5 w-5 text-gray-500" />
+                  <span>Manage Members</span>
+                </Link>
+                <button
+                  onClick={() => toast.info('Team settings feature coming soon!')}
+                  className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Settings className="h-5 w-5 text-gray-500" />
+                  <span>Team Settings</span>
+                </button>
+                <button
+                  onClick={() => toast.info('Team reports feature coming soon!')}
+                  className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <FileText className="h-5 w-5 text-gray-500" />
+                  <span>View Reports</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Delete Confirmation */}
+        <ConfirmDialog
+          isOpen={deleteConfirm}
+          onClose={() => setDeleteConfirm(false)}
+          onConfirm={handleDeleteTeam}
+          title="Delete Hiring Team"
+          message={`Are you sure you want to delete "${team.name}"? This action cannot be undone and will remove all team data.`}
+          confirmText="Delete Team"
+          cancelText="Cancel"
+          isDestructive={true}
+        />
+
+        <ToastContainer />
+      </div>
+    </div>
+  );
+};
+
+export default HiringTeamDetailPage;

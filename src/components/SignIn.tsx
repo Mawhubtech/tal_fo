@@ -4,12 +4,13 @@ import { Mail, ArrowLeft, Shield } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useGoogleLogin } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
+import { getDefaultRedirectPath } from '../utils/userUtils';
 import AuthModal from './AuthModal';
 
 const SignIn: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
-  const { isAuthenticated, isLoading } = useAuthContext();
+  const { isAuthenticated, isLoading, user } = useAuthContext();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();  const googleLogin = useGoogleLogin();
   const { addToast } = useToast();
@@ -25,12 +26,14 @@ const SignIn: React.FC = () => {
     }
   }, [searchParams, addToast]);
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to dashboard or specified redirect
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      navigate('/dashboard', { replace: true });
+    if (isAuthenticated && !isLoading && user) {
+      const redirect = searchParams.get('redirect');
+      const defaultPath = getDefaultRedirectPath(user);
+      navigate(redirect || defaultPath, { replace: true });
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, user, navigate, searchParams]);
 
   // Show loading state while checking authentication
   if (isLoading) {

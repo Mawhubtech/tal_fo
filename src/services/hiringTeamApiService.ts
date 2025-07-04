@@ -177,6 +177,11 @@ export const hiringTeamApiService = {
     return response.data.data;
   },
 
+  resendInvitation: async (memberId: string): Promise<HiringTeamMember> => {
+    const response = await apiClient.post(`/hiring-teams/members/${memberId}/resend-invitation`);
+    return response.data.data;
+  },
+
   updateTeamMember: async (memberId: string, data: UpdateHiringTeamMemberData): Promise<HiringTeamMember> => {
     const response = await apiClient.put(`/hiring-teams/members/${memberId}`, data);
     return response.data.data;

@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
+import ExternalUserGuard from './components/ExternalUserGuard';
 import SignIn from './components/SignIn';
 import OAuthCallback from './components/OAuthCallback';
 import LandingPage from './pages/LandingPage';
@@ -12,6 +13,14 @@ import JobSeekerRegisterPage from './pages/jobSeeker/JobSeekerRegisterPage';
 import JobSeekerAdminPage from './pages/jobSeeker/admin/JobSeekerAdminPage';
 import Dashboard from './pages/Dashboard';
 import RequestDemoPage from './pages/RequestDemoPage';
+import AcceptInvitationPage from './pages/hiring-teams/AcceptInvitationPage';
+import InvitationAcceptedPage from './pages/hiring-teams/InvitationAcceptedPage';
+import ExternalTeamAccessPage from './pages/hiring-teams/ExternalTeamAccessPage';
+import ExternalUserLayout from './layouts/ExternalUserLayout';
+import ExternalJobsPage from './pages/external/ExternalJobsPage';
+import ExternalJobDetailPage from './pages/external/ExternalJobDetailPage';
+import ExternalSettingsPage from './pages/external/ExternalSettingsPage';
+import ExternalUserRegisterPage from './pages/external/ExternalUserRegisterPage';
 
 function App() {
   return (
@@ -57,6 +66,40 @@ function App() {
             <Route
               path="/request-demo"
               element={<RequestDemoPage />}
+            />
+            {/* Public Hiring Team Invitation Routes */}
+            <Route
+              path="/hiring-teams/accept-invitation"
+              element={<AcceptInvitationPage />}
+            />
+            <Route
+              path="/hiring-teams/invitation-accepted"
+              element={<InvitationAcceptedPage />}
+            />
+            <Route
+              path="/hiring-teams/external-access"
+              element={<ExternalTeamAccessPage />}
+            />
+            {/* External User Registration (no auth required) */}
+            <Route
+              path="/external/register"
+              element={<ExternalUserRegisterPage />}
+            />
+            {/* External User Routes */}
+            <Route
+              path="/external/*"
+              element={
+                <ExternalUserGuard>
+                  <Routes>
+                    <Route path="/" element={<ExternalUserLayout />}>
+                      <Route index element={<Navigate to="/external/jobs" replace />} />
+                      <Route path="jobs" element={<ExternalJobsPage />} />
+                      <Route path="jobs/:jobId" element={<ExternalJobDetailPage />} />
+                      <Route path="settings" element={<ExternalSettingsPage />} />
+                    </Route>
+                  </Routes>
+                </ExternalUserGuard>
+              }
             />
             {/* Remove individual /dashboard/resume-processing and /dashboard/sequences routes as they are handled by Dashboard.tsx */}
             <Route path="*" element={<Navigate to="/" replace />} />

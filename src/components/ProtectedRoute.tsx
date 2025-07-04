@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
+import { isExternalUser } from '../utils/userUtils';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -8,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuthContext();
+  const { isAuthenticated, isLoading, user } = useAuthContext();
   const location = useLocation();
 
   if (isLoading) {
@@ -25,6 +26,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (!isAuthenticated) {
     // Save the attempted location for redirecting after login
     return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+
+  // If user is external, redirect them to external dashboard
+  if (isExternalUser(user)) {
+    return <Navigate to="/external/jobs" replace />;
   }
 
   return <>{children}</>;

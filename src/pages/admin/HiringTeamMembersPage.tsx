@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Plus, Search, MoreHorizontal, Edit, Trash2, 
+  Plus, Search, Edit, Trash2, 
   Users, Mail, User, Shield, ChevronRight, AlertCircle, 
   X, Crown, UserCheck, Calendar, MessageSquare, Gavel, Eye,
   ArrowLeft, UserPlus, ExternalLink
@@ -11,6 +11,7 @@ import {
   useTeamMembers,
   useAddTeamMember, 
   useInviteExternalMember,
+  useResendInvitation,
   useUpdateTeamMember, 
   useRemoveTeamMember,
   useUserSearch 
@@ -73,6 +74,23 @@ const TEAM_ROLES: { value: TeamRole; label: string; description: string; icon: R
   },
 ];
 
+// Helper functions
+const getRoleIcon = (role: TeamRole) => {
+  const roleConfig = TEAM_ROLES.find(r => r.value === role);
+  return roleConfig?.icon || <User className="h-4 w-4" />;
+};
+
+const getPermissionSummary = (member: HiringTeamMember) => {
+  const permissions = [];
+  if (member.canViewApplications) permissions.push('View Apps');
+  if (member.canMoveCandidates) permissions.push('Move Candidates');
+  if (member.canScheduleInterviews) permissions.push('Schedule');
+  if (member.canLeaveFeedback) permissions.push('Feedback');
+  if (member.canMakeDecisions) permissions.push('Decisions');
+  
+  return permissions.length > 0 ? permissions.join(', ') : 'Basic access';
+};
+
 const HiringTeamMembersPage: React.FC = () => {
   const { organizationId, teamId } = useParams<{ organizationId: string; teamId: string }>();
   const navigate = useNavigate();
@@ -80,7 +98,6 @@ const HiringTeamMembersPage: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMember, setEditingMember] = useState<HiringTeamMember | null>(null);
   const [deleteMember, setDeleteMember] = useState<HiringTeamMember | null>(null);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [addType, setAddType] = useState<'internal' | 'external'>('internal');
   
   // User search
@@ -104,9 +121,10 @@ const HiringTeamMembersPage: React.FC = () => {
   // API hooks
   const { data: organization } = useOrganization(organizationId || '');
   const { data: team, isLoading: teamLoading } = useHiringTeam(teamId || '');
-  const { data: members = [], isLoading: membersLoading, error } = useTeamMembers(teamId || '');
+  const { data: members = [], isLoading: membersLoading, error, refetch: refetchMembers } = useTeamMembers(teamId || '');
   const addMemberMutation = useAddTeamMember();
   const inviteExternalMutation = useInviteExternalMember();
+  const resendInvitationMutation = useResendInvitation();
   const updateMemberMutation = useUpdateTeamMember();
   const removeMemberMutation = useRemoveTeamMember();
 
@@ -120,6 +138,15 @@ const HiringTeamMembersPage: React.FC = () => {
     return name.includes(searchTerm.toLowerCase()) || 
            email.toLowerCase().includes(searchTerm.toLowerCase()) ||
            member.teamRole.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  // Debug log to see current data
+  console.log('Current members data:', { 
+    members, 
+    filteredMembers, 
+    membersLoading, 
+    error,
+    teamId 
   });
 
   const handleAddMember = async () => {
@@ -142,8 +169,13 @@ const HiringTeamMembersPage: React.FC = () => {
           canMakeDecisions: memberForm.canMakeDecisions,
         };
         
-        await addMemberMutation.mutateAsync(data);
+        console.log('Adding internal member:', data);
+        const result = await addMemberMutation.mutateAsync(data);
+        console.log('Internal member added successfully:', result);
         toast.success('Team member added successfully!');
+        
+        // Manually refetch members list
+        await refetchMembers();
       } else {
         if (!memberForm.externalEmail || !memberForm.externalFirstName || !memberForm.externalLastName) {
           toast.error('Please fill in all required fields');
@@ -163,13 +195,19 @@ const HiringTeamMembersPage: React.FC = () => {
           canMakeDecisions: memberForm.canMakeDecisions,
         };
         
-        await inviteExternalMutation.mutateAsync(data);
+        console.log('Inviting external member:', data);
+        const result = await inviteExternalMutation.mutateAsync(data);
+        console.log('External member invited successfully:', result);
         toast.success('Invitation sent successfully!');
+        
+        // Manually refetch members list
+        await refetchMembers();
       }
       
       setShowAddModal(false);
       resetForm();
     } catch (error: any) {
+      console.error('Error adding member:', error);
       toast.error(error.response?.data?.message || 'Failed to add team member');
     }
   };
@@ -212,6 +250,15 @@ const HiringTeamMembersPage: React.FC = () => {
     }
   };
 
+  const handleResendInvitation = async (member: HiringTeamMember) => {
+    try {
+      await resendInvitationMutation.mutateAsync(member.id);
+      toast.success('Invitation sent successfully!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to send invitation');
+    }
+  };
+
   const resetForm = () => {
     setMemberForm({
       userId: '',
@@ -244,25 +291,10 @@ const HiringTeamMembersPage: React.FC = () => {
     setEditingMember(member);
   };
 
-  const getRoleIcon = (role: TeamRole) => {
-    const roleConfig = TEAM_ROLES.find(r => r.value === role);
-    return roleConfig?.icon || <User className="h-4 w-4" />;
-  };
-
-  const getPermissionSummary = (member: HiringTeamMember) => {
-    const permissions = [];
-    if (member.canViewApplications) permissions.push('View');
-    if (member.canMoveCandidates) permissions.push('Move');
-    if (member.canScheduleInterviews) permissions.push('Schedule');
-    if (member.canLeaveFeedback) permissions.push('Feedback');
-    if (member.canMakeDecisions) permissions.push('Decide');
-    return permissions.join(', ') || 'Limited access';
-  };
-
   if (teamLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
       </div>
     );
   }
@@ -276,7 +308,7 @@ const HiringTeamMembersPage: React.FC = () => {
           <p className="text-gray-600 mb-4">The hiring team you're looking for doesn't exist.</p>
           <button
             onClick={() => navigate(`/admin/organizations/${organizationId}/hiring-teams`)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
           >
             Back to Teams
           </button>
@@ -333,7 +365,7 @@ const HiringTeamMembersPage: React.FC = () => {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
             >
               <UserPlus className="h-5 w-5" />
               <span>Add Member</span>
@@ -374,7 +406,7 @@ const HiringTeamMembersPage: React.FC = () => {
               placeholder="Search members by name, email, or role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -382,7 +414,7 @@ const HiringTeamMembersPage: React.FC = () => {
         {/* Members List */}
         {membersLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
           </div>
         ) : error ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
@@ -405,7 +437,7 @@ const HiringTeamMembersPage: React.FC = () => {
             {!searchTerm && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors mx-auto"
+                className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors mx-auto"
               >
                 <UserPlus className="h-5 w-5" />
                 <span>Add First Member</span>
@@ -413,7 +445,7 @@ const HiringTeamMembersPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
             <div className="divide-y divide-gray-200">
               {filteredMembers.map((member) => (
                 <div key={member.id} className="p-6 hover:bg-gray-50 transition-colors">
@@ -430,7 +462,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           <User className="h-5 w-5 text-gray-600" />
                         )}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <h3 className="font-semibold text-gray-900">
                             {member.user 
@@ -444,9 +476,19 @@ const HiringTeamMembersPage: React.FC = () => {
                               External
                             </span>
                           )}
-                          {!member.invitationAccepted && member.memberType === 'external' && (
+                          {member.memberType === 'external' && !member.invitationSent && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Not Invited
+                            </span>
+                          )}
+                          {member.memberType === 'external' && member.invitationSent && !member.invitationAccepted && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              Pending
+                              Invitation Pending
+                            </span>
+                          )}
+                          {member.memberType === 'external' && member.invitationAccepted && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Invitation Accepted
                             </span>
                           )}
                         </div>
@@ -465,41 +507,37 @@ const HiringTeamMembersPage: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="relative">
-                      <button
-                        onClick={() => setActiveDropdown(activeDropdown === member.id ? null : member.id)}
-                        className="p-1 hover:bg-gray-100 rounded"
-                      >
-                        <MoreHorizontal className="h-4 w-4 text-gray-400" />
-                      </button>
-                      {activeDropdown === member.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                          <div className="py-1">
-                            <button
-                              onClick={() => {
-                                openEditModal(member);
-                                setActiveDropdown(null);
-                              }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                            >
-                              <Edit className="h-4 w-4 mr-3" />
-                              Edit Permissions
-                            </button>
-                            <div className="border-t border-gray-100">
-                              <button
-                                onClick={() => {
-                                  setDeleteMember(member);
-                                  setActiveDropdown(null);
-                                }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4 mr-3" />
-                                Remove Member
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                    {/* Action Buttons */}
+                    <div className="flex items-center space-x-2">
+                      {/* Send Invite button for external members who haven't been sent an invitation or need resending */}
+                      {member.memberType === 'external' && (!member.invitationSent || !member.invitationAccepted) && (
+                        <button
+                          onClick={() => handleResendInvitation(member)}
+                          disabled={resendInvitationMutation.isPending}
+                          className="flex items-center space-x-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                          title={member.invitationSent ? "Resend Invitation" : "Send Invitation"}
+                        >
+                          <Mail className="h-4 w-4" />
+                          <span>{member.invitationSent ? 'Resend' : 'Send Invite'}</span>
+                        </button>
                       )}
+                      
+                      <button
+                        onClick={() => openEditModal(member)}
+                        className="flex items-center space-x-1 px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="Edit Permissions"
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => setDeleteMember(member)}
+                        className="flex items-center space-x-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove Member"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Remove</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -544,7 +582,7 @@ const HiringTeamMembersPage: React.FC = () => {
                             value="internal"
                             checked={addType === 'internal'}
                             onChange={(e) => setAddType(e.target.value as 'internal' | 'external')}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
                           />
                           <span className="ml-2 text-sm text-gray-700">Internal User</span>
                         </label>
@@ -554,7 +592,7 @@ const HiringTeamMembersPage: React.FC = () => {
                             value="external"
                             checked={addType === 'external'}
                             onChange={(e) => setAddType(e.target.value as 'internal' | 'external')}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
                           />
                           <span className="ml-2 text-sm text-gray-700">External User</span>
                         </label>
@@ -574,7 +612,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           value={userSearchQuery}
                           onChange={(e) => setUserSearchQuery(e.target.value)}
                           placeholder="Type to search users by name or email..."
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         />
                       </div>
                       {searching && (
@@ -618,7 +656,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="text"
                           value={memberForm.externalFirstName}
                           onChange={(e) => setMemberForm({ ...memberForm, externalFirstName: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           placeholder="John"
                           required
                         />
@@ -631,7 +669,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="text"
                           value={memberForm.externalLastName}
                           onChange={(e) => setMemberForm({ ...memberForm, externalLastName: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           placeholder="Doe"
                           required
                         />
@@ -644,7 +682,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="email"
                           value={memberForm.externalEmail}
                           onChange={(e) => setMemberForm({ ...memberForm, externalEmail: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           placeholder="john.doe@company.com"
                           required
                         />
@@ -659,7 +697,7 @@ const HiringTeamMembersPage: React.FC = () => {
                     <select
                       value={memberForm.teamRole}
                       onChange={(e) => setMemberForm({ ...memberForm, teamRole: e.target.value as TeamRole })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       {TEAM_ROLES.map((role) => (
                         <option key={role.value} value={role.value}>
@@ -682,7 +720,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="checkbox"
                           checked={memberForm.canViewApplications}
                           onChange={(e) => setMemberForm({ ...memberForm, canViewApplications: e.target.checked })}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700">Can view applications</span>
                       </label>
@@ -691,7 +729,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="checkbox"
                           checked={memberForm.canMoveCandidates}
                           onChange={(e) => setMemberForm({ ...memberForm, canMoveCandidates: e.target.checked })}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700">Can move candidates between stages</span>
                       </label>
@@ -700,7 +738,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="checkbox"
                           checked={memberForm.canScheduleInterviews}
                           onChange={(e) => setMemberForm({ ...memberForm, canScheduleInterviews: e.target.checked })}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700">Can schedule interviews</span>
                       </label>
@@ -709,7 +747,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="checkbox"
                           checked={memberForm.canLeaveFeedback}
                           onChange={(e) => setMemberForm({ ...memberForm, canLeaveFeedback: e.target.checked })}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700">Can leave feedback and notes</span>
                       </label>
@@ -718,7 +756,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="checkbox"
                           checked={memberForm.canMakeDecisions}
                           onChange={(e) => setMemberForm({ ...memberForm, canMakeDecisions: e.target.checked })}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700">Can make hiring decisions</span>
                       </label>
@@ -747,7 +785,7 @@ const HiringTeamMembersPage: React.FC = () => {
                     inviteExternalMutation.isPending || 
                     updateMemberMutation.isPending
                   }
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {addMemberMutation.isPending || inviteExternalMutation.isPending || updateMemberMutation.isPending
                     ? 'Saving...' 
@@ -781,14 +819,6 @@ const HiringTeamMembersPage: React.FC = () => {
       </div>
 
       <ToastContainer />
-
-      {/* Click outside to close dropdown */}
-      {activeDropdown && (
-        <div 
-          className="fixed inset-0 z-0" 
-          onClick={() => setActiveDropdown(null)}
-        />
-      )}
     </div>
   );
 };

@@ -3,7 +3,8 @@ import {
   Plus, Search, MoreHorizontal, Edit, Copy, Trash2,
   Eye, Users, Lock, Globe, Building, Settings, ChevronRight,
   CheckCircle, Clock, AlertCircle, X, Crown,
-  Archive, Download, Star, StarOff
+  Archive, Download, Star, StarOff, Share, Link2, 
+  FileText, Calendar, Activity
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -32,6 +33,7 @@ const HiringTeamsPage: React.FC = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [bulkActionMode, setBulkActionMode] = useState(false);
+  const [loadingActions, setLoadingActions] = useState<Record<string, boolean>>({});
 
   const [formData, setFormData] = useState<TeamFormData>({
     name: '',
@@ -106,11 +108,8 @@ const HiringTeamsPage: React.FC = () => {
   const handleUpdateTeam = async () => {
     if (!formData.id) return;
     try {
-      const { id, ...updateData } = formData;
-      const teamData: UpdateHiringTeamData = {
-        ...updateData,
-        organizationIds: formData.visibility === 'organization' ? formData.organizationIds : [],
-      };
+      const { id, organizationIds, ...updateData } = formData;
+      const teamData: UpdateHiringTeamData = updateData;
       await updateTeamMutation.mutateAsync({ teamId: id, data: teamData });
       toast.success('Hiring team updated successfully!');
       setModalMode('none');
@@ -133,7 +132,9 @@ const HiringTeamsPage: React.FC = () => {
   };
 
   const handleDuplicateTeam = async (team: HiringTeam) => {
+    const actionKey = `duplicate-${team.id}`;
     try {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: true }));
       const duplicateData: CreateHiringTeamData = {
         name: `${team.name} (Copy)`,
         description: team.description || '',
@@ -150,11 +151,15 @@ const HiringTeamsPage: React.FC = () => {
     } catch (err) {
       console.error('Error duplicating team:', err);
       toast.error('Failed to duplicate team. Please try again.');
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
   };
 
   const handleToggleDefault = async (team: HiringTeam) => {
+    const actionKey = `default-${team.id}`;
     try {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: true }));
       await updateTeamMutation.mutateAsync({
         teamId: team.id,
         data: { isDefault: !team.isDefault }
@@ -164,11 +169,15 @@ const HiringTeamsPage: React.FC = () => {
     } catch (err) {
       console.error('Error toggling default status:', err);
       toast.error('Failed to update default status. Please try again.');
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
   };
 
   const handleArchiveTeam = async (team: HiringTeam) => {
+    const actionKey = `archive-${team.id}`;
     try {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: true }));
       const newStatus = team.status === 'archived' ? 'active' : 'archived';
       await updateTeamMutation.mutateAsync({
         teamId: team.id,
@@ -179,6 +188,8 @@ const HiringTeamsPage: React.FC = () => {
     } catch (err) {
       console.error('Error archiving team:', err);
       toast.error('Failed to update team status. Please try again.');
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
   };
 
@@ -214,6 +225,47 @@ const HiringTeamsPage: React.FC = () => {
       console.error('Error exporting team:', err);
       toast.error('Failed to export team data. Please try again.');
     }
+  };
+
+  const handleShareTeam = async (team: HiringTeam) => {
+    try {
+      const shareUrl = `${window.location.origin}/dashboard/admin/hiring-teams/${team.id}`;
+      
+      if (navigator.share) {
+        await navigator.share({
+          title: `Hiring Team: ${team.name}`,
+          text: team.description || `Check out the ${team.name} hiring team`,
+          url: shareUrl,
+        });
+        toast.success('Team shared successfully!');
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Team link copied to clipboard!');
+      }
+      setActiveDropdown(null);
+    } catch (err) {
+      console.error('Error sharing team:', err);
+      toast.error('Failed to share team. Please try again.');
+    }
+  };
+
+  const handleViewSettings = (team: HiringTeam) => {
+    setActiveDropdown(null);
+    // This could navigate to a team settings page or open a settings modal
+    toast.info('Team settings feature coming soon!');
+  };
+
+  const handleViewActivity = (team: HiringTeam) => {
+    setActiveDropdown(null);
+    // This could navigate to team activity/audit log
+    toast.info('Activity log feature coming soon!');
+  };
+
+  const handleViewReports = (team: HiringTeam) => {
+    setActiveDropdown(null);
+    // This could navigate to team reports
+    toast.info('Team reports feature coming soon!');
   };
 
   const openEditModal = (team: HiringTeam) => {
@@ -283,6 +335,41 @@ const HiringTeamsPage: React.FC = () => {
 
   const showCreateInsteadOfError = error && (hiringTeams.length === 0);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle shortcuts when no modal is open and not in an input
+      if (modalMode !== 'none' || 
+          (event.target as HTMLElement)?.tagName === 'INPUT' || 
+          (event.target as HTMLElement)?.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey) {
+        switch (event.key) {
+          case 'n':
+            event.preventDefault();
+            setModalMode('create');
+            break;
+          case 'b':
+            event.preventDefault();
+            setBulkActionMode(!bulkActionMode);
+            break;
+        }
+      }
+
+      if (event.key === 'Escape') {
+        setActiveDropdown(null);
+        if (modalMode !== 'none') {
+          setModalMode('none');
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [modalMode, bulkActionMode]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -291,13 +378,13 @@ const HiringTeamsPage: React.FC = () => {
           <div className="flex items-center mb-2">
             {/* FIX: Use template literal for dynamic Link 'to' prop */}
             <Link
-              to={`/admin/organizations/${organizationId}`}
+              to={`/dashboard/admin/hiring-teams`}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
-              {organization?.name || 'Organization'}
+              Hiring Teams
             </Link>
             <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
-            <span className="text-gray-900 font-medium">Hiring Teams</span>
+            <span className="text-gray-900 font-medium">{organization?.name || 'Organization'}</span>
           </div>
           <div className="flex justify-between items-center">
             <div>
@@ -305,6 +392,11 @@ const HiringTeamsPage: React.FC = () => {
               <p className="text-gray-600 mt-1">
                 Manage teams responsible for hiring across your organization
               </p>
+              <div className="text-xs text-gray-500 mt-1">
+                <span className="font-mono bg-gray-100 px-1 rounded">Ctrl+N</span> to create team • 
+                <span className="font-mono bg-gray-100 px-1 rounded ml-1">Ctrl+B</span> for bulk actions • 
+                <span className="font-mono bg-gray-100 px-1 rounded ml-1">Esc</span> to close
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               <button
@@ -481,7 +573,12 @@ const HiringTeamsPage: React.FC = () => {
                             <h3 className="font-semibold text-gray-900 flex items-center truncate">
                               <span className="truncate" title={team.name}>{team.name}</span>
                               {team.isDefault && (
-                                <Crown className="h-4 w-4 text-yellow-500 ml-2 flex-shrink-0" title="Default Team"/>
+                                <Crown className="h-4 w-4 text-yellow-500 ml-2 flex-shrink-0" />
+                              )}
+                              {team.status === 'archived' && (
+                                <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full flex-shrink-0">
+                                  Archived
+                                </span>
                               )}
                             </h3>
                             <div className="flex items-center space-x-2 mt-1">
@@ -499,13 +596,15 @@ const HiringTeamsPage: React.FC = () => {
                           <MoreHorizontal className="h-4 w-4 text-gray-400" />
                         </button>
                         {activeDropdown === team.id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                             <div className="py-1">
+                              {/* Primary Actions */}
                               <Link
-                                to={`/admin/organizations/${organizationId}/hiring-teams/${team.id}`}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                to={`/dashboard/admin/hiring-teams/${team.id}`}
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                onClick={() => setActiveDropdown(null)}
                               >
-                                <Eye className="h-4 w-4 mr-3" />
+                                <Eye className="h-4 w-4 mr-3 text-gray-500" />
                                 View Details
                               </Link>
                               <button
@@ -513,63 +612,120 @@ const HiringTeamsPage: React.FC = () => {
                                   openEditModal(team);
                                   setActiveDropdown(null);
                                 }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               >
-                                <Edit className="h-4 w-4 mr-3" />
+                                <Edit className="h-4 w-4 mr-3 text-gray-500" />
                                 Edit Team
                               </button>
                               <Link
-                                to={`/admin/organizations/${organizationId}/hiring-teams/${team.id}/members`}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                to={`/dashboard/admin/hiring-teams/${team.id}/members`}
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                onClick={() => setActiveDropdown(null)}
                               >
-                                <Users className="h-4 w-4 mr-3" />
+                                <Users className="h-4 w-4 mr-3 text-gray-500" />
                                 Manage Members
                               </Link>
+                              
                               <div className="border-t border-gray-100 my-1"></div>
+                              
+                              {/* Team Management */}
+                              <button
+                                onClick={() => handleToggleDefault(team)}
+                                disabled={loadingActions[`default-${team.id}`]}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                              >
+                                {loadingActions[`default-${team.id}`] ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500 mr-3"></div>
+                                ) : team.isDefault ? (
+                                  <StarOff className="h-4 w-4 mr-3 text-yellow-500" />
+                                ) : (
+                                  <Star className="h-4 w-4 mr-3 text-yellow-500" />
+                                )}
+                                {team.isDefault ? 'Remove as Default' : 'Set as Default'}
+                              </button>
                               <button
                                 onClick={() => handleDuplicateTeam(team)}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                disabled={loadingActions[`duplicate-${team.id}`]}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
                               >
-                                <Copy className="h-4 w-4 mr-3" />
+                                {loadingActions[`duplicate-${team.id}`] ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-3"></div>
+                                ) : (
+                                  <Copy className="h-4 w-4 mr-3 text-gray-500" />
+                                )}
                                 Duplicate Team
                               </button>
                               <button
-                                onClick={() => handleToggleDefault(team)}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                onClick={() => handleShareTeam(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               >
-                                {team.isDefault ? (
-                                  <>
-                                    <StarOff className="h-4 w-4 mr-3" />
-                                    Remove as Default
-                                  </>
-                                ) : (
-                                  <>
-                                    <Star className="h-4 w-4 mr-3" />
-                                    Set as Default
-                                  </>
-                                )}
+                                <Share className="h-4 w-4 mr-3 text-gray-500" />
+                                Share Team
+                              </button>
+                              
+                              <div className="border-t border-gray-100 my-1"></div>
+                              
+                              {/* Data & Reports */}
+                              <button
+                                onClick={() => handleViewReports(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <FileText className="h-4 w-4 mr-3 text-gray-500" />
+                                View Reports
+                              </button>
+                              <button
+                                onClick={() => handleViewActivity(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Activity className="h-4 w-4 mr-3 text-gray-500" />
+                                Activity Log
                               </button>
                               <button
                                 onClick={() => handleExportTeam(team)}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               >
-                                <Download className="h-4 w-4 mr-3" />
+                                <Download className="h-4 w-4 mr-3 text-gray-500" />
                                 Export Data
+                              </button>
+                              
+                              <div className="border-t border-gray-100 my-1"></div>
+                              
+                              {/* Settings & Status */}
+                              <button
+                                onClick={() => handleViewSettings(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Settings className="h-4 w-4 mr-3 text-gray-500" />
+                                Team Settings
                               </button>
                               <button
                                 onClick={() => handleArchiveTeam(team)}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                disabled={loadingActions[`archive-${team.id}`]}
+                                className={`flex items-center w-full px-4 py-2 text-sm transition-colors disabled:opacity-50 ${
+                                  team.status === 'archived' 
+                                    ? 'text-green-600 hover:bg-green-50' 
+                                    : 'text-yellow-600 hover:bg-yellow-50'
+                                }`}
                               >
-                                <Archive className="h-4 w-4 mr-3" />
+                                {loadingActions[`archive-${team.id}`] ? (
+                                  <div className={`animate-spin rounded-full h-4 w-4 border-b-2 mr-3 ${
+                                    team.status === 'archived' ? 'border-green-500' : 'border-yellow-500'
+                                  }`}></div>
+                                ) : (
+                                  <Archive className="h-4 w-4 mr-3" />
+                                )}
                                 {team.status === 'archived' ? 'Restore' : 'Archive'} Team
                               </button>
+                              
                               <div className="border-t border-gray-100 my-1"></div>
+                              
+                              {/* Destructive Actions */}
                               <button
                                 onClick={() => {
                                   setDeleteConfirmTeam(team);
                                   setActiveDropdown(null);
                                 }}
-                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                               >
                                 <Trash2 className="h-4 w-4 mr-3" />
                                 Delete Team
@@ -595,6 +751,17 @@ const HiringTeamsPage: React.FC = () => {
                           <span>{team.members?.length || 0} members</span>
                         </div>
                       </div>
+                      
+                      {/* Quick Actions - Only show default team indicator */}
+                      {team.isDefault && (
+                        <div className="flex items-center">
+                          <Tooltip text="Default Team">
+                            <div className="p-1 text-yellow-500">
+                              <Crown className="h-4 w-4" />
+                            </div>
+                          </Tooltip>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -808,7 +975,6 @@ const HiringTeamsPage: React.FC = () => {
           confirmText="Delete"
           cancelText="Cancel"
           isDestructive={true}
-          isConfirming={deleteTeamMutation.isPending}
         />
       </div>
 
@@ -824,5 +990,15 @@ const HiringTeamsPage: React.FC = () => {
     </div>
   );
 };
+
+// Simple tooltip component for better UX
+const Tooltip: React.FC<{ children: React.ReactNode; text: string }> = ({ children, text }) => (
+  <div className="relative group">
+    {children}
+    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
+      {text}
+    </div>
+  </div>
+);
 
 export default HiringTeamsPage;

@@ -166,6 +166,37 @@ class JobApiService {
     }
   }
 
+  // External user specific methods
+  async getExternalUserJobs(): Promise<Job[]> {
+    try {
+      const response = await apiClient.get('/jobs/external/my-jobs');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching external user jobs:', error);
+      throw error;
+    }
+  }
+
+  async getExternalJobDetail(jobId: string): Promise<Job> {
+    try {
+      const response = await apiClient.get(`/jobs/external/${jobId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching external job detail:', error);
+      throw error;
+    }
+  }
+
+  async getExternalJobApplications(jobId: string): Promise<any[]> {
+    try {
+      const response = await apiClient.get(`/jobs/external/${jobId}/applications`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching external job applications:', error);
+      throw error;
+    }
+  }
+
   async incrementApplicantCount(id: string): Promise<Job> {
     try {
       const response = await apiClient.patch(`/jobs/${id}/applicant-count`, {});

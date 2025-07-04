@@ -44,6 +44,7 @@ import UserManagementPage from './admin/UserManagementPage'; // Import UserManag
 import UserClientsPage from './admin/UserClientsPage'; // Import UserClientsPage
 import PipelinesPage from './admin/PipelinesPage'; // Import PipelinesPage
 import HiringTeamsPage from './admin/HiringTeamsPage'; // Import HiringTeamsPage
+import HiringTeamDetailPage from './admin/HiringTeamDetailPage'; // Import HiringTeamDetailPage
 import HiringTeamMembersPage from './admin/HiringTeamMembersPage'; // Import HiringTeamMembersPage
 import CandidateProfilesPage from '../recruitment/candidates/pages/CandidateProfilesPage'; // Import CandidateProfilesPage
 import { ClientManagementPage, ClientDetailPage, CreateDepartmentPage } from './clients'; // Import ClientManagementPage, ClientDetailPage, and CreateDepartmentPage
@@ -128,8 +129,8 @@ const Dashboard: React.FC = () => {
               <Route path="user-clients" element={<UserClientsPage />} />
               <Route path="pipelines" element={<PipelinesPage />} />
               <Route path="hiring-teams" element={<HiringTeamsPage />} />
-              <Route path="organizations/:organizationId/hiring-teams" element={<HiringTeamsPage />} />
-              <Route path="organizations/:organizationId/hiring-teams/:teamId/members" element={<HiringTeamMembersPage />} />
+              <Route path="hiring-teams/:teamId" element={<HiringTeamDetailPage />} />
+              <Route path="hiring-teams/:teamId/members" element={<HiringTeamMembersPage />} />
               <Route path="candidates" element={<CandidateProfilesPage />} />
               <Route path="clients" element={<ClientManagementPage />} />
               <Route path="clients/create-department" element={<CreateDepartmentPage />} />
