@@ -78,7 +78,7 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
         </div>
 
         {/* Card Content */}
-        <div className="flex-1 min-w-0" onClick={onClick}>
+        <div className="flex-1 min-w-0">
           {/* Candidate Info */}
           <div className="flex items-center mb-2 gap-2">
             <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
@@ -95,9 +95,16 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent card drag from interfering
+                  onClick?.();
+                }}
+                className="text-sm font-medium text-gray-900 truncate hover:text-purple-600 hover:underline cursor-pointer transition-colors text-left block w-full"
+                title="Click to view full profile"
+              >
                 {candidate.name}
-              </p>
+              </button>
               <div className="flex items-center">
                 <Star className="w-3 h-3 text-yellow-400 mr-1 flex-shrink-0" />
                 <span className={`text-xs font-medium ${getScoreColor(candidate.score)}`}>

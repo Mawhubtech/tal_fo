@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle, RefreshCw
@@ -9,6 +9,7 @@ import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { usePipeline } from '../../../hooks/usePipelines';
 import { useDefaultPipeline } from '../../../hooks/useDefaultPipeline';
 import { useJobApplicationsByJob, useUpdateJobApplication, useDeleteJobApplication } from '../../../hooks/useJobApplications';
+import { useCandidate } from '../../../hooks/useCandidates';
 import { useStageMovement } from '../../../hooks/useStageMovement';
 import { useOptimisticStageMovement } from '../../../hooks/useOptimisticStageMovement';
 import { useTaskStats } from '../../../hooks/useTasks';
@@ -23,6 +24,7 @@ import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/
 import AddCandidateModal from '../components/AddCandidateModal';
 import ConfirmationDialog from '../../../components/ConfirmationDialog';
 import ToastContainer, { toast } from '../../../components/ToastContainer';
+import ProfileSidePanel, { type UserStructuredData, type PanelState } from '../../../components/ProfileSidePanel';
 
 const JobATSPage: React.FC = () => {
   const { organizationId, departmentId, jobId } = useParams<{ 
@@ -36,6 +38,11 @@ const JobATSPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // State for the profile side panel
+  const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
+  const [panelState, setPanelState] = useState<PanelState>('closed');
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   
   // Determine if current user is external and use appropriate hook
   const isExternal = isExternalUser(user);
@@ -116,6 +123,13 @@ const JobATSPage: React.FC = () => {
   const { data: interviewsData } = useInterviews(jobId ? { jobId } : undefined);
   const { data: reportData, isLoading: reportLoading, error: reportError } = useJobReport(jobId || '');
   
+  // Fetch detailed candidate data when a candidate is selected for the profile panel
+  const { 
+    data: selectedCandidateDetails, 
+    isLoading: candidateDetailsLoading,
+    error: candidateDetailsError 
+  } = useCandidate(selectedCandidateId || '');
+  
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [candidateToRemove, setCandidateToRemove] = useState<any>(null);
@@ -193,7 +207,7 @@ const JobATSPage: React.FC = () => {
       stage: candidateStage,
       score: application.score || 0,
       lastUpdated: application.lastActivityDate || application.updatedAt,
-      tags: [], // Empty array for now since skills aren't being loaded
+      tags: application.candidate?.skillMappings?.map(sm => sm.skill?.name).filter(Boolean) || [], // Map skills from skill mappings
       source: application.candidate?.source || 'unknown',
       appliedDate: application.appliedDate,
       // Additional properties for compatibility
@@ -206,6 +220,22 @@ const JobATSPage: React.FC = () => {
       // Pipeline tracking information
       currentPipelineStageId: application.currentPipelineStageId,
       pipelineId: application.pipelineId,
+      // Full candidate data for ProfileSidePanel
+      fullName: application.candidate?.fullName,
+      firstName: application.candidate?.firstName,
+      lastName: application.candidate?.lastName,
+      linkedIn: application.candidate?.linkedIn,
+      github: application.candidate?.github,
+      website: application.candidate?.website,
+      summary: application.candidate?.summary,
+      experience: application.candidate?.experience,
+      education: application.candidate?.education,
+      skills: application.candidate?.skillMappings?.map(sm => sm.skill?.name).filter(Boolean) || [],
+      projects: application.candidate?.projects,
+      certifications: application.candidate?.certifications,
+      awards: application.candidate?.awards,
+      interests: application.candidate?.interests,
+      languages: application.candidate?.languages,
     };
   });
 
@@ -313,6 +343,108 @@ const JobATSPage: React.FC = () => {
     // Invalidate all queries when a new candidate is added
     await invalidateAllQueries();
   };
+
+  // Function to handle opening the profile panel for a candidate
+  const handleOpenProfilePanel = (candidateData: any) => {
+    console.log('Opening profile panel with candidate data:', candidateData);
+    
+    // Store the candidate ID to trigger data fetching
+    const candidateId = candidateData.id;
+    if (candidateId) {
+      setSelectedCandidateId(candidateId);
+      setPanelState('expanded');
+    } else {
+      console.error('No candidate ID found in candidate data:', candidateData);
+    }
+  };
+
+  const handlePanelStateChange = (newState: PanelState) => {
+    setPanelState(newState);
+    if (newState === 'closed') {
+      setSelectedUserDataForPanel(null);
+      setSelectedCandidateId(null);
+    }
+  };
+
+  // Effect to transform candidate data when fetched
+  useEffect(() => {
+    if (selectedCandidateDetails && selectedCandidateId) {
+      console.log('Transforming candidate details:', selectedCandidateDetails);
+      
+      const userDataForPanel = {
+        personalInfo: {
+          fullName: selectedCandidateDetails.fullName || 'Unknown Candidate',
+          email: selectedCandidateDetails.email || '',
+          phone: selectedCandidateDetails.phone || '',
+          location: selectedCandidateDetails.location || '',
+          linkedIn: selectedCandidateDetails.linkedIn || '',
+          github: selectedCandidateDetails.github || '',
+          website: selectedCandidateDetails.website || '',
+          avatar: selectedCandidateDetails.avatar || undefined,
+        },
+        summary: selectedCandidateDetails.summary || '',
+        experience: Array.isArray(selectedCandidateDetails.experience) 
+          ? selectedCandidateDetails.experience.map((exp: any) => ({
+              position: exp.position || '',
+              company: exp.company || '',
+              startDate: exp.startDate || '',
+              endDate: exp.endDate || '',
+              location: exp.location || '',
+              description: exp.description || '',
+              responsibilities: exp.responsibilities || [],
+              achievements: exp.achievements || [],
+            }))
+          : [],
+        skills: Array.isArray(selectedCandidateDetails.skillMappings) 
+          ? selectedCandidateDetails.skillMappings.map((sm: any) => sm.skill?.name).filter(Boolean)
+          : (selectedCandidateDetails.skills || []),
+        education: Array.isArray(selectedCandidateDetails.education) 
+          ? selectedCandidateDetails.education.map((edu: any) => ({
+              degree: edu.degree || '',
+              institution: edu.institution || '',
+              startDate: edu.startDate || '',
+              endDate: edu.endDate || '',
+              graduationDate: edu.graduationDate || '',
+              location: edu.location || '',
+              description: edu.description || '',
+              major: edu.major || '',
+              courses: edu.courses || [],
+              honors: edu.honors || [],
+            }))
+          : [],
+        projects: Array.isArray(selectedCandidateDetails.projects)
+          ? selectedCandidateDetails.projects.map((proj: any) => ({
+              name: proj.name || '',
+              date: proj.date || '',
+              description: proj.description || '',
+              technologies: proj.technologies || [],
+              url: proj.url || '',
+            }))
+          : [],
+        certifications: Array.isArray(selectedCandidateDetails.certifications)
+          ? selectedCandidateDetails.certifications.map((cert: any) => ({
+              name: cert.name || '',
+              issuer: cert.issuer || '',
+              dateIssued: cert.dateIssued || '',
+              expirationDate: cert.expirationDate || '',
+            }))
+          : [],
+        awards: Array.isArray(selectedCandidateDetails.awards)
+          ? selectedCandidateDetails.awards.map((award: any) => ({
+              name: award.name || '',
+              issuer: award.issuer || '',
+              date: award.date || '',
+              description: award.description || '',
+            }))
+          : [],
+        interests: selectedCandidateDetails.interests || [],
+        languages: selectedCandidateDetails.languages || [],
+      } as UserStructuredData;
+
+      console.log('Transformed user data for panel:', userDataForPanel);
+      setSelectedUserDataForPanel(userDataForPanel);
+    }
+  }, [selectedCandidateDetails, selectedCandidateId]);
 
   // Comprehensive function to invalidate all relevant queries
   const invalidateAllQueries = async () => {
@@ -508,7 +640,11 @@ const JobATSPage: React.FC = () => {
   }
 
   return (
-	<div className="p-6 bg-gray-50 min-h-screen">
+	<div className={`p-6 bg-gray-50 min-h-screen transition-all duration-300 ${
+      panelState === 'expanded' ? 'mr-[66.666667%]' : 
+      panelState === 'collapsed' ? 'mr-[33.333333%]' : 
+      ''
+    }`}>
 	  {/* Breadcrumbs - Only show for internal users */}
 	  {!isExternal && (
 		<div className="flex items-center text-sm text-gray-500 mb-4">
@@ -710,6 +846,7 @@ const JobATSPage: React.FC = () => {
 			  onStageChange={setSelectedStage}
 			  sortBy={sortBy}
 			  onSortChange={setSortBy}
+			  onCandidateClick={handleOpenProfilePanel}
 			  onCandidateUpdate={handleCandidateUpdate}
 			  onCandidateRemove={handleCandidateRemove}
 			  onCandidateStageChange={handleCandidateStageChange}
@@ -788,6 +925,48 @@ const JobATSPage: React.FC = () => {
 		loading={deleteJobApplicationMutation.isPending}
 		variant="danger"
 	  />
+
+	  {/* Profile Side Panel */}
+	  {panelState !== 'closed' && (
+		<>
+		  {/* Overlay - only show for expanded state */}
+		  {panelState === 'expanded' && (
+			<div
+			  className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out"
+			  onClick={() => handlePanelStateChange('closed')}
+			  aria-hidden="true"
+			></div>
+		  )}
+		  
+		  {/* Show loading state while candidate details are being fetched */}
+		  {candidateDetailsLoading ? (
+			<div className="fixed inset-y-0 right-0 w-1/3 bg-white shadow-2xl z-50 flex items-center justify-center">
+			  <div className="text-center">
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+				<p className="text-gray-500">Loading candidate details...</p>
+			  </div>
+			</div>
+		  ) : candidateDetailsError ? (
+			<div className="fixed inset-y-0 right-0 w-1/3 bg-white shadow-2xl z-50 flex items-center justify-center">
+			  <div className="text-center text-red-600">
+				<p className="mb-2">Failed to load candidate details</p>
+				<button 
+				  onClick={() => handlePanelStateChange('closed')}
+				  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+				>
+				  Close
+				</button>
+			  </div>
+			</div>
+		  ) : (
+			<ProfileSidePanel
+			  userData={selectedUserDataForPanel}
+			  panelState={panelState}
+			  onStateChange={handlePanelStateChange}
+			/>
+		  )}
+		</>
+	  )}
 
 	  {/* Toast Container */}
 	  <ToastContainer position="top-right" />

@@ -99,9 +99,16 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                       )}
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row click
+                          onCandidateClick?.(candidate);
+                        }}
+                        className="text-sm font-medium text-gray-900 hover:text-purple-600 hover:underline cursor-pointer transition-colors text-left"
+                        title="Click to view full profile"
+                      >
                         {candidate.name}
-                      </div>
+                      </button>
                       <div className="text-sm text-gray-500 flex items-center">
                         <Mail className="w-3 h-3 mr-1" />
                         {candidate.email}

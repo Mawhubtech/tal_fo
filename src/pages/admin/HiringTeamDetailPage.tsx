@@ -197,7 +197,7 @@ const HiringTeamDetailPage: React.FC = () => {
                   className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                     team.status === 'archived'
                       ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-yellow-600 text-white hover:bg-yellow-700'
+                      : 'bg-white text-purple-600 border border-purple-600 hover:bg-purple-50'
                   }`}
                 >
                   <Archive className="h-4 w-4" />
