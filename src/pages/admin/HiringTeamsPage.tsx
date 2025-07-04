@@ -4,7 +4,7 @@ import {
   Eye, Users, Lock, Globe, Building, Settings, ChevronRight,
   CheckCircle, Clock, AlertCircle, X, Crown,
   Archive, Download, Star, StarOff, Share, Link2, 
-  FileText, Calendar, Activity
+  FileText, Calendar, Activity, Briefcase
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -18,6 +18,7 @@ import { useUserClients } from '../../hooks/useUser';
 import type { HiringTeam, CreateHiringTeamData, UpdateHiringTeamData } from '../../services/hiringTeamApiService';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer, { toast } from '../../components/ToastContainer';
+import JobAssignmentModal from '../../components/JobAssignmentModal';
 
 type ModalMode = 'create' | 'edit' | 'none';
 
@@ -34,6 +35,7 @@ const HiringTeamsPage: React.FC = () => {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [bulkActionMode, setBulkActionMode] = useState(false);
   const [loadingActions, setLoadingActions] = useState<Record<string, boolean>>({});
+  const [jobAssignmentTeam, setJobAssignmentTeam] = useState<HiringTeam | null>(null);
 
   const [formData, setFormData] = useState<TeamFormData>({
     name: '',
@@ -266,6 +268,11 @@ const HiringTeamsPage: React.FC = () => {
     setActiveDropdown(null);
     // This could navigate to team reports
     toast.info('Team reports feature coming soon!');
+  };
+
+  const handleManageJobs = (team: HiringTeam) => {
+    setActiveDropdown(null);
+    setJobAssignmentTeam(team);
   };
 
   const openEditModal = (team: HiringTeam) => {
@@ -625,6 +632,13 @@ const HiringTeamsPage: React.FC = () => {
                                 <Users className="h-4 w-4 mr-3 text-gray-500" />
                                 Manage Members
                               </Link>
+                              <button
+                                onClick={() => handleManageJobs(team)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Briefcase className="h-4 w-4 mr-3 text-gray-500" />
+                                Manage Jobs
+                              </button>
                               
                               <div className="border-t border-gray-100 my-1"></div>
                               
@@ -983,6 +997,15 @@ const HiringTeamsPage: React.FC = () => {
         <div
           className="fixed inset-0 z-0"
           onClick={() => setActiveDropdown(null)}
+        />
+      )}
+
+      {/* Job Assignment Modal */}
+      {jobAssignmentTeam && (
+        <JobAssignmentModal
+          isOpen={!!jobAssignmentTeam}
+          onClose={() => setJobAssignmentTeam(null)}
+          team={jobAssignmentTeam}
         />
       )}
 

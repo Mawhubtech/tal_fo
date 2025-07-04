@@ -9,6 +9,7 @@ interface ReportsTabProps {
   loading?: boolean;
   error?: Error | null;
   onExportReport?: () => void;
+  onDataChange?: () => Promise<void>;
 }
 
 export const ReportsTab: React.FC<ReportsTabProps> = ({ 

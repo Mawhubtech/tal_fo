@@ -95,6 +95,7 @@ function App() {
                       <Route index element={<Navigate to="/external/jobs" replace />} />
                       <Route path="jobs" element={<ExternalJobsPage />} />
                       <Route path="jobs/:jobId" element={<ExternalJobDetailPage />} />
+                      <Route path="jobs/:jobId/applications" element={<ExternalJobDetailPage />} />
                       <Route path="settings" element={<ExternalSettingsPage />} />
                     </Route>
                   </Routes>

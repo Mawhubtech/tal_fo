@@ -12,6 +12,7 @@ interface AddCandidateModalProps {
   jobId: string;
   onCandidateAdded: () => void;
   pipeline?: Pipeline | null; // Add pipeline prop
+  onDataChange?: () => Promise<void>;
 }
 
 const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
@@ -20,12 +21,14 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   jobId,
   onCandidateAdded,
   pipeline,
+  onDataChange,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [addingCandidateId, setAddingCandidateId] = useState<string | null>(null);
   const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
+  const [existingCandidateIds, setExistingCandidateIds] = useState<Set<string>>(new Set());
   
   // Stage movement hook for tracking initial application
   const stageMovement = useStageMovement();
@@ -33,6 +36,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadCandidates();
+      loadExistingCandidates();
     }
   }, [isOpen]);
 
@@ -77,6 +81,16 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       console.error('Error searching candidates:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadExistingCandidates = async () => {
+    try {
+      const { applications } = await jobApplicationApiService.getJobApplicationsByJobId(jobId);
+      const existingIds = new Set(applications.map(app => app.candidateId));
+      setExistingCandidateIds(existingIds);
+    } catch (error) {
+      console.error('Error loading existing candidates for job:', error);
     }
   };
 
@@ -126,7 +140,13 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       }
       
       setSelectedCandidates(prev => new Set([...prev, candidateId]));
+      setExistingCandidateIds(prev => new Set([...prev, candidateId]));
       onCandidateAdded();
+      
+      // Call onDataChange if provided to invalidate all queries
+      if (onDataChange) {
+        await onDataChange();
+      }
     } catch (error) {
       console.error('Error adding candidate to job:', error);
       alert('Failed to add candidate to job. They may already be applied to this position.');
@@ -137,6 +157,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   const handleClose = () => {
     setSearchQuery('');
     setSelectedCandidates(new Set());
+    setExistingCandidateIds(new Set());
     onClose();
   };
 
@@ -156,9 +177,9 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">Add Candidate to Job</h2>
           <button
             onClick={handleClose}
@@ -169,7 +190,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
         </div>
 
         {/* Search */}
-        <div className="p-6 border-b">
+        <div className="p-6 border-b flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -182,8 +203,8 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
           </div>
         </div>
 
-        {/* Candidates List */}
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* Candidates List - Made scrollable */}
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
@@ -245,7 +266,11 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         {candidate.status}
                       </span>
                     </div>
-                    {selectedCandidates.has(candidate.id) ? (
+                    {existingCandidateIds.has(candidate.id) ? (
+                      <div className="px-4 py-2 bg-gray-100 text-gray-600 rounded-md text-sm font-medium">
+                        Already Added
+                      </div>
+                    ) : selectedCandidates.has(candidate.id) ? (
                       <div className="px-4 py-2 bg-green-100 text-green-800 rounded-md text-sm font-medium">
                         Added ✓
                       </div>
@@ -253,16 +278,16 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                       <button
                         onClick={() => addCandidateToJob(candidate.id)}
                         disabled={addingCandidateId === candidate.id}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center min-w-[100px] justify-center"
                       >
                         {addingCandidateId === candidate.id ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
                             Adding...
                           </>
                         ) : (
                           <>
-                            <Plus className="w-4 h-4 mr-2" />
+                            <Plus className="w-3 h-3 mr-1" />
                             Add to Job
                           </>
                         )}
@@ -276,9 +301,14 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t bg-gray-50">
+        <div className="flex items-center justify-between p-6 border-t bg-gray-50 flex-shrink-0">
           <p className="text-sm text-gray-500">
             {selectedCandidates.size} candidate(s) added to this job
+            {existingCandidateIds.size > 0 && (
+              <span className="ml-2 text-gray-400">
+                • {existingCandidateIds.size} already in job
+              </span>
+            )}
           </p>
           <div className="flex space-x-3">
             <button

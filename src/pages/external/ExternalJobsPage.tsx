@@ -47,8 +47,17 @@ const ExternalJobsPage: React.FC = () => {
     job.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleJobClick = (jobId: string) => {
-    navigate(`/external/jobs/${jobId}`);
+  const handleJobClick = (job: ExternalJob) => {
+    const organizationId = job.organizationId || job.organization?.id;
+    const departmentId = job.departmentId;
+    
+    if (organizationId && departmentId) {
+      // Navigate to the main JobATSPage for full ATS experience
+      navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
+    } else {
+      // Fallback to external job detail page if missing organization/department info
+      navigate(`/external/jobs/${job.id}/applications`);
+    }
   };
 
   if (isLoading) {
@@ -115,7 +124,7 @@ const ExternalJobsPage: React.FC = () => {
             {filteredJobs.map((job) => (
               <div 
                 key={job.id} 
-                onClick={() => handleJobClick(job.id)}
+                onClick={() => handleJobClick(job)}
                 className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer border border-gray-200 hover:border-purple-200"
               >
                 <div className="flex items-start justify-between">

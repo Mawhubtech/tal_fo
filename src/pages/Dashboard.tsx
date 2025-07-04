@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom'; // Import Routes and Route
 import Sidebar from '../components/Sidebar';   // Your Sidebar component
 import TopNavbar from '../components/TopNavbar'; // Your TopNavbar component
+import { useAuthContext } from '../contexts/AuthContext';
+import { isExternalUser } from '../utils/userUtils';
 import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
 // Sourcing imports
 import { Search, SearchResults, EmailSequencesPage } from '../sourcing';
@@ -56,7 +58,9 @@ import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSet
 // --- End of Mock Data ---
 
 const Dashboard: React.FC = () => {
+  const { user } = useAuthContext();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const isExternal = isExternalUser(user);
   
   const toggleSidebar = () => {
     setIsSidebarExpanded(!isSidebarExpanded);
@@ -70,18 +74,40 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-white">
-      {/* Sidebar Component */}
-      <Sidebar
-        isExpanded={isSidebarExpanded}
-        onToggle={toggleSidebar}
-      />
+      {/* Sidebar Component - Hidden for external users */}
+      {!isExternal && (
+        <Sidebar
+          isExpanded={isSidebarExpanded}
+          onToggle={toggleSidebar}
+        />
+      )}
 
       {/* Main content flex container */}
       <div className="flex-1 flex flex-col">
-        {/* TopNavbar Component */}
-        <TopNavbar
-          onNewSearch={handleNewSearch}
-        />        {/* Main content area */}        <main className="flex-1 p-4 overflow-y-auto"> {/* Removed flex items-center justify-center and added overflow-y-auto if not already present for scrolling */}          <Routes> {/* Add Routes component here */}
+        {/* TopNavbar Component - Use simpler external navigation for external users */}
+        {isExternal ? (
+          <nav className="bg-white shadow-sm border-b border-gray-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between h-16">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <div className="h-5 w-5 text-white">💼</div>
+                  </div>
+                  <span className="ml-2 text-xl font-semibold text-gray-900">TAL Hiring</span>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-600">
+                    {user?.firstName} {user?.lastName}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </nav>
+        ) : (
+          <TopNavbar
+            onNewSearch={handleNewSearch}
+          />
+        )}        {/* Main content area */}        <main className="flex-1 p-4 overflow-y-auto"> {/* Removed flex items-center justify-center and added overflow-y-auto if not already present for scrolling */}          <Routes> {/* Add Routes component here */}
             <Route path="/" element={<DashboardOverview />} /> {/* Dashboard Overview as default route */}            <Route path="search" element={<Search />} /> {/* Search talents page */}
             <Route path="projects" element={<div className="p-6"><h1 className="text-2xl font-bold">Projects</h1><p>Projects page coming soon...</p></div>} />
             <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />

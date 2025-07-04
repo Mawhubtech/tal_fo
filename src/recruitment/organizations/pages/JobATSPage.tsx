@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
-  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle
+  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle, RefreshCw
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useJob } from '../../../hooks/useJobs';
+import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { usePipeline } from '../../../hooks/usePipelines';
 import { useDefaultPipeline } from '../../../hooks/useDefaultPipeline';
 import { useJobApplicationsByJob, useUpdateJobApplication, useDeleteJobApplication } from '../../../hooks/useJobApplications';
@@ -12,6 +14,8 @@ import { useOptimisticStageMovement } from '../../../hooks/useOptimisticStageMov
 import { useTaskStats } from '../../../hooks/useTasks';
 import { useInterviews } from '../../../hooks/useInterviews';
 import { useJobReport } from '../../../hooks/useReports';
+import { useAuthContext } from '../../../contexts/AuthContext';
+import { isExternalUser } from '../../../utils/userUtils';
 import { StageChangeReason } from '../../../types/stageMovement.types';
 import type { Job as JobType } from '../../data/types';
 import type { JobApplication } from '../../../services/jobApplicationApiService';
@@ -26,23 +30,41 @@ const JobATSPage: React.FC = () => {
 	departmentId: string; 
 	jobId: string; 
   }>();
+  const { user } = useAuthContext();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Use React Query hooks
+  // Determine if current user is external and use appropriate hook
+  const isExternal = isExternalUser(user);
+  
+  // Use React Query hooks - choose the right job fetching hook based on user type
   const { 
-    data: job, 
-    isLoading: jobLoading, 
-    error: jobError 
-  } = useJob(jobId || '');
+    data: internalJob, 
+    isLoading: internalJobLoading, 
+    error: internalJobError 
+  } = useJob(isExternal ? '' : (jobId || ''));
+  
+  const { 
+    data: externalJob, 
+    isLoading: externalJobLoading, 
+    error: externalJobError 
+  } = useExternalJobDetail(isExternal ? (jobId || '') : '');
+
+  // Use the appropriate job data
+  const job = isExternal ? externalJob : internalJob;
+  const jobLoading = isExternal ? externalJobLoading : internalJobLoading;
+  const jobError = isExternal ? externalJobError : internalJobError;
   
   // Get the pipeline for this job, or use default if none specified
+  // For external users, the pipeline should already be loaded with the job
   const {
     data: jobPipeline,
     isLoading: pipelineLoading,
     error: pipelineError
-  } = usePipeline(job?.pipelineId || '');
+  } = usePipeline(job?.pipelineId && !job?.pipeline ? (job.pipelineId || '') : '');
 
   // Get or create default pipeline if no pipeline is assigned to job
   const {
@@ -52,8 +74,29 @@ const JobATSPage: React.FC = () => {
     isCreating: isCreatingDefault
   } = useDefaultPipeline();
 
-  // Determine which pipeline to use
-  const effectivePipeline = job?.pipelineId ? jobPipeline : defaultPipeline;
+  // Determine which pipeline to use - prefer the one loaded with the job
+  const effectivePipeline = job?.pipeline || (job?.pipelineId ? jobPipeline : defaultPipeline);
+
+  // Debug logging
+  console.log('JobATSPage Debug:', {
+    isExternal,
+    jobId,
+    job: job ? { 
+      id: job.id, 
+      title: job.title, 
+      pipelineId: job.pipelineId,
+      pipeline: job.pipeline ? { id: job.pipeline.id, name: job.pipeline.name, stagesCount: job.pipeline.stages?.length } : null 
+    } : null,
+    jobLoading,
+    jobError,
+    effectivePipeline: effectivePipeline ? { 
+      id: effectivePipeline.id, 
+      name: effectivePipeline.name, 
+      stagesCount: effectivePipeline.stages?.length 
+    } : null,
+    pipelineLoading,
+    defaultPipelineLoading
+  });
   
   const { 
     data: jobApplicationsData, 
@@ -96,6 +139,10 @@ const JobATSPage: React.FC = () => {
   const handleCreateDefaultPipeline = async () => {
     try {
       await createDefaultPipeline();
+      
+      // Invalidate all related queries after pipeline creation
+      await invalidateAllQueries();
+      
       toast.success('Pipeline Created', 'Default recruitment pipeline has been created successfully.');
     } catch (error) {
       toast.error('Creation Failed', 'Failed to create default pipeline. Please try again.');
@@ -215,6 +262,9 @@ const JobATSPage: React.FC = () => {
           // Explicitly refetch job applications to ensure UI updates
           await refetchApplications();
           
+          // Invalidate all related queries to ensure consistency
+          await invalidateAllQueries();
+          
           // Show success message
           toast.success('Stage Updated', `${updatedCandidate.name} moved to ${updatedCandidate.stage}`);
           
@@ -244,6 +294,9 @@ const JobATSPage: React.FC = () => {
           }
         });
         
+        // Invalidate all related queries to ensure consistency
+        await invalidateAllQueries();
+        
         // Show success message for non-stage updates
         if (!isStageChange) {
           toast.success('Candidate Updated', 'Candidate information has been updated successfully.');
@@ -257,8 +310,57 @@ const JobATSPage: React.FC = () => {
   };
 
   const handleCandidateAdded = async () => {
-    // Refetch job applications when a new candidate is added
-    refetchApplications();
+    // Invalidate all queries when a new candidate is added
+    await invalidateAllQueries();
+  };
+
+  // Comprehensive function to invalidate all relevant queries
+  const invalidateAllQueries = async () => {
+    await Promise.all([
+      // Job-related queries
+      queryClient.invalidateQueries({ queryKey: ['job', jobId] }),
+      queryClient.invalidateQueries({ queryKey: ['externalJob', jobId] }),
+      
+      // Pipeline-related queries
+      queryClient.invalidateQueries({ queryKey: ['pipeline'] }),
+      queryClient.invalidateQueries({ queryKey: ['defaultPipeline'] }),
+      
+      // Job applications and candidates
+      queryClient.invalidateQueries({ queryKey: ['jobApplications', jobId] }),
+      queryClient.invalidateQueries({ queryKey: ['candidates'] }),
+      
+      // Tasks and task statistics
+      queryClient.invalidateQueries({ queryKey: ['tasks', jobId] }),
+      queryClient.invalidateQueries({ queryKey: ['taskStats', jobId] }),
+      
+      // Interviews
+      queryClient.invalidateQueries({ queryKey: ['interviews', { jobId }] }),
+      queryClient.invalidateQueries({ queryKey: ['interviews'] }),
+      
+      // Reports
+      queryClient.invalidateQueries({ queryKey: ['jobReport', jobId] }),
+      queryClient.invalidateQueries({ queryKey: ['reports'] }),
+      
+      // Stage movements and tracking
+      queryClient.invalidateQueries({ queryKey: ['stageMovements'] }),
+      
+      // Organization and department data that might affect the job view
+      queryClient.invalidateQueries({ queryKey: ['organization', organizationId] }),
+      queryClient.invalidateQueries({ queryKey: ['department', departmentId] }),
+    ]);
+  };
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      await invalidateAllQueries();
+      toast.success('Data Refreshed', 'All job data has been refreshed successfully.');
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast.error('Refresh Failed', 'Failed to refresh data. Please try again.');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleCandidateRemove = async (candidate: any) => {
@@ -286,6 +388,9 @@ const JobATSPage: React.FC = () => {
     try {
       // Delete using React Query mutation
       await deleteJobApplicationMutation.mutateAsync(application.id);
+      
+      // Invalidate all related queries to ensure consistency
+      await invalidateAllQueries();
       
       // Close dialog and reset state
       setShowDeleteConfirmation(false);
@@ -360,6 +465,9 @@ const JobATSPage: React.FC = () => {
         newStage: newStage
       });
       
+      // Invalidate all related queries to ensure consistency
+      await invalidateAllQueries();
+      
       // Note: optimistic hook handles all cache updates automatically
       // Show success message
       toast.success('Stage Updated', `Candidate moved to ${newStage}`);
@@ -401,46 +509,80 @@ const JobATSPage: React.FC = () => {
 
   return (
 	<div className="p-6 bg-gray-50 min-h-screen">
-	  {/* Breadcrumbs */}
-	  <div className="flex items-center text-sm text-gray-500 mb-4">
-		<Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
-		<span className="mx-2">/</span>
-		<Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
-		<span className="mx-2">/</span>
-		<Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
-		  Organization
-		</Link>
-		<span className="mx-2">/</span>
-		<Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`} className="hover:text-gray-700">
-		  {job.department}
-		</Link>
-		<span className="mx-2">/</span>
-		<span className="text-gray-900 font-medium">ATS - {job.title}</span>
-	  </div>
+	  {/* Breadcrumbs - Only show for internal users */}
+	  {!isExternal && (
+		<div className="flex items-center text-sm text-gray-500 mb-4">
+		  <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+		  <span className="mx-2">/</span>
+		  <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
+		  <span className="mx-2">/</span>
+		  <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
+			Organization
+		  </Link>
+		  <span className="mx-2">/</span>
+		  <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`} className="hover:text-gray-700">
+			{job.department}
+		  </Link>
+		  <span className="mx-2">/</span>
+		  <span className="text-gray-900 font-medium">ATS - {job.title}</span>
+		</div>
+	  )}
 
 	  {/* Header */}
 	  <div className="flex items-center justify-between mb-6">
 		<div className="flex items-center">
-		  <Link 
-			to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
-			className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-		  >
-			<ArrowLeft className="w-5 h-5" />
-		  </Link>
+		  {/* Back button - Only show for internal users */}
+		  {!isExternal && (
+			<Link 
+			  to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
+			  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+			>
+			  <ArrowLeft className="w-5 h-5" />
+			</Link>
+		  )}
+		  {/* For external users, show a back button to their jobs page */}
+		  {isExternal && (
+			<Link 
+			  to="/external/jobs"
+			  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+			>
+			  <ArrowLeft className="w-5 h-5" />
+			</Link>
+		  )}
 		  <div>
-			<h1 className="text-2xl font-bold text-gray-900">ATS Pipeline</h1>
-			<p className="text-gray-600 mt-1">Managing candidates for this specific job</p>
+			<h1 className="text-2xl font-bold text-gray-900">
+			  {isExternal ? 'Job Applications' : 'ATS Pipeline'}
+			</h1>
+			<p className="text-gray-600 mt-1">
+			  {isExternal ? 'View and manage candidates for this job' : 'Managing candidates for this specific job'}
+			</p>
 		  </div>
 		</div>
-				{effectivePipeline && (
-				  <button 
-					onClick={() => setShowAddCandidateModal(true)}
-					className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors mr-3"
-				  >
-					<Plus className="w-4 h-4 mr-2" />
-					Add Candidate
-				  </button>
-				)}
+		{/* Action buttons */}
+		<div className="flex items-center space-x-3">
+		  {/* Refresh button */}
+		  <button 
+			onClick={handleRefreshData}
+			disabled={isRefreshing}
+			className={`bg-white text-purple-600 border border-purple-600 hover:text-purple-800 px-3 py-2 rounded-md flex items-center transition-colors ${
+			  isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+			}`}
+			title="Refresh all data"
+		  >
+			<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+		  </button>
+		  
+		  {/* Add Candidate button - Available for all users */}
+		  {effectivePipeline && (
+			<button 
+			  onClick={() => setShowAddCandidateModal(true)}
+			  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors"
+			>
+			  <Plus className="w-4 h-4 mr-2" />
+			  Add Candidate
+			</button>
+		  )}
+		</div>
 		
 	  </div>
 
@@ -465,7 +607,7 @@ const JobATSPage: React.FC = () => {
 		</div>
 	  </div>
 
-	  {/* No Pipeline Warning */}
+	  {/* No Pipeline Warning - Only allow internal users to create default pipeline */}
 	  {job && !job.pipelineId && !effectivePipeline && !defaultPipelineLoading && (
 		<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
 		  <div className="flex items-center justify-between">
@@ -476,27 +618,33 @@ const JobATSPage: React.FC = () => {
 			  <div className="ml-4">
 				<h3 className="text-lg font-medium text-yellow-800">No Pipeline Assigned</h3>
 				<p className="text-yellow-700">
-				  This job doesn't have a recruitment pipeline assigned. Create a default pipeline to start managing candidates.
+				  {isExternal 
+					? 'This job doesn\'t have a recruitment pipeline assigned. Please contact your hiring manager.'
+					: 'This job doesn\'t have a recruitment pipeline assigned. Create a default pipeline to start managing candidates.'
+				  }
 				</p>
 			  </div>
 			</div>
-			<button
-			  onClick={handleCreateDefaultPipeline}
-			  disabled={isCreatingDefault}
-			  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md flex items-center transition-colors disabled:opacity-50"
-			>
-			  {isCreatingDefault ? (
-				<>
-				  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-				  Creating...
-				</>
-			  ) : (
-				<>
-				  <Plus className="w-4 h-4 mr-2" />
-				  Create Default Pipeline
-				</>
-			  )}
-			</button>
+			{/* Only show create button for internal users */}
+			{!isExternal && (
+			  <button
+				onClick={handleCreateDefaultPipeline}
+				disabled={isCreatingDefault}
+				className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md flex items-center transition-colors disabled:opacity-50"
+			  >
+				{isCreatingDefault ? (
+				  <>
+					<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+					Creating...
+				  </>
+				) : (
+				  <>
+					<Plus className="w-4 h-4 mr-2" />
+					Create Default Pipeline
+				  </>
+				)}
+			  </button>
+			)}
 		  </div>
 		</div>
 	  )}
@@ -555,7 +703,7 @@ const JobATSPage: React.FC = () => {
 		  <div style={{ display: activeTab === 'pipeline' ? 'block' : 'none' }}>
 			<PipelineTab 
 			  candidates={candidates}
-			  pipeline={effectivePipeline}
+			  pipeline={effectivePipeline as any}
 			  searchQuery={searchQuery}
 			  onSearchChange={setSearchQuery}
 			  selectedStage={selectedStage}
@@ -565,6 +713,7 @@ const JobATSPage: React.FC = () => {
 			  onCandidateUpdate={handleCandidateUpdate}
 			  onCandidateRemove={handleCandidateRemove}
 			  onCandidateStageChange={handleCandidateStageChange}
+			  onDataChange={invalidateAllQueries}
 			/>
 		  </div>
 
@@ -577,6 +726,7 @@ const JobATSPage: React.FC = () => {
 			  onNavigateMonth={navigateMonth}
 			  onToday={handleToday}
 			  pipelineId={effectivePipeline?.id}
+			  onDataChange={invalidateAllQueries}
 			/>
 		  </div>
 
@@ -587,6 +737,7 @@ const JobATSPage: React.FC = () => {
 				// Handle interview click if needed
 			  }}
 			  pipelineId={effectivePipeline?.id}
+			  onDataChange={invalidateAllQueries}
 			/>
 		  </div>
 
@@ -595,6 +746,7 @@ const JobATSPage: React.FC = () => {
 			  reportData={reportData || null}
 			  loading={reportLoading}
 			  error={reportError}
+			  onDataChange={invalidateAllQueries}
 			/>
 		  </div>
 		</>
@@ -615,7 +767,8 @@ const JobATSPage: React.FC = () => {
 		  onClose={() => setShowAddCandidateModal(false)}
 		  jobId={jobId!}
 		  onCandidateAdded={handleCandidateAdded}
-		  pipeline={effectivePipeline}
+		  pipeline={effectivePipeline as any}
+		  onDataChange={invalidateAllQueries}
 		/>
 	  )}
 

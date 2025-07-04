@@ -28,8 +28,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
-  // If user is external, redirect them to external dashboard
+  // If user is external, check if they're trying to access an ATS route
   if (isExternalUser(user)) {
+    // Allow external users to access ATS routes for jobs they have access to
+    const isATSRoute = location.pathname.includes('/jobs/') && location.pathname.endsWith('/ats');
+    
+    if (isATSRoute) {
+      // Allow access to ATS routes for external users
+      return <>{children}</>;
+    }
+    
+    // For all other dashboard routes, redirect external users to their dashboard
     return <Navigate to="/external/jobs" replace />;
   }
 

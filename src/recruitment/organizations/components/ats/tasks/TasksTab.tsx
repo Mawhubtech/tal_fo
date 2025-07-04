@@ -19,6 +19,7 @@ interface TasksTabProps {
   onNavigateMonth: (direction: 'prev' | 'next') => void;
   onToday: () => void;
   pipelineId?: string; // Add pipeline ID for stage movement
+  onDataChange?: () => Promise<void>;
 }
 
 export const TasksTab: React.FC<TasksTabProps> = ({ 
@@ -28,7 +29,8 @@ export const TasksTab: React.FC<TasksTabProps> = ({
   currentDate,
   onNavigateMonth,
   onToday,
-  pipelineId
+  pipelineId,
+  onDataChange
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -76,8 +78,14 @@ export const TasksTab: React.FC<TasksTabProps> = ({
   const actualTasks = is404Error ? [] : (tasks || []);
   const actualError = is404Error ? null : error;
 
-  const handleTaskCreated = () => {
-    refetch();
+  const handleTaskCreated = async () => {
+    await refetch();
+    
+    // Call onDataChange if provided to invalidate all queries
+    if (onDataChange) {
+      await onDataChange();
+    }
+    
     // If date modal is open, refresh the tasks for that date
     if (showDateModal && selectedDate) {
       // We'll need to wait for the refetch to complete and then update
@@ -99,7 +107,13 @@ export const TasksTab: React.FC<TasksTabProps> = ({
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
         await deleteTaskMutation.mutateAsync(taskId);
-        refetch();
+        await refetch();
+        
+        // Call onDataChange if provided to invalidate all queries
+        if (onDataChange) {
+          await onDataChange();
+        }
+        
         // Close date modal if it's open
         if (showDateModal) {
           setShowDateModal(false);
@@ -122,7 +136,13 @@ export const TasksTab: React.FC<TasksTabProps> = ({
         await handleTaskCompletion(taskId);
       }
       
-      refetch();
+      await refetch();
+      
+      // Call onDataChange if provided to invalidate all queries
+      if (onDataChange) {
+        await onDataChange();
+      }
+      
       // Update the selected date tasks if the modal is open
       if (showDateModal && selectedDate) {
         const updatedTasks = selectedDateTasks.map(task =>

@@ -20,6 +20,7 @@ interface PipelineTabProps {
   onCandidateUpdate?: (candidate: Candidate) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
+  onDataChange?: () => Promise<void>;
 }
 
 export const PipelineTab: React.FC<PipelineTabProps> = ({

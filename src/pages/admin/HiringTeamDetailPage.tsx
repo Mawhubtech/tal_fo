@@ -4,18 +4,22 @@ import {
   ArrowLeft, Edit, Users, Settings, Archive, Trash2,
   Globe, Lock, Building, Crown, CheckCircle, Clock,
   AlertCircle, Share, Copy, Download, Activity,
-  FileText, Calendar, MapPin, Mail, Phone
+  FileText, Calendar, MapPin, Mail, Phone, Briefcase
 } from 'lucide-react';
 import { useHiringTeam, useUpdateHiringTeam, useDeleteHiringTeam } from '../../hooks/useHiringTeam';
+import { useJobsAssignedToTeam } from '../../hooks/useJobAssignment';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer, { toast } from '../../components/ToastContainer';
+import JobAssignmentModal from '../../components/JobAssignmentModal';
 
 const HiringTeamDetailPage: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [jobAssignmentModalOpen, setJobAssignmentModalOpen] = useState(false);
 
   const { data: team, isLoading: teamLoading, error: teamError } = useHiringTeam(teamId || '');
+  const { data: assignedJobs = [], isLoading: jobsLoading } = useJobsAssignedToTeam(teamId || '');
   const updateTeamMutation = useUpdateHiringTeam();
   const deleteTeamMutation = useDeleteHiringTeam();
 
@@ -267,6 +271,69 @@ const HiringTeamDetailPage: React.FC = () => {
               )}
             </div>
 
+            {/* Assigned Jobs */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">Assigned Jobs</h2>
+                <button
+                  onClick={() => setJobAssignmentModalOpen(true)}
+                  className="inline-flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+                >
+                  <Briefcase className="h-4 w-4" />
+                  <span>Manage Jobs</span>
+                </button>
+              </div>
+              
+              {jobsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                </div>
+              ) : assignedJobs && assignedJobs.length > 0 ? (
+                <div className="space-y-4">
+                  {assignedJobs.slice(0, 5).map((job) => (
+                    <div key={job.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{job.title}</h3>
+                        <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                          <span>{job.department}</span>
+                          <span>{job.location}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            job.status === 'Active' ? 'bg-green-100 text-green-800' :
+                            job.status === 'Draft' ? 'bg-gray-100 text-gray-800' :
+                            job.status === 'Paused' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {job.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Created {new Date(job.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                  {assignedJobs.length > 5 && (
+                    <p className="text-sm text-gray-500 text-center">
+                      And {assignedJobs.length - 5} more jobs...
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Jobs Assigned</h3>
+                  <p className="text-gray-600 mb-4">This team doesn't have any jobs assigned yet.</p>
+                  <button
+                    onClick={() => setJobAssignmentModalOpen(true)}
+                    className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    <span>Assign Jobs</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Recent Activity */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h2>
@@ -287,6 +354,10 @@ const HiringTeamDetailPage: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Members</span>
                   <span className="font-semibold">{team.members?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Assigned Jobs</span>
+                  <span className="font-semibold">{assignedJobs.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Status</span>
@@ -314,6 +385,13 @@ const HiringTeamDetailPage: React.FC = () => {
                   <Users className="h-5 w-5 text-gray-500" />
                   <span>Manage Members</span>
                 </Link>
+                <button
+                  onClick={() => setJobAssignmentModalOpen(true)}
+                  className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Briefcase className="h-5 w-5 text-gray-500" />
+                  <span>Manage Jobs</span>
+                </button>
                 <button
                   onClick={() => toast.info('Team settings feature coming soon!')}
                   className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -344,6 +422,15 @@ const HiringTeamDetailPage: React.FC = () => {
           cancelText="Cancel"
           isDestructive={true}
         />
+
+        {/* Job Assignment Modal */}
+        {team && (
+          <JobAssignmentModal
+            isOpen={jobAssignmentModalOpen}
+            onClose={() => setJobAssignmentModalOpen(false)}
+            team={team}
+          />
+        )}
 
         <ToastContainer />
       </div>

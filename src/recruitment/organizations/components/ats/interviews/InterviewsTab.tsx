@@ -18,6 +18,7 @@ interface InterviewsTabProps {
   onNewInterview?: () => void;
   selectedCandidateId?: string;
   pipelineId?: string; // Add pipeline ID for stage movement
+  onDataChange?: () => Promise<void>;
 }
 
 export const InterviewsTab: React.FC<InterviewsTabProps> = ({
@@ -25,7 +26,8 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   onInterviewClick,
   onNewInterview,
   selectedCandidateId,
-  pipelineId
+  pipelineId,
+  onDataChange
 }) => {
   const [interviewsView, setInterviewsView] = useState<'list' | 'calendar'>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -99,6 +101,11 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
         id: interview.id,
         data: { status: status as any }
       });
+      
+      // Call onDataChange if provided to invalidate all queries
+      if (onDataChange) {
+        await onDataChange();
+      }
       
       toast.success('Status Updated', `Interview status changed to ${status}`);
     } catch (error) {
