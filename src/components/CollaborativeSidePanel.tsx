@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, ChevronLeft, ChevronRight, Plus, Send, MessageSquare, Users, 
-  Clock, Edit, Trash2, Heart, Smile, ThumbsUp, Reply, MoreVertical, Tag, Search
+  Clock, Edit, Trash2, Heart, Smile, ThumbsUp, Reply, MoreVertical, Tag, Search, Wifi, WifiOff
 } from 'lucide-react';
 import Button from './Button';
+import { useJobWebSocket } from '../hooks/useJobWebSocket';
 
 // Types for comments and reactions
 export interface Comment {
@@ -105,9 +106,121 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   const [showCandidatePicker, setShowCandidatePicker] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [candidateSearchQuery, setCandidateSearchQuery] = useState('');
+  const [liveComments, setLiveComments] = useState<Comment[]>(comments);
+  const [liveTeamMembers, setLiveTeamMembers] = useState<TeamMember[]>(teamMembers);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sort comments by creation date (newest first)
-  const sortedComments = comments
+  // WebSocket integration for live updates
+  const {
+    isConnected,
+    activeUsers,
+    typingUsers,
+    sendTyping,
+    onNewComment,
+    onCommentUpdated,
+    onCommentDeleted,
+    onNewReaction,
+    onReactionRemoved,
+  } = useJobWebSocket({
+    jobId,
+    userId: currentUserId,
+    userName: currentUserName,
+    userAvatar: currentUserAvatar,
+    enabled: panelState !== 'closed',
+  });
+
+  // Update live comments when props change
+  useEffect(() => {
+    setLiveComments(comments);
+  }, [comments]);
+
+  // Update team members with live presence
+  useEffect(() => {
+    const updatedTeamMembers = teamMembers.map(member => {
+      const activeUser = activeUsers.find(user => user.userId === member.id);
+      return {
+        ...member,
+        isOnline: activeUser ? activeUser.isOnline : member.isOnline,
+        lastSeen: activeUser?.lastSeen ? activeUser.lastSeen.toString() : member.lastSeen,
+      };
+    });
+    setLiveTeamMembers(updatedTeamMembers);
+  }, [teamMembers, activeUsers]);
+
+  // Set up WebSocket event handlers
+  useEffect(() => {
+    onNewComment((newComment) => {
+      setLiveComments(prev => {
+        // Check if comment already exists to avoid duplicates
+        if (prev.some(c => c.id === newComment.id)) return prev;
+        return [newComment, ...prev];
+      });
+    });
+
+    onCommentUpdated((updatedComment) => {
+      setLiveComments(prev => 
+        prev.map(c => c.id === updatedComment.id ? updatedComment : c)
+      );
+    });
+
+    onCommentDeleted(({ commentId }) => {
+      setLiveComments(prev => 
+        prev.filter(c => c.id !== commentId)
+      );
+    });
+
+    onNewReaction((reaction) => {
+      setLiveComments(prev => 
+        prev.map(comment => {
+          if (comment.id === reaction.commentId) {
+            return {
+              ...comment,
+              reactions: [...comment.reactions, reaction]
+            };
+          }
+          return comment;
+        })
+      );
+    });
+
+    onReactionRemoved(({ commentId, emoji, userId }) => {
+      setLiveComments(prev => 
+        prev.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              reactions: comment.reactions.filter(r => !(r.emoji === emoji && r.userId === userId))
+            };
+          }
+          return comment;
+        })
+      );
+    });
+  }, [onNewComment, onCommentUpdated, onCommentDeleted, onNewReaction, onReactionRemoved]);
+
+  // Handle typing indicators
+  const handleInputChange = (value: string) => {
+    setNewComment(value);
+    
+    // Send typing indicator
+    if (value.trim() && !typingTimeoutRef.current) {
+      sendTyping(true);
+    }
+    
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Stop typing indicator after 2 seconds of no typing
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTyping(false);
+      typingTimeoutRef.current = null;
+    }, 2000);
+  };
+
+  // Sort comments by creation date (newest first) - use live comments
+  const sortedComments = liveComments
     .filter(comment => !comment.parentId) // Only top-level comments
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -413,11 +526,11 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
           <div className="p-4 border-b border-gray-200">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{comments.length}</div>
+                <div className="text-2xl font-bold text-purple-600">{liveComments.length}</div>
                 <div className="text-xs text-gray-500">Comments</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{teamMembers.filter(m => m.isOnline).length}</div>
+                <div className="text-2xl font-bold text-green-600">{liveTeamMembers.filter(m => m.isOnline).length}</div>
                 <div className="text-xs text-gray-500">Online</div>
               </div>
             </div>
@@ -457,7 +570,19 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
             <div className="flex items-center space-x-3">
               <MessageSquare className="h-5 w-5 text-purple-600" />
               <h3 className="text-lg font-semibold text-gray-800">Team Discussion</h3>
-              <span className="text-sm text-gray-500">({comments.length} comments)</span>
+              <span className="text-sm text-gray-500">({liveComments.length} comments)</span>
+              {/* Connection Status */}
+              <div className="flex items-center space-x-1">
+                {isConnected ? (
+                  <div title="Connected">
+                    <Wifi className="h-4 w-4 text-green-500" />
+                  </div>
+                ) : (
+                  <div title="Disconnected">
+                    <WifiOff className="h-4 w-4 text-red-500" />
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center">
               <Button
@@ -552,7 +677,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                 <div className="flex-1">
                   <textarea
                     value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
+                    onChange={(e) => handleInputChange(e.target.value)}
                     placeholder={replyTo ? "Write a reply..." : "Add a comment..."}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                     rows={2}
@@ -563,6 +688,16 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                       }
                     }}
                   />
+                  
+                  {/* Typing Indicators */}
+                  {typingUsers.length > 0 && (
+                    <div className="mt-2 text-xs text-gray-500 italic">
+                      {typingUsers.length === 1 
+                        ? `${typingUsers[0].userName} is typing...`
+                        : `${typingUsers.length} people are typing...`
+                      }
+                    </div>
+                  )}
                   
                   {/* Comment Actions */}
                   <div className="flex items-center justify-between mt-2">
@@ -678,14 +813,17 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
           <div className="flex items-center space-x-2">
             <Users className="h-5 w-5 text-green-600" />
             <h4 className="font-semibold text-gray-800">Team Members</h4>
-            <span className="text-sm text-gray-500">({teamMembers.length})</span>
+            <span className="text-sm text-gray-500">({liveTeamMembers.length})</span>
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+              {liveTeamMembers.filter(m => m.isOnline).length} online
+            </span>
           </div>
         </div>
 
         {/* Team Members List */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="space-y-3">
-            {teamMembers.map(member => (
+            {liveTeamMembers.map(member => (
               <div key={member.id} className="flex items-center space-x-3">
                 <div className="relative">
                   {member.avatar ? (
