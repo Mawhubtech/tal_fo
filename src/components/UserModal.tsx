@@ -1,0 +1,332 @@
+import React, { useState, useEffect } from 'react';
+import { X, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { type User, type CreateUserData, type UpdateUserData, type Role } from '../services/adminUserApiService';
+
+interface UserModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (userData: CreateUserData | UpdateUserData) => void;
+  isLoading: boolean;
+  user?: User | null;
+  isEditing?: boolean;
+  roles: Role[];
+}
+
+export const UserModal: React.FC<UserModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+  user,
+  isEditing = false,
+  roles
+}) => {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    status: 'active' as 'active' | 'inactive' | 'banned',
+    roleIds: [] as string[]
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Reset form when modal opens/closes or user changes
+  useEffect(() => {
+    if (isOpen) {
+      if (isEditing && user) {
+        setFormData({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          password: '',
+          status: user.status,
+          roleIds: user.roles?.map(role => role.id) || []
+        });
+      } else {
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          password: '',
+          status: 'active',
+          roleIds: []
+        });
+      }
+      setErrors({});
+    }
+  }, [isOpen, isEditing, user]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!isEditing && !formData.password.trim()) {
+      newErrors.password = 'Password is required for new users';
+    }
+
+    if (!isEditing && formData.password && formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters long';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    const submitData: CreateUserData | UpdateUserData = {
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim(),
+      status: formData.status,
+      roleIds: formData.roleIds.length > 0 ? formData.roleIds : undefined
+    };
+
+    if (!isEditing && formData.password) {
+      (submitData as CreateUserData).password = formData.password;
+    }
+
+    onSubmit(submitData);
+  };
+
+  const handleRoleChange = (roleId: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      roleIds: checked 
+        ? [...prev.roleIds, roleId]
+        : prev.roleIds.filter(id => id !== roleId)
+    }));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {isEditing ? 'Edit User' : 'Create New User'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={isLoading}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Basic Information */}
+          <div className="space-y-4">
+            <h4 className="text-md font-medium text-gray-900">Basic Information</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  First Name *
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.firstName ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  disabled={isLoading}
+                />
+                {errors.firstName && (
+                  <div className="flex items-center mt-1 text-sm text-red-600">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.firstName}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Name *
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.lastName ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  disabled={isLoading}
+                />
+                {errors.lastName && (
+                  <div className="flex items-center mt-1 text-sm text-red-600">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.lastName}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address *
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
+                disabled={isLoading}
+              />
+              {errors.email && (
+                <div className="flex items-center mt-1 text-sm text-red-600">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {errors.email}
+                </div>
+              )}
+            </div>
+
+            {!isEditing && (
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10 ${
+                      errors.password ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <div className="flex items-center mt-1 text-sm text-red-600">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.password}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                disabled={isLoading}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="banned">Banned</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Roles */}
+          <div className="space-y-4">
+            <h4 className="text-md font-medium text-gray-900">Roles</h4>
+            <div className="space-y-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+              {roles.map((role) => (
+                <div key={role.id} className="border-b border-gray-100 pb-3 last:border-b-0">
+                  <div className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      id={`role-${role.id}`}
+                      checked={formData.roleIds.includes(role.id)}
+                      onChange={(e) => handleRoleChange(role.id, e.target.checked)}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      disabled={isLoading}
+                    />
+                    <label htmlFor={`role-${role.id}`} className="ml-2 text-sm font-medium text-gray-900">
+                      {role.name}
+                    </label>
+                  </div>
+                  {role.description && (
+                    <p className="text-xs text-gray-600 ml-6 mb-2">{role.description}</p>
+                  )}
+                  {role.permissions && role.permissions.length > 0 && (
+                    <div className="ml-6">
+                      <p className="text-xs font-medium text-gray-700 mb-1">Permissions:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {role.permissions.map((permission) => (
+                          <span
+                            key={permission.id}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                          >
+                            {permission.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {roles.length === 0 && (
+                <p className="text-sm text-gray-500">No roles available</p>
+              )}
+            </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : isEditing ? 'Update User' : 'Create User'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default UserModal;

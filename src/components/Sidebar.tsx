@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Search, Users, MessageSquare, 
   Settings, HelpCircle, ChevronDown, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
-  Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3, GitBranch, // Added for Jobs and Admin
+  Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3, GitBranch, KeyRound, // Added for Jobs and Admin
   Mail, UserCircle // Added for Outreach
 } from 'lucide-react';
 
@@ -298,13 +298,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                 </Link>
                 <div className="border-t border-gray-100 my-1 pt-1">
                   <div className="text-xs text-gray-500 mb-1 font-medium">Management</div>
-                  <Link to="/dashboard/admin/users" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/users') && !isActive('/dashboard/admin/user-clients') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <Link to="/dashboard/admin/users" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/users') && !isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                     <Users className="w-3 h-3 mr-2" />
                     Users
                   </Link>
-                  <Link to="/dashboard/admin/user-clients" className={`flex items-center py-1 text-sm pl-2 ${isActive('/dashboard/admin/user-clients') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <Link to="/dashboard/admin/roles" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/roles') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <KeyRound className="w-3 h-3 mr-2" />
+                    Roles & Permissions
+                  </Link>
+                  <Link to="/dashboard/admin/team-management" className={`flex items-center py-1 text-sm pl-2 ${isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                     <Shield className="w-3 h-3 mr-2" />
-                    User-Client Access
+                    Team Management
                   </Link>
                 </div>
                 <div className="border-t border-gray-100 my-1 pt-1">

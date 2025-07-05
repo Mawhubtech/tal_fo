@@ -1,6 +1,6 @@
 /**
  * TeamManagementPage - Interface for managing team members and their client access
- *
+ * 
  * Features:
  * - Create new team members (restricted roles based on current user)
  * - View and manage existing team members
@@ -9,7 +9,7 @@
  * - Bulk actions for client assignments
  * - Role-based access control (admin and super-admin only)
  * - Filtering and search capabilities
- *
+ * 
  * Restrictions:
  * - Users cannot create super-admin or admin roles (unless they are super-admin)
  * - Only shows team members created by or assigned to the current user
@@ -17,19 +17,19 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  Users, Building, Link as LinkIcon, Search, Filter,
+import { 
+  Users, Building, Link as LinkIcon, Search, Filter, 
   MoreHorizontal, Edit, Plus, X, Check, AlertCircle, User,
-  ChevronRight, UserCheck, Crown, Settings, RefreshCw,
+  ChevronRight, UserCheck, Crown, Settings, RefreshCw, 
   CheckSquare, Trash2, UserPlus, Shield, Eye
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import {
-  useUsers,
-  useCreateUser,
+import { 
+  useUsers, 
+  useCreateUser, 
   useUpdateUser,
   useDeleteUser,
-  useAssignClient,
+  useAssignClient, 
   useRemoveClient,
   useRoles,
   useUpdateUserStatus,
@@ -79,11 +79,11 @@ const TeamManagementPage: React.FC = () => {
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
 
   // Check if current user has admin permissions
-  const isAdmin = currentUser?.roles?.some(role =>
+  const isAdmin = currentUser?.roles?.some(role => 
     role.name === 'admin' || role.name === 'super-admin'
   );
-
-  const isSuperAdmin = currentUser?.roles?.some(role =>
+  
+  const isSuperAdmin = currentUser?.roles?.some(role => 
     role.name === 'super-admin'
   );
 
@@ -127,7 +127,7 @@ const TeamManagementPage: React.FC = () => {
     .filter(user => {
       // If user is not super-admin, hide other super-admins and admins from non-super-admins
       if (!isSuperAdmin) {
-        const hasAdminRole = user.roles?.some(role =>
+        const hasAdminRole = user.roles?.some(role => 
           role.name === 'super-admin' || role.name === 'admin'
         );
         if (hasAdminRole) return false;
@@ -138,45 +138,45 @@ const TeamManagementPage: React.FC = () => {
   // Enhanced filtering with memoization for performance
   const filteredUsers = useMemo(() => {
     return usersWithClients.filter(user => {
-      const matchesSearch =
+      const matchesSearch = 
         user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.clients.some(client => client.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
-      const matchesRole = roleFilter === 'all' ||
+      
+      const matchesRole = roleFilter === 'all' || 
         user.roles.some(role => role.name === roleFilter);
-
-      const matchesClientFilter =
+      
+      const matchesClientFilter = 
         clientFilter === 'all' ||
         (clientFilter === 'has-access' && user.clients.length > 0) ||
         (clientFilter === 'no-access' && user.clients.length === 0);
-
+      
       return matchesSearch && matchesRole && matchesClientFilter;
     });
   }, [usersWithClients, searchTerm, roleFilter, clientFilter]);
 
   const handleAssignClients = async () => {
     if (!selectedUser) return;
-
+    
     try {
       // Get current client IDs
       const currentClientIds = selectedUser.clients.map(c => c.id);
-
+      
       // Find clients to add and remove
       const clientsToAdd = selectedClients.filter(id => !currentClientIds.includes(id));
       const clientsToRemove = currentClientIds.filter(id => !selectedClients.includes(id));
-
+      
       // Add new clients
       for (const clientId of clientsToAdd) {
         await assignClientMutation.mutateAsync({ userId: selectedUser.id, clientId });
       }
-
+      
       // Remove old clients
       for (const clientId of clientsToRemove) {
         await removeClientMutation.mutateAsync({ userId: selectedUser.id, clientId });
       }
-
+      
       toast.success('Client assignments updated successfully!');
       setShowAssignModal(false);
       setSelectedUser(null);
@@ -190,11 +190,11 @@ const TeamManagementPage: React.FC = () => {
 
   const handleBulkAssignClients = async () => {
     if (selectedUsers.length === 0) return;
-
+    
     try {
       let successCount = 0;
       let failedCount = 0;
-
+      
       // Process each user individually since we don't have a bulk endpoint
       for (const userId of selectedUsers) {
         try {
@@ -207,13 +207,13 @@ const TeamManagementPage: React.FC = () => {
           failedCount++;
         }
       }
-
+      
       if (failedCount > 0) {
         toast.success(`Updated client access for ${successCount} user${successCount > 1 ? 's' : ''}. ${failedCount} user${failedCount > 1 ? 's' : ''} failed.`);
       } else {
         toast.success(`Successfully updated client access for ${successCount} user${successCount > 1 ? 's' : ''}!`);
       }
-
+      
       setShowBulkAssignModal(false);
       setSelectedUsers([]);
       setSelectedClients([]);
@@ -241,7 +241,7 @@ const TeamManagementPage: React.FC = () => {
   // Handle user update
   const handleUpdateUser = async (userData: any) => {
     if (!editingUser) return;
-
+    
     try {
       await updateUserMutation.mutateAsync({ id: editingUser.id, userData });
       toast.success('User updated successfully!');
@@ -259,7 +259,7 @@ const TeamManagementPage: React.FC = () => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
     }
-
+    
     try {
       await deleteUserMutation.mutateAsync(userId);
       toast.success('User deleted successfully!');
@@ -326,9 +326,9 @@ const TeamManagementPage: React.FC = () => {
       inactive: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Inactive' },
       banned: { bg: 'bg-red-100', text: 'text-red-800', label: 'Banned' }
     };
-
+    
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
-
+    
     return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
       {config.label}
     </span>;
@@ -336,12 +336,11 @@ const TeamManagementPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ToastContainer />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center mb-2">
-            <Link
+            <Link 
               to="/admin"
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
@@ -375,10 +374,11 @@ const TeamManagementPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setBulkMode(!bulkMode)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${bulkMode
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  bulkMode 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
                     : 'text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
+                }`}
               >
                 <CheckSquare className="h-4 w-4" />
                 <span>{bulkMode ? 'Exit Bulk Mode' : 'Bulk Actions'}</span>
@@ -478,7 +478,7 @@ const TeamManagementPage: React.FC = () => {
               {searchTerm || roleFilter !== 'all' ? 'No users match your search' : 'No users found'}
             </h3>
             <p className="text-gray-600">
-              {searchTerm || roleFilter !== 'all'
+              {searchTerm || roleFilter !== 'all' 
                 ? 'Try adjusting your search criteria or filters.'
                 : 'No users are currently in the system.'
               }
@@ -492,7 +492,7 @@ const TeamManagementPage: React.FC = () => {
                 Showing {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
               </p>
             </div>
-
+            
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -656,7 +656,7 @@ const TeamManagementPage: React.FC = () => {
         {/* Assign Clients Modal */}
         {showAssignModal && selectedUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -675,7 +675,7 @@ const TeamManagementPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="px-6 py-6 overflow-y-auto">
+              <div className="px-6 py-6">
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-gray-600 mb-4">
@@ -690,7 +690,7 @@ const TeamManagementPage: React.FC = () => {
                     </div>
                   ) : allClients.length > 0 ? (
                     <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3">
-                      {allClients.map((client: any) => (
+                      {allClients.map((client) => (
                         <label key={client.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
                           <input
                             type="checkbox"
@@ -711,8 +711,9 @@ const TeamManagementPage: React.FC = () => {
                               <div className="text-xs text-gray-500">{client.industry}</div>
                             )}
                           </div>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                            }`}>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
                             {client.status}
                           </span>
                         </label>
@@ -721,72 +722,224 @@ const TeamManagementPage: React.FC = () => {
                   ) : (
                     <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
                       <Building className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                      <p className="font-medium">No Clients Available</p>
-                      <p className="text-sm">Create a client first to assign them to a user.</p>
+                      <p className="text-sm">No clients available</p>
+                    </div>
+                  )}
+
+                  {selectedClients.length > 0 && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <Check className="h-4 w-4 inline mr-1" />
+                        {selectedClients.length} client{selectedClients.length > 1 ? 's' : ''} selected
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
                 <button
-                  onClick={() => setShowAssignModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setSelectedUser(null);
+                    setSelectedClients([]);
+                  }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAssignClients}
-                  className="px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50"
-                  disabled={assignClientMutation.isLoading || removeClientMutation.isLoading}
+                  disabled={assignClientMutation.isPending}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Changes
+                  {assignClientMutation.isPending ? 'Updating...' : 'Update Access'}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Placeholder for Bulk Assign Modal */}
+        {/* Bulk Assign Clients Modal */}
         {showBulkAssignModal && (
-           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-             {/* A full implementation would be similar to the Assign Clients Modal but for multiple users */}
-             <div className="bg-white rounded-lg shadow-xl p-6">
-                <h3 className="text-lg font-bold mb-4">Bulk Assign Clients</h3>
-                <p>This is where the bulk client assignment UI would go.</p>
-                <p className="my-4">Selected Users: {selectedUsers.length}</p>
-                 <button onClick={handleBulkAssignClients} className="bg-blue-500 text-white p-2 rounded mr-2">Confirm Bulk Assign</button>
-                <button onClick={() => setShowBulkAssignModal(false)} className="bg-gray-300 p-2 rounded">Close</button>
-             </div>
-           </div>
-        )}
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Bulk Assign Client Access ({selectedUsers.length} users)
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowBulkAssignModal(false);
+                      setSelectedClients([]);
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
 
-        {/* Placeholder for User Modal */}
-        {showUserModal && (
-          <UserModal
-            isOpen={showUserModal}
-            onClose={() => {
-              setShowUserModal(false);
-              setEditingUser(null);
-            }}
-            onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-            user={editingUser}
-            roles={availableRoles}
-            isSuperAdmin={isSuperAdmin}
-          />
-        )}
-        
-        {/* Placeholder for User Details Modal */}
-        {showDetailsModal && selectedUser && (
-          <UserDetailsModal 
-             isOpen={showDetailsModal}
-             onClose={() => {
-                setShowDetailsModal(false);
-                setSelectedUser(null);
-             }}
-             user={selectedUser}
-          />
+              <div className="px-6 py-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Select which clients/organizations the selected users should have access to:
+                    </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-blue-800 font-medium">
+                        Selected Users ({selectedUsers.length}):
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedUsers.slice(0, 5).map(userId => {
+                          const user = usersWithClients.find(u => u.id === userId);
+                          return user ? (
+                            <span key={userId} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {user.firstName} {user.lastName}
+                            </span>
+                          ) : null;
+                        })}
+                        {selectedUsers.length > 5 && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            +{selectedUsers.length - 5} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {loadingClients ? (
+                    <div className="p-4 text-center text-gray-500">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+                      <p className="text-sm mt-2">Loading clients...</p>
+                    </div>
+                  ) : allClients.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                      {allClients.map((client) => (
+                        <label key={client.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedClients.includes(client.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedClients([...selectedClients, client.id]);
+                              } else {
+                                setSelectedClients(selectedClients.filter(id => id !== client.id));
+                              }
+                            }}
+                            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                          />
+                          <Building className="h-5 w-5 text-gray-500" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                            {client.industry && (
+                              <div className="text-xs text-gray-500">{client.industry}</div>
+                            )}
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {client.status}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                      <Building className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm">No clients available</p>
+                    </div>
+                  )}
+
+                  {selectedClients.length > 0 && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <Check className="h-4 w-4 inline mr-1" />
+                        {selectedClients.length} client{selectedClients.length > 1 ? 's' : ''} selected for {selectedUsers.length} user{selectedUsers.length > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowBulkAssignModal(false);
+                    setSelectedClients([]);
+                  }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkAssignClients}
+                  disabled={assignClientMutation.isPending || selectedClients.length === 0}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {assignClientMutation.isPending ? 'Updating...' : `Update Access for ${selectedUsers.length} Users`}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* User Creation/Edit Modal */}
+      {showUserModal && (
+        <UserModal
+          isOpen={showUserModal}
+          onClose={() => {
+            setShowUserModal(false);
+            setEditingUser(null);
+          }}
+          onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+          user={editingUser as any}
+          isEditing={!!editingUser}
+          isLoading={editingUser ? updateUserMutation.isPending : createUserMutation.isPending}
+          roles={availableRoles.filter(role => {
+            // Filter out restricted roles based on current user permissions
+            if (!isSuperAdmin && (role.name === 'super-admin' || role.name === 'admin')) {
+              return false;
+            }
+            return true;
+          })}
+        />
+      )}
+
+      {/* User Details Modal */}
+      {showDetailsModal && selectedUser && (
+        <UserDetailsModal
+          isOpen={showDetailsModal}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedUser(null);
+          }}
+          user={selectedUser as any}
+          onEdit={(user) => {
+            setEditingUser(user as any);
+            setShowUserModal(true);
+            setShowDetailsModal(false);
+          }}
+          onDelete={handleDeleteUser}
+          onArchive={(userId) => archiveUserMutation.mutate(userId)}
+          onRestore={(userId) => restoreUserMutation.mutate(userId)}
+          onStatusChange={(userId, status) => updateUserStatusMutation.mutate({ id: userId, status })}
+          onSendPasswordReset={(userId) => sendPasswordResetMutation.mutate(userId)}
+          onSendEmailVerification={(userId) => sendEmailVerificationMutation.mutate(userId)}
+        />
+      )}
+
+      <ToastContainer />
+
+      {/* Click outside to close dropdown */}
+      {activeDropdown && (
+        <div 
+          className="fixed inset-0 z-0" 
+          onClick={() => setActiveDropdown(null)}
+        />
+      )}
     </div>
   );
 };

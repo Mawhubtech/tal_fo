@@ -43,7 +43,8 @@ import {
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
 import UserManagementPage from './admin/UserManagementPage'; // Import UserManagementPage
-import UserClientsPage from './admin/UserClientsPage'; // Import UserClientsPage
+import RoleManagementPage from './admin/RoleManagementPage'; // Import RoleManagementPage
+import TeamManagementPage from './admin/TeamManagementPage'; // Import TeamManagementPage
 import PipelinesPage from './admin/PipelinesPage'; // Import PipelinesPage
 import HiringTeamsPage from './admin/HiringTeamsPage'; // Import HiringTeamsPage
 import HiringTeamDetailPage from './admin/HiringTeamDetailPage'; // Import HiringTeamDetailPage
@@ -152,7 +153,8 @@ const Dashboard: React.FC = () => {
             <Route path="admin" element={<AdminLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
-              <Route path="user-clients" element={<UserClientsPage />} />
+              <Route path="roles" element={<RoleManagementPage />} />
+              <Route path="team-management" element={<TeamManagementPage />} />
               <Route path="pipelines" element={<PipelinesPage />} />
               <Route path="hiring-teams" element={<HiringTeamsPage />} />
               <Route path="hiring-teams/:teamId" element={<HiringTeamDetailPage />} />

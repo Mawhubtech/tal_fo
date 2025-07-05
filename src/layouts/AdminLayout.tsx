@@ -38,10 +38,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           description: 'Manage system users'
         },
         {
-          id: 'user-clients',
-          label: 'User-Client Access',
-          path: '/dashboard/admin/user-clients',
-          description: 'Manage user access to organizations'
+          id: 'team-management',
+          label: 'Team Management',
+          path: '/dashboard/admin/team-management',
+          description: 'Create and manage team members'
         }
       ]
     },
