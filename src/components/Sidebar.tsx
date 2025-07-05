@@ -306,6 +306,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     <KeyRound className="w-3 h-3 mr-2" />
                     Roles & Permissions
                   </Link>
+                  <Link to="/dashboard/admin/email-management" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/email-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <Mail className="w-3 h-3 mr-2" />
+                    Email Management
+                  </Link>
                   <Link to="/dashboard/admin/team-management" className={`flex items-center py-1 text-sm pl-2 ${isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                     <Shield className="w-3 h-3 mr-2" />
                     Team Management
@@ -353,6 +357,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       <Link to="/dashboard/admin/users" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/users') && !isActive('/dashboard/admin/user-clients') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                         <Users className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/users') && !isActive('/dashboard/admin/user-clients') ? '#7e22ce' : '' }} />
                         Users
+                      </Link>
+                      <Link to="/dashboard/admin/roles" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/roles') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                        <KeyRound className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/roles') ? '#7e22ce' : '' }} />
+                        Roles & Permissions
+                      </Link>
+                      <Link to="/dashboard/admin/email-management" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/email-management') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                        <Mail className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/email-management') ? '#7e22ce' : '' }} />
+                        Email Management
                       </Link>
                       <Link to="/dashboard/admin/user-clients" className={`flex items-center px-3 py-2 text-sm rounded-md ml-4 ${isActive('/dashboard/admin/user-clients') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                         <Shield className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/user-clients') ? '#7e22ce' : '' }} />

@@ -44,6 +44,7 @@ import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
 import UserManagementPage from './admin/UserManagementPage'; // Import UserManagementPage
 import RoleManagementPage from './admin/RoleManagementPage'; // Import RoleManagementPage
+import EmailManagementPage from './admin/EmailManagementPage'; // Import EmailManagementPage
 import TeamManagementPage from './admin/TeamManagementPage'; // Import TeamManagementPage
 import PipelinesPage from './admin/PipelinesPage'; // Import PipelinesPage
 import HiringTeamsPage from './admin/HiringTeamsPage'; // Import HiringTeamsPage
@@ -154,6 +155,7 @@ const Dashboard: React.FC = () => {
               <Route index element={<AdminOverviewPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="roles" element={<RoleManagementPage />} />
+              <Route path="email-management" element={<EmailManagementPage />} />
               <Route path="team-management" element={<TeamManagementPage />} />
               <Route path="pipelines" element={<PipelinesPage />} />
               <Route path="hiring-teams" element={<HiringTeamsPage />} />
