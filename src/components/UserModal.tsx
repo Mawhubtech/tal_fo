@@ -69,10 +69,13 @@ export const UserModal: React.FC<UserModalProps> = ({
       newErrors.lastName = 'Last name is required';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    // Only validate email for new users since it can't be changed for existing users
+    if (!isEditing) {
+      if (!formData.email.trim()) {
+        newErrors.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
     }
 
     if (!isEditing && !formData.password.trim()) {
@@ -94,19 +97,27 @@ export const UserModal: React.FC<UserModalProps> = ({
       return;
     }
 
-    const submitData: CreateUserData | UpdateUserData = {
-      firstName: formData.firstName.trim(),
-      lastName: formData.lastName.trim(),
-      email: formData.email.trim(),
-      status: formData.status,
-      roleIds: formData.roleIds.length > 0 ? formData.roleIds : undefined
-    };
-
-    if (!isEditing && formData.password) {
-      (submitData as CreateUserData).password = formData.password;
+    if (isEditing) {
+      // For editing, exclude email field as backend doesn't allow email updates
+      const submitData: UpdateUserData = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        status: formData.status,
+        roleIds: formData.roleIds.length > 0 ? formData.roleIds : undefined
+      };
+      onSubmit(submitData);
+    } else {
+      // For creating, include all fields including email and password
+      const submitData: CreateUserData = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        status: formData.status,
+        roleIds: formData.roleIds.length > 0 ? formData.roleIds : undefined
+      };
+      onSubmit(submitData);
     }
-
-    onSubmit(submitData);
   };
 
   const handleRoleChange = (roleId: string, checked: boolean) => {
@@ -190,6 +201,7 @@ export const UserModal: React.FC<UserModalProps> = ({
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address *
+                {isEditing && <span className="text-sm text-gray-500 font-normal ml-1">(cannot be changed)</span>}
               </label>
               <input
                 type="email"
@@ -198,8 +210,8 @@ export const UserModal: React.FC<UserModalProps> = ({
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.email ? 'border-red-300' : 'border-gray-300'
-                }`}
-                disabled={isLoading}
+                } ${isEditing ? 'bg-gray-50' : ''}`}
+                disabled={isLoading || isEditing}
               />
               {errors.email && (
                 <div className="flex items-center mt-1 text-sm text-red-600">
