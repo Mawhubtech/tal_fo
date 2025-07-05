@@ -110,18 +110,6 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   const [liveTeamMembers, setLiveTeamMembers] = useState<TeamMember[]>(teamMembers);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('CollaborativeSidePanel props:', {
-      jobId,
-      teamMembers,
-      comments,
-      currentUserId,
-      currentUserName,
-      panelState
-    });
-  }, [jobId, teamMembers, comments, currentUserId, currentUserName, panelState]);
-
   // WebSocket integration for live updates
   const {
     isConnected,
@@ -143,50 +131,39 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
 
   // Update live comments when props change
   useEffect(() => {
-    console.log('Comments prop updated:', comments);
     setLiveComments(comments);
   }, [comments]);
 
   // Update team members with live presence
   useEffect(() => {
-    console.log('Updating team members with live presence:', { teamMembers, activeUsers });
     const updatedTeamMembers = teamMembers.map(member => {
       const activeUser = activeUsers.find(user => user.userId === member.id);
-      console.log(`Member ${member.name} (${member.id}):`, { activeUser, isOnline: activeUser ? activeUser.isOnline : member.isOnline });
       return {
         ...member,
         isOnline: activeUser ? activeUser.isOnline : member.isOnline,
         lastSeen: activeUser?.lastSeen ? activeUser.lastSeen.toString() : member.lastSeen,
       };
     });
-    console.log('Updated team members:', updatedTeamMembers);
     setLiveTeamMembers(updatedTeamMembers);
   }, [teamMembers, activeUsers]);
 
   // Set up WebSocket event handlers
   useEffect(() => {
     onNewComment((newComment) => {
-      console.log('Received new comment via WebSocket:', newComment);
       setLiveComments(prev => {
         // Check if comment already exists to avoid duplicates
-        if (prev.some(c => c.id === newComment.id)) {
-          console.log('Comment already exists, skipping duplicate');
-          return prev;
-        }
-        console.log('Adding new comment to live comments');
+        if (prev.some(c => c.id === newComment.id)) return prev;
         return [newComment, ...prev];
       });
     });
 
     onCommentUpdated((updatedComment) => {
-      console.log('Received comment update via WebSocket:', updatedComment);
       setLiveComments(prev => 
         prev.map(c => c.id === updatedComment.id ? updatedComment : c)
       );
     });
 
     onCommentDeleted(({ commentId }) => {
-      console.log('Received comment deletion via WebSocket:', commentId);
       setLiveComments(prev => 
         prev.filter(c => c.id !== commentId)
       );
@@ -254,18 +231,8 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !onAddComment) return;
     
-    console.log('Submitting comment:', {
-      content: newComment,
-      replyTo,
-      selectedCandidates,
-      jobId,
-      currentUserId,
-      currentUserName
-    });
-    
     try {
       await onAddComment(newComment, replyTo || undefined, selectedCandidates.length > 0 ? selectedCandidates : undefined);
-      console.log('Comment submitted successfully');
       setNewComment('');
       setReplyTo(null);
       setSelectedCandidates([]);
