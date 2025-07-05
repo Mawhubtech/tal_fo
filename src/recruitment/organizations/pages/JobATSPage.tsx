@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
-  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle, RefreshCw, Eye
+  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle, RefreshCw, Eye, MessageSquare
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useJob } from '../../../hooks/useJobs';
@@ -18,6 +18,7 @@ import { useJobReport } from '../../../hooks/useReports';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
 import { StageChangeReason } from '../../../types/stageMovement.types';
+import { useHiringTeam, useTeamMembers } from '../../../hooks/useHiringTeam';
 import type { Job as JobType } from '../../data/types';
 import type { JobApplication } from '../../../services/jobApplicationApiService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
@@ -26,6 +27,8 @@ import ConfirmationDialog from '../../../components/ConfirmationDialog';
 import ToastContainer, { toast } from '../../../components/ToastContainer';
 import ProfileSidePanel, { type UserStructuredData, type PanelState } from '../../../components/ProfileSidePanel';
 import JobPreviewModal from '../../../components/modals/JobPreviewModal';
+import CollaborativeSidePanel, { type CollaborativePanelState, type TeamMember } from '../../../components/CollaborativeSidePanel';
+import { useJobComments, useCreateComment, useUpdateComment, useDeleteComment, useAddReaction, useRemoveReaction } from '../../../hooks/useJobComments';
 
 const JobATSPage: React.FC = () => {
   const { organizationId, departmentId, jobId } = useParams<{ 
@@ -45,6 +48,9 @@ const JobATSPage: React.FC = () => {
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  
+  // State for the collaborative side panel
+  const [collaborativePanelState, setCollaborativePanelState] = useState<CollaborativePanelState>('closed');
   
   // Determine if current user is external and use appropriate hook
   const isExternal = isExternalUser(user);
@@ -132,6 +138,18 @@ const JobATSPage: React.FC = () => {
     error: candidateDetailsError 
   } = useCandidate(selectedCandidateId || '');
   
+  // Collaborative panel hooks
+  const { data: comments = [], isLoading: commentsLoading } = useJobComments(jobId || '');
+  const createCommentMutation = useCreateComment();
+  const updateCommentMutation = useUpdateComment();
+  const deleteCommentMutation = useDeleteComment();
+  const addReactionMutation = useAddReaction();
+  const removeReactionMutation = useRemoveReaction();
+  
+  // Team member hooks
+  const { data: hiringTeam } = useHiringTeam(job?.hiringTeamId || '');
+  const { data: teamMembersData = [] } = useTeamMembers(job?.hiringTeamId || '');
+  
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [candidateToRemove, setCandidateToRemove] = useState<any>(null);
@@ -186,6 +204,26 @@ const JobATSPage: React.FC = () => {
     
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
   };
+
+  // Transform hiring team members to TeamMember format for CollaborativeSidePanel
+  const teamMembers: TeamMember[] = teamMembersData.map(member => {
+    const fullName = member.memberType === 'internal' && member.user
+      ? `${member.user.firstName} ${member.user.lastName}`
+      : `${member.externalFirstName || ''} ${member.externalLastName || ''}`.trim();
+    
+    const email = member.memberType === 'internal' && member.user
+      ? member.user.email
+      : member.externalEmail || '';
+
+    return {
+      id: member.id,
+      name: fullName || 'Unknown Member',
+      email: email,
+      avatar: member.user?.avatar,
+      role: member.teamRole,
+      isOnline: false, // This would need to be implemented with real-time status if needed
+    };
+  });
 
   // Convert job applications to candidates format for the ATS components
   const candidates = jobApplications.map(application => {
@@ -365,6 +403,75 @@ const JobATSPage: React.FC = () => {
     if (newState === 'closed') {
       setSelectedUserDataForPanel(null);
       setSelectedCandidateId(null);
+    }
+  };
+
+  // Collaborative panel handlers
+  const handleCollaborativePanelStateChange = (newState: CollaborativePanelState) => {
+    setCollaborativePanelState(newState);
+  };
+
+  const handlePostComment = async (content: string, parentId?: string, taggedCandidateIds?: string[]) => {
+    if (!jobId) return;
+    
+    try {
+      await createCommentMutation.mutateAsync({
+        jobId,
+        content,
+        parentId,
+        taggedCandidateIds,
+      });
+      toast.success('Comment Posted', 'Your comment has been posted successfully.');
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      toast.error('Post Failed', 'Failed to post comment. Please try again.');
+    }
+  };
+
+  const handleEditComment = async (commentId: string, content: string) => {
+    try {
+      await updateCommentMutation.mutateAsync({
+        commentId,
+        data: { content },
+      });
+      toast.success('Comment Updated', 'Your comment has been updated successfully.');
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      toast.error('Update Failed', 'Failed to update comment. Please try again.');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteCommentMutation.mutateAsync(commentId);
+      toast.success('Comment Deleted', 'Your comment has been deleted successfully.');
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast.error('Delete Failed', 'Failed to delete comment. Please try again.');
+    }
+  };
+
+  const handleAddReaction = async (commentId: string, emoji: string) => {
+    try {
+      await addReactionMutation.mutateAsync({
+        commentId,
+        emoji,
+      });
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      toast.error('Reaction Failed', 'Failed to add reaction. Please try again.');
+    }
+  };
+
+  const handleRemoveReaction = async (commentId: string, emoji: string) => {
+    try {
+      await removeReactionMutation.mutateAsync({
+        commentId,
+        emoji,
+      });
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+      toast.error('Reaction Failed', 'Failed to remove reaction. Please try again.');
     }
   };
 
@@ -643,9 +750,17 @@ const JobATSPage: React.FC = () => {
 
   return (
 	<div className={`p-6 bg-gray-50 min-h-screen transition-all duration-300 ${
-      panelState === 'expanded' ? 'mr-[66.666667%]' : 
-      panelState === 'collapsed' ? 'mr-[33.333333%]' : 
-      ''
+      // Calculate margins for both panels
+      (() => {
+        const profileMargin = panelState === 'expanded' ? 'mr-[33.333333%]' : 
+                             panelState === 'collapsed' ? 'mr-[16.666667%]' : '';
+        const collabMargin = collaborativePanelState === 'expanded' ? 
+                            (profileMargin ? 'mr-[66.666667%]' : 'mr-[33.333333%]') :
+                            collaborativePanelState === 'collapsed' ? 
+                            (profileMargin ? 'mr-[50%]' : 'mr-[16.666667%]') : 
+                            profileMargin;
+        return collabMargin;
+      })()
     }`}>
 	  {/* Breadcrumbs - Only show for internal users */}
 	  {!isExternal && (
@@ -718,6 +833,16 @@ const JobATSPage: React.FC = () => {
 			title="Refresh all data"
 		  >
 			<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+		  </button>
+		  
+		  {/* Team Notes button */}
+		  <button 
+			onClick={() => handleCollaborativePanelStateChange('expanded')}
+			className="bg-white text-green-600 border border-green-600 hover:bg-green-50 px-4 py-2 rounded-md flex items-center transition-colors"
+			title="Team collaboration and notes"
+		  >
+			<MessageSquare className="w-4 h-4 mr-2" />
+			Team Notes
 		  </button>
 		  
 		  {/* Add Candidate button - Available for all users */}
@@ -986,6 +1111,48 @@ const JobATSPage: React.FC = () => {
 			  onStateChange={handlePanelStateChange}
 			/>
 		  )}
+		</>
+	  )}
+
+	  {/* Collaborative Side Panel */}
+	  {collaborativePanelState !== 'closed' && (
+		<>
+		  {/* Overlay for collaborative panel - only show for expanded state when profile panel is not open */}
+		  {collaborativePanelState === 'expanded' && panelState === 'closed' && (
+			<div
+			  className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out"
+			  onClick={() => handleCollaborativePanelStateChange('closed')}
+			  aria-hidden="true"
+			></div>
+		  )}
+		  
+		  <CollaborativeSidePanel
+			jobId={jobId || ''}
+			comments={comments}
+			teamMembers={teamMembers}
+			candidates={candidates.map(candidate => ({
+			  id: candidate.id,
+			  name: candidate.name,
+			  avatar: candidate.avatar,
+			  stage: candidate.stage,
+			  email: candidate.email
+			}))}
+			currentUserId={user?.id || ''}
+			currentUserName={user ? `${user.firstName} ${user.lastName}` : 'Unknown User'}
+			currentUserAvatar={user?.avatar}
+			panelState={collaborativePanelState}
+			onStateChange={handleCollaborativePanelStateChange}
+			onAddComment={handlePostComment}
+			onEditComment={handleEditComment}
+			onDeleteComment={handleDeleteComment}
+			onAddReaction={handleAddReaction}
+			onRemoveReaction={handleRemoveReaction}
+			isLoading={commentsLoading}
+			rightOffset={panelState !== 'closed' ? 
+			  (panelState === 'expanded' ? 'right-[33.333333%]' : 'right-[16.666667%]') : 
+			  'right-0'
+			}
+		  />
 		</>
 	  )}
 
