@@ -206,24 +206,62 @@ const JobATSPage: React.FC = () => {
   };
 
   // Transform hiring team members to TeamMember format for CollaborativeSidePanel
-  const teamMembers: TeamMember[] = teamMembersData.map(member => {
-    const fullName = member.memberType === 'internal' && member.user
-      ? `${member.user.firstName} ${member.user.lastName}`
-      : `${member.externalFirstName || ''} ${member.externalLastName || ''}`.trim();
-    
-    const email = member.memberType === 'internal' && member.user
-      ? member.user.email
-      : member.externalEmail || '';
+  const teamMembers: TeamMember[] = (() => {
+    const members = teamMembersData.map(member => {
+      const fullName = member.memberType === 'internal' && member.user
+        ? `${member.user.firstName} ${member.user.lastName}`
+        : `${member.externalFirstName || ''} ${member.externalLastName || ''}`.trim();
+      
+      const email = member.memberType === 'internal' && member.user
+        ? member.user.email
+        : member.externalEmail || '';
 
-    return {
-      id: member.id,
-      name: fullName || 'Unknown Member',
-      email: email,
-      avatar: member.user?.avatar,
-      role: member.teamRole,
-      isOnline: false, // This would need to be implemented with real-time status if needed
-    };
-  });
+      // For presence matching, use the actual user ID for both internal and external users
+      // Internal users: member.user.id
+      // External users: member.userId (if linked to a user account) or fallback to member.id
+      const memberId = member.memberType === 'internal' && member.user 
+        ? member.user.id 
+        : member.userId || member.id;
+
+      // Debug logging for team member ID mapping
+      console.log(`Team member mapping: ${fullName}`, {
+        memberType: member.memberType,
+        memberId,
+        memberRecordId: member.id,
+        userId: member.userId,
+        userIdFromUser: member.user?.id
+      });
+
+      return {
+        id: memberId,
+        name: fullName || 'Unknown Member',
+        email: email,
+        avatar: member.user?.avatar,
+        role: member.teamRole as string,
+        isOnline: false, // This would need to be implemented with real-time status if needed
+      };
+    });
+
+    // Add job creator if they're not already in the team
+    if (job?.createdBy) {
+      const creatorId = job.createdBy.id;
+      const isCreatorInTeam = members.some(member => member.id === creatorId);
+      
+      if (!isCreatorInTeam) {
+        const creatorName = `${job.createdBy.firstName} ${job.createdBy.lastName}`;
+        members.unshift({
+          id: creatorId,
+          name: creatorName,
+          email: job.createdBy.email,
+          avatar: undefined, // Job creator info from backend might not include avatar
+          role: 'Job Creator',
+          isOnline: false,
+        });
+      }
+    }
+
+    return members;
+  })();
 
   // Convert job applications to candidates format for the ATS components
   const candidates = jobApplications.map(application => {

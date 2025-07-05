@@ -110,6 +110,18 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   const [liveTeamMembers, setLiveTeamMembers] = useState<TeamMember[]>(teamMembers);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('CollaborativeSidePanel props:', {
+      jobId,
+      teamMembers,
+      comments,
+      currentUserId,
+      currentUserName,
+      panelState
+    });
+  }, [jobId, teamMembers, comments, currentUserId, currentUserName, panelState]);
+
   // WebSocket integration for live updates
   const {
     isConnected,
@@ -131,39 +143,50 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
 
   // Update live comments when props change
   useEffect(() => {
+    console.log('Comments prop updated:', comments);
     setLiveComments(comments);
   }, [comments]);
 
   // Update team members with live presence
   useEffect(() => {
+    console.log('Updating team members with live presence:', { teamMembers, activeUsers });
     const updatedTeamMembers = teamMembers.map(member => {
       const activeUser = activeUsers.find(user => user.userId === member.id);
+      console.log(`Member ${member.name} (${member.id}):`, { activeUser, isOnline: activeUser ? activeUser.isOnline : member.isOnline });
       return {
         ...member,
         isOnline: activeUser ? activeUser.isOnline : member.isOnline,
         lastSeen: activeUser?.lastSeen ? activeUser.lastSeen.toString() : member.lastSeen,
       };
     });
+    console.log('Updated team members:', updatedTeamMembers);
     setLiveTeamMembers(updatedTeamMembers);
   }, [teamMembers, activeUsers]);
 
   // Set up WebSocket event handlers
   useEffect(() => {
     onNewComment((newComment) => {
+      console.log('Received new comment via WebSocket:', newComment);
       setLiveComments(prev => {
         // Check if comment already exists to avoid duplicates
-        if (prev.some(c => c.id === newComment.id)) return prev;
+        if (prev.some(c => c.id === newComment.id)) {
+          console.log('Comment already exists, skipping duplicate');
+          return prev;
+        }
+        console.log('Adding new comment to live comments');
         return [newComment, ...prev];
       });
     });
 
     onCommentUpdated((updatedComment) => {
+      console.log('Received comment update via WebSocket:', updatedComment);
       setLiveComments(prev => 
         prev.map(c => c.id === updatedComment.id ? updatedComment : c)
       );
     });
 
     onCommentDeleted(({ commentId }) => {
+      console.log('Received comment deletion via WebSocket:', commentId);
       setLiveComments(prev => 
         prev.filter(c => c.id !== commentId)
       );
@@ -231,8 +254,18 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !onAddComment) return;
     
+    console.log('Submitting comment:', {
+      content: newComment,
+      replyTo,
+      selectedCandidates,
+      jobId,
+      currentUserId,
+      currentUserName
+    });
+    
     try {
       await onAddComment(newComment, replyTo || undefined, selectedCandidates.length > 0 ? selectedCandidates : undefined);
+      console.log('Comment submitted successfully');
       setNewComment('');
       setReplyTo(null);
       setSelectedCandidates([]);
@@ -530,7 +563,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                 <div className="text-xs text-gray-500">Comments</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{liveTeamMembers.filter(m => m.isOnline).length}</div>
+                <div className="text-2xl font-bold text-purple-600">{liveTeamMembers.filter(m => m.isOnline).length}</div>
                 <div className="text-xs text-gray-500">Online</div>
               </div>
             </div>
@@ -575,7 +608,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
               <div className="flex items-center space-x-1">
                 {isConnected ? (
                   <div title="Connected">
-                    <Wifi className="h-4 w-4 text-green-500" />
+                    <Wifi className="h-4 w-4 text-purple-500" />
                   </div>
                 ) : (
                   <div title="Disconnected">
@@ -643,7 +676,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                     Tagged:
                   </span>
                   {getSelectedCandidatesData().map(candidate => (
-                    <div key={candidate.id} className="inline-flex items-center space-x-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs">
+                    <div key={candidate.id} className="inline-flex items-center space-x-1 bg-purple-50 text-purple-700 px-2 py-1 rounded-full text-xs">
                       {candidate.avatar ? (
                         <img 
                           src={candidate.avatar} 
@@ -651,14 +684,14 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                           className="h-4 w-4 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="bg-blue-100 rounded-full h-4 w-4 flex items-center justify-center text-blue-600 text-xs font-semibold">
+                        <div className="bg-purple-100 rounded-full h-4 w-4 flex items-center justify-center text-purple-600 text-xs font-semibold">
                           {candidate.name.charAt(0)}
                         </div>
                       )}
                       <span>{candidate.name}</span>
                       <button
                         onClick={() => handleToggleCandidateSelection(candidate.id)}
-                        className="text-blue-500 hover:text-blue-700"
+                        className="text-purple-500 hover:text-purple-700"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -666,7 +699,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                   ))}
                   <button
                     onClick={() => setSelectedCandidates([])}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+                    className="text-xs text-purple-500 hover:text-purple-700"
                   >
                     Clear all
                   </button>
@@ -707,7 +740,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowCandidatePicker(!showCandidatePicker)}
-                          className="text-gray-500 hover:text-gray-700"
+                          className="text-gray-500 hover:text-purple-700"
                         >
                           <Tag className="h-4 w-4 mr-1" />
                           Tag Candidates
@@ -735,8 +768,8 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                                     <button
                                       key={candidate.id}
                                       onClick={() => handleToggleCandidateSelection(candidate.id)}
-                                      className={`w-full flex items-center space-x-2 p-2 rounded-md text-left hover:bg-gray-50 ${
-                                        selectedCandidates.includes(candidate.id) ? 'bg-blue-50 text-blue-700' : ''
+                                      className={`w-full flex items-center space-x-2 p-2 rounded-md text-left hover:bg-purple-50 ${
+                                        selectedCandidates.includes(candidate.id) ? 'bg-purple-50 text-purple-700' : ''
                                       }`}
                                     >
                                       <input
@@ -808,17 +841,16 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
 
       {/* Team Sidebar - 1/3 width */}
       <div className="w-1/3 border-l border-gray-200 flex flex-col">
-        {/* Team Header */}
-        <div className="sticky top-0 bg-white z-10 border-b border-gray-200 p-4">
-          <div className="flex items-center space-x-2">
-            <Users className="h-5 w-5 text-green-600" />
-            <h4 className="font-semibold text-gray-800">Team Members</h4>
-            <span className="text-sm text-gray-500">({liveTeamMembers.length})</span>
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {liveTeamMembers.filter(m => m.isOnline).length} online
-            </span>
+        {/* Team Header */}          <div className="sticky top-0 bg-white z-10 border-b border-gray-200 p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-purple-600" />
+              <h4 className="font-semibold text-gray-800">Team Members</h4>
+              <span className="text-sm text-gray-500">({liveTeamMembers.length})</span>
+              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                {liveTeamMembers.filter(m => m.isOnline).length} online
+              </span>
+            </div>
           </div>
-        </div>
 
         {/* Team Members List */}
         <div className="flex-1 overflow-y-auto p-4">
@@ -838,7 +870,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                     </div>
                   )}
                   <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                    member.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                    member.isOnline ? 'bg-purple-500' : 'bg-gray-400'
                   }`} />
                 </div>
                 <div className="flex-1 min-w-0">

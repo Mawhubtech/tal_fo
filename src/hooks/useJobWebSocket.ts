@@ -77,10 +77,18 @@ export const useJobWebSocket = ({
     if (!enabled || !jobId || !userId) return;
 
     // Initialize socket connection
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const backendUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:3000';
+    const token = localStorage.getItem('accessToken');
+    
     const socket = io(`${backendUrl}/job-comments`, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
+      auth: {
+        token: token,
+      },
+      extraHeaders: token ? {
+        Authorization: `Bearer ${token}`
+      } : {},
     });
 
     socketRef.current = socket;
@@ -89,22 +97,26 @@ export const useJobWebSocket = ({
       console.log('Connected to job comments WebSocket');
       setIsConnected(true);
       
-      // Join the job room
-      socket.emit('joinJob', {
-        jobId,
-        userId,
-        userName,
-        userAvatar,
-      });
+      // Wait a moment for authentication to complete, then join the job room
+      setTimeout(() => {
+        socket.emit('joinJob', {
+          jobId,
+          userId,
+          userName,
+          userAvatar,
+        });
+      }, 100); // Wait 100ms for backend authentication to complete
     });
 
     socket.on('disconnect', () => {
       console.log('Disconnected from job comments WebSocket');
       setIsConnected(false);
+      setActiveUsers([]); // Clear active users on disconnect
     });
 
     // Presence events
     socket.on('presenceUpdate', (users: UserPresence[]) => {
+      console.log('Received presenceUpdate:', users);
       setActiveUsers(users);
     });
 
@@ -136,18 +148,21 @@ export const useJobWebSocket = ({
 
     // Comment events
     socket.on('newComment', (comment: WebSocketComment) => {
+      console.log('Received newComment:', comment);
       if (callbacksRef.current.onNewComment) {
         callbacksRef.current.onNewComment(comment);
       }
     });
 
     socket.on('commentUpdated', (comment: WebSocketComment) => {
+      console.log('Received commentUpdated:', comment);
       if (callbacksRef.current.onCommentUpdated) {
         callbacksRef.current.onCommentUpdated(comment);
       }
     });
 
     socket.on('commentDeleted', (data: { commentId: string }) => {
+      console.log('Received commentDeleted:', data);
       if (callbacksRef.current.onCommentDeleted) {
         callbacksRef.current.onCommentDeleted(data);
       }
