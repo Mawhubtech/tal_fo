@@ -166,6 +166,27 @@ export class AdminUserApiService {
     return response.data;
   }
 
+  // Assign multiple clients to user (bulk operation)
+  static async assignClients(userId: string, clientIds: string[]): Promise<{ user: User; message: string }> {
+    const response = await apiClient.post(`/users/${userId}/clients`, { clientIds });
+    return response.data;
+  }
+
+  // Update user's complete client access (replace all)
+  static async updateUserClients(userId: string, clientIds: string[]): Promise<{ user: User; message: string }> {
+    const response = await apiClient.put(`/users/${userId}/clients`, { clientIds });
+    return response.data;
+  }
+
+  // Bulk assign multiple users to multiple clients
+  static async bulkAssignUsersToClients(userIds: string[], clientIds: string[]): Promise<{ 
+    message: string; 
+    result: { success: number; failed: any[] } 
+  }> {
+    const response = await apiClient.post('/users/bulk/assign-clients', { userIds, clientIds });
+    return response.data;
+  }
+
   // Get user statistics
   static async getUserStats(): Promise<{ stats: UserStats; message: string }> {
     const response = await apiClient.get('/users/stats');

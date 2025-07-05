@@ -219,6 +219,48 @@ export function useRemoveClient() {
   });
 }
 
+// Assign multiple clients to user mutation
+export function useAssignClients() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, clientIds }: { userId: string; clientIds: string[] }) => 
+      AdminUserApiService.assignClients(userId, clientIds),
+    onSuccess: (_, { userId }) => {
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.user(userId) });
+    },
+  });
+}
+
+// Update user's complete client access mutation
+export function useUpdateUserClients() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, clientIds }: { userId: string; clientIds: string[] }) => 
+      AdminUserApiService.updateUserClients(userId, clientIds),
+    onSuccess: (_, { userId }) => {
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.user(userId) });
+    },
+  });
+}
+
+// Bulk assign users to clients mutation
+export function useBulkAssignUsersToClients() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userIds, clientIds }: { userIds: string[]; clientIds: string[] }) => 
+      AdminUserApiService.bulkAssignUsersToClients(userIds, clientIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+    },
+  });
+}
+
 // Send password reset mutation
 export function useSendPasswordReset() {
   return useMutation({

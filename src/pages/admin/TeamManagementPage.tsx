@@ -31,6 +31,9 @@ import {
   useDeleteUser,
   useAssignClient, 
   useRemoveClient,
+  useAssignClients,
+  useUpdateUserClients,
+  useBulkAssignUsersToClients,
   useRoles,
   useUpdateUserStatus,
   useSendPasswordReset,
@@ -104,6 +107,9 @@ const TeamManagementPage: React.FC = () => {
   const deleteUserMutation = useDeleteUser();
   const assignClientMutation = useAssignClient();
   const removeClientMutation = useRemoveClient();
+  const assignClientsMutation = useAssignClients();
+  const updateUserClientsMutation = useUpdateUserClients();
+  const bulkAssignMutation = useBulkAssignUsersToClients();
   const updateUserStatusMutation = useUpdateUserStatus();
   const sendPasswordResetMutation = useSendPasswordReset();
   const sendEmailVerificationMutation = useSendEmailVerification();
@@ -156,26 +162,39 @@ const TeamManagementPage: React.FC = () => {
     });
   }, [usersWithClients, searchTerm, roleFilter, clientFilter]);
 
+  // Quick assign single client to user
+  const handleQuickAssignClient = async (userId: string, clientId: string) => {
+    try {
+      await assignClientMutation.mutateAsync({ userId, clientId });
+      toast.success('Client assigned successfully!');
+      refetchUsers();
+    } catch (error) {
+      console.error('Error assigning client:', error);
+      toast.error('Failed to assign client. Please try again.');
+    }
+  };
+
+  // Quick remove single client from user
+  const handleQuickRemoveClient = async (userId: string, clientId: string) => {
+    try {
+      await removeClientMutation.mutateAsync({ userId, clientId });
+      toast.success('Client access removed successfully!');
+      refetchUsers();
+    } catch (error) {
+      console.error('Error removing client:', error);
+      toast.error('Failed to remove client access. Please try again.');
+    }
+  };
+
   const handleAssignClients = async () => {
     if (!selectedUser) return;
     
     try {
-      // Get current client IDs
-      const currentClientIds = selectedUser.clients.map(c => c.id);
-      
-      // Find clients to add and remove
-      const clientsToAdd = selectedClients.filter(id => !currentClientIds.includes(id));
-      const clientsToRemove = currentClientIds.filter(id => !selectedClients.includes(id));
-      
-      // Add new clients
-      for (const clientId of clientsToAdd) {
-        await assignClientMutation.mutateAsync({ userId: selectedUser.id, clientId });
-      }
-      
-      // Remove old clients
-      for (const clientId of clientsToRemove) {
-        await removeClientMutation.mutateAsync({ userId: selectedUser.id, clientId });
-      }
+      // Use the new updateUserClients method which replaces all client assignments
+      await updateUserClientsMutation.mutateAsync({ 
+        userId: selectedUser.id, 
+        clientIds: selectedClients 
+      });
       
       toast.success('Client assignments updated successfully!');
       setShowAssignModal(false);
@@ -192,28 +211,12 @@ const TeamManagementPage: React.FC = () => {
     if (selectedUsers.length === 0) return;
     
     try {
-      let successCount = 0;
-      let failedCount = 0;
+      const result = await bulkAssignMutation.mutateAsync({
+        userIds: selectedUsers,
+        clientIds: selectedClients
+      });
       
-      // Process each user individually since we don't have a bulk endpoint
-      for (const userId of selectedUsers) {
-        try {
-          for (const clientId of selectedClients) {
-            await assignClientMutation.mutateAsync({ userId, clientId });
-          }
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to assign clients to user ${userId}:`, error);
-          failedCount++;
-        }
-      }
-      
-      if (failedCount > 0) {
-        toast.success(`Updated client access for ${successCount} user${successCount > 1 ? 's' : ''}. ${failedCount} user${failedCount > 1 ? 's' : ''} failed.`);
-      } else {
-        toast.success(`Successfully updated client access for ${successCount} user${successCount > 1 ? 's' : ''}!`);
-      }
-      
+      toast.success(result.message);
       setShowBulkAssignModal(false);
       setSelectedUsers([]);
       setSelectedClients([]);
@@ -221,7 +224,7 @@ const TeamManagementPage: React.FC = () => {
       refetchUsers();
     } catch (error) {
       console.error('Error in bulk assignment:', error);
-      toast.error('Failed to update some client assignments. Please try again.');
+      toast.error('Failed to update client assignments. Please try again.');
     }
   };
 
@@ -750,10 +753,10 @@ const TeamManagementPage: React.FC = () => {
                 </button>
                 <button
                   onClick={handleAssignClients}
-                  disabled={assignClientMutation.isPending}
+                  disabled={updateUserClientsMutation.isPending}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {assignClientMutation.isPending ? 'Updating...' : 'Update Access'}
+                  {updateUserClientsMutation.isPending ? 'Updating...' : 'Update Access'}
                 </button>
               </div>
             </div>
@@ -875,10 +878,10 @@ const TeamManagementPage: React.FC = () => {
                 </button>
                 <button
                   onClick={handleBulkAssignClients}
-                  disabled={assignClientMutation.isPending || selectedClients.length === 0}
+                  disabled={bulkAssignMutation.isPending || selectedClients.length === 0}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {assignClientMutation.isPending ? 'Updating...' : `Update Access for ${selectedUsers.length} Users`}
+                  {bulkAssignMutation.isPending ? 'Updating...' : `Update Access for ${selectedUsers.length} Users`}
                 </button>
               </div>
             </div>
