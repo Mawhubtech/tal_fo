@@ -4,22 +4,24 @@ import {
   ArrowLeft, Edit, Users, Settings, Archive, Trash2,
   Globe, Lock, Building, Crown, CheckCircle, Clock,
   AlertCircle, Share, Copy, Download, Activity,
-  FileText, Calendar, MapPin, Mail, Phone, Briefcase
+  FileText, Calendar, MapPin, Mail, Phone, Briefcase, ChevronRight
 } from 'lucide-react';
 import { useHiringTeam, useUpdateHiringTeam, useDeleteHiringTeam } from '../../hooks/useHiringTeam';
 import { useJobsAssignedToTeam } from '../../hooks/useJobAssignment';
+import { useOrganization } from '../../hooks/useOrganizations';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 import JobAssignmentModal from '../../components/JobAssignmentModal';
 
 const HiringTeamDetailPage: React.FC = () => {
-  const { teamId } = useParams<{ teamId: string }>();
+  const { teamId, organizationId } = useParams<{ teamId: string; organizationId?: string }>();
   const navigate = useNavigate();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [jobAssignmentModalOpen, setJobAssignmentModalOpen] = useState(false);
 
   const { data: team, isLoading: teamLoading, error: teamError } = useHiringTeam(teamId || '');
   const { data: assignedJobs = [], isLoading: jobsLoading } = useJobsAssignedToTeam(teamId || '');
+  const { data: organization } = useOrganization(organizationId || '');
   const updateTeamMutation = useUpdateHiringTeam();
   const deleteTeamMutation = useDeleteHiringTeam();
 
@@ -43,7 +45,12 @@ const HiringTeamDetailPage: React.FC = () => {
     try {
       await deleteTeamMutation.mutateAsync(team.id);
       toast.success('Team deleted successfully!');
-      navigate(`/dashboard/admin/hiring-teams`);
+      // Navigate back to the appropriate hiring teams page
+      if (organizationId) {
+        navigate(`/dashboard/admin/organizations/${organizationId}/hiring-teams`);
+      } else {
+        navigate(`/dashboard/admin/hiring-teams`);
+      }
     } catch (err) {
       console.error('Error deleting team:', err);
       toast.error('Failed to delete team. Please try again.');
@@ -105,7 +112,7 @@ const HiringTeamDetailPage: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">Team Not Found</h3>
           <p className="text-gray-600 mb-6">The hiring team you're looking for doesn't exist or has been deleted.</p>
           <Link
-            to={`/dashboard/admin/hiring-teams`}
+            to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams` : `/dashboard/admin/hiring-teams`}
             className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -121,9 +128,33 @@ const HiringTeamDetailPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
+          {/* Breadcrumb Navigation */}
           <div className="flex items-center mb-4">
             <Link
               to={`/dashboard/admin/hiring-teams`}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Hiring Teams
+            </Link>
+            {organizationId && organization && (
+              <>
+                <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+                <Link
+                  to={`/dashboard/admin/organizations/${organizationId}`}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {organization.name}
+                </Link>
+              </>
+            )}
+            <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+            <span className="text-gray-900 font-medium">{team?.name || 'Team Details'}</span>
+          </div>
+
+          {/* Back Button */}
+          <div className="flex items-center mb-4">
+            <Link
+              to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams` : `/dashboard/admin/hiring-teams`}
               className="inline-flex items-center text-gray-500 hover:text-gray-700 transition-colors mr-4"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
@@ -173,6 +204,31 @@ const HiringTeamDetailPage: React.FC = () => {
                       <span>Created {new Date(team.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
+                  
+                  {/* Organizations */}
+                  {team.organizations && team.organizations.length > 0 && (
+                    <div className="mt-4">
+                      <div className="flex items-center space-x-1 text-sm text-gray-500 mb-2">
+                        <Building className="h-4 w-4" />
+                        <span>Organizations:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {team.organizations.map((org) => (
+                          <span 
+                            key={org.id}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                            title={org.industry ? `${org.name} (${org.industry})` : org.name}
+                          >
+                            <Building className="h-3 w-3 mr-1" />
+                            {org.name}
+                            {org.industry && (
+                              <span className="ml-1 text-xs opacity-75">({org.industry})</span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -224,7 +280,7 @@ const HiringTeamDetailPage: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
                 <Link
-                  to={`/dashboard/admin/hiring-teams/${teamId}/members`}
+                  to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams/${teamId}/members` : `/dashboard/admin/hiring-teams/${teamId}/members`}
                   className="inline-flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
                 >
                   <Users className="h-4 w-4" />
@@ -261,7 +317,7 @@ const HiringTeamDetailPage: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Members Yet</h3>
                   <p className="text-gray-600 mb-4">This team doesn't have any members assigned.</p>
                   <Link
-                    to={`/dashboard/admin/hiring-teams/${teamId}/members`}
+                    to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams/${teamId}/members` : `/dashboard/admin/hiring-teams/${teamId}/members`}
                     className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                   >
                     <Users className="h-4 w-4" />
@@ -298,10 +354,12 @@ const HiringTeamDetailPage: React.FC = () => {
                           <span>{job.department}</span>
                           <span>{job.location}</span>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            job.status === 'Active' ? 'bg-green-100 text-green-800' :
+                            job.status === 'Published' ? 'bg-green-100 text-green-800' :
                             job.status === 'Draft' ? 'bg-gray-100 text-gray-800' :
                             job.status === 'Paused' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
+                            job.status === 'Closed' ? 'bg-red-100 text-red-800' :
+                            job.status === 'Archived' ? 'bg-gray-100 text-gray-600' :
+                            'bg-gray-100 text-gray-800'
                           }`}>
                             {job.status}
                           </span>
@@ -333,6 +391,39 @@ const HiringTeamDetailPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Organizations */}
+            {team.organizations && team.organizations.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Associated Organizations</h2>
+                  <span className="text-sm text-gray-500">{team.organizations.length} organization{team.organizations.length !== 1 ? 's' : ''}</span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {team.organizations.map((org) => (
+                    <div key={org.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Building className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-900 truncate">{org.name}</h3>
+                          {org.industry && (
+                            <p className="text-sm text-gray-500">{org.industry}</p>
+                          )}
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${
+                            org.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {org.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Recent Activity */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -371,6 +462,10 @@ const HiringTeamDetailPage: React.FC = () => {
                   <span className="text-gray-600">Default Team</span>
                   <span className="font-semibold">{team.isDefault ? 'Yes' : 'No'}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Organizations</span>
+                  <span className="font-semibold">{team.organizations?.length || 0}</span>
+                </div>
               </div>
             </div>
 
@@ -379,7 +474,7 @@ const HiringTeamDetailPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <Link
-                  to={`/dashboard/admin/hiring-teams/${teamId}/members`}
+                  to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams/${teamId}/members` : `/dashboard/admin/hiring-teams/${teamId}/members`}
                   className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Users className="h-5 w-5 text-gray-500" />

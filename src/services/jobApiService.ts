@@ -8,7 +8,7 @@ export interface CreateJobData {
   departmentId: string;
   location: string;
   type?: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
-  status?: 'Active' | 'Draft' | 'Paused' | 'Closed';
+  status?: 'Published' | 'Draft' | 'Paused' | 'Closed' | 'Archived';
   urgency?: 'High' | 'Medium' | 'Low';
   experienceLevel?: string;
   salaryMin?: number;
@@ -39,7 +39,7 @@ export interface JobFilters {
   departmentId?: string;
   organizationId?: string;
   type?: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
-  status?: 'Active' | 'Draft' | 'Paused' | 'Closed';
+  status?: 'Published' | 'Draft' | 'Paused' | 'Closed' | 'Archived';
   urgency?: 'High' | 'Medium' | 'Low';
   location?: string;
   remote?: boolean;
@@ -49,10 +49,11 @@ export interface JobFilters {
 
 export interface JobStats {
   total: number;
-  active: number;
+  published: number;
   draft: number;
   paused: number;
   closed: number;
+  archived: number;
 }
 
 class JobApiService {

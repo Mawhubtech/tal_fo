@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
-  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle, RefreshCw
+  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle, RefreshCw, Eye
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useJob } from '../../../hooks/useJobs';
@@ -25,6 +25,7 @@ import AddCandidateModal from '../components/AddCandidateModal';
 import ConfirmationDialog from '../../../components/ConfirmationDialog';
 import ToastContainer, { toast } from '../../../components/ToastContainer';
 import ProfileSidePanel, { type UserStructuredData, type PanelState } from '../../../components/ProfileSidePanel';
+import JobPreviewModal from '../../../components/modals/JobPreviewModal';
 
 const JobATSPage: React.FC = () => {
   const { organizationId, departmentId, jobId } = useParams<{ 
@@ -38,6 +39,7 @@ const JobATSPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showJobPreviewModal, setShowJobPreviewModal] = useState(false);
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
@@ -696,6 +698,16 @@ const JobATSPage: React.FC = () => {
 		</div>
 		{/* Action buttons */}
 		<div className="flex items-center space-x-3">
+		  {/* View Job button */}
+		  <button 
+			onClick={() => setShowJobPreviewModal(true)}
+			className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 px-4 py-2 rounded-md flex items-center transition-colors"
+			title="View job details"
+		  >
+			<Eye className="w-4 h-4 mr-2" />
+			View Job
+		  </button>
+		  
 		  {/* Refresh button */}
 		  <button 
 			onClick={handleRefreshData}
@@ -736,9 +748,18 @@ const JobATSPage: React.FC = () => {
 		    {effectivePipeline && <span> • Pipeline: {effectivePipeline.name}</span>}
 		  </p>
 			</div>
-		  </div>		  <div className="text-right">
-			<p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
-			<p className="text-sm text-gray-500">Total Candidates</p>
+		  </div>		  <div className="flex items-center space-x-4">
+			<div className="text-right">
+			  <p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
+			  <p className="text-sm text-gray-500">Total Candidates</p>
+			</div>
+			<button
+			  onClick={() => setShowJobPreviewModal(true)}
+			  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+			  title="View job details"
+			>
+			  <Eye className="w-5 h-5" />
+			</button>
 		  </div>
 		</div>
 	  </div>
@@ -966,6 +987,15 @@ const JobATSPage: React.FC = () => {
 			/>
 		  )}
 		</>
+	  )}
+
+	  {/* Job Preview Modal */}
+	  {showJobPreviewModal && job && (
+		<JobPreviewModal
+		  isOpen={showJobPreviewModal}
+		  onClose={() => setShowJobPreviewModal(false)}
+		  job={job}
+		/>
 	  )}
 
 	  {/* Toast Container */}

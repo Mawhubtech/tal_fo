@@ -36,7 +36,7 @@ export interface Job {
   description: string;
   requirements: string[];
   skills: string[];
-  status: 'open' | 'closed' | 'draft';
+  status: 'Published' | 'Draft' | 'Paused' | 'Closed' | 'Archived';
   postedDate: Date;
   applicationDeadline: Date;
   applicantCount: number;

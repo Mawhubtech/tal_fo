@@ -36,8 +36,8 @@ const JobBoardPage: React.FC = () => {
       try {
         setLoading(true);
         const allJobs = await jobService.getAllJobs();
-        // Only show open jobs in the public job board
-        const openJobs = allJobs.filter(job => job.status === 'open');
+        // Only show published jobs in the public job board
+        const openJobs = allJobs.filter(job => job.status === 'Published');
         setJobs(openJobs);
       } catch (error) {
         console.error('Error loading jobs:', error);

@@ -9,7 +9,7 @@ export interface ExternalJob {
   departmentId: string;
   location: string;
   type: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
-  status: 'Active' | 'Draft' | 'Paused' | 'Closed';
+  status: 'Published' | 'Draft' | 'Paused' | 'Closed' | 'Archived';
   urgency: 'High' | 'Medium' | 'Low';
   experienceLevel?: string;
   salaryMin?: number;

@@ -62,7 +62,7 @@ export class OrganizationApiService {
         
         // Only get job stats for detail view, not for listing
         const jobStats = await jobApiService.getJobStats(client.id);
-        activeJobs = jobStats.active;
+        activeJobs = jobStats.published;
       } catch (error) {
         console.error('Error getting detailed organization data:', error);
         // Fallback to client data
@@ -150,7 +150,7 @@ export class OrganizationApiService {
               departmentId: dept.id
             });
             totalJobs = jobsResponse.data.length;
-            activeJobs = jobsResponse.data.filter(job => job.status === 'Active').length;
+            activeJobs = jobsResponse.data.filter(job => job.status === 'Published').length;
           } catch (error) {
             console.error('Error getting jobs count for department:', error);
           }
@@ -211,7 +211,7 @@ export class OrganizationApiService {
         name: data.name,
         description: `${data.name} department`,
         manager: 'Department Manager', // Mock data for now
-        activeJobs: data.jobs.filter(job => job.status === 'Active').length,
+        activeJobs: data.jobs.filter(job => job.status === 'Published').length,
         totalJobs: data.jobs.length,
         totalEmployees: Math.floor(Math.random() * 50) + 10, // Mock data for now
         color: this.getDepartmentColor(index),
@@ -240,7 +240,7 @@ export class OrganizationApiService {
           departmentId: backendDept.id
         });
         totalJobs = jobsResponse.data.length;
-        activeJobs = jobsResponse.data.filter(job => job.status === 'Active').length;
+        activeJobs = jobsResponse.data.filter(job => job.status === 'Published').length;
       } catch (error) {
         console.error('Error getting jobs count for department:', error);
       }

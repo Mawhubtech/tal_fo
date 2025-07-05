@@ -86,6 +86,9 @@ export interface UpdateHiringTeamData {
   isDefault?: boolean;
   color?: string;
   icon?: string;
+  organizationIds?: string[];
+  // Legacy field for backward compatibility
+  organizationId?: string;
 }
 
 export interface CreateHiringTeamMemberData {

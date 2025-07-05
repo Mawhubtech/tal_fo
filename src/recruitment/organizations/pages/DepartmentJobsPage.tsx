@@ -9,6 +9,7 @@ import { useOrganization } from '../../../hooks/useOrganizations';
 import { useDepartment, useJobsByDepartment } from '../../../hooks/useDepartments';
 import { useDeleteJob } from '../../../hooks/useJobs';
 import type { Job } from '../../data/types';
+import JobPreviewModal from '../../../components/modals/JobPreviewModal';
 
 const DepartmentJobsPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ organizationId: string; departmentId: string }>();
@@ -44,6 +45,10 @@ const DepartmentJobsPage: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  
+  // Preview modal state
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [jobToPreview, setJobToPreview] = useState<Job | null>(null);
 
   const loading = organizationLoading || departmentLoading || jobsLoading;
   const error = organizationError || departmentError || jobsError;
@@ -100,6 +105,11 @@ const DepartmentJobsPage: React.FC = () => {
   const handleDeleteJob = (job: Job) => {
     setJobToDelete(job);
     setShowDeleteDialog(true);
+  };
+
+  const handlePreviewJob = (job: Job) => {
+    setJobToPreview(job);
+    setShowPreviewModal(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -364,6 +374,13 @@ const DepartmentJobsPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => handlePreviewJob(job)}
+                      className="p-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+                      title="Preview job"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => handleEditJob(job)}
                       className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
                       title="Edit job"
@@ -443,6 +460,13 @@ const DepartmentJobsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handlePreviewJob(job)}
+                          className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
+                          title="Preview job"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleEditJob(job)}
                           className="text-green-600 hover:text-green-700 p-1 hover:bg-green-50 rounded"
@@ -542,6 +566,15 @@ const DepartmentJobsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Job Preview Modal */}
+      {showPreviewModal && jobToPreview && (
+        <JobPreviewModal
+          isOpen={showPreviewModal}
+          onClose={() => setShowPreviewModal(false)}
+          job={jobToPreview}
+        />
       )}
     </div>
   );

@@ -123,7 +123,7 @@ const ExternalJobDetailPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-3">
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                job.status === 'Active' 
+                job.status === 'Published' 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-gray-100 text-gray-800'
               }`}>

@@ -278,7 +278,7 @@ const CreateJobPage: React.FC = () => {
         departmentId: departmentIdForm,
         location: location.trim(),
         type: employmentType as any,
-        status: publish ? 'Active' : 'Draft',
+        status: publish ? 'Published' : 'Draft',
         experienceLevel: experienceLevel.trim() || undefined,
         salaryMin: minSalary,
         salaryMax: maxSalary,

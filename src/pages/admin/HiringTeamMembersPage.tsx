@@ -141,6 +141,12 @@ const HiringTeamMembersPage: React.FC = () => {
   });
 
   // Debug log to see current data
+  console.log('Current team data:', { 
+    team,
+    teamLoading,
+    organizations: team?.organizations,
+    organizationId: team?.organizationId
+  });
   console.log('Current members data:', { 
     members, 
     filteredMembers, 
@@ -299,15 +305,14 @@ const HiringTeamMembersPage: React.FC = () => {
     );
   }
 
-  if (!team) {
-    return (
+  if (!team) {            return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Team Not Found</h2>
           <p className="text-gray-600 mb-4">The hiring team you're looking for doesn't exist.</p>
           <button
-            onClick={() => navigate(`/admin/organizations/${organizationId}/hiring-teams`)}
+            onClick={() => navigate(organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams` : `/dashboard/admin/hiring-teams`)}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
           >
             Back to Teams
@@ -323,27 +328,38 @@ const HiringTeamMembersPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center mb-2">
-            <Link 
-              to={`/admin/organizations/${organizationId}`}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              {organization?.name || 'Organization'}
-            </Link>
-            <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
-            <Link 
-              to={`/admin/organizations/${organizationId}/hiring-teams`}
+            <Link
+              to={`/dashboard/admin/hiring-teams`}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               Hiring Teams
             </Link>
+            {organizationId && organization && (
+              <>
+                <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+                <Link
+                  to={`/dashboard/admin/organizations/${organizationId}`}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {organization.name}
+                </Link>
+              </>
+            )}
             <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
-            <span className="text-gray-900 font-medium">{team.name}</span>
+            <Link
+              to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams/${teamId}` : `/dashboard/admin/hiring-teams/${teamId}`}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              {team.name}
+            </Link>
+            <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+            <span className="text-gray-900 font-medium">Members</span>
           </div>
           <div className="flex justify-between items-center">
             <div>
               <div className="flex items-center space-x-3 mb-2">
                 <button
-                  onClick={() => navigate(`/admin/organizations/${organizationId}/hiring-teams`)}
+                  onClick={() => navigate(organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams` : `/dashboard/admin/hiring-teams`)}
                   className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
                 >
                   <ArrowLeft className="h-5 w-5 mr-1" />
@@ -375,7 +391,7 @@ const HiringTeamMembersPage: React.FC = () => {
 
         {/* Team Info */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-1">Team Description</h3>
               <p className="text-gray-600">{team.description || 'No description provided'}</p>
@@ -393,6 +409,27 @@ const HiringTeamMembersPage: React.FC = () => {
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-1">Members</h3>
               <p className="text-gray-600">{members.length} total members</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-1">Organizations</h3>
+              {team.organizations && team.organizations.length > 0 ? (
+                <div className="space-y-1">
+                  {team.organizations.map((org) => (
+                    <div key={org.id} className="flex items-center space-x-1">
+                      <span className="text-gray-600 text-sm">{org.name}</span>
+                      {org.industry && (
+                        <span className="text-xs text-gray-400">({org.industry})</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : team.organizationId && organization ? (
+                <div className="flex items-center space-x-1">
+                  <span className="text-gray-600 text-sm">{organization.name}</span>
+                </div>
+              ) : (
+                <p className="text-gray-400 text-sm">No organizations assigned</p>
+              )}
             </div>
           </div>
         </div>

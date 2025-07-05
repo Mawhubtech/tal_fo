@@ -110,8 +110,12 @@ const HiringTeamsPage: React.FC = () => {
   const handleUpdateTeam = async () => {
     if (!formData.id) return;
     try {
-      const { id, organizationIds, ...updateData } = formData;
-      const teamData: UpdateHiringTeamData = updateData;
+      const { id, ...updateData } = formData;
+      const teamData: UpdateHiringTeamData = {
+        ...updateData,
+        // Always include organizationIds for organization visibility, exclude for others
+        organizationIds: formData.visibility === 'organization' ? formData.organizationIds : undefined
+      };
       await updateTeamMutation.mutateAsync({ teamId: id, data: teamData });
       toast.success('Hiring team updated successfully!');
       setModalMode('none');
@@ -754,6 +758,32 @@ const HiringTeamsPage: React.FC = () => {
                       <p className="text-gray-600 text-sm mb-4 line-clamp-2">{team.description}</p>
                     )}
 
+                    {/* Organizations section */}
+                    {team.organizations && team.organizations.length > 0 && (
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-1 text-xs text-gray-500 mb-1">
+                          <Building className="h-3 w-3" />
+                          <span>Organizations:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {team.organizations.slice(0, 3).map((org) => (
+                            <span 
+                              key={org.id}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                              title={org.industry ? `${org.name} (${org.industry})` : org.name}
+                            >
+                              {org.name}
+                            </span>
+                          ))}
+                          {team.organizations.length > 3 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              +{team.organizations.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-1 text-gray-500">
@@ -764,6 +794,18 @@ const HiringTeamsPage: React.FC = () => {
                           <Users className="h-4 w-4" />
                           <span>{team.members?.length || 0} members</span>
                         </div>
+                        {/* Display organizations */}
+                        {team.organizations && team.organizations.length > 0 && (
+                          <div className="flex items-center space-x-1 text-gray-500">
+                            <Building className="h-4 w-4" />
+                            <span title={team.organizations.map(org => org.name).join(', ')}>
+                              {team.organizations.length === 1 
+                                ? team.organizations[0].name 
+                                : `${team.organizations.length} orgs`
+                              }
+                            </span>
+                          </div>
+                        )}
                       </div>
                       
                       {/* Quick Actions - Only show default team indicator */}

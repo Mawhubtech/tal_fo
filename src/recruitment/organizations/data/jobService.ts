@@ -19,7 +19,7 @@ const mockJobs: Job[] = [  {
       'Experience with testing frameworks (Jest, React Testing Library)',
       'Familiarity with build tools (Webpack, Vite)'
     ],    skills: ['React', 'TypeScript', 'CSS', 'JavaScript', 'HTML'],
-    status: 'open',
+    status: 'Published',
     postedDate: new Date('2025-05-20'),
     applicationDeadline: new Date('2025-07-20'),
     applicantCount: 24
@@ -41,7 +41,7 @@ const mockJobs: Job[] = [  {
       'Excellent communication and leadership skills',
       'Experience with product analytics tools'
     ],    skills: ['Product Strategy', 'Analytics', 'Agile', 'User Research', 'Communication'],
-    status: 'open',
+    status: 'Published',
     postedDate: new Date('2025-05-25'),
     applicationDeadline: new Date('2025-07-25'),
     applicantCount: 18
@@ -63,7 +63,7 @@ const mockJobs: Job[] = [  {
       'Experience with user research and usability testing',
       'Understanding of design systems and accessibility'
     ],    skills: ['Figma', 'User Research', 'Prototyping', 'Design Systems', 'Accessibility'],
-    status: 'open',
+    status: 'Published',
     postedDate: new Date('2025-05-28'),
     applicationDeadline: new Date('2025-07-28'),
     applicantCount: 31
@@ -85,7 +85,7 @@ const mockJobs: Job[] = [  {
       'Experience with Infrastructure as Code (Terraform, CloudFormation)',
       'Knowledge of monitoring and logging tools'
     ],    skills: ['AWS', 'Kubernetes', 'Docker', 'Terraform', 'CI/CD'],
-    status: 'open',
+    status: 'Published',
     postedDate: new Date('2025-06-01'),
     applicationDeadline: new Date('2025-08-01'),
     applicantCount: 15
@@ -107,7 +107,7 @@ const mockJobs: Job[] = [  {
       'Strong statistical analysis skills',
       'Experience with data visualization tools'
     ],    skills: ['Python', 'SQL', 'Machine Learning', 'Statistics', 'Data Visualization'],
-    status: 'open',
+    status: 'Published',
     postedDate: new Date('2025-06-03'),
     applicationDeadline: new Date('2025-08-03'),
     applicantCount: 22
@@ -129,7 +129,7 @@ const mockJobs: Job[] = [  {
       'Knowledge of social media platforms',
       'Basic understanding of analytics tools'
     ],    skills: ['Digital Marketing', 'Social Media', 'Content Creation', 'Analytics', 'Communication'],
-    status: 'open',
+    status: 'Published',
     postedDate: new Date('2025-06-05'),
     applicationDeadline: new Date('2025-08-05'),
     applicantCount: 35
@@ -151,7 +151,7 @@ const mockJobs: Job[] = [  {
       'Knowledge of API design and development',
       'Understanding of software architecture principles'
     ],    skills: ['Node.js', 'Python', 'PostgreSQL', 'MongoDB', 'API Development'],
-    status: 'open',
+    status: 'Published',
     postedDate: new Date('2025-06-07'),
     applicationDeadline: new Date('2025-08-07'),
     applicantCount: 19
@@ -173,7 +173,7 @@ const mockJobs: Job[] = [  {
       'Familiarity with bug tracking tools',
       'Understanding of software development lifecycle'
     ],    skills: ['Test Automation', 'Selenium', 'Jest', 'Manual Testing', 'Bug Tracking'],
-    status: 'open',
+    status: 'Published',
     postedDate: new Date('2025-06-08'),
     applicationDeadline: new Date('2025-08-08'),
     applicantCount: 12
@@ -195,7 +195,7 @@ const mockJobs: Job[] = [  {
       'Strong leadership and communication skills',
       'Experience managing healthcare or software development projects'
     ],    skills: ['Project Management', 'Agile', 'Scrum', 'Leadership', 'Risk Management'],
-    status: 'draft',
+    status: 'Draft',
     postedDate: new Date('2025-05-30'),
     applicationDeadline: new Date('2025-07-30'),
     applicantCount: 8
@@ -217,7 +217,7 @@ const mockJobs: Job[] = [  {
       'Experience with CRM systems',
       'Bachelor\'s degree preferred'
     ],    skills: ['Sales', 'CRM', 'Lead Generation', 'Communication', 'Negotiation'],
-    status: 'closed',
+    status: 'Closed',
     postedDate: new Date('2025-04-15'),
     applicationDeadline: new Date('2025-05-15'),
     applicantCount: 42
@@ -345,9 +345,11 @@ export class JobService {
 
     return {
       total: jobs.length,
-      open: jobs.filter(job => job.status === 'open').length,
-      closed: jobs.filter(job => job.status === 'closed').length,
-      draft: jobs.filter(job => job.status === 'draft').length,
+      published: jobs.filter(job => job.status === 'Published').length,
+      closed: jobs.filter(job => job.status === 'Closed').length,
+      draft: jobs.filter(job => job.status === 'Draft').length,
+      paused: jobs.filter(job => job.status === 'Paused').length,
+      archived: jobs.filter(job => job.status === 'Archived').length,
       totalApplicants: jobs.reduce((sum, job) => sum + job.applicantCount, 0)
     };
   }
