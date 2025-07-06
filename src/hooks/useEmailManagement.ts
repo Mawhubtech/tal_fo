@@ -309,6 +309,12 @@ export const emailProviderApi = {
   setDefault: async (id: string) => {
     const response = await apiClient.patch(`/email-management/providers/${id}/set-default`);
     return response.data;
+  },
+
+  // Toggle active status
+  toggleActive: async (id: string) => {
+    const response = await apiClient.patch(`/email-management/providers/${id}/toggle-active`);
+    return response.data;
   }
 };
 
@@ -316,7 +322,16 @@ export const emailProviderApi = {
 export const emailSendingApi = {
   // Send email
   send: async (data: SendEmailData) => {
-    const response = await apiClient.post('/email-management/send', data);
+    // Transform data to match backend expectations
+    const requestData = {
+      providerId: data.providerId,
+      to: data.to,
+      subject: data.subject,
+      body: data.content, // Map content to body
+      htmlBody: data.content, // Use same content for HTML body
+      replyTo: undefined, // Can be added later if needed
+    };
+    const response = await apiClient.post('/email-management/send-email', requestData);
     return response.data;
   },
 
@@ -497,6 +512,17 @@ export const useSetDefaultEmailProvider = () => {
   
   return useMutation({
     mutationFn: emailProviderApi.setDefault,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-providers'] });
+    },
+  });
+};
+
+export const useToggleActiveEmailProvider = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: emailProviderApi.toggleActive,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['email-providers'] });
     },

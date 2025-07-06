@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Plus, Settings, Send, Trash2, Edit, Copy, AlertCircle, CheckCircle, Eye, MoreVertical, ExternalLink, RefreshCw, Download, X } from 'lucide-react';
+import { Mail, Plus, Settings, Send, Trash2, Edit, Copy, AlertCircle, CheckCircle, Eye, MoreVertical, ExternalLink, RefreshCw, Download, X, TestTube, Power, Star } from 'lucide-react';
 import { 
   useEmailTemplates, 
   useEmailProviders, 
@@ -7,9 +7,9 @@ import {
   useDuplicateEmailTemplate,
   useDeleteEmailProvider,
   useSetDefaultEmailProvider,
-  useGmailIntegration,
-  useMigrateGmailIntegration,
+  useToggleActiveEmailProvider,
   useTemplatePreview,
+  useSendEmail,
   type EmailTemplate,
   type EmailProvider 
 } from '../../hooks/useEmailManagement';
@@ -18,6 +18,7 @@ import { useToast } from '../../contexts/ToastContext';
 import EmailTemplateForm from '../../components/EmailTemplateForm';
 import EmailProviderForm from '../../components/EmailProviderForm';
 import PresetTemplatesDialog from '../../components/PresetTemplatesDialog';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const EmailManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'templates' | 'providers'>('templates');
@@ -30,13 +31,21 @@ const EmailManagementPage: React.FC = () => {
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<'raw' | 'rendered'>('rendered');
+  const [isTestEmailModalOpen, setIsTestEmailModalOpen] = useState(false);
+  const [testEmailProvider, setTestEmailProvider] = useState<EmailProvider | null>(null);
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  
+  // Confirmation modal states
+  const [isDeleteTemplateModalOpen, setIsDeleteTemplateModalOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [isDeleteProviderModalOpen, setIsDeleteProviderModalOpen] = useState(false);
+  const [providerToDelete, setProviderToDelete] = useState<string | null>(null);
 
   const { addToast } = useToast();
 
   // API hooks
   const { data: templatesData, isLoading: isLoadingTemplates, error: templatesError } = useEmailTemplates();
   const { data: providersData, isLoading: isLoadingProviders, error: providersError } = useEmailProviders();
-  const { data: gmailIntegration, isLoading: isLoadingGmail, error: gmailError } = useGmailIntegration();
   const {
     emailSettings,
     connectGmail,
@@ -57,8 +66,9 @@ const EmailManagementPage: React.FC = () => {
   const duplicateTemplateMutation = useDuplicateEmailTemplate();
   const deleteProviderMutation = useDeleteEmailProvider();
   const setDefaultProviderMutation = useSetDefaultEmailProvider();
-  const migrateGmailMutation = useMigrateGmailIntegration();
+  const toggleActiveProviderMutation = useToggleActiveEmailProvider();
   const templatePreviewMutation = useTemplatePreview();
+  const sendEmailMutation = useSendEmail();
 
   const handleCreateTemplate = () => {
     setSelectedTemplate(null);
@@ -82,14 +92,21 @@ const EmailManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteTemplate = async (templateId: string) => {
-    if (window.confirm('Are you sure you want to delete this template?')) {
-      try {
-        await deleteTemplateMutation.mutateAsync(templateId);
-        addToast({ type: 'success', title: 'Template deleted successfully' });
-      } catch (error) {
-        addToast({ type: 'error', title: 'Failed to delete template' });
-      }
+  const handleDeleteTemplate = (templateId: string) => {
+    setTemplateToDelete(templateId);
+    setIsDeleteTemplateModalOpen(true);
+  };
+
+  const confirmDeleteTemplate = async () => {
+    if (!templateToDelete) return;
+    
+    try {
+      await deleteTemplateMutation.mutateAsync(templateToDelete);
+      addToast({ type: 'success', title: 'Template deleted successfully' });
+    } catch (error) {
+      addToast({ type: 'error', title: 'Failed to delete template' });
+    } finally {
+      setTemplateToDelete(null);
     }
   };
 
@@ -179,23 +196,86 @@ const EmailManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteProvider = async (providerId: string) => {
-    if (window.confirm('Are you sure you want to disconnect this email provider?')) {
-      try {
-        await deleteProviderMutation.mutateAsync(providerId);
-        addToast({ type: 'success', title: 'Provider disconnected successfully' });
-      } catch (error) {
-        addToast({ type: 'error', title: 'Failed to disconnect provider' });
-      }
+  const handleToggleActiveProvider = async (providerId: string) => {
+    try {
+      await toggleActiveProviderMutation.mutateAsync(providerId);
+      addToast({ type: 'success', title: 'Provider status updated' });
+    } catch (error) {
+      addToast({ type: 'error', title: 'Failed to update provider status' });
     }
   };
 
-  const handleMigrateGmail = async () => {
+  const handleDeleteProvider = (providerId: string) => {
+    setProviderToDelete(providerId);
+    setIsDeleteProviderModalOpen(true);
+  };
+
+  const confirmDeleteProvider = async () => {
+    if (!providerToDelete) return;
+    
     try {
-      await migrateGmailMutation.mutateAsync();
-      addToast({ type: 'success', title: 'Gmail integration migrated successfully' });
+      await deleteProviderMutation.mutateAsync(providerToDelete);
+      addToast({ type: 'success', title: 'Provider disconnected successfully' });
     } catch (error) {
-      addToast({ type: 'error', title: 'Failed to migrate Gmail integration' });
+      addToast({ type: 'error', title: 'Failed to disconnect provider' });
+    } finally {
+      setProviderToDelete(null);
+    }
+  };
+
+  const handleEditProvider = (provider: EmailProvider) => {
+    setSelectedProvider(provider);
+    setSelectedProviderType(provider.type);
+    setIsProviderModalOpen(true);
+  };
+
+  const handleTestProvider = (provider: EmailProvider) => {
+    setTestEmailProvider(provider);
+    setTestEmailAddress('');
+    setIsTestEmailModalOpen(true);
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testEmailProvider || !testEmailAddress.trim()) {
+      addToast({ type: 'error', title: 'Please enter a valid email address' });
+      return;
+    }
+
+    try {
+      await sendEmailMutation.mutateAsync({
+        providerId: testEmailProvider.id,
+        to: [testEmailAddress],
+        subject: 'Test Email from TAL Platform',
+        content: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+            <h2 style="color: #6366f1;">Test Email Successful!</h2>
+            <p>This is a test email sent from the TAL platform to verify your email provider configuration.</p>
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #374151;">Provider Details:</h3>
+              <p style="margin: 5px 0;"><strong>Name:</strong> ${testEmailProvider.name}</p>
+              <p style="margin: 5px 0;"><strong>Type:</strong> ${testEmailProvider.type}</p>
+              <p style="margin: 5px 0;"><strong>From Email:</strong> ${testEmailProvider.fromEmail || 'Not configured'}</p>
+            </div>
+            <p style="color: #6b7280; font-size: 14px;">
+              If you received this email, your email provider is working correctly.
+            </p>
+          </div>
+        `
+      });
+      
+      addToast({ 
+        type: 'success', 
+        title: 'Test email sent successfully',
+        message: `Test email sent to ${testEmailAddress}`
+      });
+      setIsTestEmailModalOpen(false);
+      setTestEmailAddress('');
+    } catch (error) {
+      addToast({ 
+        type: 'error', 
+        title: 'Failed to send test email',
+        message: 'Please check your provider configuration'
+      });
     }
   };
 
@@ -358,43 +438,6 @@ const EmailManagementPage: React.FC = () => {
           <p className="text-gray-600 mt-1">Manage email templates and providers for your organization</p>
         </div>
       </div>
-
-      {/* Show Gmail migration notice if available */}
-      {gmailIntegration?.isConnected && providers.length === 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0">
-              <Mail className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-yellow-800">Existing Gmail Connection Found</h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <p>We found an existing Gmail connection for <strong>{gmailIntegration.email}</strong> from your account settings.</p>
-                <p className="mt-2">You can migrate this connection to the new email management system to take advantage of advanced features like templates, multiple providers, and detailed analytics.</p>
-              </div>
-              <div className="mt-4">
-                <button
-                  onClick={handleMigrateGmail}
-                  disabled={migrateGmailMutation.isPending}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
-                >
-                  {migrateGmailMutation.isPending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Migrating...
-                    </>
-                  ) : (
-                    <>
-                      <Settings className="w-4 h-4 mr-2" />
-                      Migrate Gmail Connection
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
@@ -671,20 +714,59 @@ const EmailManagementPage: React.FC = () => {
                             </div>
                         </div>
                         <div className="ml-4 flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 flex-shrink-0">
-                           {!provider.isDefault && (
-                                <button
-                                    onClick={() => handleSetDefaultProvider(provider.id)}
-                                    disabled={setDefaultProviderMutation.isPending}
-                                    className="text-xs inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-                                >
-                                    Set as Default
-                                </button>
-                           )}
+                            {/* Toggle Active/Inactive */}
+                            <button
+                                onClick={() => handleToggleActiveProvider(provider.id)}
+                                disabled={toggleActiveProviderMutation.isPending}
+                                className={`p-2 ${
+                                    provider.status === 'active' 
+                                        ? 'text-green-600 hover:text-green-700' 
+                                        : 'text-gray-400 hover:text-green-500'
+                                }`}
+                                title={provider.status === 'active' ? 'Deactivate Provider' : 'Activate Provider'}
+                            >
+                                <Power className="w-4 h-4" />
+                            </button>
+
+                            {/* Toggle Default */}
+                            <button
+                                onClick={() => handleSetDefaultProvider(provider.id)}
+                                disabled={setDefaultProviderMutation.isPending || provider.isDefault}
+                                className={`p-2 ${
+                                    provider.isDefault 
+                                        ? 'text-yellow-500 cursor-not-allowed' 
+                                        : 'text-gray-400 hover:text-yellow-500'
+                                }`}
+                                title={provider.isDefault ? 'Already Default' : 'Set as Default'}
+                            >
+                                <Star className={provider.isDefault ? 'w-4 h-4 fill-current' : 'w-4 h-4'} />
+                            </button>
+
                             {provider.type === 'gmail' && !emailSettings?.isGmailConnected && (
-                                <button onClick={handleConnectGmail} className="text-xs inline-flex items-center px-2.5 py-1.5 border border-transparent font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                <button 
+                                    onClick={handleConnectGmail} 
+                                    className="text-xs inline-flex items-center px-2.5 py-1.5 border border-transparent font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                                >
                                     Reconnect
                                 </button>
                             )}
+                            
+                            <button
+                                onClick={() => handleEditProvider(provider)}
+                                className="p-2 text-gray-400 hover:text-blue-500"
+                                title="View/Edit Provider"
+                            >
+                                <Eye className="w-4 h-4" />
+                            </button>
+                            
+                            <button
+                                onClick={() => handleTestProvider(provider)}
+                                className="p-2 text-gray-400 hover:text-green-500"
+                                title="Test Email Sending"
+                            >
+                                <TestTube className="w-4 h-4" />
+                            </button>
+                            
                             <button
                                 onClick={() => handleDeleteProvider(provider.id)}
                                 disabled={deleteProviderMutation.isPending}
@@ -717,7 +799,7 @@ const EmailManagementPage: React.FC = () => {
           isOpen={isProviderModalOpen}
           onClose={() => setIsProviderModalOpen(false)}
           provider={selectedProvider}
-          providerType={selectedProviderType}
+          type={selectedProviderType}
         />
       )}
 
@@ -725,6 +807,11 @@ const EmailManagementPage: React.FC = () => {
           <PresetTemplatesDialog
               isOpen={isPresetDialogOpen}
               onClose={() => setIsPresetDialogOpen(false)}
+              onSuccess={() => {
+                setIsPresetDialogOpen(false);
+                // Refetch templates after successful preset creation
+                // The React Query hook should automatically refetch
+              }}
           />
       )}
 
@@ -784,6 +871,135 @@ const EmailManagementPage: React.FC = () => {
               </div>
           </div>
       )}
+
+      {/* Test Email Modal */}
+      {isTestEmailModalOpen && testEmailProvider && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-30" aria-hidden="true">
+              <div className="fixed inset-0 z-40 w-screen overflow-y-auto">
+                  <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                      <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                              <div className="flex items-start justify-between">
+                                  <div className="flex items-center">
+                                      <div className="flex-shrink-0">
+                                          <TestTube className="h-6 w-6 text-green-600" />
+                                      </div>
+                                      <div className="ml-3">
+                                          <h3 className="text-lg font-semibold leading-6 text-gray-900">
+                                              Test Email Provider
+                                          </h3>
+                                          <p className="text-sm text-gray-500 mt-1">
+                                              Send a test email using: {testEmailProvider.name}
+                                          </p>
+                                      </div>
+                                  </div>
+                                  <button
+                                      type="button"
+                                      className="ml-4 rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                                      onClick={() => setIsTestEmailModalOpen(false)}
+                                  >
+                                      <span className="sr-only">Close</span>
+                                      <X className="h-6 w-6" aria-hidden="true" />
+                                  </button>
+                              </div>
+                              
+                              <div className="mt-5">
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                      <div className="flex items-center">
+                                          <div className="flex-shrink-0">
+                                              {getProviderIcon(testEmailProvider.type)}
+                                          </div>
+                                          <div className="ml-3">
+                                              <p className="text-sm font-medium text-gray-900">
+                                                  {testEmailProvider.name}
+                                              </p>
+                                              <p className="text-sm text-gray-500">
+                                                  Type: {testEmailProvider.type} | From: {testEmailProvider.fromEmail || 'Not configured'}
+                                              </p>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  
+                                  <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                          Test Email Address *
+                                      </label>
+                                      <input
+                                          type="email"
+                                          value={testEmailAddress}
+                                          onChange={(e) => setTestEmailAddress(e.target.value)}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                          placeholder="Enter email address to test"
+                                          required
+                                      />
+                                      <p className="text-xs text-gray-500 mt-1">
+                                          A test email will be sent to this address to verify the provider configuration.
+                                      </p>
+                                  </div>
+                              </div>
+                          </div>
+                          <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                              <button
+                                  type="button"
+                                  onClick={handleSendTestEmail}
+                                  disabled={sendEmailMutation.isPending || !testEmailAddress.trim()}
+                                  className="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 sm:ml-3 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                  {sendEmailMutation.isPending ? (
+                                      <>
+                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                          Sending...
+                                      </>
+                                  ) : (
+                                      <>
+                                          <Send className="w-4 h-4 mr-2" />
+                                          Send Test Email
+                                      </>
+                                  )}
+                              </button>
+                              <button
+                                  type="button"
+                                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                                  onClick={() => setIsTestEmailModalOpen(false)}
+                              >
+                                  Cancel
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Delete Template Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteTemplateModalOpen}
+        onClose={() => {
+          setIsDeleteTemplateModalOpen(false);
+          setTemplateToDelete(null);
+        }}
+        onConfirm={confirmDeleteTemplate}
+        title="Delete Email Template"
+        message="Are you sure you want to delete this email template? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
+
+      {/* Delete Provider Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteProviderModalOpen}
+        onClose={() => {
+          setIsDeleteProviderModalOpen(false);
+          setProviderToDelete(null);
+        }}
+        onConfirm={confirmDeleteProvider}
+        title="Disconnect Email Provider"
+        message="Are you sure you want to disconnect this email provider? This action cannot be undone and may affect email sending capabilities."
+        confirmText="Disconnect"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

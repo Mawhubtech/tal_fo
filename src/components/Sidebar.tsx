@@ -310,7 +310,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     <Mail className="w-3 h-3 mr-2" />
                     Email Management
                   </Link>
-                  <Link to="/dashboard/admin/team-management" className={`flex items-center py-1 text-sm pl-2 ${isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                  <Link to="/dashboard/admin/team-management" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                     <Shield className="w-3 h-3 mr-2" />
                     Team Management
                   </Link>
@@ -366,9 +366,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                         <Mail className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/email-management') ? '#7e22ce' : '' }} />
                         Email Management
                       </Link>
-                      <Link to="/dashboard/admin/user-clients" className={`flex items-center px-3 py-2 text-sm rounded-md ml-4 ${isActive('/dashboard/admin/user-clients') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                        <Shield className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/user-clients') ? '#7e22ce' : '' }} />
-                        User-Client Access
+                      <Link to="/dashboard/admin/team-management" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                        <Shield className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/team-management') ? '#7e22ce' : '' }} />
+                        Team Management
                       </Link>
                     </div>
                     <div className="border-t border-gray-100 my-2 pt-2">

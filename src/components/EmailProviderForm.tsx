@@ -49,6 +49,11 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
         };
       }
       
+      // If it's an SMTP provider and has settings, use them directly
+      if (provider.type === 'smtp' && provider.settings && Object.keys(provider.settings).length > 0) {
+        settings = { ...provider.settings };
+      }
+      
       setFormData({
         name: provider.name,
         type: provider.type,
