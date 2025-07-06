@@ -20,6 +20,21 @@ export interface EmailTemplate {
   variables?: string[];
   organizationId?: string;
   teamId?: string;
+  // Current backend fields (single team/organization)
+  clientId?: string; // Backend uses clientId for organizations
+  // Future fields for multiple teams and clients (not yet implemented in backend)
+  sharedWithTeams?: Array<{
+    id: string;
+    name: string;
+    organizationId: string;
+  }>;
+  sharedWithOrganizations?: Array<{
+    id: string;
+    name: string;
+    type: string;
+  }>;
+  teamIds?: string[];
+  organizationIds?: string[];
   createdBy?: {
     id: string;
     firstName: string;
@@ -130,6 +145,10 @@ export interface CreateTemplateData {
   isShared?: boolean;
   organizationId?: string;
   teamId?: string;
+  // New fields for multiple teams and clients
+  teamIds?: string[];
+  organizationIds?: string[];
+  description?: string;
 }
 
 export interface UpdateTemplateData extends Partial<CreateTemplateData> {
@@ -670,5 +689,73 @@ export const useTemplatePreview = () => {
         return response.data;
       }
     },
+  });
+};
+
+// Share template with teams and organizations
+export const useShareTemplateWithTeams = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ templateId, teamIds }: { templateId: string; teamIds: string[] }) => {
+      return apiClient.post(`/email-management/templates/${templateId}/share-teams`, { teamIds });
+    },
+    onSuccess: (_, { templateId }) => {
+      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['email-template-sharing', templateId] });
+    },
+  });
+};
+
+export const useShareTemplateWithOrganizations = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ templateId, organizationIds }: { templateId: string; organizationIds: string[] }) => {
+      return apiClient.post(`/email-management/templates/${templateId}/share-organizations`, { organizationIds });
+    },
+    onSuccess: (_, { templateId }) => {
+      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['email-template-sharing', templateId] });
+    },
+  });
+};
+
+export const useRemoveTemplateFromTeams = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ templateId, teamIds }: { templateId: string; teamIds: string[] }) => {
+      return apiClient.post(`/email-management/templates/${templateId}/unshare-teams`, { teamIds });
+    },
+    onSuccess: (_, { templateId }) => {
+      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['email-template-sharing', templateId] });
+    },
+  });
+};
+
+export const useRemoveTemplateFromOrganizations = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ templateId, organizationIds }: { templateId: string; organizationIds: string[] }) => {
+      return apiClient.post(`/email-management/templates/${templateId}/unshare-organizations`, { organizationIds });
+    },
+    onSuccess: (_, { templateId }) => {
+      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['email-template-sharing', templateId] });
+    },
+  });
+};
+
+export const useGetTemplateSharing = (templateId: string) => {
+  return useQuery({
+    queryKey: ['email-template-sharing', templateId],
+    queryFn: async () => {
+      const response = await apiClient.get(`/email-management/templates/${templateId}/sharing`);
+      return response.data;
+    },
+    enabled: !!templateId,
   });
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Plus, Settings, Send, Trash2, Edit, Copy, AlertCircle, CheckCircle, Eye, MoreVertical, ExternalLink, RefreshCw, Download, X, TestTube, Power, Star } from 'lucide-react';
+import { Mail, Plus, Settings, Send, Trash2, Edit, Copy, AlertCircle, CheckCircle, Eye, MoreVertical, ExternalLink, RefreshCw, Download, X, TestTube, Power, Star, Users, Building2, Share2 } from 'lucide-react';
 import { 
   useEmailTemplates, 
   useEmailProviders, 
@@ -18,6 +18,7 @@ import { useToast } from '../../contexts/ToastContext';
 import EmailTemplateForm from '../../components/EmailTemplateForm';
 import EmailProviderForm from '../../components/EmailProviderForm';
 import PresetTemplatesDialog from '../../components/PresetTemplatesDialog';
+import TemplateShareDialog from '../../components/TemplateShareDialog';
 import ConfirmationModal from '../../components/ConfirmationModal';
 
 const EmailManagementPage: React.FC = () => {
@@ -34,6 +35,10 @@ const EmailManagementPage: React.FC = () => {
   const [isTestEmailModalOpen, setIsTestEmailModalOpen] = useState(false);
   const [testEmailProvider, setTestEmailProvider] = useState<EmailProvider | null>(null);
   const [testEmailAddress, setTestEmailAddress] = useState('');
+  
+  // Template sharing state
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [templateToShare, setTemplateToShare] = useState<EmailTemplate | null>(null);
   
   // Confirmation modal states
   const [isDeleteTemplateModalOpen, setIsDeleteTemplateModalOpen] = useState(false);
@@ -114,6 +119,11 @@ const EmailManagementPage: React.FC = () => {
     setPreviewTemplate(template);
     setPreviewMode('rendered'); // Default to rendered view
     setIsPreviewModalOpen(true);
+  };
+
+  const handleShareTemplate = (template: EmailTemplate) => {
+    setTemplateToShare(template);
+    setIsShareModalOpen(true);
   };
 
   // Function to render template with sample data
@@ -578,6 +588,30 @@ If you received this email, your email provider is working correctly.
                                 {template.isActive ? 'Active' : 'Inactive'}
                             </span>
                         </div>
+                        
+                        {/* Show sharing information */}
+                        {(template.sharedWithTeams?.length || template.sharedWithOrganizations?.length) && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {template.sharedWithTeams?.map(team => (
+                                    <span
+                                        key={team.id}
+                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                    >
+                                        <Users className="w-3 h-3 mr-1" />
+                                        {team.name}
+                                    </span>
+                                ))}
+                                {template.sharedWithOrganizations?.map(org => (
+                                    <span
+                                        key={org.id}
+                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                    >
+                                        <Building2 className="w-3 h-3 mr-1" />
+                                        {org.name}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                       </div>
                       <div className="ml-4 flex items-center space-x-2 flex-shrink-0">
                         <button
@@ -586,6 +620,13 @@ If you received this email, your email provider is working correctly.
                           title="Preview template"
                         >
                           <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleShareTemplate(template)}
+                          className="p-2 text-gray-400 hover:text-purple-500"
+                          title="Share template"
+                        >
+                          <Share2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleEditTemplate(template)}
@@ -829,6 +870,22 @@ If you received this email, your email provider is working correctly.
                 // The React Query hook should automatically refetch
               }}
           />
+      )}
+
+      {isShareModalOpen && (
+        <TemplateShareDialog
+          template={templateToShare}
+          isOpen={isShareModalOpen}
+          onClose={() => {
+            setIsShareModalOpen(false);
+            setTemplateToShare(null);
+          }}
+          onSuccess={() => {
+            setIsShareModalOpen(false);
+            setTemplateToShare(null);
+            // The React Query hook should automatically refetch
+          }}
+        />
       )}
 
       {isPreviewModalOpen && previewTemplate && (

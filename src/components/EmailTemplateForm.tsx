@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Eye, Code, Eye as EyeIcon, Sparkles } from 'lucide-react';
+import { X, Save, Eye, Code, Eye as EyeIcon, Sparkles, Users, Building2, Plus, Minus } from 'lucide-react';
 import { useCreateEmailTemplate, useUpdateEmailTemplate, useGenerateAiTemplateContent, type EmailTemplate, type CreateTemplateData } from '../hooks/useEmailManagement';
+import { useHiringTeams } from '../hooks/useHiringTeam';
+import { useOrganizations } from '../hooks/useOrganizations';
 import { useToast } from '../contexts/ToastContext';
 import RichTextEditor from './RichTextEditor';
 import TemplateVariablesHelper from './TemplateVariablesHelper';
@@ -25,7 +27,10 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
     type: 'custom',
     category: 'general',
     scope: 'personal',
-    isShared: false
+    isShared: false,
+    description: '',
+    teamIds: [],
+    organizationIds: []
   });
   const [showPreview, setShowPreview] = useState(false);
   const [editorMode, setEditorMode] = useState<'rich' | 'html'>('rich');
@@ -37,6 +42,10 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
   const createMutation = useCreateEmailTemplate();
   const updateMutation = useUpdateEmailTemplate();
   const generateAiMutation = useGenerateAiTemplateContent();
+  
+  // Fetch teams and organizations for sharing
+  const { data: teams = [] } = useHiringTeams();
+  const { data: organizations = [] } = useOrganizations();
 
   // Add custom CSS for email preview
   const emailPreviewStyles = `
@@ -62,7 +71,10 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
         type: template.type,
         category: template.category,
         scope: template.scope,
-        isShared: template.isShared
+        isShared: template.isShared,
+        description: template.description,
+        teamIds: template.teamIds || [],
+        organizationIds: template.organizationIds || []
       });
     } else {
       setFormData({
@@ -72,7 +84,10 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
         type: 'custom',
         category: 'general',
         scope: 'personal',
-        isShared: false
+        isShared: false,
+        description: '',
+        teamIds: [],
+        organizationIds: []
       });
     }
   }, [template]);
@@ -196,6 +211,39 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
     { value: 'organization', label: 'Organization', description: 'Available to your organization' }
   ] as const;
 
+  // Helper functions for team and organization management
+  const handleAddTeam = (teamId: string) => {
+    if (!formData.teamIds?.includes(teamId)) {
+      setFormData(prev => ({
+        ...prev,
+        teamIds: [...(prev.teamIds || []), teamId]
+      }));
+    }
+  };
+
+  const handleRemoveTeam = (teamId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      teamIds: prev.teamIds?.filter(id => id !== teamId) || []
+    }));
+  };
+
+  const handleAddOrganization = (orgId: string) => {
+    if (!formData.organizationIds?.includes(orgId)) {
+      setFormData(prev => ({
+        ...prev,
+        organizationIds: [...(prev.organizationIds || []), orgId]
+      }));
+    }
+  };
+
+  const handleRemoveOrganization = (orgId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      organizationIds: prev.organizationIds?.filter(id => id !== orgId) || []
+    }));
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -307,6 +355,142 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Brief description of this template's purpose..."
+                />
+              </div>
+
+              {/* Share with Teams */}
+              {(formData.scope === 'team' || formData.scope === 'organization') && (
+                <div className="space-y-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    <h4 className="text-sm font-medium text-gray-900">Share with Teams</h4>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm text-gray-600">
+                      Select teams that can access this template:
+                    </label>
+                    
+                    {/* Selected Teams */}
+                    {formData.teamIds && formData.teamIds.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {formData.teamIds.map(teamId => {
+                          const team = teams.find(t => t.id === teamId);
+                          return team ? (
+                            <span
+                              key={teamId}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                            >
+                              {team.name}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTeam(teamId)}
+                                className="ml-2 text-blue-600 hover:text-blue-800"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                    
+                    {/* Team Selection */}
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          handleAddTeam(e.target.value);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                      defaultValue=""
+                    >
+                      <option value="">Select a team to add...</option>
+                      {teams
+                        .filter(team => !formData.teamIds?.includes(team.id))
+                        .map(team => (
+                          <option key={team.id} value={team.id}>
+                            {team.name} {team.organizations?.[0]?.name && `(${team.organizations[0].name})`}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Share with Organizations/Clients */}
+              {formData.scope === 'organization' && (
+                <div className="space-y-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="w-5 h-5 text-green-600" />
+                    <h4 className="text-sm font-medium text-gray-900">Share with Organizations</h4>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm text-gray-600">
+                      Select client organizations that can access this template:
+                    </label>
+                    
+                    {/* Selected Organizations */}
+                    {formData.organizationIds && formData.organizationIds.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {formData.organizationIds.map(orgId => {
+                          const org = organizations.find(o => o.id === orgId);
+                          return org ? (
+                            <span
+                              key={orgId}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800"
+                            >
+                              {org.name}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveOrganization(orgId)}
+                                className="ml-2 text-green-600 hover:text-green-800"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                    
+                    {/* Organization Selection */}
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          handleAddOrganization(e.target.value);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                      defaultValue=""
+                    >
+                      <option value="">Select an organization to add...</option>
+                      {organizations
+                        .filter(org => !formData.organizationIds?.includes(org.id))
+                        .map(org => (
+                          <option key={org.id} value={org.id}>
+                            {org.name} ({org.industry || 'Unknown Industry'})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* Generate with AI Button */}
               <div className="border border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 shadow-sm">

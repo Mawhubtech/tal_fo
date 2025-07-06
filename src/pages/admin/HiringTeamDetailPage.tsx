@@ -1,29 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Edit, Users, Settings, Archive, Trash2,
   Globe, Lock, Building, Crown, CheckCircle, Clock,
   AlertCircle, Share, Copy, Download, Activity,
-  FileText, Calendar, MapPin, Mail, Phone, Briefcase, ChevronRight
+  FileText, Calendar, MapPin, Mail, Phone, Briefcase, ChevronRight, X
 } from 'lucide-react';
 import { useHiringTeam, useUpdateHiringTeam, useDeleteHiringTeam } from '../../hooks/useHiringTeam';
 import { useJobsAssignedToTeam } from '../../hooks/useJobAssignment';
 import { useOrganization } from '../../hooks/useOrganizations';
+import { useUserClients } from '../../hooks/useUser';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 import JobAssignmentModal from '../../components/JobAssignmentModal';
+
+// Types for the edit form
+type TeamFormData = {
+  id?: string;
+  name: string;
+  description: string;
+  visibility: 'public' | 'private' | 'organization';
+  status: 'active' | 'inactive' | 'archived';
+  isDefault: boolean;
+  color: string;
+  organizationIds: string[];
+};
 
 const HiringTeamDetailPage: React.FC = () => {
   const { teamId, organizationId } = useParams<{ teamId: string; organizationId?: string }>();
   const navigate = useNavigate();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [jobAssignmentModalOpen, setJobAssignmentModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Form data for editing
+  const [formData, setFormData] = useState<TeamFormData>({
+    name: '',
+    description: '',
+    visibility: 'organization',
+    status: 'active',
+    isDefault: false,
+    color: '#6366f1',
+    organizationIds: []
+  });
 
   const { data: team, isLoading: teamLoading, error: teamError } = useHiringTeam(teamId || '');
   const { data: assignedJobs = [], isLoading: jobsLoading } = useJobsAssignedToTeam(teamId || '');
   const { data: organization } = useOrganization(organizationId || '');
+  const { data: userClients = [], isLoading: loadingClients } = useUserClients();
   const updateTeamMutation = useUpdateHiringTeam();
   const deleteTeamMutation = useDeleteHiringTeam();
+
+  const openEditModal = useCallback(() => {
+    if (!team) return;
+    
+    setFormData({
+      id: team.id,
+      name: team.name,
+      description: team.description || '',
+      visibility: team.visibility,
+      status: team.status,
+      isDefault: team.isDefault,
+      color: team.color || '#6366f1',
+      organizationIds: team.organizations ? team.organizations.map(org => org.id) : []
+    });
+    setIsEditModalOpen(true);
+  }, [team]);
+
+  const handleUpdateTeam = async () => {
+    if (!formData.id) return;
+    try {
+      const { id, ...updateData } = formData;
+      const teamData = {
+        ...updateData,
+        organizationIds: formData.visibility === 'organization' ? formData.organizationIds : undefined
+      };
+      await updateTeamMutation.mutateAsync({ teamId: id, data: teamData });
+      toast.success('Hiring team updated successfully!');
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error('Error updating team:', err);
+      toast.error('Failed to update hiring team. Please try again.');
+    }
+  };
 
   const handleArchiveTeam = async () => {
     if (!team) return;
@@ -241,13 +300,13 @@ const HiringTeamDetailPage: React.FC = () => {
                   <Share className="h-4 w-4" />
                   <span>Share</span>
                 </button>
-                <Link
-                  to={`/dashboard/admin/hiring-teams/${teamId}/edit`}
+                <button
+                  onClick={openEditModal}
                   className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   <Edit className="h-4 w-4" />
                   <span>Edit Team</span>
-                </Link>
+                </button>
                 <button
                   onClick={handleArchiveTeam}
                   className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
@@ -505,6 +564,183 @@ const HiringTeamDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Edit Team Modal */}
+        {isEditModalOpen && team && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Edit Team: {team.name}
+                  </h3>
+                  <button
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-6 py-6 overflow-y-auto">
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 mb-2">
+                      Team Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="teamName"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="e.g. Engineering Hiring Team"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="teamDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      id="teamDescription"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Brief description of this team's responsibilities..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="teamVisibility" className="block text-sm font-medium text-gray-700 mb-2">
+                        Visibility
+                      </label>
+                      <select
+                        id="teamVisibility"
+                        value={formData.visibility}
+                        onChange={(e) => setFormData({ ...formData, visibility: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                        <option value="organization">Organization</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="teamStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                        Status
+                      </label>
+                      <select
+                        id="teamStatus"
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="archived">Archived</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {formData.visibility === 'organization' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Organizations *
+                      </label>
+                      {loadingClients ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                          {userClients.map((client) => (
+                            <label key={client.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.organizationIds.includes(client.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      organizationIds: [...formData.organizationIds, client.id]
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      organizationIds: formData.organizationIds.filter(id => id !== client.id)
+                                    });
+                                  }
+                                }}
+                                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                              />
+                              <span className="text-sm text-gray-900">{client.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isDefault"
+                        checked={formData.isDefault}
+                        onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="isDefault" className="text-sm text-gray-700">
+                        Set as default team
+                      </label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <label htmlFor="teamColor" className="text-sm text-gray-700">
+                        Color:
+                      </label>
+                      <input
+                        type="color"
+                        id="teamColor"
+                        value={formData.color}
+                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                        className="w-10 h-8 border border-gray-300 rounded cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleUpdateTeam}
+                  disabled={
+                    !formData.name.trim() ||
+                    (formData.visibility === 'organization' && formData.organizationIds.length === 0) ||
+                    updateTeamMutation.isPending
+                  }
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {updateTeamMutation.isPending ? 'Updating...' : 'Update Team'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Confirmation */}
         <ConfirmDialog
