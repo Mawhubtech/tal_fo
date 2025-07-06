@@ -186,6 +186,16 @@ const TeamManagementPage: React.FC = () => {
     }
   };
 
+  // Helper function to determine dropdown position
+  const getDropdownPosition = (index: number, totalItems: number) => {
+    // If it's one of the last 2 items, show dropdown above
+    if (index >= totalItems - 2) {
+      return "absolute right-0 bottom-full mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50";
+    }
+    // Otherwise show below
+    return "absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50";
+  };
+
   const handleAssignClients = async () => {
     if (!selectedUser) return;
     
@@ -338,7 +348,7 @@ const TeamManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -488,7 +498,7 @@ const TeamManagementPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm overflow-visible">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Users & Client Access</h3>
               <p className="text-sm text-gray-600 mt-1">
@@ -496,8 +506,8 @@ const TeamManagementPage: React.FC = () => {
               </p>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            <div className="overflow-x-auto overflow-y-visible relative">
+              <table className="min-w-full divide-y divide-gray-200 relative">
                 <thead className="bg-gray-50">
                   <tr>
                     {bulkMode && (
@@ -528,7 +538,7 @@ const TeamManagementPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
+                  {filteredUsers.map((user, index) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       {bulkMode && (
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -598,7 +608,7 @@ const TeamManagementPage: React.FC = () => {
                             <MoreHorizontal className="h-4 w-4 text-gray-400" />
                           </button>
                           {activeDropdown === user.id && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                            <div className={getDropdownPosition(index, filteredUsers.length)}>
                               <div className="py-1">
                                 <button
                                   onClick={() => {
