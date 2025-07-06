@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { 
   X, Calendar, Clock, MapPin, Video, Phone, Users, User, ExternalLink, 
   Mail, MessageSquare, FileText, Star, Edit, Save, XCircle, CheckCircle,
@@ -7,6 +9,7 @@ import {
 import type { Interview, InterviewFeedback } from '../../../../../types/interview.types';
 import { useUpdateInterview } from '../../../../../hooks/useInterviews';
 import { useEmailService } from '../../../../../hooks/useEmailService';
+import { useEmailTemplates, type EmailTemplate } from '../../../../../hooks/useEmailManagement';
 import { toast } from '../../../../../components/ToastContainer';
 import { EditInterviewForm } from './EditInterviewForm';
 
@@ -18,83 +21,6 @@ interface InterviewDetailModalProps {
   onSendEmail?: (interview: Interview, emailType: string, recipients: string[], subject: string, body: string) => Promise<void>;
   onAddFeedback?: (interview: Interview, feedback: Omit<InterviewFeedback, 'id' | 'submittedBy' | 'submitter' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
-
-const emailTemplates = {
-  interview_invitation: {
-    subject: 'Interview Invitation - {{jobTitle}} Position',
-    body: `Dear {{candidateName}},
-
-We are pleased to invite you for an interview for the {{jobTitle}} position at our company.
-
-Interview Details:
-- Date & Time: {{dateTime}}
-- Duration: {{duration}} minutes
-- Format: {{mode}}
-{{#if meetingLink}}- Meeting Link: {{meetingLink}}{{/if}}
-{{#if location}}- Location: {{location}}{{/if}}
-
-{{#if agenda}}Agenda: {{agenda}}{{/if}}
-
-Please confirm your attendance by replying to this email.
-
-Best regards,
-{{schedulerName}}`
-  },
-  interview_reminder: {
-    subject: 'Interview Reminder - {{jobTitle}} Position Tomorrow',
-    body: `Dear {{candidateName}},
-
-This is a friendly reminder about your upcoming interview for the {{jobTitle}} position.
-
-Interview Details:
-- Date & Time: {{dateTime}}
-- Duration: {{duration}} minutes
-- Format: {{mode}}
-{{#if meetingLink}}- Meeting Link: {{meetingLink}}{{/if}}
-{{#if location}}- Location: {{location}}{{/if}}
-
-Please be prepared and on time. If you have any questions, feel free to reach out.
-
-Best regards,
-{{schedulerName}}`
-  },
-  interview_reschedule: {
-    subject: 'Interview Rescheduled - {{jobTitle}} Position',
-    body: `Dear {{candidateName}},
-
-We need to reschedule your interview for the {{jobTitle}} position.
-
-New Interview Details:
-- Date & Time: {{dateTime}}
-- Duration: {{duration}} minutes
-- Format: {{mode}}
-{{#if meetingLink}}- Meeting Link: {{meetingLink}}{{/if}}
-{{#if location}}- Location: {{location}}{{/if}}
-
-We apologize for any inconvenience caused.
-
-Best regards,
-{{schedulerName}}`
-  },
-  feedback_request: {
-    subject: 'Interview Feedback Request - {{candidateName}}',
-    body: `Dear {{interviewerName}},
-
-Thank you for conducting the interview with {{candidateName}} for the {{jobTitle}} position.
-
-Please provide your feedback using the interview feedback form at your earliest convenience.
-
-Interview Details:
-- Date & Time: {{dateTime}}
-- Candidate: {{candidateName}}
-- Position: {{jobTitle}}
-
-Your input is valuable for our hiring decision.
-
-Best regards,
-{{schedulerName}}`
-  }
-};
 
 export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   interview,
@@ -110,7 +36,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   const [showEditForm, setShowEditForm] = useState(false);
   const [notes, setNotes] = useState('');
   const [emailForm, setEmailForm] = useState({
-    type: 'interview_invitation',
+    type: '', // Will be set when templates load
     recipients: [] as string[],
     subject: '',
     body: '',
@@ -127,6 +53,48 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     sendEmail, 
     isSendingEmail 
   } = useEmailService(activeTab === 'email');
+
+  // Fetch email templates for interviews category
+  const { 
+    data: emailTemplatesData, 
+    isLoading: isLoadingTemplates, 
+    error: templatesError 
+  } = useEmailTemplates({ 
+    category: 'interviews' 
+  });
+
+  // Transform templates data for easier use
+  const emailTemplates = React.useMemo(() => {
+    let templatesArray;
+    
+    // Handle both array and object responses
+    if (Array.isArray(emailTemplatesData)) {
+      templatesArray = emailTemplatesData;
+    } else if (emailTemplatesData && emailTemplatesData.templates && Array.isArray(emailTemplatesData.templates)) {
+      templatesArray = emailTemplatesData.templates;
+    } else if (!emailTemplatesData || isLoadingTemplates) {
+      console.log('Email templates not loaded yet:', { emailTemplatesData, isLoadingTemplates, templatesError });
+      return {};
+    } else {
+      console.log('Unexpected template data structure:', emailTemplatesData);
+      return {};
+    }
+    
+    console.log('Loading email templates array:', templatesArray);
+    
+    const templates = templatesArray.reduce((acc: Record<string, EmailTemplate>, template: EmailTemplate) => {
+      acc[template.type] = template;
+      return acc;
+    }, {});
+    
+    console.log('Transformed templates:', templates);
+    return templates;
+  }, [emailTemplatesData, isLoadingTemplates, templatesError]);
+
+  // Get available template types for dropdown
+  const availableTemplateTypes = React.useMemo(() => {
+    return Object.keys(emailTemplates);
+  }, [emailTemplates]);
 
   useEffect(() => {
     if (interview) {
@@ -152,10 +120,22 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
         recipients: recipients.filter(Boolean)
       }));
       
-      // Populate default email template
-      populateEmailTemplate(emailTemplates.interview_invitation);
+      // Populate default email template when templates are loaded
+      if (emailTemplates && Object.keys(emailTemplates).length > 0) {
+        const defaultTemplate = emailTemplates['interview_invitation'] || 
+                               emailTemplates['interview_invite'] || 
+                               Object.values(emailTemplates)[0];
+        if (defaultTemplate) {
+          // Set the form type if not already set
+          setEmailForm(prev => ({
+            ...prev,
+            type: prev.type || defaultTemplate.type
+          }));
+          populateEmailTemplate(defaultTemplate);
+        }
+      }
     }
-  }, [interview, interview?.updatedAt]); // Add updatedAt to dependency to respond to updates
+  }, [interview, interview?.updatedAt, emailTemplates]); // Add emailTemplates to dependency
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -224,21 +204,32 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
       setActiveTab('details');
       
       // Repopulate default template for next use
-      populateEmailTemplate(emailTemplates.interview_invitation);
+      const defaultTemplate = emailTemplates['interview_invitation'] || 
+                             emailTemplates['interview_invite'] || 
+                             Object.values(emailTemplates)[0];
+      if (defaultTemplate) {
+        populateEmailTemplate(defaultTemplate);
+      }
     } catch (error) {
       console.error('Failed to send email:', error);
       toast.error('Email Failed', 'Failed to send email. Please check your email configuration.');
     }
   };
 
-  const populateEmailTemplate = (template: any) => {
-    if (!interview) return;
+  const populateEmailTemplate = (template: EmailTemplate | undefined) => {
+    if (!interview || !template) return;
     
     const candidate = interview.jobApplication?.candidate;
     const job = interview.jobApplication?.job;
     const scheduler = interview.scheduler;
     
     console.log('Populating email template with data:', {
+      template: {
+        id: template.id,
+        name: template.name,
+        type: template.type,
+        variables: template.variables
+      },
       candidate,
       job,
       scheduler,
@@ -252,30 +243,63 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
       }
     });
     
-    // Create replacement data
-    const replacements = {
-      '{{jobTitle}}': job?.title || 'Unknown Position',
+    // Create replacement data based on template variables
+    const replacements: Record<string, string> = {
+      // Standard variables
       '{{candidateName}}': candidate?.fullName || `${candidate?.firstName || ''} ${candidate?.lastName || ''}`.trim() || 'Candidate',
-      '{{interviewerName}}': 'Team Member', // This will be replaced for feedback requests
+      '{{position}}': job?.title || 'Unknown Position',
+      '{{jobTitle}}': job?.title || 'Unknown Position',
+      '{{company}}': 'Our Company', // Could be enhanced to fetch organization name
+      '{{interviewDate}}': new Date(interview.scheduledAt).toLocaleDateString(),
+      '{{interviewTime}}': new Date(interview.scheduledAt).toLocaleTimeString(),
       '{{dateTime}}': formatDateTime(interview.scheduledAt),
       '{{duration}}': interview.durationMinutes?.toString() || '60',
       '{{mode}}': interview.mode || 'In-person',
       '{{meetingLink}}': interview.meetingLink || '',
       '{{location}}': interview.location || '',
+      '{{interviewLocation}}': interview.location || '',
       '{{agenda}}': interview.agenda || '',
-      '{{schedulerName}}': `${scheduler?.firstName || ''} ${scheduler?.lastName || ''}`.trim() || 'HR Team'
+      '{{schedulerName}}': `${scheduler?.firstName || ''} ${scheduler?.lastName || ''}`.trim() || 'HR Team',
+      '{{recruiterName}}': `${scheduler?.firstName || ''} ${scheduler?.lastName || ''}`.trim() || 'HR Team',
+      '{{senderName}}': `${scheduler?.firstName || ''} ${scheduler?.lastName || ''}`.trim() || 'HR Team',
+      '{{yourName}}': `${scheduler?.firstName || ''} ${scheduler?.lastName || ''}`.trim() || 'HR Team',
+      '{{contactEmail}}': scheduler?.email || 'hr@company.com',
+      '{{contactPhone}}': '(555) 123-4567', // Could be made configurable
+      '{{contactName}}': `${scheduler?.firstName || ''} ${scheduler?.lastName || ''}`.trim() || 'HR Team',
+      '{{interviewerName}}': 'Team Member', // This will be replaced for feedback requests
+      '{{candidateFirstName}}': candidate?.firstName || 'Candidate',
+      '{{candidateLastName}}': candidate?.lastName || '',
+      '{{senderTitle}}': 'Talent Acquisition Specialist',
+      // Additional common variables
+      '{{interviewType}}': interview.type || 'Interview',
+      '{{preparationNotes}}': interview.preparationNotes || '',
+      '{{reason}}': '', // For cancellation/reschedule reasons
+      '{{newInterviewDate}}': new Date(interview.scheduledAt).toLocaleDateString(),
+      '{{newInterviewTime}}': new Date(interview.scheduledAt).toLocaleTimeString(),
+      '{{newInterviewLocation}}': interview.location || '',
+      '{{originalDate}}': new Date(interview.scheduledAt).toLocaleDateString(),
+      '{{originalTime}}': new Date(interview.scheduledAt).toLocaleTimeString(),
     };
+    
+    // Add any additional variables from template if they exist
+    template.variables?.forEach(variable => {
+      const varKey = `{{${variable}}}`;
+      if (!replacements[varKey]) {
+        // Set to empty string for any variables not yet handled
+        replacements[varKey] = '';
+      }
+    });
     
     console.log('Template replacements:', replacements);
     
-    // Replace variables in subject
-    let subject = template.subject;
+    // Replace variables in subject - use template.subject instead of subject
+    let subject = template.subject || '';
     Object.entries(replacements).forEach(([key, value]) => {
       subject = subject.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value);
     });
     
-    // Replace variables in body
-    let body = template.body;
+    // Replace variables in body - use template.content instead of body
+    let body = template.content || template.body || '';
     Object.entries(replacements).forEach(([key, value]) => {
       body = body.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value);
     });
@@ -283,15 +307,15 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     console.log('Before conditional processing:', { subject, body });
     
     // Handle conditional blocks (simple implementation)
-    body = body.replace(/{{#if meetingLink}}(.*?){{\/if}}/g, (match, content) => {
+    body = body.replace(/{{#if meetingLink}}(.*?){{\/if}}/gs, (match, content) => {
       return interview.meetingLink ? content : '';
     });
     
-    body = body.replace(/{{#if location}}(.*?){{\/if}}/g, (match, content) => {
+    body = body.replace(/{{#if location}}(.*?){{\/if}}/gs, (match, content) => {
       return interview.location ? content : '';
     });
     
-    body = body.replace(/{{#if agenda}}(.*?){{\/if}}/g, (match, content) => {
+    body = body.replace(/{{#if agenda}}(.*?){{\/if}}/gs, (match, content) => {
       return interview.agenda ? content : '';
     });
     
@@ -812,29 +836,78 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                   </div>
                 </div>
                 
+                {/* Show loading state or error if templates aren't available */}
+                {isLoadingTemplates ? (
+                  <div className="bg-gray-50 rounded-lg p-6 text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                    <p className="text-gray-600">Loading email templates...</p>
+                  </div>
+                ) : templatesError ? (
+                  <div className="bg-red-50 rounded-lg p-6 text-center">
+                    <AlertCircle className="w-6 h-6 text-red-600 mx-auto mb-2" />
+                    <p className="text-red-600 mb-2">Failed to load email templates</p>
+                    <p className="text-sm text-gray-600">Please check your connection and try again.</p>
+                  </div>
+                ) : availableTemplateTypes.length === 0 ? (
+                  <div className="bg-yellow-50 rounded-lg p-6 text-center">
+                    <Mail className="w-6 h-6 text-yellow-600 mx-auto mb-2" />
+                    <p className="text-yellow-600 mb-2">No interview email templates found</p>
+                    <p className="text-sm text-gray-600">Please create interview email templates in Email Management to send emails.</p>
+                  </div>
+                ) : (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Email Template</label>
-                      <select
-                        value={emailForm.type}
-                        onChange={(e) => {
-                          setEmailForm(prev => ({ ...prev, type: e.target.value }));
-                          populateEmailTemplate(emailTemplates[e.target.value as keyof typeof emailTemplates]);
-                        }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="interview_invitation">Interview Invitation</option>
-                        <option value="interview_reminder">Interview Reminder</option>
-                        <option value="interview_reschedule">Interview Reschedule</option>
-                        <option value="feedback_request">Feedback Request</option>
-                      </select>
+                      {isLoadingTemplates ? (
+                        <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50">
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                            <span className="text-gray-500">Loading templates...</span>
+                          </div>
+                        </div>
+                      ) : templatesError ? (
+                        <div className="w-full border border-red-300 rounded-lg px-3 py-2 bg-red-50">
+                          <span className="text-red-600 text-sm">Failed to load templates</span>
+                        </div>
+                      ) : availableTemplateTypes.length === 0 ? (
+                        <div className="w-full border border-yellow-300 rounded-lg px-3 py-2 bg-yellow-50">
+                          <span className="text-yellow-600 text-sm">No interview templates found</span>
+                        </div>
+                      ) : (
+                        <select
+                          value={emailForm.type}
+                          onChange={(e) => {
+                            setEmailForm(prev => ({ ...prev, type: e.target.value }));
+                            const selectedTemplate = emailTemplates[e.target.value];
+                            if (selectedTemplate) {
+                              populateEmailTemplate(selectedTemplate);
+                            }
+                          }}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        >
+                          {availableTemplateTypes.map(templateType => {
+                            const template = emailTemplates[templateType];
+                            return (
+                              <option key={templateType} value={templateType}>
+                                {template.name || templateType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Actions</label>
                       <button
-                        onClick={() => populateEmailTemplate(emailTemplates[emailForm.type as keyof typeof emailTemplates])}
-                        className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                        onClick={() => {
+                          const selectedTemplate = emailTemplates[emailForm.type];
+                          if (selectedTemplate) {
+                            populateEmailTemplate(selectedTemplate);
+                          }
+                        }}
+                        disabled={!emailTemplates[emailForm.type]}
+                        className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Reset Template
                       </button>
@@ -892,16 +965,56 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
 
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                    <textarea
-                      value={emailForm.body}
-                      onChange={(e) => setEmailForm(prev => ({ ...prev, body: e.target.value }))}
-                      rows={12}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
-                      placeholder="Email message..."
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Review and edit the email content. Template variables have been automatically populated with interview details.
-                    </p>
+                    <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+                      <style dangerouslySetInnerHTML={{
+                        __html: `
+                          .quill-editor .ql-editor {
+                            min-height: 250px;
+                            font-size: 14px;
+                            line-height: 1.5;
+                            padding: 12px;
+                          }
+                          .quill-editor .ql-toolbar {
+                            border-bottom: 1px solid #e5e7eb;
+                            background-color: #f9fafb;
+                          }
+                          .quill-editor .ql-container {
+                            border-top: none;
+                            font-family: inherit;
+                          }
+                        `
+                      }} />
+                      <ReactQuill
+                        value={emailForm.body}
+                        onChange={(value) => setEmailForm(prev => ({ ...prev, body: value }))}
+                        modules={{
+                          toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['link'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'align': [] }],
+                            ['clean']
+                          ]
+                        }}
+                        formats={[
+                          'header', 'bold', 'italic', 'underline', 'strike',
+                          'list', 'bullet', 'link', 'color', 'background', 'align'
+                        ]}
+                        theme="snow"
+                        className="quill-editor"
+                        placeholder="Email message..."
+                      />
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      <p>Review and edit the email content. Template variables have been automatically populated with interview details.</p>
+                      {emailTemplates[emailForm.type]?.variables && emailTemplates[emailForm.type].variables!.length > 0 && (
+                        <p className="mt-1">
+                          <strong>Available variables:</strong> {emailTemplates[emailForm.type].variables!.map(v => `{{${v}}}`).join(', ')}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <button
@@ -934,6 +1047,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                     </p>
                   )}
                 </div>
+                )}
               </div>
             </div>
           )}

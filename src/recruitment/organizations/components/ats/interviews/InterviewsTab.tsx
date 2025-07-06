@@ -19,6 +19,13 @@ interface InterviewsTabProps {
   selectedCandidateId?: string;
   pipelineId?: string; // Add pipeline ID for stage movement
   onDataChange?: () => Promise<void>;
+  hiringTeamMembers?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    memberType: 'internal' | 'external';
+  }>;
 }
 
 export const InterviewsTab: React.FC<InterviewsTabProps> = ({
@@ -27,7 +34,8 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   onNewInterview,
   selectedCandidateId,
   pipelineId,
-  onDataChange
+  onDataChange,
+  hiringTeamMembers = []
 }) => {
   const [interviewsView, setInterviewsView] = useState<'list' | 'calendar'>('list');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -381,6 +389,7 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
               jobId={jobId}
               onClose={() => setShowScheduleForm(false)}
               selectedCandidateId={selectedCandidateId}
+              hiringTeamMembers={hiringTeamMembers}
               onSuccess={() => {
                 setShowScheduleForm(false);
                 // No need to call refetch() - query invalidation handles this automatically

@@ -100,6 +100,7 @@ const JobATSPage: React.FC = () => {
       id: job.id, 
       title: job.title, 
       pipelineId: job.pipelineId,
+      hiringTeamId: job.hiringTeamId, // Check if hiringTeamId is available
       pipeline: job.pipeline ? { id: job.pipeline.id, name: job.pipeline.name, stagesCount: job.pipeline.stages?.length } : null 
     } : null,
     jobLoading,
@@ -149,6 +150,27 @@ const JobATSPage: React.FC = () => {
   // Team member hooks
   const { data: hiringTeam } = useHiringTeam(job?.hiringTeamId || '');
   const { data: teamMembersData = [] } = useTeamMembers(job?.hiringTeamId || '');
+  
+  // Debug hiring team data
+  console.log('Hiring Team Debug:', {
+    jobHiringTeamId: job?.hiringTeamId,
+    hiringTeam: hiringTeam ? { 
+      id: hiringTeam.id, 
+      name: hiringTeam.name, 
+      organizationId: hiringTeam.organizationId,
+      membersCount: hiringTeam.members?.length 
+    } : null,
+    teamMembersData: teamMembersData ? { 
+      count: teamMembersData.length, 
+      members: teamMembersData.map(m => ({ 
+        id: m.id, 
+        memberType: m.memberType, 
+        teamRole: m.teamRole,
+        userId: m.userId,
+        userInfo: m.user ? { id: m.user.id, name: `${m.user.firstName} ${m.user.lastName}` } : null
+      })) 
+    } : null
+  });
   
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -1049,15 +1071,24 @@ const JobATSPage: React.FC = () => {
 			  pipelineId={effectivePipeline?.id}
 			  onDataChange={invalidateAllQueries}
 			/>
-		  </div>
-
-		  <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
+		  </div>          <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
 			<InterviewsTab 
 			  jobId={jobId!}
 			  onInterviewClick={(interview) => {
 				// Handle interview click if needed
 			  }}
 			  pipelineId={effectivePipeline?.id}
+			  hiringTeamMembers={teamMembersData.map(member => ({
+			    id: member.id,
+			    name: member.memberType === 'internal' && member.user
+			      ? `${member.user.firstName} ${member.user.lastName}`
+			      : `${member.externalFirstName || ''} ${member.externalLastName || ''}`.trim(),
+			    email: member.memberType === 'internal' && member.user
+			      ? member.user.email
+			      : member.externalEmail || '',
+			    role: member.teamRole as string,
+			    memberType: member.memberType
+			  }))}
 			  onDataChange={invalidateAllQueries}
 			/>
 		  </div>

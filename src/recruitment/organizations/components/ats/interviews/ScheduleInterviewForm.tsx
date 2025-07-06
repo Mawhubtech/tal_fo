@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, MapPin, Video, Phone, Plus, Trash2 } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Video, Phone, Plus, Trash2, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import {
   InterviewType,
@@ -16,6 +16,13 @@ interface ScheduleInterviewFormProps {
   onClose: () => void;
   onSuccess: (interview: any) => void;
   selectedCandidateId?: string;
+  hiringTeamMembers?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    memberType: 'internal' | 'external';
+  }>;
 }
 
 const INTERVIEW_TYPES = [
@@ -68,6 +75,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
   onClose,
   onSuccess,
   selectedCandidateId,
+  hiringTeamMembers = [],
 }) => {
   const [formData, setFormData] = useState<Omit<CreateInterviewRequest, 'participants'> & { participants: ManualParticipant[] }>({
     jobApplicationId: '',
@@ -81,6 +89,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showHiringTeamDropdown, setShowHiringTeamDropdown] = useState(true);
 
   // Fetch job applications for this job
   const { data: jobApplicationsData, isLoading: loadingApplications } = useQuery({
@@ -132,6 +141,29 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
           name: '',
           email: '',
           role: ParticipantRole.INTERVIEWER,
+          isRequired: true,
+        },
+      ],
+    }));
+  };
+
+  const addHiringTeamMember = (member: typeof hiringTeamMembers[0]) => {
+    // Check if member is already added
+    const isAlreadyAdded = formData.participants.some(p => p.email === member.email);
+    if (isAlreadyAdded) {
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      participants: [
+        ...prev.participants,
+        {
+          name: member.name,
+          email: member.email,
+          role: member.role.includes('Recruiter') ? ParticipantRole.HR_REPRESENTATIVE : 
+                member.role.includes('Manager') ? ParticipantRole.HIRING_MANAGER : 
+                ParticipantRole.INTERVIEWER,
           isRequired: true,
         },
       ],
@@ -444,15 +476,59 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
               <label className="block text-sm font-medium text-gray-700">
                 Interviewers *
               </label>
-              <button
-                type="button"
-                onClick={addParticipant}
-                className="flex items-center text-sm text-purple-600 hover:text-purple-700"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Interviewer
-              </button>
+              <div className="flex items-center space-x-2">
+                {hiringTeamMembers.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowHiringTeamDropdown(!showHiringTeamDropdown)}
+                    className="flex items-center text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    <Users className="w-4 h-4 mr-1" />
+                    {showHiringTeamDropdown ? 'Hide' : 'Show'} Hiring Team
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={addParticipant}
+                  className="flex items-center text-sm text-purple-600 hover:text-purple-700"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Manually
+                </button>
+              </div>
             </div>
+
+            {/* Hiring Team Dropdown */}
+            {showHiringTeamDropdown && hiringTeamMembers.length > 0 && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Add from Hiring Team</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {hiringTeamMembers.map((member) => {
+                    const isAlreadyAdded = formData.participants.some(p => p.email === member.email);
+                    return (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => addHiringTeamMember(member)}
+                        disabled={isAlreadyAdded}
+                        className={`text-left p-2 border rounded-md transition-colors ${
+                          isAlreadyAdded
+                            ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
+                            : 'bg-white border-blue-300 hover:bg-blue-50 hover:border-blue-400'
+                        }`}
+                      >
+                        <div className="font-medium text-sm">{member.name}</div>
+                        <div className="text-xs text-gray-600">{member.role}</div>
+                        <div className="text-xs text-gray-500">{member.email}</div>
+                        {isAlreadyAdded && (
+                          <div className="text-xs text-green-600 mt-1">✓ Added</div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {formData.participants.map((participant, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3 p-3 border border-gray-200 rounded-md">
