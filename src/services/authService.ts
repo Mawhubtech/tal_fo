@@ -50,4 +50,20 @@ export const authService = {
       localStorage.removeItem('refreshToken');
     }
   },
+
+  async updateProfile(data: {
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+  }): Promise<User> {
+    const response = await api.patch<{ message: string; user: User }>('/users/me', data);
+    return response.data.user;
+  },
+
+  async changePassword(data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<void> {
+    await api.patch('/auth/change-password', data);
+  },
 };

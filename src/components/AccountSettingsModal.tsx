@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  X, Mail, Check, AlertCircle, Settings, User, Bell, 
-  Shield, ExternalLink, RefreshCw 
+  X, User, Bell, Shield, Save, Eye, EyeOff, Camera, Upload, Check 
 } from 'lucide-react';
-import { useEmailService } from '../hooks/useEmailService';
+import { useAuth, useUpdateProfile, useChangePassword } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
 
 interface AccountSettingsModalProps {
@@ -11,90 +10,121 @@ interface AccountSettingsModalProps {
   onClose: () => void;
 }
 
-type SettingsTab = 'profile' | 'email' | 'notifications' | 'security';
+type SettingsTab = 'profile' | 'notifications' | 'security';
 
 export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('email');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const { user } = useAuth();
   const { addToast } = useToast();
-  const {
-    emailSettings,
-    isLoadingSettings,
-    connectGmail,
-    isConnectingGmail,
-    disconnectGmail,
-    isDisconnectingGmail,
-    refetchSettings
-  } = useEmailService();
+  const updateProfileMutation = useUpdateProfile();
+  const changePasswordMutation = useChangePassword();
 
-  const handleConnectGmail = async () => {
+  // Profile form state
+  const [profileData, setProfileData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    avatar: user?.avatar || '',
+  });
+
+  // Password form state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
+  // Notification settings state
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    pushNotifications: true,
+    interviewReminders: true,
+    candidateUpdates: true,
+    systemUpdates: false,
+  });
+
+  // Update profile data when user changes
+  React.useEffect(() => {
+    if (user) {
+      setProfileData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        avatar: user.avatar || '',
+      });
+    }
+  }, [user]);
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const result = await connectGmail();
-      if (result.authUrl) {
-        // Open OAuth flow in new window
-        const oauthWindow = window.open(result.authUrl, 'gmail-oauth', 'width=500,height=600');
-        
-        // Listen for messages from the OAuth window
-        const handleMessage = (event: MessageEvent) => {
-          if (event.origin !== window.location.origin) return;
-          
-          if (event.data.type === 'GMAIL_OAUTH_SUCCESS') {
-            // OAuth successful, refetch settings
-            refetchSettings().then(() => {
-              addToast({ type: 'success', title: 'Gmail Connected', message: 'Your Gmail account has been connected successfully.' });
-            });
-            oauthWindow?.close();
-            window.removeEventListener('message', handleMessage);
-          } else if (event.data.type === 'GMAIL_OAUTH_ERROR') {
-            addToast({ type: 'error', title: 'Connection Failed', message: 'Failed to connect Gmail. Please try again.' });
-            oauthWindow?.close();
-            window.removeEventListener('message', handleMessage);
-          }
-        };
-        
-        window.addEventListener('message', handleMessage);
-        
-        // Fallback: Check if window is closed manually
-        const checkWindowClosed = setInterval(() => {
-          if (!oauthWindow || oauthWindow.closed) {
-            clearInterval(checkWindowClosed);
-            window.removeEventListener('message', handleMessage);
-            // Only refetch if we haven't received a message yet
-            setTimeout(() => {
-              refetchSettings().catch(() => {
-                // Silently ignore refetch errors
-              });
-            }, 1000);
-          }
-        }, 1000);
-        
-        // Cleanup after 5 minutes
-        setTimeout(() => {
-          clearInterval(checkWindowClosed);
-          window.removeEventListener('message', handleMessage);
-          if (oauthWindow && !oauthWindow.closed) {
-            oauthWindow.close();
-            addToast({ type: 'error', title: 'Timeout', message: 'Gmail connection timed out. Please try again.' });
-          }
-        }, 300000);
-      }
+      await updateProfileMutation.mutateAsync({
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        avatar: profileData.avatar,
+      });
     } catch (error) {
-      console.error('Failed to connect Gmail:', error);
-      addToast({ type: 'error', title: 'Connection Failed', message: 'Failed to connect Gmail. Please try again.' });
+      console.error('Profile update failed:', error);
     }
   };
 
-  const handleDisconnectGmail = async () => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      addToast({
+        type: 'error',
+        title: 'Password Mismatch',
+        message: 'New passwords do not match.',
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      addToast({
+        type: 'error',
+        title: 'Password Too Short',
+        message: 'Password must be at least 6 characters long.',
+      });
+      return;
+    }
+
     try {
-      await disconnectGmail();
-      // Refetch settings to update the UI
-      await refetchSettings();
-      addToast({ type: 'success', title: 'Gmail Disconnected', message: 'Your Gmail account has been disconnected.' });
+      await changePasswordMutation.mutateAsync({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
     } catch (error) {
-      console.error('Failed to disconnect Gmail:', error);
-      addToast({ type: 'error', title: 'Disconnection Failed', message: 'Failed to disconnect Gmail. Please try again.' });
+      console.error('Password change failed:', error);
+    }
+  };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // In a real implementation, you would upload the file to a server
+      // For now, we'll just create a local URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        setProfileData(prev => ({
+          ...prev,
+          avatar: reader.result as string
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -110,7 +140,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold">Account Settings</h2>
-              <p className="text-purple-100 mt-1">Manage your account preferences and integrations</p>
+              <p className="text-purple-100 mt-1">Manage your account preferences and personal information</p>
             </div>
             <button
               onClick={onClose}
@@ -128,7 +158,6 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               <div className="space-y-2">
                 {[
                   { id: 'profile', label: 'Profile', icon: User },
-                  { id: 'email', label: 'Email Integration', icon: Mail },
                   { id: 'notifications', label: 'Notifications', icon: Bell },
                   { id: 'security', label: 'Security', icon: Shield }
                 ].map(({ id, label, icon: Icon }) => (
@@ -151,138 +180,144 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
           {/* Content Area */}
           <div className="flex-1 p-6">
-            {activeTab === 'email' && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Integration</h3>
-                  <p className="text-gray-600 mb-6">
-                    Connect your Gmail account to send interview emails directly from the platform.
-                  </p>
-                </div>
-
-                {/* Gmail Integration Card */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-red-600" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">Gmail</h4>
-                        <p className="text-gray-600 text-sm">
-                          Send emails using your Gmail account
-                        </p>
-                        {emailSettings?.gmailEmail && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            Connected as: {emailSettings.gmailEmail}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      {isLoadingSettings ? (
-                        <RefreshCw className="w-4 h-4 animate-spin text-gray-400" />
-                      ) : emailSettings?.isGmailConnected ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="flex items-center space-x-1">
-                            <Check className="w-4 h-4 text-green-600" />
-                            <span className="text-sm text-green-600 font-medium">Connected</span>
-                          </div>
-                          <button
-                            onClick={handleDisconnectGmail}
-                            disabled={isDisconnectingGmail}
-                            className="px-3 py-1 text-sm text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                          >
-                            {isDisconnectingGmail ? 'Disconnecting...' : 'Disconnect'}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={handleConnectGmail}
-                          disabled={isConnectingGmail}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center disabled:opacity-50"
-                        >
-                          {isConnectingGmail ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                              Connecting...
-                            </>
-                          ) : (
-                            <>
-                              <ExternalLink className="w-4 h-4 mr-2" />
-                              Connect Gmail
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Permission Status */}
-                  {emailSettings?.isGmailConnected && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <h5 className="text-sm font-medium text-gray-900 mb-2">Permissions</h5>
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          {emailSettings.hasRequiredScopes ? (
-                            <Check className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <AlertCircle className="w-4 h-4 text-red-600" />
-                          )}
-                          <span className="text-sm text-gray-700">
-                            Send emails via Gmail
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {!emailSettings.hasRequiredScopes && (
-                        <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                          <p className="text-sm text-yellow-800">
-                            Additional permissions required. Please reconnect your Gmail account.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Features List */}
-                  <div className="mt-4">
-                    <h5 className="text-sm font-medium text-gray-900 mb-2">Features</h5>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Send interview invitations and reminders</li>
-                      <li>• Professional emails from your domain</li>
-                      <li>• High deliverability rates</li>
-                      <li>• Email tracking in your Gmail sent folder</li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Email Templates Info */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <Settings className="w-5 h-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-medium text-blue-900">Email Templates</h4>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Customize email templates for interview invitations, reminders, and feedback requests in the interview workflow.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activeTab === 'profile' && (
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Profile Settings</h3>
                   <p className="text-gray-600">Manage your profile information and preferences.</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                  <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Profile settings coming soon</p>
-                </div>
+
+                <form onSubmit={handleProfileUpdate} className="space-y-6">
+                  {/* Avatar Section */}
+                  <div className="flex items-center space-x-6">
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                        {profileData.avatar ? (
+                          <img 
+                            src={profileData.avatar} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-8 h-8 text-gray-400" />
+                        )}
+                      </div>
+                      <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-purple-600 rounded-full p-2 cursor-pointer hover:bg-purple-700 transition-colors">
+                        <Camera className="w-4 h-4 text-white" />
+                      </label>
+                      <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Profile Photo</h4>
+                      <p className="text-sm text-gray-500">Upload a new photo or choose from your existing photos.</p>
+                    </div>
+                  </div>
+
+                  {/* Personal Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                        First Name
+                      </label>
+                      <input
+                        type="text"
+                        id="firstName"
+                        value={profileData.firstName}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                        placeholder="Enter your first name"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                        Last Name
+                      </label>
+                      <input
+                        type="text"
+                        id="lastName"
+                        value={profileData.lastName}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                        placeholder="Enter your last name"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={profileData.email}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Email address cannot be changed.</p>
+                  </div>
+
+                  {/* Account Information */}
+                  <div className="border-t pt-6">
+                    <h4 className="text-md font-medium text-gray-900 mb-4">Account Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Account Status:</span>
+                        <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                          user?.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {user?.status || 'Active'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Email Verified:</span>
+                        <span className={`ml-2 ${user?.isEmailVerified ? 'text-green-600' : 'text-red-600'}`}>
+                          {user?.isEmailVerified ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Member Since:</span>
+                        <span className="ml-2 text-gray-900">
+                          {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Login Provider:</span>
+                        <span className="ml-2 text-gray-900 capitalize">
+                          {user?.provider || 'Email'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={updateProfileMutation.isPending}
+                      className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                    >
+                      {updateProfileMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
 
@@ -292,9 +327,120 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Notification Settings</h3>
                   <p className="text-gray-600">Control how and when you receive notifications.</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                  <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Notification settings coming soon</p>
+
+                <div className="bg-white border border-gray-200 rounded-lg divide-y">
+                  {/* Email Notifications */}
+                  <div className="p-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Email Notifications</h4>
+                    <div className="space-y-4">
+                      {[
+                        {
+                          id: 'emailNotifications',
+                          title: 'General Email Notifications',
+                          description: 'Receive email notifications for important updates',
+                          checked: notificationSettings.emailNotifications,
+                        },
+                        {
+                          id: 'interviewReminders',
+                          title: 'Interview Reminders',
+                          description: 'Get reminders about upcoming interviews',
+                          checked: notificationSettings.interviewReminders,
+                        },
+                        {
+                          id: 'candidateUpdates',
+                          title: 'Candidate Updates',
+                          description: 'Notifications when candidates complete assessments or update profiles',
+                          checked: notificationSettings.candidateUpdates,
+                        },
+                        {
+                          id: 'systemUpdates',
+                          title: 'System Updates',
+                          description: 'Important system announcements and feature updates',
+                          checked: notificationSettings.systemUpdates,
+                        },
+                      ].map((setting) => (
+                        <div key={setting.id} className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h5 className="text-sm font-medium text-gray-900">{setting.title}</h5>
+                            <p className="text-sm text-gray-500">{setting.description}</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={setting.checked}
+                              onChange={(e) => setNotificationSettings(prev => ({
+                                ...prev,
+                                [setting.id]: e.target.checked
+                              }))}
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Push Notifications */}
+                  <div className="p-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Push Notifications</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h5 className="text-sm font-medium text-gray-900">Browser Notifications</h5>
+                          <p className="text-sm text-gray-500">Receive push notifications in your browser</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={notificationSettings.pushNotifications}
+                            onChange={(e) => setNotificationSettings(prev => ({
+                              ...prev,
+                              pushNotifications: e.target.checked
+                            }))}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notification Frequency */}
+                  <div className="p-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Notification Frequency</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Digest Frequency
+                        </label>
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                          <option value="immediate">Immediate</option>
+                          <option value="daily">Daily Digest</option>
+                          <option value="weekly">Weekly Digest</option>
+                          <option value="never">Never</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                    onClick={() => {
+                      addToast({
+                        type: 'success',
+                        title: 'Settings Saved',
+                        message: 'Your notification preferences have been saved.',
+                      });
+                    }}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Preferences
+                  </button>
                 </div>
               </div>
             )}
@@ -305,9 +451,147 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Security Settings</h3>
                   <p className="text-gray-600">Manage your account security and authentication.</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                  <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Security settings coming soon</p>
+
+                {/* Change Password Section */}
+                {user?.provider === 'local' || !user?.provider ? (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Change Password</h4>
+                    <form onSubmit={handlePasswordChange} className="space-y-4">
+                      <div>
+                        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                          Current Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.current ? 'text' : 'password'}
+                            id="currentPassword"
+                            value={passwordData.currentPassword}
+                            onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="Enter your current password"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                          >
+                            {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                          New Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.new ? 'text' : 'password'}
+                            id="newPassword"
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="Enter a new password"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                          >
+                            {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                          Confirm New Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.confirm ? 'text' : 'password'}
+                            id="confirmPassword"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="Confirm your new password"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                          >
+                            {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="pt-4">
+                        <button
+                          type="submit"
+                          disabled={changePasswordMutation.isPending}
+                          className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                        >
+                          {changePasswordMutation.isPending ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                              Changing...
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="w-4 h-4 mr-2" />
+                              Change Password
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div className="flex items-start space-x-3">
+                      <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-medium text-blue-900">OAuth Account</h4>
+                        <p className="text-sm text-blue-700 mt-1">
+                          You signed in using {user?.provider}. Password changes are managed through your {user?.provider} account.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Security Information */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Security Information</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between py-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">Two-Factor Authentication</span>
+                        <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+                      </div>
+                      <div className="text-sm text-gray-500">Coming Soon</div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between py-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">Login Sessions</span>
+                        <p className="text-sm text-gray-500">View and manage your active sessions</p>
+                      </div>
+                      <div className="text-sm text-gray-500">Coming Soon</div>
+                    </div>
+
+                    <div className="flex items-center justify-between py-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">Account Recovery</span>
+                        <p className="text-sm text-gray-500">Set up account recovery options</p>
+                      </div>
+                      <div className="text-sm text-gray-500">Coming Soon</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

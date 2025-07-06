@@ -22,6 +22,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
     name: '',
     type: type,
     email: '',
+    fromName: '',
     isDefault: false,
     settings: {}
   });
@@ -58,6 +59,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
         name: provider.name,
         type: provider.type,
         email: provider.fromEmail || provider.email || '', // Use fromEmail if available
+        fromName: provider.fromName || '',
         isDefault: provider.isDefault,
         settings: settings
       });
@@ -70,6 +72,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
         name: defaultName,
         type: type,
         email: '',
+        fromName: '',
         isDefault: false,
         settings: type === 'smtp' ? {
           smtpHost: '',
@@ -109,8 +112,16 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
             secure: formData.settings.smtpSecure
           },
           fromEmail: formData.email, // Ensure fromEmail is set
+          fromName: formData.fromName, // Ensure fromName is set
           // Remove settings as we're using config now
           settings: undefined
+        };
+      } else {
+        // For OAuth providers (Gmail, Outlook), ensure fromEmail and fromName are set
+        submitData = {
+          ...formData,
+          fromEmail: formData.email, // Ensure fromEmail is set
+          fromName: formData.fromName, // Ensure fromName is set
         };
       }
       
@@ -228,6 +239,8 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
         name: formData.name || `${type.charAt(0).toUpperCase() + type.slice(1)} Account`,
         type: type,
         email: email || formData.email, // Use email from OAuth response if available
+        fromEmail: email || formData.email, // Ensure fromEmail is set
+        fromName: formData.fromName, // Include fromName
         isDefault: formData.isDefault,
         config: {} // Empty config for Gmail - backend will populate from user's OAuth tokens
       };
@@ -304,6 +317,23 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
               />
             </div>
 
+            {/* From Name (Display Name) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                From Name (Display Name)
+              </label>
+              <input
+                type="text"
+                value={formData.fromName || ''}
+                onChange={(e) => setFormData({ ...formData, fromName: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                placeholder="e.g., John Smith, TAL Recruiting Team"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                This name will appear as the sender in emails. If left empty, the email address will be used.
+              </p>
+            </div>
+
             {/* OAuth Provider Info */}
             {(type === 'gmail' || type === 'outlook') && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -319,7 +349,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                     </h3>
                     <div className="mt-2 text-sm text-blue-700">
                       <p>
-                        You'll be redirected to {type === 'gmail' ? 'Google' : 'Microsoft'} to authorize access to your email account.
+                        Please fill in the Provider Name and Email Address above, then you'll be redirected to {type === 'gmail' ? 'Google' : 'Microsoft'} to authorize access to your email account.
                         This is secure and allows us to send emails on your behalf.
                       </p>
                     </div>
@@ -486,7 +516,13 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={isConnecting || createMutation.isPending || updateMutation.isPending}
+                  disabled={
+                    isConnecting || 
+                    createMutation.isPending || 
+                    updateMutation.isPending ||
+                    !formData.name.trim() ||
+                    !formData.email.trim()
+                  }
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
                 >
                   {(isConnecting || createMutation.isPending || updateMutation.isPending) ? (

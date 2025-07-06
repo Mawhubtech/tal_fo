@@ -241,26 +241,42 @@ const EmailManagementPage: React.FC = () => {
       return;
     }
 
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+        <h2 style="color: #6366f1;">Test Email Successful!</h2>
+        <p>This is a test email sent from the TAL platform to verify your email provider configuration.</p>
+        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin: 0 0 10px 0; color: #374151;">Provider Details:</h3>
+          <p style="margin: 5px 0;"><strong>Name:</strong> ${testEmailProvider.name}</p>
+          <p style="margin: 5px 0;"><strong>Type:</strong> ${testEmailProvider.type}</p>
+          <p style="margin: 5px 0;"><strong>From Email:</strong> ${testEmailProvider.fromEmail || 'Not configured'}</p>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;">
+          If you received this email, your email provider is working correctly.
+        </p>
+      </div>
+    `;
+
+    const plainTextContent = `
+Test Email Successful!
+
+This is a test email sent from the TAL platform to verify your email provider configuration.
+
+Provider Details:
+- Name: ${testEmailProvider.name}
+- Type: ${testEmailProvider.type}
+- From Email: ${testEmailProvider.fromEmail || 'Not configured'}
+
+If you received this email, your email provider is working correctly.
+    `.trim();
+
     try {
       await sendEmailMutation.mutateAsync({
         providerId: testEmailProvider.id,
         to: [testEmailAddress],
         subject: 'Test Email from TAL Platform',
-        content: `
-          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
-            <h2 style="color: #6366f1;">Test Email Successful!</h2>
-            <p>This is a test email sent from the TAL platform to verify your email provider configuration.</p>
-            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin: 0 0 10px 0; color: #374151;">Provider Details:</h3>
-              <p style="margin: 5px 0;"><strong>Name:</strong> ${testEmailProvider.name}</p>
-              <p style="margin: 5px 0;"><strong>Type:</strong> ${testEmailProvider.type}</p>
-              <p style="margin: 5px 0;"><strong>From Email:</strong> ${testEmailProvider.fromEmail || 'Not configured'}</p>
-            </div>
-            <p style="color: #6b7280; font-size: 14px;">
-              If you received this email, your email provider is working correctly.
-            </p>
-          </div>
-        `
+        content: htmlContent, // This will be used for htmlBody
+        plainText: plainTextContent, // This will be used for body
       });
       
       addToast({ 

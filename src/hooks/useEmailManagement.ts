@@ -163,6 +163,7 @@ export interface SendEmailData {
   bcc?: string[];
   subject: string;
   content: string;
+  plainText?: string;
   variables?: Record<string, string>;
 }
 
@@ -327,8 +328,8 @@ export const emailSendingApi = {
       providerId: data.providerId,
       to: data.to,
       subject: data.subject,
-      body: data.content, // Map content to body
-      htmlBody: data.content, // Use same content for HTML body
+      body: data.plainText || data.content, // Use plainText if available, otherwise content as fallback
+      htmlBody: data.content, // Use content for HTML body
       replyTo: undefined, // Can be added later if needed
     };
     const response = await apiClient.post('/email-management/send-email', requestData);

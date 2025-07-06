@@ -114,3 +114,52 @@ export const useAuth = () => {
     error,
   };
 };
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: { firstName?: string; lastName?: string; avatar?: string }) => 
+      authService.updateProfile(data),
+    onSuccess: (user) => {
+      queryClient.setQueryData(['user'], user);
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      addToast({
+        type: 'success',
+        title: 'Profile Updated',
+        message: 'Your profile has been updated successfully.',
+      });
+    },
+    onError: () => {
+      addToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: 'Failed to update profile. Please try again.',
+      });
+    },
+  });
+};
+
+export const useChangePassword = () => {
+  const { addToast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: { currentPassword: string; newPassword: string }) => 
+      authService.changePassword(data),
+    onSuccess: () => {
+      addToast({
+        type: 'success',
+        title: 'Password Changed',
+        message: 'Your password has been changed successfully.',
+      });
+    },
+    onError: () => {
+      addToast({
+        type: 'error',
+        title: 'Password Change Failed',
+        message: 'Failed to change password. Please check your current password and try again.',
+      });
+    },
+  });
+};
