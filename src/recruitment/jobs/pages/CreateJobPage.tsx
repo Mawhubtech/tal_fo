@@ -147,13 +147,13 @@ const CreateJobPage: React.FC = () => {
       setSalaryMax(editingJob.salaryMax ? editingJob.salaryMax.toString() : '');
       setCurrency(editingJob.currency || 'USD');
       setRemote(editingJob.remote || false);
-      setSkills(editingJob.skills || []);
-      setBenefits(editingJob.benefits || []);
+      setSkills(Array.isArray(editingJob.skills) ? editingJob.skills : editingJob.skills ? [editingJob.skills] : []);
+      setBenefits(Array.isArray(editingJob.benefits) ? editingJob.benefits : editingJob.benefits ? [editingJob.benefits] : []);
       setApplicationDeadline(editingJob.applicationDeadline ? 
         (typeof editingJob.applicationDeadline === 'string' ? editingJob.applicationDeadline : editingJob.applicationDeadline.toISOString().split('T')[0]) 
         : '');
-      setRequirements(editingJob.requirements || ['']);
-      setResponsibilities(editingJob.responsibilities || ['']);
+      setRequirements(Array.isArray(editingJob.requirements) ? editingJob.requirements : editingJob.requirements ? [editingJob.requirements] : ['']);
+      setResponsibilities(Array.isArray(editingJob.responsibilities) ? editingJob.responsibilities : editingJob.responsibilities ? [editingJob.responsibilities] : ['']);
       setDepartmentIdForm(editingJob.departmentId || departmentId || '');
       setSelectedPipelineId(editingJob.pipelineId || '');
       setSelectedHiringTeamId(editingJob.hiringTeamId || '');

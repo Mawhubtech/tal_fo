@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
@@ -16,12 +16,15 @@ import {
   Trash2,
   Eye
 } from 'lucide-react';
-import { useJobs, useDeleteJob } from '../../../hooks/useJobs';
+import { useJobs, useDeleteJob, useJobsByOrganization } from '../../../hooks/useJobs';
+import { useAuthContext } from '../../../contexts/AuthContext';
+import { useMyAssignment } from '../../../hooks/useUserAssignment';
 import type { JobFilters } from '../../../services/jobApiService';
 import type { Job } from '../../data/types';
 
 const AllJobsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<JobFilters>({
     page: 1,
@@ -34,22 +37,119 @@ const AllJobsPage: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
 
-  // Use hooks for data fetching
+  // Internal recruiter state management
+  const [isInternalRecruiter, setIsInternalRecruiter] = useState(false);
+  const [defaultOrganizationId, setDefaultOrganizationId] = useState<string | null>(null);
+  const [defaultDepartmentId, setDefaultDepartmentId] = useState<string | null>(null);
+
+  // Get user's organization assignment for internal recruiters
+  const { data: userAssignment, isLoading: assignmentLoading, error: assignmentError } = useMyAssignment();
+
+  // Check if user is internal recruiter based on role or organization assignment
+  useEffect(() => {
+    if (!user) return;
+    
+    // Wait for assignment loading to complete before making decisions
+    if (assignmentLoading) return;
+
+    // Get user roles
+    const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
+    
+    // Check for admin roles first (they take precedence)
+    const hasAdminRole = userRoles.some(role => 
+      role === 'admin' || role === 'super-admin'
+    );
+    
+    if (hasAdminRole) {
+      // Admins see all jobs, no assignment needed
+      setIsInternalRecruiter(false);
+      setDefaultOrganizationId(null);
+      setDefaultDepartmentId(null);
+      return;
+    }
+    
+    // Check for roles that need organization assignment
+    const hasAssignmentRole = userRoles.some(role => 
+      role === 'internal-recruiter' || 
+      role === 'internal-hr' || 
+      role === 'user'
+    );
+    
+    if (hasAssignmentRole) {
+      setIsInternalRecruiter(true);
+      
+      // Get the organization ID from user's assignment
+      const assignedOrgId = userAssignment?.organizationId || userAssignment?.clientId;
+      const assignedDeptId = userAssignment?.departmentId;
+      
+      setDefaultOrganizationId(assignedOrgId || null);
+      setDefaultDepartmentId(assignedDeptId || null);
+    } else {
+      // Other roles see all jobs
+      setIsInternalRecruiter(false);
+      setDefaultOrganizationId(null);
+      setDefaultDepartmentId(null);
+    }
+  }, [user, userAssignment, assignmentLoading]);
+
+  // Use appropriate hook based on user type
+  // For internal recruiters, check if they have an assignment
+  const shouldFetchJobs = !isInternalRecruiter || (isInternalRecruiter && !!defaultOrganizationId);
+  
+  // Determine which hooks should be enabled
+  const enableAllJobs = shouldFetchJobs && !isInternalRecruiter;
+  const enableOrgJobs = shouldFetchJobs && isInternalRecruiter && !!defaultOrganizationId;
+  
+  // Always call hooks, but with conditional parameters
   const { 
-    data: jobsResponse,
-    isLoading: loading,
-    error: queryError,
-    refetch: loadJobs
-  } = useJobs(filters);
+    data: allJobsResponse,
+    isLoading: allJobsLoading,
+    error: allJobsError,
+    refetch: refetchAllJobs
+  } = useJobs(filters, { enabled: enableAllJobs });
+
+  const { 
+    data: orgJobsResponse,
+    isLoading: orgJobsLoading,
+    error: orgJobsError,
+    refetch: refetchOrgJobs
+  } = useJobsByOrganization(
+    defaultOrganizationId || '', 
+    filters,
+    { enabled: enableOrgJobs }
+  );
+
+  // Determine which data to use
+  const jobsResponse = isInternalRecruiter && defaultOrganizationId ? orgJobsResponse : allJobsResponse;
+  const loading = isInternalRecruiter && defaultOrganizationId ? orgJobsLoading : allJobsLoading;
+  const queryError = isInternalRecruiter && defaultOrganizationId ? orgJobsError : allJobsError;
+  const loadJobs = isInternalRecruiter && defaultOrganizationId ? refetchOrgJobs : refetchAllJobs;
 
   const deleteJobMutation = useDeleteJob();
 
   // Extract data from response or use defaults
-  const jobs = jobsResponse?.data || [];
+  const jobs = !shouldFetchJobs 
+    ? [] // Internal recruiter with no assignment - show no jobs
+    : (isInternalRecruiter && defaultOrganizationId
+        ? (jobsResponse as { jobs: Job[]; total: number })?.jobs || []
+        : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.data || []);
+    
   const pagination = {
-    total: jobsResponse?.total || 0,
-    page: jobsResponse?.page || 1,
-    limit: jobsResponse?.limit || 10
+    total: !shouldFetchJobs 
+      ? 0 // Internal recruiter with no assignment - show 0 total
+      : (isInternalRecruiter && defaultOrganizationId
+          ? (jobsResponse as { jobs: Job[]; total: number })?.total || 0
+          : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.total || 0),
+    page: !shouldFetchJobs 
+      ? 1
+      : (isInternalRecruiter && defaultOrganizationId
+          ? filters.page || 1
+          : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.page || 1),
+    limit: !shouldFetchJobs 
+      ? 10
+      : (isInternalRecruiter && defaultOrganizationId
+          ? filters.limit || 10
+          : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.limit || 10)
   };
   
   // Convert error to string format
@@ -80,8 +180,44 @@ const AllJobsPage: React.FC = () => {
 
   // Handler functions for CRUD operations
   const handleEditJob = (job: Job) => {
-    // Navigate to create job page with edit mode
-    navigate(`/recruitment/jobs/create?edit=${job.id}`);
+    if (isInternalRecruiter && defaultOrganizationId && defaultDepartmentId) {
+      // For internal recruiters, use their default organization and department
+      navigate(`/dashboard/organizations/${defaultOrganizationId}/departments/${defaultDepartmentId}/create-job?edit=${job.id}`);
+    } else {
+      // For external recruiters, use the job's organization and department
+      const organizationId = job.organizationId || 'default-org';
+      const departmentId = job.departmentId || 'default-dept';
+      navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/create-job?edit=${job.id}`);
+    }
+  };
+
+  const handleCreateJob = () => {
+    // Prevent internal recruiters with no assignment from creating jobs
+    if (isInternalRecruiter && !defaultOrganizationId) {
+      return;
+    }
+    
+    if (isInternalRecruiter && defaultOrganizationId) {
+      // For internal recruiters, go directly to job creation within their assigned organization
+      // Since they work across all departments, we can let them choose the department during creation
+      navigate(`/dashboard/organizations/${defaultOrganizationId}/create-job`);
+    } else {
+      // For external recruiters, navigate to organizations page to choose client
+      navigate('/dashboard/organizations');
+    }
+  };
+
+  const handleJobClick = (job: Job) => {
+    if (isInternalRecruiter && defaultOrganizationId) {
+      // For internal recruiters, use their organization and the job's department
+      const departmentId = job.departmentId || defaultDepartmentId || 'default-dept';
+      navigate(`/dashboard/organizations/${defaultOrganizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
+    } else {
+      // For external recruiters, use the job's organization and department
+      const organizationId = job.organizationId || 'default-org';
+      const departmentId = job.departmentId || 'default-dept';
+      navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
+    }
   };
 
   const handleDeleteJob = (job: Job) => {
@@ -109,10 +245,11 @@ const AllJobsPage: React.FC = () => {
 
   const getStatusColor = (status: Job['status']) => {
     switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800';
+      case 'Published': return 'bg-green-100 text-green-800';
       case 'Draft': return 'bg-gray-100 text-gray-800';
       case 'Paused': return 'bg-yellow-100 text-yellow-800';
       case 'Closed': return 'bg-red-100 text-red-800';
+      case 'Archived': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -168,7 +305,7 @@ const AllJobsPage: React.FC = () => {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => loadJobs()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
           >
             Try Again
           </button>
@@ -183,16 +320,39 @@ const AllJobsPage: React.FC = () => {
       <div className="bg-white border-2 border-purple-500 rounded-lg p-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">All Jobs</h1>
-            <p className="text-gray-600">Manage all job openings across your organization</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {(() => {
+                const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
+                const hasAdminRole = userRoles.some(role => role === 'admin' || role === 'super-admin');
+                
+                if (hasAdminRole) return 'All Jobs';
+                if (isInternalRecruiter) return 'My Jobs';
+                return 'All Jobs';
+              })()}
+            </h1>
+            <p className="text-gray-600">
+              {(() => {
+                const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
+                const hasAdminRole = userRoles.some(role => role === 'admin' || role === 'super-admin');
+                
+                if (hasAdminRole) return 'Manage all job openings across the platform (Admin)';
+                if (isInternalRecruiter) return 'Manage job openings for your assigned organization';
+                return 'Manage all job openings across your clients';
+              })()}
+            </p>
           </div>
-          <Link
-            to="/recruitment/jobs/create"
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2 border border-purple-600"
+          <button
+            onClick={handleCreateJob}
+            disabled={isInternalRecruiter && !defaultOrganizationId}
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 border ${
+              isInternalRecruiter && !defaultOrganizationId 
+                ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed' 
+                : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
+            }`}
           >
             <Plus className="h-4 w-4" />
             <span>Create Job</span>
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -209,7 +369,7 @@ const AllJobsPage: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full"
               />
             </div>
           </div>
@@ -219,19 +379,20 @@ const AllJobsPage: React.FC = () => {
             <select
               value={filters.status || ''}
               onChange={(e) => handleFilterChange({ status: e.target.value as any || undefined })}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
             >
               <option value="">All Status</option>
-              <option value="Active">Active</option>
+              <option value="Published">Published</option>
               <option value="Draft">Draft</option>
               <option value="Paused">Paused</option>
               <option value="Closed">Closed</option>
+              <option value="Archived">Archived</option>
             </select>
 
             <select
               value={filters.type || ''}
               onChange={(e) => handleFilterChange({ type: e.target.value as any || undefined })}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
             >
               <option value="">All Types</option>
               <option value="Full-time">Full-time</option>
@@ -243,7 +404,7 @@ const AllJobsPage: React.FC = () => {
             <select
               value={filters.urgency || ''}
               onChange={(e) => handleFilterChange({ urgency: e.target.value as any || undefined })}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500"
             >
               <option value="">All Urgency</option>
               <option value="High">High</option>
@@ -253,7 +414,7 @@ const AllJobsPage: React.FC = () => {
 
             <button
               onClick={handleSearch}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2"
             >
               <Filter className="h-4 w-4" />
               <span>Apply</span>
@@ -273,15 +434,28 @@ const AllJobsPage: React.FC = () => {
         {jobs.length === 0 ? (
           <div className="p-12 text-center">
             <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
-            <p className="text-gray-600 mb-4">Try adjusting your search criteria or create a new job.</p>
-            <Link
-              to="/recruitment/jobs/create"
-              className="inline-flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create Job</span>
-            </Link>
+            {isInternalRecruiter && !defaultOrganizationId ? (
+              // Internal recruiter with no assignment
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Organization Assignment</h3>
+                <p className="text-gray-600 mb-4">
+                  You haven't been assigned to an organization yet. Please contact your administrator to get assigned to an organization before you can view and manage jobs.
+                </p>
+              </>
+            ) : (
+              // Normal empty state
+              <>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs found</h3>
+                <p className="text-gray-600 mb-4">Try adjusting your search criteria or create a new job.</p>
+                <button
+                  onClick={handleCreateJob}
+                  className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create Job</span>
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
@@ -290,10 +464,13 @@ const AllJobsPage: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer">
-                        <Link to={`/recruitment/jobs/${job.id}`}>
+                      <h3 className="text-lg font-semibold text-gray-900 hover:text-purple-600 cursor-pointer">
+                        <button 
+                          onClick={() => handleJobClick(job)}
+                          className="text-left hover:underline"
+                        >
                           {job.title}
-                        </Link>
+                        </button>
                       </h3>
                       <div className="flex items-center space-x-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
@@ -335,18 +512,22 @@ const AllJobsPage: React.FC = () => {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col items-end">
+                  <div className="flex flex-col space-y-2">
                     <button
                       onClick={() => handleEditJob(job)}
-                      className="text-gray-500 hover:text-gray-700 mb-2"
+                      className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 px-3 py-2 rounded-lg transition-colors"
+                      title="Edit Job"
                     >
-                      <Edit3 className="h-5 w-5" />
+                      <Edit3 className="h-4 w-4" />
+                      <span className="text-sm font-medium">Edit</span>
                     </button>
                     <button
                       onClick={() => handleDeleteJob(job)}
-                      className="text-red-500 hover:text-red-700"
+                      className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                      title="Delete Job"
                     >
-                      <Trash2 className="h-5 w-5" />
+                      <Trash2 className="h-4 w-4" />
+                      <span className="text-sm font-medium">Delete</span>
                     </button>
                   </div>
                 </div>
@@ -380,7 +561,7 @@ const AllJobsPage: React.FC = () => {
                       onClick={() => handlePageChange(pageNum)}
                       className={`px-3 py-2 rounded-lg ${
                         pagination.page === pageNum
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-purple-600 text-white'
                           : 'border border-gray-300 hover:bg-gray-50'
                       }`}
                     >

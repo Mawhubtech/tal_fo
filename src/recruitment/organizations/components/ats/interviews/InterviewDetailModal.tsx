@@ -73,7 +73,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     } else if (emailTemplatesData && emailTemplatesData.templates && Array.isArray(emailTemplatesData.templates)) {
       templatesArray = emailTemplatesData.templates;
     } else if (!emailTemplatesData || isLoadingTemplates) {
-      console.log('Email templates not loaded yet:', { emailTemplatesData, isLoadingTemplates, templatesError });
+    //   console.log('Email templates not loaded yet:', { emailTemplatesData, isLoadingTemplates, templatesError });
       return {};
     } else {
       console.log('Unexpected template data structure:', emailTemplatesData);

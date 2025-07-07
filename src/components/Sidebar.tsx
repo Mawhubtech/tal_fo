@@ -158,6 +158,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               <Briefcase className="w-4 h-4" />
             </div>
             {isExpanded && "Jobs"}
+          </Link>
+
+          {/* My Jobs Section */}
+          <Link 
+            to="/dashboard/my-jobs" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/my-jobs') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+            title={!isExpanded ? "My Jobs" : ""}
+          >
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/my-jobs') ? '#7e22ce' : '#9ca3af' }}>
+              <Briefcase className="w-4 h-4" />
+            </div>
+            {isExpanded && "My Jobs"}
           </Link>          {/* Candidates Section */}
           <Link 
             to="/dashboard/candidates" 

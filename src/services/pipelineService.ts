@@ -60,7 +60,7 @@ export interface CreatePipelineDto {
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('accessToken'); // Changed from 'token' to 'accessToken'
-  console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
+//   console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),

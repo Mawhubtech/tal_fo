@@ -99,13 +99,13 @@ export const useAuth = () => {
   const isAuthenticated = hasToken && !!user;
 
   // Debug logging
-  console.log('Auth state:', {
-    hasToken,
-    user: !!user,
-    isAuthenticated,
-    isLoading,
-    error: !!error
-  });
+//   console.log('Auth state:', {
+//     hasToken,
+//     user: !!user,
+//     isAuthenticated,
+//     isLoading,
+//     error: !!error
+//   });
 
   return {
     user,

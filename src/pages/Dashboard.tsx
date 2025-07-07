@@ -18,6 +18,7 @@ import {
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
 // Job Pages - Only keep CreateJobPage for the new flow
 import CreateJobPage from '../recruitment/jobs/pages/CreateJobPage'; // Import CreateJobPage
+import AllJobsPage from '../recruitment/jobs/pages/AllJobsPage'; // Import AllJobsPage
 
 // Organization Pages (New Hierarchical Flow)
 import OrganizationsPage from '../recruitment/organizations/pages/OrganizationsPage';
@@ -117,6 +118,9 @@ const Dashboard: React.FC = () => {
             <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
             <Route path="contacts" element={<UnifiedContactsPage />} /> {/* Route for Unified Contact Management */}            {/* Jobs redirect to organizations - hierarchical approach */}
             <Route path="jobs" element={<Navigate to="/dashboard/organizations" replace />} />
+            
+            {/* My Jobs - Show AllJobsPage */}
+            <Route path="my-jobs" element={<AllJobsPage />} />
             
             {/* Candidates and Clients standalone routes */}
             <Route path="candidates" element={<CandidatesPage />} />

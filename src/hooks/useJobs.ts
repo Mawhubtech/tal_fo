@@ -15,11 +15,12 @@ export const jobKeys = {
 };
 
 // Get all jobs with filters
-export function useJobs(filters: JobFilters = {}) {
+export function useJobs(filters: JobFilters = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: jobKeys.list(filters),
     queryFn: () => jobApiService.getAllJobs(filters),
     staleTime: 1000 * 60 * 3, // 3 minutes
+    enabled: options.enabled ?? true, // Default to true if not specified
   });
 }
 
@@ -43,11 +44,11 @@ export function useJobStats(organizationId?: string) {
 }
 
 // Get jobs by organization
-export function useJobsByOrganization(organizationId: string, filters: JobFilters = {}) {
+export function useJobsByOrganization(organizationId: string, filters: JobFilters = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: [...jobKeys.byOrganization(organizationId), filters],
     queryFn: () => jobApiService.getJobsByOrganization(organizationId, filters),
-    enabled: !!organizationId,
+    enabled: (options.enabled ?? true) && !!organizationId, // Must have both: enabled option and valid org ID
     staleTime: 1000 * 60 * 3, // 3 minutes
   });
 }

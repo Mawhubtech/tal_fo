@@ -93,26 +93,26 @@ const JobATSPage: React.FC = () => {
   const effectivePipeline = job?.pipeline || (job?.pipelineId ? jobPipeline : defaultPipeline);
 
   // Debug logging
-  console.log('JobATSPage Debug:', {
-    isExternal,
-    jobId,
-    job: job ? { 
-      id: job.id, 
-      title: job.title, 
-      pipelineId: job.pipelineId,
-      hiringTeamId: job.hiringTeamId, // Check if hiringTeamId is available
-      pipeline: job.pipeline ? { id: job.pipeline.id, name: job.pipeline.name, stagesCount: job.pipeline.stages?.length } : null 
-    } : null,
-    jobLoading,
-    jobError,
-    effectivePipeline: effectivePipeline ? { 
-      id: effectivePipeline.id, 
-      name: effectivePipeline.name, 
-      stagesCount: effectivePipeline.stages?.length 
-    } : null,
-    pipelineLoading,
-    defaultPipelineLoading
-  });
+//   console.log('JobATSPage Debug:', {
+//     isExternal,
+//     jobId,
+//     job: job ? { 
+//       id: job.id, 
+//       title: job.title, 
+//       pipelineId: job.pipelineId,
+//       hiringTeamId: job.hiringTeamId, // Check if hiringTeamId is available
+//       pipeline: job.pipeline ? { id: job.pipeline.id, name: job.pipeline.name, stagesCount: job.pipeline.stages?.length } : null 
+//     } : null,
+//     jobLoading,
+//     jobError,
+//     effectivePipeline: effectivePipeline ? { 
+//       id: effectivePipeline.id, 
+//       name: effectivePipeline.name, 
+//       stagesCount: effectivePipeline.stages?.length 
+//     } : null,
+//     pipelineLoading,
+//     defaultPipelineLoading
+//   });
   
   const { 
     data: jobApplicationsData, 
@@ -152,25 +152,25 @@ const JobATSPage: React.FC = () => {
   const { data: teamMembersData = [] } = useTeamMembers(job?.hiringTeamId || '');
   
   // Debug hiring team data
-  console.log('Hiring Team Debug:', {
-    jobHiringTeamId: job?.hiringTeamId,
-    hiringTeam: hiringTeam ? { 
-      id: hiringTeam.id, 
-      name: hiringTeam.name, 
-      organizationId: hiringTeam.organizationId,
-      membersCount: hiringTeam.members?.length 
-    } : null,
-    teamMembersData: teamMembersData ? { 
-      count: teamMembersData.length, 
-      members: teamMembersData.map(m => ({ 
-        id: m.id, 
-        memberType: m.memberType, 
-        teamRole: m.teamRole,
-        userId: m.userId,
-        userInfo: m.user ? { id: m.user.id, name: `${m.user.firstName} ${m.user.lastName}` } : null
-      })) 
-    } : null
-  });
+//   console.log('Hiring Team Debug:', {
+//     jobHiringTeamId: job?.hiringTeamId,
+//     hiringTeam: hiringTeam ? { 
+//       id: hiringTeam.id, 
+//       name: hiringTeam.name, 
+//       organizationId: hiringTeam.organizationId,
+//       membersCount: hiringTeam.members?.length 
+//     } : null,
+//     teamMembersData: teamMembersData ? { 
+//       count: teamMembersData.length, 
+//       members: teamMembersData.map(m => ({ 
+//         id: m.id, 
+//         memberType: m.memberType, 
+//         teamRole: m.teamRole,
+//         userId: m.userId,
+//         userInfo: m.user ? { id: m.user.id, name: `${m.user.firstName} ${m.user.lastName}` } : null
+//       })) 
+//     } : null
+//   });
   
   // Confirmation dialog state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -246,13 +246,13 @@ const JobATSPage: React.FC = () => {
         : member.userId || member.id;
 
       // Debug logging for team member ID mapping
-      console.log(`Team member mapping: ${fullName}`, {
-        memberType: member.memberType,
-        memberId,
-        memberRecordId: member.id,
-        userId: member.userId,
-        userIdFromUser: member.user?.id
-      });
+    //   console.log(`Team member mapping: ${fullName}`, {
+    //     memberType: member.memberType,
+    //     memberId,
+    //     memberRecordId: member.id,
+    //     userId: member.userId,
+    //     userIdFromUser: member.user?.id
+    //   });
 
       return {
         id: memberId,
