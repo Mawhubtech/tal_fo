@@ -29,6 +29,14 @@ export const useCandidates = (params: CandidateQueryParams) => {
             Math.max(...candidate.experience.map((exp: any) => exp.years || 0)) : 0,
           lastActivityDate: candidate.lastActivity || null,
           rating: candidate.rating ? parseFloat(candidate.rating) : 0,
+          // Transform languages array
+          languages: candidate.languages || [],
+          // Transform references array  
+          references: candidate.references || [],
+          // Transform custom fields array
+          customFields: candidate.customFields || [],
+          // Transform interests array (already included but ensuring consistency)
+          interests: candidate.interests || [],
         }));
         
         return {

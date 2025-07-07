@@ -73,17 +73,75 @@ export interface Language {
   certificationDate?: string;
 }
 
+export interface Reference {
+  name: string;
+  position: string;
+  company: string;
+  email: string;
+  phone?: string;
+  referenceType?: string;
+  status?: string;
+  relationship?: string;
+  yearsKnown?: number;
+  notes?: string;
+  feedback?: string;
+}
+
+export interface Skill {
+  id: number;
+  name: string;
+  category?: string;
+  level?: string;
+  description?: string;
+  yearsOfExperience?: number;
+  achievements?: string[];
+  relatedSkills?: string[];
+  isActive?: boolean;
+  isProfessionallyRelevant?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  candidateId?: number;
+}
+
+export interface Interest {
+  id: string;
+  name: string;
+  category?: string;
+  level?: string;
+  description?: string | null;
+  yearsOfExperience?: number | null;
+  achievements?: string[];
+  relatedSkills?: string[];
+  isActive?: boolean;
+  isProfessionallyRelevant?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  candidateId?: string;
+}
+
+export interface CustomField {
+  fieldName: string;
+  fieldKey: string;
+  fieldType: string;
+  fieldValue: string | null;
+  fieldDescription?: string;
+  isActive?: boolean;
+  isRequired?: boolean;
+}
+
 export interface UserStructuredData {
   personalInfo: PersonalInfo;
   summary?: string;
   experience?: Experience[];
   education?: Education[];
-  skills?: string[];
+  skills?: (string | Skill)[];
   projects?: Project[];
   certifications?: Certification[];
   awards?: Award[];
-  interests?: string[];
+  interests?: (string | Interest)[];
   languages?: Language[];
+  references?: Reference[];
+  customFields?: CustomField[];
 }
 
 export interface UserData { // If UserData is also needed elsewhere
@@ -109,7 +167,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     return null;
   }
 
-  const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages } = userData;// Main profile tabs for the 2/3 section
+  const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages, references, customFields } = userData;// Main profile tabs for the 2/3 section
   const profileTabs = [
     { name: 'Experience', icon: Briefcase, index: 0, count: experience?.length || 0 },
     { name: 'Education', icon: GraduationCap, index: 1, count: education?.length || 0 },
@@ -119,6 +177,8 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     { name: 'Awards', icon: Award, index: 5, count: awards?.length || 0 },
     { name: 'Languages', icon: Languages, index: 6, count: languages?.length || 0 },
     { name: 'Interests', icon: Heart, index: 7, count: interests?.length || 0 },
+    { name: 'References', icon: Mail, index: 8, count: references?.length || 0 },
+    { name: 'Custom Fields', icon: FileText, index: 9, count: customFields?.length || 0 },
   ];
 
   // Side panel tabs for the 1/3 section (candidate management)
@@ -424,7 +484,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                         {skills.map((skill, index) => (
                           <span key={index} className="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-full text-sm font-medium flex items-center">
                             <Zap className="h-3.5 w-3.5 mr-1 text-purple-600" />
-                            {skill}
+                            {typeof skill === 'string' ? skill : skill.name}
                           </span>
                         ))}
                       </div>
@@ -661,7 +721,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                         {interests.map((interest, index) => (
                           <span key={index} className="px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-sm font-medium flex items-center">
                             <Heart className="h-3.5 w-3.5 mr-1 text-red-500" />
-                            {interest}
+                            {typeof interest === 'string' ? interest : interest.name}
                           </span>
                         ))}
                       </div>
@@ -674,14 +734,130 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                   )}
                 </div>
               )}
+
+              {/* References Tab */}
+              {activeTab === 8 && (
+                <div>
+                  {references && references.length > 0 ? (
+                    <div className="space-y-4">
+                      {references.map((reference, index) => (
+                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center">
+                              <Mail className="h-5 w-5 text-blue-600 mr-2" />
+                              <h3 className="text-md font-medium text-gray-800">{reference.name}</h3>
+                            </div>
+                            {reference.status && (
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                reference.status === 'verified' ? 'bg-green-100 text-green-800' :
+                                reference.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                                reference.status === 'available' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {reference.status}
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-2 text-sm text-gray-600">
+                            <div className="flex items-center">
+                              <span className="font-medium mr-2">Position:</span>
+                              <span>{reference.position}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="font-medium mr-2">Company:</span>
+                              <span>{reference.company}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="font-medium mr-2">Email:</span>
+                              <span className="text-blue-600">{reference.email}</span>
+                            </div>
+                            {reference.phone && (
+                              <div className="flex items-center">
+                                <span className="font-medium mr-2">Phone:</span>
+                                <span>{reference.phone}</span>
+                              </div>
+                            )}
+                            {reference.relationship && (
+                              <div className="flex items-center">
+                                <span className="font-medium mr-2">Relationship:</span>
+                                <span>{reference.relationship}</span>
+                              </div>
+                            )}
+                            {reference.yearsKnown && (
+                              <div className="flex items-center">
+                                <span className="font-medium mr-2">Years Known:</span>
+                                <span>{reference.yearsKnown} years</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Mail className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No references information available</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Custom Fields Tab */}
+              {activeTab === 9 && (
+                <div>
+                  {customFields && customFields.length > 0 ? (
+                    <div className="space-y-4">
+                      {customFields.map((field, index) => (
+                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                          <div className="flex items-center mb-2">
+                            <FileText className="h-5 w-5 text-purple-600 mr-2" />
+                            <h3 className="text-md font-medium text-gray-800">{field.fieldName}</h3>
+                            {field.isRequired && (
+                              <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded">
+                                Required
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-2 text-sm text-gray-600">
+                            <div className="flex items-center">
+                              <span className="font-medium mr-2">Type:</span>
+                              <span className="capitalize">{field.fieldType}</span>
+                            </div>
+                            {field.fieldValue && (
+                              <div className="flex items-start">
+                                <span className="font-medium mr-2">Value:</span>
+                                <span className="flex-1">{field.fieldValue}</span>
+                              </div>
+                            )}
+                            {field.fieldDescription && (
+                              <div className="flex items-start">
+                                <span className="font-medium mr-2">Description:</span>
+                                <span className="flex-1 text-gray-500">{field.fieldDescription}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No custom fields available</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
     );
-  }// Expanded state - full panel covering 2/3 of page width
+  }
+
+  // Expanded state - full panel covering 2/3 of page width
   return (
-    <div className="fixed inset-y-0 right-0 w-2/3 bg-white shadow-2xl z-50 flex">      {/* Profile Info Section - Responsive width based on candidate actions state */}
+    <div className="fixed inset-y-0 right-0 w-2/3 bg-white shadow-2xl z-50 flex">
+      {/* Profile Info Section - Responsive width based on candidate actions state */}
       <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'flex-1 w-2/3'} flex flex-col border-r border-gray-200 transition-all duration-300 ease-in-out`}>
         {/* Panel Header - Sticky */}
         <div className="sticky top-0 bg-white z-10">
@@ -962,7 +1138,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                       {skills.map((skill, index) => (
                         <span key={index} className="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-full text-sm font-medium flex items-center">
                           <Zap className="h-3.5 w-3.5 mr-1 text-purple-600" />
-                          {skill}
+                          {typeof skill === 'string' ? skill : skill.name}
                         </span>
                       ))}
                     </div>
@@ -1201,7 +1377,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                         {interests.map((interest, index) => (
                           <span key={index} className="px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-sm font-medium flex items-center">
                             <Heart className="h-3.5 w-3.5 mr-1 text-red-500" />
-                            {interest}
+                            {typeof interest === 'string' ? interest : interest.name}
                           </span>
                         ))}
                       </div>
@@ -1214,149 +1390,126 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                   )}
                 </div>
               )}
-          </div>
-        </div>
-      </div>      {/* Tabbed Content Section - 1/3 of the space */}
-      <div className={`${isCandidateActionsCollapsed ? 'w-16' : 'w-1/3'} flex flex-col border-l border-gray-200 bg-gray-50 transition-all duration-300 ease-in-out`}>
-        {/* Tabs Header */}
-        <div className="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
-          <h3 className={`text-base font-semibold text-gray-900 ${isCandidateActionsCollapsed ? 'hidden' : 'block'}`}>
-            Candidate Actions
-          </h3>
-          <Button
-            variant="ghost"
-            onClick={() => setIsCandidateActionsCollapsed(!isCandidateActionsCollapsed)}
-            className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 p-2 rounded-md"
-            aria-label={isCandidateActionsCollapsed ? "Expand Candidate Actions" : "Collapse Candidate Actions"}
-          >
-            {isCandidateActionsCollapsed ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
-          </Button>
-        </div>        {!isCandidateActionsCollapsed && (
-          <>
-            {/* Tabs Navigation */}
-            <div className="border-b border-gray-200 bg-white">
-              <nav className="flex" aria-label="Tabs">
-                {sideTabs.map((tab) => (
-                  <button
-                    key={tab.name}
-                    onClick={() => setActiveSideTab(tab.index)}
-                    className={`${
-                      activeSideTab === tab.index
-                        ? 'border-purple-600 text-purple-700 font-semibold bg-white'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-100'
-                    } whitespace-nowrap py-3 px-3 border-b-2 text-sm flex items-center gap-1.5 flex-1 justify-center transition-colors duration-150 ease-in-out`}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.name}
-                    {tab.count > 0 && (
-                      <span className="bg-gray-100 text-gray-600 py-0.5 px-1.5 rounded-full text-xs">
-                        {tab.count}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </nav>            </div>
-            
-            {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {/* Sequences Tab */}
-              {activeSideTab === 0 && (
+
+              {/* References Tab */}
+              {activeTab === 8 && (
                 <div>
-                  <div className="mb-4">
-                    <Button variant="primary" size="md" className="w-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center">
-                      <Plus size={18} className="mr-2" />
-                      Add to Sequence
-                    </Button>
-                  </div>
-                  <div className="text-center py-8">
-                    <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 text-sm">No sequences yet</p>
-                    <p className="text-gray-400 text-xs mt-1">Add this candidate to a sequence to start nurturing them</p>
-                  </div>
+                  {references && references.length > 0 ? (
+                    <div className="space-y-4">
+                      {references.map((reference, index) => (
+                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center">
+                              <Mail className="h-5 w-5 text-blue-600 mr-2" />
+                              <h3 className="text-md font-medium text-gray-800">{reference.name}</h3>
+                            </div>
+                            {reference.status && (
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                reference.status === 'verified' ? 'bg-green-100 text-green-800' :
+                                reference.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                                reference.status === 'available' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {reference.status}
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-2 text-sm text-gray-600">
+                            <div className="flex items-center">
+                              <span className="font-medium mr-2">Position:</span>
+                              <span>{reference.position}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="font-medium mr-2">Company:</span>
+                              <span>{reference.company}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="font-medium mr-2">Email:</span>
+                              <span className="text-blue-600">{reference.email}</span>
+                            </div>
+                            {reference.phone && (
+                              <div className="flex items-center">
+                                <span className="font-medium mr-2">Phone:</span>
+                                <span>{reference.phone}</span>
+                              </div>
+                            )}
+                            {reference.relationship && (
+                              <div className="flex items-center">
+                                <span className="font-medium mr-2">Relationship:</span>
+                                <span>{reference.relationship}</span>
+                              </div>
+                            )}
+                            {reference.yearsKnown && (
+                              <div className="flex items-center">
+                                <span className="font-medium mr-2">Years Known:</span>
+                                <span>{reference.yearsKnown} years</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Mail className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No references information available</p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Notes Tab */}
-              {activeSideTab === 1 && (
+              {/* Custom Fields Tab */}
+              {activeTab === 9 && (
                 <div>
-                  <div className="mb-4">
-                    <textarea
-                      placeholder="Add a note about this candidate..."
-                      className="w-full p-3 text-sm border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
-                      rows={3}
-                    />
-                    <Button variant="primary" size="md" className="w-full mt-2 bg-primary-600 hover:bg-primary-700">
-                      Add Note
-                    </Button>
-                  </div>
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-sm">No notes yet</p>
-                    <p className="text-xs mt-1">Add notes to remember key details about this candidate</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Activity Tab */}
-              {activeSideTab === 2 && (
-                <div>
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-sm">No activity yet</p>
-                    <p className="text-xs mt-1">Interactions and updates will appear here</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Pipeline Tab */}
-              {activeSideTab === 3 && (
-                <div>
-                  <div className="mb-4">
-                    <select className="w-full p-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm bg-white">
-                      <option>Select Pipeline Stage</option>
-                      <option>Sourced</option>
-                      <option>Contacted</option>
-                      <option>Screening</option>
-                      <option>Interview</option>
-                      <option>Offer</option>
-                      <option>Hired</option>
-                      <option>Rejected</option>
-                    </select>
-                    <Button variant="primary" size="md" className="w-full mt-2 bg-primary-600 hover:bg-primary-700">
-                      Update Stage
-                    </Button>
-                  </div>
-                  <div className="text-center py-8 text-gray-500">
-                    <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-sm">Not in pipeline</p>
-                    <p className="text-xs mt-1">Add to pipeline to track recruitment progress</p>
-                  </div>
+                  {customFields && customFields.length > 0 ? (
+                    <div className="space-y-4">
+                      {customFields.map((field, index) => (
+                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                          <div className="flex items-center mb-2">
+                            <FileText className="h-5 w-5 text-purple-600 mr-2" />
+                            <h3 className="text-md font-medium text-gray-800">{field.fieldName}</h3>
+                            {field.isRequired && (
+                              <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded">
+                                Required
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-2 text-sm text-gray-600">
+                            <div className="flex items-center">
+                              <span className="font-medium mr-2">Type:</span>
+                              <span className="capitalize">{field.fieldType}</span>
+                            </div>
+                            {field.fieldValue && (
+                              <div className="flex items-start">
+                                <span className="font-medium mr-2">Value:</span>
+                                <span className="flex-1">{field.fieldValue}</span>
+                              </div>
+                            )}
+                            {field.fieldDescription && (
+                              <div className="flex items-start">
+                                <span className="font-medium mr-2">Description:</span>
+                                <span className="flex-1 text-gray-500">{field.fieldDescription}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No custom fields available</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          </>
-        )}
-        
-        {/* Collapsed State - Show minimal info */}
-        {isCandidateActionsCollapsed && (
-          <div className="flex-1 flex flex-col items-center justify-start pt-6 space-y-4">
-            {sideTabs.map((tab) => (
-              <button
-                key={tab.name}
-                onClick={() => {
-                  setActiveSideTab(tab.index);
-                  setIsCandidateActionsCollapsed(false);
-                }}
-                className="p-3 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-150 ease-in-out"
-                title={tab.name}
-              >
-                <tab.icon className="w-5 h-5" />
-              </button>
-            ))}
           </div>
-        )}
+        </div>
       </div>
-    </div>
+
+   
+
   );
 };
 

@@ -43,6 +43,10 @@ interface EnhancedCandidate {
   projects?: any[];
   skillMappings?: any[]; // Original API field
   skills?: string[]; // Transformed field from the hook
+  languages?: any[]; // Languages from API
+  interests?: any[]; // Interests from API
+  references?: any[]; // References from API
+  customFields?: any[]; // Custom fields from API
 }
 
 const CandidatesPage: React.FC = () => {
@@ -161,7 +165,36 @@ const CandidatesPage: React.FC = () => {
         issuer: award.issuer || '',
         date: award.date || '',
         description: award.description || '',
-      })) || [],      interests: userData.interests || [],    } as UserStructuredData;    setSelectedUserDataForPanel(userDataForPanel);
+      })) || [],
+      languages: userData.languages?.map((lang: any) => ({
+        language: lang.language || '',
+        proficiency: lang.proficiency || '',
+        speakingLevel: lang.speakingLevel || '',
+        writingLevel: lang.writingLevel || '',
+        readingLevel: lang.readingLevel || '',
+        certificationName: lang.certificationName || '',
+        certificationScore: lang.certificationScore || '',
+        isNative: lang.isNative || false,
+      })) || [],
+      interests: userData.interests || [],
+      references: userData.references?.map((ref: any) => ({
+        name: ref.name || '',
+        position: ref.position || '',
+        company: ref.company || '',
+        email: ref.email || '',
+        phone: ref.phone || '',
+        relationship: ref.relationship || '',
+        yearsKnown: ref.yearsKnown || '',
+        status: ref.status || '',
+      })) || [],
+      customFields: userData.customFields?.map((field: any) => ({
+        fieldName: field.fieldName || '',
+        fieldType: field.fieldType || '',
+        fieldValue: field.fieldValue || '',
+        fieldDescription: field.fieldDescription || '',
+        isRequired: field.isRequired || false,
+      })) || [],
+    } as UserStructuredData;    setSelectedUserDataForPanel(userDataForPanel);
     setPanelState('expanded');
     // Don't prevent background scroll since only the table area is affected
   };
