@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0', // Allow external connections
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://localhost:3000',
+          target: env.VITE_API_URL || 'https://tal.mawhub.io',
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api/, '/api'),
@@ -41,13 +41,13 @@ export default defineConfig(({ mode }) => {
         // Only proxy /auth in production to avoid conflicts with frontend routing in development
         ...(mode === 'production' ? {
           '/auth': {
-            target: env.VITE_API_URL || 'http://localhost:3000',
+            target: env.VITE_API_URL || 'https://tal.mawhub.io',
             changeOrigin: true,
             secure: false,
           },
         } : {}),
         '/uploads': {
-          target: env.VITE_API_URL || 'http://localhost:3000',
+          target: env.VITE_API_URL || 'https://tal.mawhub.io',
           changeOrigin: true,
           secure: false,
         },

@@ -1,11 +1,11 @@
 // Utility functions for handling file URLs from the backend
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://tal.mawhub.io';
 
 /**
  * Convert a file path from the backend to a full URL
  * @param filePath - The file path from the backend (relative, absolute, or URL)
- * @returns Full URL to access the file (e.g., "http://localhost:3000/uploads/candidates/filename.jpg")
+ * @returns Full URL to access the file (e.g., "https://tal.mawhub.io/uploads/candidates/filename.jpg")
  */
 export const getFileUrl = (filePath: string | null | undefined): string | null => {
   if (!filePath) return null;

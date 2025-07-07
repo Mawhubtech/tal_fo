@@ -262,7 +262,7 @@ const DocumentsSection: React.FC<DocumentsSectionProps> = ({ documents, onChange
                     {/* Download Button for existing documents */}
                     {!isFileUpload(doc) && (
                       <a
-                        href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${doc.filePath}`}
+                        href={`${import.meta.env.VITE_API_URL || 'https://tal.mawhub.io'}${doc.filePath}`}
                         download={doc.originalName}
                         target="_blank"
                         rel="noopener noreferrer"

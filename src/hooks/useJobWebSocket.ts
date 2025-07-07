@@ -76,8 +76,8 @@ export const useJobWebSocket = ({
   useEffect(() => {
     if (!enabled || !jobId || !userId) return;
 
-    // Initialize socket connection
-    const backendUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:3000';
+    // Initialize socket connection - use production URL as default
+    const backendUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'https://tal.mawhub.io';
     const token = localStorage.getItem('accessToken');
     
     const socket = io(`${backendUrl}/job-comments`, {
