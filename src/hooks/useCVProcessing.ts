@@ -16,6 +16,12 @@ export interface CVProcessingResult {
 export interface BulkProcessingResult {
   message: string;
   processed: number;
+  successful: number;
+  failed: number;
+  options?: {
+    maxConcurrency: number;
+    batchSize: number;
+  };
   results: Array<{
     filename: string;
     success: boolean;
@@ -53,13 +59,19 @@ export const useCVProcessing = () => {
     }
   };
 
-  // Process multiple CVs from a zip file
-  const processBulkCVs = async (zipFile: File): Promise<BulkProcessingResult | null> => {
+  // Process multiple CVs from a zip file with performance options
+  const processBulkCVs = async (
+    zipFile: File,
+    options?: {
+      maxConcurrency?: number;
+      batchSize?: number;
+    }
+  ): Promise<BulkProcessingResult | null> => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await candidatesService.processBulkCVs(zipFile);
+      const result = await candidatesService.processBulkCVs(zipFile, options);
       setData(result);
       setLoading(false);
       return result;

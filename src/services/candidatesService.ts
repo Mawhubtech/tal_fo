@@ -142,10 +142,22 @@ export const candidatesService = {  // Get candidates with filtering and paginat
     return response.data;
   },
 
-  // Process multiple CVs from a zip file
-  async processBulkCVs(zipFile: File) {
+  // Process multiple CVs from a zip file with performance options
+  async processBulkCVs(zipFile: File, options?: {
+    maxConcurrency?: number;
+    batchSize?: number;
+  }) {
     const formData = new FormData();
     formData.append('zipFile', zipFile);
+    
+    // Add performance options if provided
+    if (options?.maxConcurrency) {
+      formData.append('maxConcurrency', options.maxConcurrency.toString());
+    }
+    if (options?.batchSize) {
+      formData.append('batchSize', options.batchSize.toString());
+    }
+    
     const response = await apiClient.post('/candidates/process-bulk', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
