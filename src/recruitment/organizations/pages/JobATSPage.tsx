@@ -140,7 +140,11 @@ const JobATSPage: React.FC = () => {
   } = useCandidate(selectedCandidateId || '');
   
   // Collaborative panel hooks
-  const { data: comments = [], isLoading: commentsLoading } = useJobComments(jobId || '');
+  const { 
+    data: comments = [], 
+    isLoading: commentsLoading, 
+    refetch: refetchComments 
+  } = useJobComments(jobId || '');
   const createCommentMutation = useCreateComment();
   const updateCommentMutation = useUpdateComment();
   const deleteCommentMutation = useDeleteComment();
@@ -532,6 +536,16 @@ const JobATSPage: React.FC = () => {
     } catch (error) {
       console.error('Error removing reaction:', error);
       toast.error('Reaction Failed', 'Failed to remove reaction. Please try again.');
+    }
+  };
+
+  const handleRefreshComments = async () => {
+    try {
+      console.log('Refreshing comments for job:', jobId);
+      await refetchComments();
+    } catch (error) {
+      console.error('Error refreshing comments:', error);
+      // Don't show toast error for refresh failures as it's a background operation
     }
   };
 
@@ -1216,6 +1230,7 @@ const JobATSPage: React.FC = () => {
 			onDeleteComment={handleDeleteComment}
 			onAddReaction={handleAddReaction}
 			onRemoveReaction={handleRemoveReaction}
+			onRefreshComments={handleRefreshComments}
 			isLoading={commentsLoading}
 			rightOffset={panelState !== 'closed' ? 
 			  (panelState === 'expanded' ? 'right-[33.333333%]' : 'right-[16.666667%]') : 

@@ -72,6 +72,7 @@ interface CollaborativeSidePanelProps {
   onDeleteComment?: (commentId: string) => Promise<void>;
   onAddReaction?: (commentId: string, emoji: string) => Promise<void>;
   onRemoveReaction?: (commentId: string, emoji: string) => Promise<void>;
+  onRefreshComments?: () => Promise<void>; // New callback for refreshing comments
   comments?: Comment[];
   isLoading?: boolean;
   rightOffset?: string; // For positioning when other panels are open
@@ -93,6 +94,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   onDeleteComment,
   onAddReaction,
   onRemoveReaction,
+  onRefreshComments,
   comments = [],
   isLoading = false,
   rightOffset = 'right-0'
@@ -106,9 +108,25 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   const [showCandidatePicker, setShowCandidatePicker] = useState(false);
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [candidateSearchQuery, setCandidateSearchQuery] = useState('');
-  const [liveComments, setLiveComments] = useState<Comment[]>(comments);
+  const [liveComments, setLiveComments] = useState<Comment[]>([]);
   const [liveTeamMembers, setLiveTeamMembers] = useState<TeamMember[]>(teamMembers);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const commentsInitializedRef = useRef<boolean>(false);
+  const lastPanelStateRef = useRef<CollaborativePanelState>(panelState);
+
+  // Initialize live comments with sorted data
+  useEffect(() => {
+    const sortedComments = comments
+      .map(comment => ({
+        ...comment,
+        replies: comment.replies ? comment.replies.sort((a, b) => 
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        ) : []
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    setLiveComments(sortedComments);
+  }, []); // Only run once on mount
 
   // WebSocket integration for live updates
   const {
@@ -129,10 +147,77 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
     enabled: panelState !== 'closed',
   });
 
-  // Update live comments when props change
+  // Handle panel state changes and force refresh on open
   useEffect(() => {
-    setLiveComments(comments);
-  }, [comments]);
+    const wasClosedNowOpen = lastPanelStateRef.current === 'closed' && panelState !== 'closed';
+    const wasOpenNowClosed = lastPanelStateRef.current !== 'closed' && panelState === 'closed';
+    
+    if (wasClosedNowOpen) {
+      // Panel was closed and now opened - always refresh to get latest data
+      console.log('Panel reopened, forcing refresh for job:', jobId);
+      
+      if (onRefreshComments) {
+        // Don't reset commentsInitializedRef here - let the refresh complete first
+        onRefreshComments()
+          .then(() => {
+            console.log('Comments refreshed successfully on panel open');
+            commentsInitializedRef.current = true;
+          })
+          .catch(error => {
+            console.error('Failed to refresh comments on panel open:', error);
+            // Fallback to current comments if refresh fails
+            setLiveComments(comments);
+            commentsInitializedRef.current = true;
+          });
+      } else {
+        // No refresh function provided, just use current comments
+        console.log('No refresh function, using current comments');
+        setLiveComments(comments);
+        commentsInitializedRef.current = true;
+      }
+    } else if (wasOpenNowClosed) {
+      // Panel is closing - reset initialization flag for next open
+      console.log('Panel closing, will refresh on next open');
+      commentsInitializedRef.current = false;
+    }
+    
+    lastPanelStateRef.current = panelState;
+  }, [panelState, onRefreshComments, jobId]);
+
+  // Handle comments prop changes - update live comments when they change
+  useEffect(() => {
+    if (panelState !== 'closed') {
+      console.log('Comments prop updated. Incoming count:', comments.length);
+      console.log('Current live comments count:', liveComments.length);
+      console.log('Comments initialized?', commentsInitializedRef.current);
+      
+      // Sort the incoming comments properly before setting them
+      const sortedIncomingComments = comments
+        .map(comment => ({
+          ...comment,
+          replies: comment.replies ? comment.replies.sort((a, b) => 
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          ) : []
+        }))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      console.log('Setting live comments to:', sortedIncomingComments.length, 'comments');
+      setLiveComments(sortedIncomingComments);
+      
+      if (!commentsInitializedRef.current) {
+        commentsInitializedRef.current = true;
+      }
+    }
+  }, [comments, panelState]);
+
+  // Ensure we have the latest comments when WebSocket reconnects
+  useEffect(() => {
+    if (isConnected && panelState !== 'closed' && commentsInitializedRef.current) {
+      // WebSocket reconnected, make sure we have the latest state
+      // The parent component should handle refetching if needed
+      console.log('WebSocket reconnected for job:', jobId);
+    }
+  }, [isConnected, panelState, jobId]);
 
   // Update team members with live presence
   useEffect(() => {
@@ -150,35 +235,110 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   // Set up WebSocket event handlers
   useEffect(() => {
     onNewComment((newComment) => {
+      console.log('Processing new comment:', newComment);
       setLiveComments(prev => {
         // Check if comment already exists to avoid duplicates
-        if (prev.some(c => c.id === newComment.id)) return prev;
-        return [newComment, ...prev];
+        if (prev.some(c => c.id === newComment.id)) {
+          console.log('Comment already exists, skipping:', newComment.id);
+          return prev;
+        }
+        
+        // If it's a reply (has parentId), add it to the parent's replies array
+        if (newComment.parentId) {
+          console.log('Adding reply to parent:', newComment.parentId);
+          return prev.map(comment => {
+            if (comment.id === newComment.parentId) {
+              // Check if reply already exists in the replies array
+              if (comment.replies.some(r => r.id === newComment.id)) {
+                console.log('Reply already exists in parent, skipping:', newComment.id);
+                return comment;
+              }
+              console.log('Adding new reply to parent comment');
+              return {
+                ...comment,
+                replies: [...comment.replies, newComment].sort((a, b) => 
+                  new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                ) // Sort replies chronologically (oldest first)
+              };
+            }
+            return comment;
+          });
+        } else {
+          // It's a top-level comment - insert in chronological order
+          console.log('Adding new top-level comment');
+          const newComments = [newComment, ...prev];
+          return newComments.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ); // Sort top-level comments newest first
+        }
       });
     });
 
     onCommentUpdated((updatedComment) => {
       setLiveComments(prev => 
-        prev.map(c => c.id === updatedComment.id ? updatedComment : c)
+        prev.map(comment => {
+          // Check if it's a top-level comment
+          if (comment.id === updatedComment.id) {
+            return {
+              ...updatedComment,
+              replies: updatedComment.replies ? updatedComment.replies.sort((a, b) => 
+                new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+              ) : []
+            };
+          }
+          // Check if it's a reply
+          if (comment.replies.some(r => r.id === updatedComment.id)) {
+            return {
+              ...comment,
+              replies: comment.replies.map(reply => 
+                reply.id === updatedComment.id ? updatedComment : reply
+              ).sort((a, b) => 
+                new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+              )
+            };
+          }
+          return comment;
+        }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       );
     });
 
     onCommentDeleted(({ commentId }) => {
       setLiveComments(prev => 
-        prev.filter(c => c.id !== commentId)
+        prev.map(comment => {
+          // Remove from replies if it's a reply
+          const updatedReplies = comment.replies.filter(r => r.id !== commentId);
+          return {
+            ...comment,
+            replies: updatedReplies
+          };
+        }).filter(c => c.id !== commentId) // Remove top-level comment if it matches
       );
     });
 
     onNewReaction((reaction) => {
       setLiveComments(prev => 
         prev.map(comment => {
+          // Check top-level comment
           if (comment.id === reaction.commentId) {
             return {
               ...comment,
               reactions: [...comment.reactions, reaction]
             };
           }
-          return comment;
+          // Check replies
+          const updatedReplies = comment.replies.map(reply => {
+            if (reply.id === reaction.commentId) {
+              return {
+                ...reply,
+                reactions: [...reply.reactions, reaction]
+              };
+            }
+            return reply;
+          });
+          return {
+            ...comment,
+            replies: updatedReplies
+          };
         })
       );
     });
@@ -186,13 +346,27 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
     onReactionRemoved(({ commentId, emoji, userId }) => {
       setLiveComments(prev => 
         prev.map(comment => {
+          // Check top-level comment
           if (comment.id === commentId) {
             return {
               ...comment,
               reactions: comment.reactions.filter(r => !(r.emoji === emoji && r.userId === userId))
             };
           }
-          return comment;
+          // Check replies
+          const updatedReplies = comment.replies.map(reply => {
+            if (reply.id === commentId) {
+              return {
+                ...reply,
+                reactions: reply.reactions.filter(r => !(r.emoji === emoji && r.userId === userId))
+              };
+            }
+            return reply;
+          });
+          return {
+            ...comment,
+            replies: updatedReplies
+          };
         })
       );
     });
@@ -222,7 +396,22 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
   // Sort comments by creation date (newest first) - use live comments
   const sortedComments = liveComments
     .filter(comment => !comment.parentId) // Only top-level comments
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map(comment => ({
+      ...comment,
+      replies: comment.replies ? comment.replies.sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      ) : [] // Sort replies chronologically (oldest first)
+    }));
+
+  // Calculate total comment count including replies
+  const totalCommentCount = liveComments.reduce((total, comment) => {
+    if (!comment.parentId) {
+      // It's a top-level comment, count it + its replies
+      return total + 1 + (comment.replies?.length || 0);
+    }
+    return total;
+  }, 0);
 
   if (panelState === 'closed') {
     return null;
@@ -526,7 +715,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
           <div className="p-4 border-b border-gray-200">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{liveComments.length}</div>
+                <div className="text-2xl font-bold text-purple-600">{totalCommentCount}</div>
                 <div className="text-xs text-gray-500">Comments</div>
               </div>
               <div className="text-center">
@@ -570,7 +759,29 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
             <div className="flex items-center space-x-3">
               <MessageSquare className="h-5 w-5 text-purple-600" />
               <h3 className="text-lg font-semibold text-gray-800">Team Discussion</h3>
-              <span className="text-sm text-gray-500">({liveComments.length} comments)</span>
+              <span className="text-sm text-gray-500">({totalCommentCount} comments)</span>
+              
+              {/* Debug refresh button - remove in production */}
+              {process.env.NODE_ENV === 'development' && onRefreshComments && (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      console.log('Manual refresh triggered');
+                      console.log('Current comments prop:', comments.length);
+                      console.log('Current live comments:', liveComments.length);
+                      onRefreshComments();
+                    }}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
+                    title="Debug: Refresh Comments"
+                  >
+                    🔄
+                  </button>
+                  <span className="text-xs text-gray-500">
+                    Prop:{comments.length} Live:{liveComments.length}
+                  </span>
+                </div>
+              )}
+              
               {/* Connection Status */}
               <div className="flex items-center space-x-1">
                 {isConnected ? (
@@ -625,7 +836,22 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
               {replyTo && (
                 <div className="mb-2 flex items-center space-x-2 text-sm text-gray-600">
                   <Reply className="h-4 w-4" />
-                  <span>Replying to {comments.find(c => c.id === replyTo)?.authorName}</span>
+                  <span>Replying to {
+                    // Find the comment from liveComments instead of comments prop
+                    (() => {
+                      const findComment = (comments: Comment[]): Comment | undefined => {
+                        for (const comment of comments) {
+                          if (comment.id === replyTo) return comment;
+                          if (comment.replies) {
+                            const found = findComment(comment.replies);
+                            if (found) return found;
+                          }
+                        }
+                        return undefined;
+                      };
+                      return findComment(liveComments)?.authorName || 'Unknown';
+                    })()
+                  }</span>
                   <button
                     onClick={() => setReplyTo(null)}
                     className="text-gray-400 hover:text-gray-600"

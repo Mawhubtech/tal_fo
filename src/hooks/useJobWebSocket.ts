@@ -94,11 +94,12 @@ export const useJobWebSocket = ({
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('Connected to job comments WebSocket');
+      console.log('Connected to job comments WebSocket for job:', jobId);
       setIsConnected(true);
       
       // Wait a moment for authentication to complete, then join the job room
       setTimeout(() => {
+        console.log('Joining job room:', jobId);
         socket.emit('joinJob', {
           jobId,
           userId,
@@ -109,9 +110,10 @@ export const useJobWebSocket = ({
     });
 
     socket.on('disconnect', () => {
-      console.log('Disconnected from job comments WebSocket');
+      console.log('Disconnected from job comments WebSocket for job:', jobId);
       setIsConnected(false);
       setActiveUsers([]); // Clear active users on disconnect
+      setTypingUsers([]); // Clear typing users on disconnect
     });
 
     // Presence events
@@ -181,6 +183,7 @@ export const useJobWebSocket = ({
     });
 
     return () => {
+      console.log('Cleaning up WebSocket connection for job:', jobId);
       socket.emit('leaveJob');
       socket.disconnect();
     };
