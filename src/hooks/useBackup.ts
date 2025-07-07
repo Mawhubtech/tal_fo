@@ -115,7 +115,7 @@ export function useUpdateBackupNote() {
       queryClient.invalidateQueries({ queryKey: backupKeys.list() });
       
       if (data.success) {
-        toast.success('Note Updated', `Backup note updated successfully!`);
+        toast.success('Note Updated', `Backup note for "${filename}" updated successfully!`);
       } else {
         toast.error('Update Failed', 'Failed to update backup note');
       }
