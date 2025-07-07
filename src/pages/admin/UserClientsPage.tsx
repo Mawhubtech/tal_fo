@@ -21,7 +21,7 @@ import {
   Users, Building, Link as LinkIcon, Search, Filter,
   MoreHorizontal, Edit, Plus, X, Check, AlertCircle, User,
   ChevronRight, UserCheck, Crown, Settings, RefreshCw,
-  CheckSquare, Trash2, UserPlus, Shield, Eye
+  CheckSquare, Trash2, UserPlus, Shield, Eye, ChevronLeft
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -72,11 +72,14 @@ const TeamManagementPage: React.FC = () => {
   const [editingUser, setEditingUser] = useState<UserWithClients | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [bulkMode, setBulkMode] = useState(false);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Check if current user has admin permissions
   const isAdmin = currentUser?.roles?.some(role =>
@@ -155,6 +158,22 @@ const TeamManagementPage: React.FC = () => {
       return matchesSearch && matchesRole && matchesClientFilter;
     });
   }, [usersWithClients, searchTerm, roleFilter, clientFilter]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, clientFilter]);
+
+  // Reset selected users when pagination changes
+  useEffect(() => {
+    setSelectedUsers([]);
+  }, [currentPage, itemsPerPage]);
 
   const handleAssignClients = async () => {
     if (!selectedUser) return;
@@ -280,7 +299,7 @@ const TeamManagementPage: React.FC = () => {
 
   const handleSelectAllUsers = (checked: boolean) => {
     if (checked) {
-      setSelectedUsers(filteredUsers.map(user => user.id));
+      setSelectedUsers(paginatedUsers.map(user => user.id));
     } else {
       setSelectedUsers([]);
     }
@@ -335,70 +354,71 @@ const TeamManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <ToastContainer />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center mb-2">
-            <Link
-              to="/admin"
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              Admin
-            </Link>
-            <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
-            <span className="text-gray-900 font-medium">Team Management</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
-              <p className="text-gray-600 mt-1">
-                Create and manage team members and their client access
-              </p>
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 px-6 py-8 w-full">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center mb-2">
+              <Link
+                to="/admin"
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Admin
+              </Link>
+              <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+              <span className="text-gray-900 font-medium">Team Management</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowUserModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span>Add Team Member</span>
-              </button>
-              <button
-                onClick={() => refetchUsers()}
-                disabled={loadingUsers}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`h-4 w-4 ${loadingUsers ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
-              <button
-                onClick={() => setBulkMode(!bulkMode)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${bulkMode
-                    ? 'bg-purple-600 text-white hover:bg-purple-700'
-                    : 'text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-              >
-                <CheckSquare className="h-4 w-4" />
-                <span>{bulkMode ? 'Exit Bulk Mode' : 'Bulk Actions'}</span>
-              </button>
-              {bulkMode && selectedUsers.length > 0 && (
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
+                <p className="text-gray-600 mt-1">
+                  Create and manage team members and their client access
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
                 <button
-                  onClick={openBulkAssignModal}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => setShowUserModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
-                  <LinkIcon className="h-4 w-4" />
-                  <span>Assign Clients ({selectedUsers.length})</span>
+                  <UserPlus className="h-4 w-4" />
+                  <span>Add Team Member</span>
                 </button>
-              )}
+                <button
+                  onClick={() => refetchUsers()}
+                  disabled={loadingUsers}
+                  className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingUsers ? 'animate-spin' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+                <button
+                  onClick={() => setBulkMode(!bulkMode)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${bulkMode
+                      ? 'bg-purple-600 text-white hover:bg-purple-700'
+                      : 'text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  <span>{bulkMode ? 'Exit Bulk Mode' : 'Bulk Actions'}</span>
+                </button>
+                {bulkMode && selectedUsers.length > 0 && (
+                  <button
+                    onClick={openBulkAssignModal}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                    <span>Assign Clients ({selectedUsers.length})</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -411,11 +431,11 @@ const TeamManagementPage: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-0"
               >
                 <option value="all">All Roles</option>
                 <option value="super-admin">Super Admin</option>
@@ -425,7 +445,7 @@ const TeamManagementPage: React.FC = () => {
               <select
                 value={clientFilter}
                 onChange={(e) => setClientFilter(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-0"
               >
                 <option value="all">All Users</option>
                 <option value="has-access">Has Client Access</option>
@@ -487,10 +507,29 @@ const TeamManagementPage: React.FC = () => {
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Users & Client Access</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Showing {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
-              </p>
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Users & Client Access</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Showing {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                {filteredUsers.length > itemsPerPage && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>Items per page:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -501,7 +540,7 @@ const TeamManagementPage: React.FC = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <input
                           type="checkbox"
-                          checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                          checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
                           onChange={(e) => handleSelectAllUsers(e.target.checked)}
                           className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
@@ -519,13 +558,13 @@ const TeamManagementPage: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Client Access
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
+                  {paginatedUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       {bulkMode && (
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -586,63 +625,46 @@ const TeamManagementPage: React.FC = () => {
                           <span className="text-sm text-gray-500 italic">No client access</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="relative">
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end space-x-1 lg:space-x-2">
                           <button
-                            onClick={() => setActiveDropdown(activeDropdown === user.id ? null : user.id)}
-                            className="p-1 hover:bg-gray-100 rounded"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowDetailsModal(true);
+                            }}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200 transition-colors"
+                            title="View Details"
                           >
-                            <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                            <Eye className="h-3 w-3 lg:mr-1" />
+                            <span className="hidden lg:inline">View</span>
                           </button>
-                          {activeDropdown === user.id && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                              <div className="py-1">
-                                <button
-                                  onClick={() => {
-                                    setSelectedUser(user);
-                                    setShowDetailsModal(true);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <Eye className="h-4 w-4 mr-3" />
-                                  View Details
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingUser(user);
-                                    setShowUserModal(true);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <Edit className="h-4 w-4 mr-3" />
-                                  Edit User
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    openAssignModal(user);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <LinkIcon className="h-4 w-4 mr-3" />
-                                  Manage Client Access
-                                </button>
-                                <hr className="my-1" />
-                                <button
-                                  onClick={() => {
-                                    handleDeleteUser(user.id);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-3" />
-                                  Delete User
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                          <button
+                            onClick={() => {
+                              setEditingUser(user);
+                              setShowUserModal(true);
+                            }}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                            title="Edit User"
+                          >
+                            <Edit className="h-3 w-3 lg:mr-1" />
+                            <span className="hidden lg:inline">Edit</span>
+                          </button>
+                          <button
+                            onClick={() => openAssignModal(user)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded hover:bg-purple-200 transition-colors"
+                            title="Manage Client Access"
+                          >
+                            <LinkIcon className="h-3 w-3 lg:mr-1" />
+                            <span className="hidden lg:inline">Clients</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded hover:bg-red-200 transition-colors"
+                            title="Delete User"
+                          >
+                            <Trash2 className="h-3 w-3 lg:mr-1" />
+                            <span className="hidden lg:inline">Delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -650,6 +672,65 @@ const TeamManagementPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} results
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </button>
+                    
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 7) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 4) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 3) {
+                          pageNumber = totalPages - 6 + i;
+                        } else {
+                          pageNumber = currentPage - 3 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => setCurrentPage(pageNumber)}
+                            className={`px-3 py-2 text-sm font-medium rounded-md ${
+                              currentPage === pageNumber
+                                ? 'bg-purple-600 text-white'
+                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -737,7 +818,7 @@ const TeamManagementPage: React.FC = () => {
                 <button
                   onClick={handleAssignClients}
                   className="px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50"
-                  disabled={assignClientMutation.isLoading || removeClientMutation.isLoading}
+                  disabled={assignClientMutation.isPending || removeClientMutation.isPending}
                 >
                   Save Changes
                 </button>
@@ -769,9 +850,21 @@ const TeamManagementPage: React.FC = () => {
               setEditingUser(null);
             }}
             onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-            user={editingUser}
+            isLoading={createUserMutation.isPending || updateUserMutation.isPending}
+            user={editingUser ? {
+              ...editingUser,
+              status: editingUser.status as 'active' | 'inactive' | 'banned',
+              provider: 'local' as const,
+              isEmailVerified: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              clients: editingUser.clients.map(client => ({
+                ...client,
+                createdAt: new Date().toISOString()
+              }))
+            } : null}
+            isEditing={!!editingUser}
             roles={availableRoles}
-            isSuperAdmin={isSuperAdmin}
           />
         )}
         
@@ -783,9 +876,32 @@ const TeamManagementPage: React.FC = () => {
                 setShowDetailsModal(false);
                 setSelectedUser(null);
              }}
-             user={selectedUser}
+             user={{
+               ...selectedUser,
+               status: selectedUser.status as 'active' | 'inactive' | 'banned',
+               provider: 'local' as const,
+               isEmailVerified: true,
+               createdAt: new Date().toISOString(),
+               updatedAt: new Date().toISOString(),
+               clients: selectedUser.clients.map(client => ({
+                 ...client,
+                 createdAt: new Date().toISOString()
+               }))
+             }}
+             onEdit={(user) => {
+               setEditingUser(selectedUser);
+               setShowUserModal(true);
+               setShowDetailsModal(false);
+             }}
+             onDelete={handleDeleteUser}
+             onArchive={(userId) => archiveUserMutation.mutate(userId)}
+             onRestore={(userId) => restoreUserMutation.mutate(userId)}
+             onStatusChange={(userId, status) => updateUserStatusMutation.mutate({ id: userId, status })}
+             onSendPasswordReset={(userId) => sendPasswordResetMutation.mutate(userId)}
+             onSendEmailVerification={(userId) => sendEmailVerificationMutation.mutate(userId)}
           />
         )}
+        </div>
       </div>
     </div>
   );

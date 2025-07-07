@@ -2,26 +2,23 @@
  * TeamManagementPage - Interface for managing team members and their client access
  * 
  * Features:
- * - Create new team members (restricted roles based on current user)
+ * - Create new team members
  * - View and manage existing team members
  * - Edit and delete team members
  * - Assign team members to clients/organizations
  * - Bulk actions for client assignments
- * - Role-based access control (admin and super-admin only)
- * - Filtering and search capabilities
+ * - Pagination for large user lists
  * 
  * Restrictions:
- * - Users cannot create super-admin or admin roles (unless they are super-admin)
- * - Only shows team members created by or assigned to the current user
  * - Pricing tier limits (to be implemented later)
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Users, Building, Link as LinkIcon, Search, Filter, 
+  Users, Building, Link as LinkIcon, 
   MoreHorizontal, Edit, Plus, X, Check, AlertCircle, User,
   ChevronRight, UserCheck, Crown, Settings, RefreshCw, 
-  CheckSquare, Trash2, UserPlus, Shield, Eye
+  CheckSquare, Trash2, UserPlus, Shield, Eye, ChevronLeft
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { 
@@ -67,39 +64,25 @@ interface UserWithClients {
 
 const TeamManagementPage: React.FC = () => {
   const { user: currentUser } = useAuthContext();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user' | 'super-admin'>('all');
-  const [clientFilter, setClientFilter] = useState<'all' | 'has-access' | 'no-access'>('all');
   const [selectedUser, setSelectedUser] = useState<UserWithClients | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithClients | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [bulkMode, setBulkMode] = useState(false);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
-
-  // Check if current user has admin permissions
-  const isAdmin = currentUser?.roles?.some(role => 
-    role.name === 'admin' || role.name === 'super-admin'
-  );
   
-  const isSuperAdmin = currentUser?.roles?.some(role => 
-    role.name === 'super-admin'
-  );
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Redirect if user doesn't have admin permissions
-  useEffect(() => {
-    if (!isAdmin) {
-      toast.error('Access denied. Admin privileges required.');
-      // Redirect would be handled by route protection
-    }
-  }, [isAdmin]);
-
-  // API hooks
-  const { data: usersResponse, isLoading: loadingUsers, error: usersError, refetch: refetchUsers } = useUsers();
+  // API hooks - pass pagination parameters
+  const { data: usersResponse, isLoading: loadingUsers, error: usersError, refetch: refetchUsers } = useUsers({
+    page: currentPage,
+    limit: itemsPerPage
+  });
   const { data: allClients = [], isLoading: loadingClients } = useClients();
   const { data: roles = [] } = useRoles();
   const createUserMutation = useCreateUser();
@@ -118,9 +101,11 @@ const TeamManagementPage: React.FC = () => {
 
   // Extract users and roles from response
   const users = usersResponse?.users || [];
+  const totalUsers = usersResponse?.total || users.length;
+  const totalPages = usersResponse?.pages || Math.ceil(totalUsers / itemsPerPage);
   const availableRoles = Array.isArray(roles) ? roles : roles?.roles || [];
 
-  // Convert users to include client information and filter based on role restrictions
+  // Convert users to include client information
   const usersWithClients: UserWithClients[] = users
     .map(user => ({
       ...user,
@@ -129,38 +114,18 @@ const TeamManagementPage: React.FC = () => {
         name: client.name,
         industry: 'N/A' // Default value since client doesn't have industry
       }))
-    }))
-    .filter(user => {
-      // If user is not super-admin, hide other super-admins and admins from non-super-admins
-      if (!isSuperAdmin) {
-        const hasAdminRole = user.roles?.some(role => 
-          role.name === 'super-admin' || role.name === 'admin'
-        );
-        if (hasAdminRole) return false;
-      }
-      return true;
-    });
+    }));
 
-  // Enhanced filtering with memoization for performance
-  const filteredUsers = useMemo(() => {
-    return usersWithClients.filter(user => {
-      const matchesSearch = 
-        user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.clients.some(client => client.name.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesRole = roleFilter === 'all' || 
-        user.roles.some(role => role.name === roleFilter);
-      
-      const matchesClientFilter = 
-        clientFilter === 'all' ||
-        (clientFilter === 'has-access' && user.clients.length > 0) ||
-        (clientFilter === 'no-access' && user.clients.length === 0);
-      
-      return matchesSearch && matchesRole && matchesClientFilter;
-    });
-  }, [usersWithClients, searchTerm, roleFilter, clientFilter]);
+  // Pagination calculations - backend handles pagination, no need to slice
+  const startIndex = (currentPage - 1) * itemsPerPage + 1;
+  const endIndex = Math.min(startIndex + users.length - 1, totalUsers);
+  // Use users directly since backend already returns paginated data
+  const paginatedUsers = usersWithClients;
+
+  // Reset selected users when pagination changes
+  useEffect(() => {
+    setSelectedUsers([]);
+  }, [currentPage, itemsPerPage]);
 
   // Quick assign single client to user
   const handleQuickAssignClient = async (userId: string, clientId: string) => {
@@ -184,16 +149,6 @@ const TeamManagementPage: React.FC = () => {
       console.error('Error removing client:', error);
       toast.error('Failed to remove client access. Please try again.');
     }
-  };
-
-  // Helper function to determine dropdown position
-  const getDropdownPosition = (index: number, totalItems: number) => {
-    // If it's one of the last 2 items, show dropdown above
-    if (index >= totalItems - 2) {
-      return "absolute right-0 bottom-full mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50";
-    }
-    // Otherwise show below
-    return "absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50";
   };
 
   const handleAssignClients = async () => {
@@ -293,7 +248,7 @@ const TeamManagementPage: React.FC = () => {
 
   const handleSelectAllUsers = (checked: boolean) => {
     if (checked) {
-      setSelectedUsers(filteredUsers.map(user => user.id));
+      setSelectedUsers(paginatedUsers.map(user => user.id));
     } else {
       setSelectedUsers([]);
     }
@@ -327,6 +282,36 @@ const TeamManagementPage: React.FC = () => {
         Admin
       </span>;
     }
+    if (roles.some(role => role.name === 'freelance-hr')) {
+      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        <User className="h-3 w-3 mr-1" />
+        Freelance HR
+      </span>;
+    }
+    if (roles.some(role => role.name === 'external-hr')) {
+      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+        <User className="h-3 w-3 mr-1" />
+        External HR
+      </span>;
+    }
+    if (roles.some(role => role.name === 'internal-hr')) {
+      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+        <User className="h-3 w-3 mr-1" />
+        Internal HR
+      </span>;
+    }
+    if (roles.some(role => role.name === 'external-user')) {
+      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800">
+        <User className="h-3 w-3 mr-1" />
+        External User
+      </span>;
+    }
+    if (roles.some(role => role.name === 'jobseeker')) {
+      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+        <User className="h-3 w-3 mr-1" />
+        Job Seeker
+      </span>;
+    }
     return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
       <User className="h-3 w-3 mr-1" />
       User
@@ -348,124 +333,67 @@ const TeamManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center mb-2">
-            <Link 
-              to="/admin"
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              Admin
-            </Link>
-            <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
-            <span className="text-gray-900 font-medium">Team Management</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
-              <p className="text-gray-600 mt-1">
-                Create and manage team members and their client access
-              </p>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 px-6 py-8 w-full">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center mb-2">
+              <Link 
+                to="/admin"
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Admin
+              </Link>
+              <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+              <span className="text-gray-900 font-medium">Team Management</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowUserModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span>Add Team Member</span>
-              </button>
-              <button
-                onClick={() => refetchUsers()}
-                disabled={loadingUsers}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`h-4 w-4 ${loadingUsers ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
-              <button
-                onClick={() => setBulkMode(!bulkMode)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  bulkMode 
-                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                    : 'text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <CheckSquare className="h-4 w-4" />
-                <span>{bulkMode ? 'Exit Bulk Mode' : 'Bulk Actions'}</span>
-              </button>
-              {bulkMode && selectedUsers.length > 0 && (
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
+                <p className="text-gray-600 mt-1">
+                  Create and manage team members and their client access
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
                 <button
-                  onClick={openBulkAssignModal}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => setShowUserModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
-                  <LinkIcon className="h-4 w-4" />
-                  <span>Assign Clients ({selectedUsers.length})</span>
+                  <UserPlus className="h-4 w-4" />
+                  <span>Add Team Member</span>
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search users, emails, or client names..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
+                <button
+                  onClick={() => refetchUsers()}
+                  disabled={loadingUsers}
+                  className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingUsers ? 'animate-spin' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+                <button
+                  onClick={() => setBulkMode(!bulkMode)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    bulkMode 
+                      ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                      : 'text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  <span>{bulkMode ? 'Exit Bulk Mode' : 'Bulk Actions'}</span>
+                </button>
+                {bulkMode && selectedUsers.length > 0 && (
+                  <button
+                    onClick={openBulkAssignModal}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                    <span>Assign Clients ({selectedUsers.length})</span>
+                  </button>
+                )}
               </div>
             </div>
-            <div className="flex gap-4">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="all">All Roles</option>
-                <option value="super-admin">Super Admin</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
-              </select>
-              <select
-                value={clientFilter}
-                onChange={(e) => setClientFilter(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="all">All Users</option>
-                <option value="has-access">Has Client Access</option>
-                <option value="no-access">No Client Access</option>
-              </select>
-            </div>
           </div>
-          {(searchTerm || roleFilter !== 'all' || clientFilter !== 'all') && (
-            <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-              <Filter className="h-4 w-4" />
-              <span>
-                Showing {filteredUsers.length} of {usersWithClients.length} users
-                {searchTerm && <span className="ml-1">matching "{searchTerm}"</span>}
-              </span>
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setRoleFilter('all');
-                  setClientFilter('all');
-                }}
-                className="ml-2 text-purple-600 hover:text-purple-700 font-medium"
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Users List */}
         {loadingUsers ? (
@@ -484,37 +412,52 @@ const TeamManagementPage: React.FC = () => {
               <span>Refresh Page</span>
             </button>
           </div>
-        ) : filteredUsers.length === 0 ? (
+        ) : usersWithClients.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {searchTerm || roleFilter !== 'all' ? 'No users match your search' : 'No users found'}
-            </h3>
-            <p className="text-gray-600">
-              {searchTerm || roleFilter !== 'all' 
-                ? 'Try adjusting your search criteria or filters.'
-                : 'No users are currently in the system.'
-              }
-            </p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+            <p className="text-gray-600">No users are currently in the system.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-visible">
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Users & Client Access</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Showing {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
-              </p>
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Users & Client Access</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Showing {startIndex}-{endIndex} of {totalUsers} user{totalUsers !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                {totalUsers > itemsPerPage && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>Items per page:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1); // Reset to first page when changing items per page
+                      }}
+                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
             
-            <div className="overflow-x-auto overflow-y-visible relative">
-              <table className="min-w-full divide-y divide-gray-200 relative">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     {bulkMode && (
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <input
                           type="checkbox"
-                          checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                          checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
                           onChange={(e) => handleSelectAllUsers(e.target.checked)}
                           className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                         />
@@ -532,13 +475,13 @@ const TeamManagementPage: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Client Access
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user, index) => (
+                  {paginatedUsers.map((user, index) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       {bulkMode && (
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -599,63 +542,46 @@ const TeamManagementPage: React.FC = () => {
                           <span className="text-sm text-gray-500 italic">No client access</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="relative">
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end space-x-1 lg:space-x-2">
                           <button
-                            onClick={() => setActiveDropdown(activeDropdown === user.id ? null : user.id)}
-                            className="p-1 hover:bg-gray-100 rounded"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowDetailsModal(true);
+                            }}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200 transition-colors"
+                            title="View Details"
                           >
-                            <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                            <Eye className="h-3 w-3 mr-1" />
+                            <span>View</span>
                           </button>
-                          {activeDropdown === user.id && (
-                            <div className={getDropdownPosition(index, filteredUsers.length)}>
-                              <div className="py-1">
-                                <button
-                                  onClick={() => {
-                                    setSelectedUser(user);
-                                    setShowDetailsModal(true);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <Eye className="h-4 w-4 mr-3" />
-                                  View Details
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingUser(user);
-                                    setShowUserModal(true);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <Edit className="h-4 w-4 mr-3" />
-                                  Edit User
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    openAssignModal(user);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <LinkIcon className="h-4 w-4 mr-3" />
-                                  Manage Client Access
-                                </button>
-                                <hr className="my-1" />
-                                <button
-                                  onClick={() => {
-                                    handleDeleteUser(user.id);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-3" />
-                                  Delete User
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                          <button
+                            onClick={() => {
+                              setEditingUser(user);
+                              setShowUserModal(true);
+                            }}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                            title="Edit User"
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => openAssignModal(user)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded hover:bg-purple-200 transition-colors"
+                            title="Manage Client Access"
+                          >
+                            <LinkIcon className="h-3 w-3 mr-1" />
+                            <span>Clients</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded hover:bg-red-200 transition-colors"
+                            title="Delete User"
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            <span>Delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -663,6 +589,65 @@ const TeamManagementPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {startIndex} to {endIndex} of {totalUsers} results
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </button>
+                    
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 7) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 4) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 3) {
+                          pageNumber = totalPages - 6 + i;
+                        } else {
+                          pageNumber = currentPage - 3 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => setCurrentPage(pageNumber)}
+                            className={`px-3 py-2 text-sm font-medium rounded-md ${
+                              currentPage === pageNumber
+                                ? 'bg-purple-600 text-white'
+                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -911,13 +896,7 @@ const TeamManagementPage: React.FC = () => {
           user={editingUser as any}
           isEditing={!!editingUser}
           isLoading={editingUser ? updateUserMutation.isPending : createUserMutation.isPending}
-          roles={availableRoles.filter(role => {
-            // Filter out restricted roles based on current user permissions
-            if (!isSuperAdmin && (role.name === 'super-admin' || role.name === 'admin')) {
-              return false;
-            }
-            return true;
-          })}
+          roles={availableRoles}
         />
       )}
 
@@ -945,14 +924,7 @@ const TeamManagementPage: React.FC = () => {
       )}
 
       <ToastContainer />
-
-      {/* Click outside to close dropdown */}
-      {activeDropdown && (
-        <div 
-          className="fixed inset-0 z-0" 
-          onClick={() => setActiveDropdown(null)}
-        />
-      )}
+      </div>
     </div>
   );
 };
