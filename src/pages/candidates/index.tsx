@@ -352,11 +352,12 @@ const CandidatesPage: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, experienceFilter]);  // Get stats from React Query or provide fallback values
   const stats = statsQuery.data || {
-    total: candidates?.length || 0,
-    active: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'active').length : 0,
-    interviewing: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'interviewing').length : 0,
-    hired: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'hired').length : 0,    rejected: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'rejected').length : 0,
-    inactive: candidates && Array.isArray(candidates) ? candidates.filter((c: EnhancedCandidate) => c.status === 'inactive').length : 0
+    total: totalItems || 0, // Use total from pagination, not just current page
+    active: 0, // Use 0 as fallback when real stats are loading
+    interviewing: 0,
+    hired: 0,
+    rejected: 0,
+    inactive: 0
   };
 
   const formatDate = (dateString: string | null) => {
@@ -410,7 +411,7 @@ const CandidatesPage: React.FC = () => {
               <p className="text-gray-600 mt-1">Manage and review candidate applications efficiently</p>
             </div>            <div className="flex items-center space-x-4">
               <div className="text-right">
-                <div className="text-2xl font-bold text-purple-600">{candidates.length}</div>
+                <div className="text-2xl font-bold text-purple-600">{totalItems}</div>
                 <div className="text-sm text-gray-500">Total Candidates</div>
               </div>
               <div className="w-px h-12 bg-gray-300"></div>

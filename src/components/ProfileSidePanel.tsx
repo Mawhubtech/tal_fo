@@ -167,10 +167,107 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     return null;
   }
 
-  const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages, references, customFields } = userData;// Main profile tabs for the 2/3 section
+  const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages, references, customFields } = userData;
+
+  // Helper function to parse and normalize dates for sorting
+  const parseDate = (dateStr: string | undefined): Date => {
+    if (!dateStr) return new Date(0); // Very old date for missing dates
+    
+    // Handle "Present" or similar current indicators
+    if (dateStr.toLowerCase().includes('present') || dateStr.toLowerCase().includes('current')) {
+      return new Date(); // Current date
+    }
+    
+    // Try to parse various date formats
+    // Handle formats like "2023", "2023-05", "May 2023", "2023-05-15", etc.
+    let parsedDate: Date;
+    
+    // If it's just a year (4 digits)
+    if (/^\d{4}$/.test(dateStr)) {
+      parsedDate = new Date(parseInt(dateStr), 11, 31); // December 31st of that year
+    }
+    // If it's year-month format (YYYY-MM)
+    else if (/^\d{4}-\d{2}$/.test(dateStr)) {
+      const [year, month] = dateStr.split('-');
+      parsedDate = new Date(parseInt(year), parseInt(month) - 1, 1); // First day of the month
+    }
+    // If it's a full ISO date (YYYY-MM-DD)
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      parsedDate = new Date(dateStr);
+    }
+    // Try parsing other formats like "May 2023"
+    else {
+      parsedDate = new Date(dateStr);
+    }
+    
+    // If parsing failed, return a very old date
+    if (isNaN(parsedDate.getTime())) {
+      return new Date(0);
+    }
+    
+    return parsedDate;
+  };
+
+  // Helper function to format date for display (Month YYYY)
+  const formatDateForDisplay = (dateStr: string | undefined): string => {
+    if (!dateStr) return '';
+    
+    if (dateStr.toLowerCase().includes('present') || dateStr.toLowerCase().includes('current')) {
+      return 'Present';
+    }
+    
+    const date = parseDate(dateStr);
+    if (date.getTime() === 0) return dateStr; // Return original if parsing failed
+    
+    return date.toLocaleDateString('en-US', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
+  };
+
+  // Helper function to sort experience chronologically (most recent first)
+  const sortedExperience = experience?.slice().sort((a, b) => {
+    const aEndDate = parseDate(a.endDate);
+    const bEndDate = parseDate(b.endDate);
+    
+    // Sort by end date descending (most recent first)
+    if (aEndDate.getTime() !== bEndDate.getTime()) {
+      return bEndDate.getTime() - aEndDate.getTime();
+    }
+    
+    // If end dates are the same, sort by start date descending
+    const aStartDate = parseDate(a.startDate);
+    const bStartDate = parseDate(b.startDate);
+    return bStartDate.getTime() - aStartDate.getTime();
+  });
+
+  // Helper function to sort education chronologically (most recent first)
+  const sortedEducation = education?.slice().sort((a, b) => {
+    // Determine the end date for each education entry
+    const getEndDate = (edu: Education) => {
+      if (edu.endDate) return parseDate(edu.endDate);
+      if (edu.graduationDate) return parseDate(edu.graduationDate);
+      return new Date(); // Current date for ongoing education
+    };
+    
+    const aEndDate = getEndDate(a);
+    const bEndDate = getEndDate(b);
+    
+    // Sort by end date descending (most recent first)
+    if (aEndDate.getTime() !== bEndDate.getTime()) {
+      return bEndDate.getTime() - aEndDate.getTime();
+    }
+    
+    // If end dates are the same, sort by start date descending
+    const aStartDate = parseDate(a.startDate);
+    const bStartDate = parseDate(b.startDate);
+    return bStartDate.getTime() - aStartDate.getTime();
+  });
+
+  // Main profile tabs for the 2/3 section
   const profileTabs = [
-    { name: 'Experience', icon: Briefcase, index: 0, count: experience?.length || 0 },
-    { name: 'Education', icon: GraduationCap, index: 1, count: education?.length || 0 },
+    { name: 'Experience', icon: Briefcase, index: 0, count: sortedExperience?.length || 0 },
+    { name: 'Education', icon: GraduationCap, index: 1, count: sortedEducation?.length || 0 },
     { name: 'Skills', icon: Zap, index: 2, count: skills?.length || 0 },
     { name: 'Projects', icon: FolderOpen, index: 3, count: projects?.length || 0 },
     { name: 'Certifications', icon: FileBadge2, index: 4, count: certifications?.length || 0 },
@@ -355,9 +452,9 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               {/* Experience Tab */}
               {activeTab === 0 && (
                 <div>
-                  {experience && experience.length > 0 ? (
+                  {sortedExperience && sortedExperience.length > 0 ? (
                     <div className="space-y-5">
-                      {experience.map((exp, index) => (
+                      {sortedExperience.map((exp, index) => (
                         <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== experience.length - 1 ? "mb-4" : ""}`}>
                           <div className="flex justify-between items-start">
                             <div className="flex">
@@ -371,7 +468,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                               </div>
                             </div>
                             <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
-                              {exp.startDate} - {exp.endDate || 'Present'}
+                              {formatDateForDisplay(exp.startDate)} - {formatDateForDisplay(exp.endDate) || 'Present'}
                             </div>
                           </div>
                           {exp.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
@@ -412,10 +509,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               {/* Education Tab */}
               {activeTab === 1 && (
                 <div>
-                  {education && education.length > 0 ? (
+                  {sortedEducation && sortedEducation.length > 0 ? (
                     <div className="space-y-4">
-                      {education.map((edu, index) => (
-                        <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== education.length - 1 ? "mb-4" : ""}`}>
+                      {sortedEducation.map((edu, index) => (
+                        <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== sortedEducation.length - 1 ? "mb-4" : ""}`}>
                           <div className="flex justify-between items-start">
                             <div className="flex">
                               <div className="mr-3 mt-1">
@@ -428,9 +525,9 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                               </div>
                             </div>
                             <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
-                              {edu.startDate && edu.endDate ? `${edu.startDate} - ${edu.endDate}` : 
-                               edu.graduationDate ? edu.graduationDate :
-                               edu.startDate ? `${edu.startDate} - Present` : ''}
+                              {edu.startDate && edu.endDate ? `${formatDateForDisplay(edu.startDate)} - ${formatDateForDisplay(edu.endDate)}` : 
+                               edu.graduationDate ? formatDateForDisplay(edu.graduationDate) :
+                               edu.startDate ? `${formatDateForDisplay(edu.startDate)} - Present` : ''}
                             </div>
                           </div>
                           {edu.major && <p className="text-xs text-gray-600 mt-1 ml-8">Major: {edu.major}</p>}
@@ -1009,10 +1106,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             {/* Experience Tab */}
             {activeTab === 0 && (
               <div>
-                {experience && experience.length > 0 ? (
+                {sortedExperience && sortedExperience.length > 0 ? (
                   <div className="space-y-5">
-                    {experience.map((exp, index) => (
-                      <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== experience.length - 1 ? "mb-4" : ""}`}>
+                    {sortedExperience.map((exp, index) => (
+                      <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== sortedExperience.length - 1 ? "mb-4" : ""}`}>
                         <div className="flex justify-between items-start">
                           <div className="flex">
                             <div className="mr-3 mt-1">
@@ -1025,7 +1122,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                             </div>
                           </div>
                           <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
-                            {exp.startDate} - {exp.endDate || 'Present'}
+                            {formatDateForDisplay(exp.startDate)} - {formatDateForDisplay(exp.endDate) || 'Present'}
                           </div>
                         </div>
                         {exp.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
@@ -1066,10 +1163,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             {/* Education Tab */}
             {activeTab === 1 && (
               <div>
-                {education && education.length > 0 ? (
+                {sortedEducation && sortedEducation.length > 0 ? (
                   <div className="space-y-4">
-                    {education.map((edu, index) => (
-                      <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== education.length - 1 ? "mb-4" : ""}`}>
+                    {sortedEducation.map((edu, index) => (
+                      <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== sortedEducation.length - 1 ? "mb-4" : ""}`}>
                         <div className="flex justify-between items-start">
                           <div className="flex">
                             <div className="mr-3 mt-1">
@@ -1082,9 +1179,9 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                             </div>
                           </div>
                           <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
-                            {edu.startDate && edu.endDate ? `${edu.startDate} - ${edu.endDate}` : 
-                             edu.graduationDate ? edu.graduationDate :
-                             edu.startDate ? `${edu.startDate} - Present` : ''}
+                            {edu.startDate && edu.endDate ? `${formatDateForDisplay(edu.startDate)} - ${formatDateForDisplay(edu.endDate)}` : 
+                             edu.graduationDate ? formatDateForDisplay(edu.graduationDate) :
+                             edu.startDate ? `${formatDateForDisplay(edu.startDate)} - Present` : ''}
                           </div>
                         </div>
                         {edu.major && <p className="text-xs text-gray-600 mt-1 ml-8">Major: {edu.major}</p>}
