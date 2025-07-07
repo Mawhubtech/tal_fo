@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Save, Shield, Bell, Mail, Database, Key, Globe, Users, FileText, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
+import { Save, Shield, Bell, Mail, Database, Key, Globe, Users, FileText, ToggleLeft, ToggleRight, AlertTriangle, HardDrive, Download, Trash2, Plus, Calendar, Clock } from 'lucide-react';
+import { useBackups, useCreateBackup, useDeleteBackup, useDownloadBackup } from '../../hooks/useBackup';
+import { BackupApiService } from '../../services/backupApiService';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 interface SettingsSection {
   id: string;
@@ -9,6 +12,8 @@ interface SettingsSection {
 
 const SystemSettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('general');
+  const [deleteBackupModal, setDeleteBackupModal] = useState<string | null>(null);
+  
   const [notifications, setNotifications] = useState({
     emailAlerts: true,
     smsAlerts: false,
@@ -26,11 +31,18 @@ const SystemSettingsPage: React.FC = () => {
     ipWhitelist: false
   });
 
+  // Backup hooks
+  const { data: backupsData, isLoading: backupsLoading } = useBackups();
+  const createBackupMutation = useCreateBackup();
+  const deleteBackupMutation = useDeleteBackup();
+  const downloadBackupMutation = useDownloadBackup();
+
   const sections: SettingsSection[] = [
     { id: 'general', name: 'General', icon: Globe },
     { id: 'security', name: 'Security', icon: Shield },
     { id: 'notifications', name: 'Notifications', icon: Bell },
     { id: 'integrations', name: 'Integrations', icon: Database },
+    { id: 'backup', name: 'Backup & Restore', icon: HardDrive },
     { id: 'user-management', name: 'User Management', icon: Users },
     { id: 'data-retention', name: 'Data & Privacy', icon: FileText }
   ];
@@ -40,6 +52,25 @@ const SystemSettingsPage: React.FC = () => {
       ...prev,
       [key]: !prev[key as keyof typeof prev]
     }));
+  };
+
+  const handleCreateBackup = async () => {
+    createBackupMutation.mutate('manual');
+  };
+
+  const handleDeleteBackup = (filename: string) => {
+    setDeleteBackupModal(filename);
+  };
+
+  const confirmDeleteBackup = () => {
+    if (deleteBackupModal) {
+      deleteBackupMutation.mutate(deleteBackupModal);
+      setDeleteBackupModal(null);
+    }
+  };
+
+  const handleDownloadBackup = (filename: string) => {
+    downloadBackupMutation.mutate(filename);
   };
 
   const renderToggle = (isOn: boolean, onClick: () => void) => (
@@ -62,9 +93,12 @@ const SystemSettingsPage: React.FC = () => {
           <span className="text-sm text-gray-600">Last updated: 2 hours ago</span>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Backup Settings
+          <button 
+            onClick={() => setActiveSection('backup')}
+            className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            <HardDrive className="h-4 w-4 mr-2" />
+            Backup & Restore
           </button>
           <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
             <Save className="h-4 w-4 mr-2" />
@@ -400,6 +434,164 @@ const SystemSettingsPage: React.FC = () => {
             </div>
           )}
 
+          {/* Backup & Restore Settings */}
+          {activeSection === 'backup' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Backup & Restore</h2>
+                <button
+                  onClick={handleCreateBackup}
+                  disabled={createBackupMutation.isPending}
+                  className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {createBackupMutation.isPending ? 'Creating...' : 'Create Backup'}
+                </button>
+              </div>
+
+              {/* Backup Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <HardDrive className="h-8 w-8 text-blue-600 mr-3" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Backups</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {backupsData?.stats?.totalBackups || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <Database className="h-8 w-8 text-green-600 mr-3" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Size</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {backupsData?.stats?.totalSize ? 
+                          BackupApiService.formatFileSize(backupsData.stats.totalSize) : 
+                          '0 Bytes'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <Clock className="h-8 w-8 text-purple-600 mr-3" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Latest Backup</p>
+                      <p className="text-sm font-bold text-purple-600">
+                        {backupsData?.stats?.newestBackup ? 
+                          BackupApiService.formatDate(backupsData.stats.newestBackup) : 
+                          'No backups'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Backup List */}
+              <div className="bg-white border rounded-lg">
+                <div className="px-4 py-3 border-b">
+                  <h3 className="text-sm font-medium text-gray-900">Backup History</h3>
+                </div>
+                
+                <div className="overflow-hidden">
+                  {backupsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                    </div>
+                  ) : backupsData?.backups?.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <HardDrive className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <p>No backups available</p>
+                      <p className="text-sm">Create your first backup to get started</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200">
+                      {backupsData?.backups?.map((backup) => (
+                        <div key={backup.filename} className="px-4 py-4 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                              <HardDrive className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{backup.filename}</p>
+                              <div className="flex items-center text-xs text-gray-500 space-x-4">
+                                <span className="flex items-center">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  {BackupApiService.formatDate(backup.created)}
+                                </span>
+                                <span>{BackupApiService.formatFileSize(backup.size)}</span>
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                  backup.type === 'manual' 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {backup.type}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleDownloadBackup(backup.filename)}
+                              disabled={downloadBackupMutation.isPending}
+                              className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
+                              title="Download backup"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBackup(backup.filename)}
+                              disabled={deleteBackupMutation.isPending}
+                              className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                              title="Delete backup"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Backup Settings */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Backup Settings</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700">Automatic Backups</h4>
+                      <p className="text-sm text-gray-500">Schedule automatic database backups</p>
+                    </div>
+                    {renderToggle(false, () => {})}
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700">Backup Retention</h4>
+                      <p className="text-sm text-gray-500">Keep backups for 30 days</p>
+                    </div>
+                    <select className="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500">
+                      <option>7 days</option>
+                      <option>30 days</option>
+                      <option>90 days</option>
+                      <option>1 year</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* User Management Settings */}
           {activeSection === 'user-management' && (
             <div className="space-y-6">
@@ -506,6 +698,19 @@ const SystemSettingsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Backup Confirmation Modal */}
+      {deleteBackupModal && (
+        <ConfirmationModal
+          isOpen={true}
+          onClose={() => setDeleteBackupModal(null)}
+          onConfirm={confirmDeleteBackup}
+          title="Delete Backup"
+          message={`Are you sure you want to delete the backup "${deleteBackupModal}"? This action cannot be undone.`}
+          confirmText="Delete"
+          type="danger"
+        />
+      )}
     </div>
   );
 };
