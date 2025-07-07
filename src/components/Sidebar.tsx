@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search, Users, MessageSquare, 
   Settings, HelpCircle, ChevronDown, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
   Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3, GitBranch, KeyRound, // Added for Jobs and Admin
   Mail, UserCircle // Added for Outreach
 } from 'lucide-react';
+import { useAuthContext } from '../contexts/AuthContext';
+import { useMyAssignment } from '../hooks/useUserAssignment';
 
 interface SidebarProps {
   isExpanded: boolean;
@@ -13,7 +15,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
-  const location = useLocation();  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuthContext();
+  const { data: userAssignment } = useMyAssignment();
+
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     sourcing: false,
     admin: false,
     clientOutreach: false
@@ -30,6 +37,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
 
   const toggleSection = (section: string) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // Handle Jobs navigation based on user role
+  const handleJobsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Get user roles
+    const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
+    
+    // Check if user has internal-hr or internal-recruiter role
+    const hasInternalRole = userRoles.some(role => 
+      role === 'internal-hr' || role === 'internal-recruiter' || role === 'user'
+    );
+    
+    // Check if user has admin role (admin takes precedence)
+    const hasAdminRole = userRoles.some(role => 
+      role === 'admin' || role === 'super-admin'
+    );
+    
+    if (hasInternalRole && !hasAdminRole && userAssignment) {
+      // Navigate directly to their assigned organization
+      const organizationId = userAssignment.organizationId || userAssignment.clientId;
+      if (organizationId) {
+        navigate(`/dashboard/organizations/${organizationId}`);
+        return;
+      }
+    }
+    
+    // Default behavior - navigate to organizations list
+    navigate('/dashboard/organizations');
   };
 
   return (
@@ -149,16 +186,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               </div>
             )}
           </div>          {/* Jobs Section */}
-          <Link 
-            to="/dashboard/jobs" 
-            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/jobs') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+          <button
+            onClick={handleJobsClick}
+            className={`flex items-center w-full ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/jobs') || location.pathname.includes('/dashboard/organizations') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
             title={!isExpanded ? "Jobs" : ""}
           >
-            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/jobs') ? '#7e22ce' : '#9ca3af' }}>
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/jobs') || location.pathname.includes('/dashboard/organizations') ? '#7e22ce' : '#9ca3af' }}>
               <Briefcase className="w-4 h-4" />
             </div>
             {isExpanded && "Jobs"}
-          </Link>
+          </button>
 
           {/* My Jobs Section */}
           <Link 
