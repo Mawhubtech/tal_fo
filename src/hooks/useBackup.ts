@@ -39,8 +39,8 @@ export function useCreateBackup() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (type: 'manual' | 'scheduled' = 'manual') => 
-      BackupApiService.createBackup(type),
+    mutationFn: ({ type = 'manual', note }: { type?: 'manual' | 'scheduled'; note?: string }) => 
+      BackupApiService.createBackup(type, note),
     onSuccess: (data) => {
       // Invalidate and refetch backup list
       queryClient.invalidateQueries({ queryKey: backupKeys.list() });
@@ -98,5 +98,43 @@ export function useDownloadBackup() {
       console.error('Backup download failed:', error);
       toast.error('Download Failed', error.response?.data?.message || 'Failed to download backup');
     },
+  });
+}
+
+/**
+ * Update backup note
+ */
+export function useUpdateBackupNote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ filename, note }: { filename: string; note: string }) => 
+      BackupApiService.updateBackupNote(filename, note),
+    onSuccess: (data, { filename }) => {
+      // Invalidate and refetch backup list
+      queryClient.invalidateQueries({ queryKey: backupKeys.list() });
+      
+      if (data.success) {
+        toast.success('Note Updated', `Backup note updated successfully!`);
+      } else {
+        toast.error('Update Failed', 'Failed to update backup note');
+      }
+    },
+    onError: (error: any) => {
+      console.error('Backup note update failed:', error);
+      toast.error('Update Failed', error.response?.data?.message || 'Failed to update backup note');
+    },
+  });
+}
+
+/**
+ * Get backup metadata
+ */
+export function useBackupMetadata(filename: string | null) {
+  return useQuery({
+    queryKey: [...backupKeys.all, 'metadata', filename],
+    queryFn: () => filename ? BackupApiService.getBackupMetadata(filename) : null,
+    enabled: !!filename,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

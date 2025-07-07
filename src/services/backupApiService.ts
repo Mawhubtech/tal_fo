@@ -6,6 +6,7 @@ export interface BackupItem {
   size: number;
   created: string;
   type: 'manual' | 'scheduled';
+  note?: string;
 }
 
 export interface BackupStats {
@@ -47,9 +48,11 @@ export class BackupApiService {
   /**
    * Create a new database backup
    */
-  static async createBackup(type: 'manual' | 'scheduled' = 'manual'): Promise<BackupResponse> {
+  static async createBackup(type: 'manual' | 'scheduled' = 'manual', note?: string): Promise<BackupResponse> {
     try {
-      const response = await apiClient.post(`${this.BASE_URL}/create`, {}, {
+      const response = await apiClient.post(`${this.BASE_URL}/create`, {
+        note: note || ''
+      }, {
         params: { type }
       });
       return response.data;
@@ -119,6 +122,34 @@ export class BackupApiService {
       return response.data;
     } catch (error) {
       console.error('Error fetching backup stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update backup note
+   */
+  static async updateBackupNote(filename: string, note: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await apiClient.put(`${this.BASE_URL}/${filename}/note`, {
+        note
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating backup note:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get backup metadata
+   */
+  static async getBackupMetadata(filename: string): Promise<{ success: boolean; metadata: any }> {
+    try {
+      const response = await apiClient.get(`${this.BASE_URL}/${filename}/metadata`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching backup metadata:', error);
       throw error;
     }
   }

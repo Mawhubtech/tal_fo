@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Save, Shield, Bell, Mail, Database, Key, Globe, Users, FileText, ToggleLeft, ToggleRight, AlertTriangle, HardDrive, Download, Trash2, Plus, Calendar, Clock } from 'lucide-react';
-import { useBackups, useCreateBackup, useDeleteBackup, useDownloadBackup } from '../../hooks/useBackup';
+import { Save, Shield, Bell, Mail, Database, Key, Globe, Users, FileText, ToggleLeft, ToggleRight, AlertTriangle, HardDrive, Download, Trash2, Plus, Calendar, Clock, Edit } from 'lucide-react';
+import { useBackups, useCreateBackup, useDeleteBackup, useDownloadBackup, useUpdateBackupNote } from '../../hooks/useBackup';
 import { BackupApiService } from '../../services/backupApiService';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import BackupNoteModal from '../../components/BackupNoteModal';
 
 interface SettingsSection {
   id: string;
@@ -13,6 +14,15 @@ interface SettingsSection {
 const SystemSettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState('general');
   const [deleteBackupModal, setDeleteBackupModal] = useState<string | null>(null);
+  const [backupNoteModal, setBackupNoteModal] = useState<{
+    isOpen: boolean;
+    type: 'create' | 'edit';
+    filename?: string;
+    initialNote?: string;
+  }>({
+    isOpen: false,
+    type: 'create'
+  });
   
   const [notifications, setNotifications] = useState({
     emailAlerts: true,
@@ -36,6 +46,7 @@ const SystemSettingsPage: React.FC = () => {
   const createBackupMutation = useCreateBackup();
   const deleteBackupMutation = useDeleteBackup();
   const downloadBackupMutation = useDownloadBackup();
+  const updateBackupNoteMutation = useUpdateBackupNote();
 
   const sections: SettingsSection[] = [
     { id: 'general', name: 'General', icon: Globe },
@@ -55,7 +66,31 @@ const SystemSettingsPage: React.FC = () => {
   };
 
   const handleCreateBackup = async () => {
-    createBackupMutation.mutate('manual');
+    setBackupNoteModal({
+      isOpen: true,
+      type: 'create'
+    });
+  };
+
+  const handleBackupNoteModalSave = (note: string) => {
+    if (backupNoteModal.type === 'create') {
+      createBackupMutation.mutate({ type: 'manual', note });
+    } else if (backupNoteModal.type === 'edit' && backupNoteModal.filename) {
+      updateBackupNoteMutation.mutate({ 
+        filename: backupNoteModal.filename, 
+        note 
+      });
+    }
+    setBackupNoteModal({ isOpen: false, type: 'create' });
+  };
+
+  const handleEditBackupNote = (filename: string, currentNote: string) => {
+    setBackupNoteModal({
+      isOpen: true,
+      type: 'edit',
+      filename,
+      initialNote: currentNote
+    });
   };
 
   const handleDeleteBackup = (filename: string) => {
@@ -514,48 +549,64 @@ const SystemSettingsPage: React.FC = () => {
                   ) : (
                     <div className="divide-y divide-gray-200">
                       {backupsData?.backups?.map((backup) => (
-                        <div key={backup.filename} className="px-4 py-4 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                              <HardDrive className="h-5 w-5 text-gray-600" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{backup.filename}</p>
-                              <div className="flex items-center text-xs text-gray-500 space-x-4">
-                                <span className="flex items-center">
-                                  <Calendar className="h-3 w-3 mr-1" />
-                                  {BackupApiService.formatDate(backup.created)}
-                                </span>
-                                <span>{BackupApiService.formatFileSize(backup.size)}</span>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  backup.type === 'manual' 
-                                    ? 'bg-blue-100 text-blue-800' 
-                                    : 'bg-green-100 text-green-800'
-                                }`}>
-                                  {backup.type}
-                                </span>
+                        <div key={backup.filename} className="px-4 py-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                                <HardDrive className="h-5 w-5 text-gray-600" />
                               </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{backup.filename}</p>
+                                <div className="flex items-center text-xs text-gray-500 space-x-4">
+                                  <span className="flex items-center">
+                                    <Calendar className="h-3 w-3 mr-1" />
+                                    {BackupApiService.formatDate(backup.created)}
+                                  </span>
+                                  <span>{BackupApiService.formatFileSize(backup.size)}</span>
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    backup.type === 'manual' 
+                                      ? 'bg-blue-100 text-blue-800' 
+                                      : 'bg-green-100 text-green-800'
+                                  }`}>
+                                    {backup.type}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleEditBackupNote(backup.filename, backup.note || '')}
+                                className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
+                                title="Edit note"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDownloadBackup(backup.filename)}
+                                disabled={downloadBackupMutation.isPending}
+                                className="p-2 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50"
+                                title="Download backup"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteBackup(backup.filename)}
+                                disabled={deleteBackupMutation.isPending}
+                                className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                                title="Delete backup"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
                           
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleDownloadBackup(backup.filename)}
-                              disabled={downloadBackupMutation.isPending}
-                              className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
-                              title="Download backup"
-                            >
-                              <Download className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBackup(backup.filename)}
-                              disabled={deleteBackupMutation.isPending}
-                              className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"
-                              title="Delete backup"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                          {/* Backup Note */}
+                          {backup.note && (
+                            <div className="ml-13 pl-4 border-l-2 border-gray-200">
+                              <p className="text-sm text-gray-600 italic">"{backup.note}"</p>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -711,6 +762,17 @@ const SystemSettingsPage: React.FC = () => {
           type="danger"
         />
       )}
+
+      {/* Backup Note Modal */}
+      <BackupNoteModal
+        isOpen={backupNoteModal.isOpen}
+        onClose={() => setBackupNoteModal({ isOpen: false, type: 'create' })}
+        onSave={handleBackupNoteModalSave}
+        isLoading={backupNoteModal.type === 'create' ? createBackupMutation.isPending : updateBackupNoteMutation.isPending}
+        title={backupNoteModal.type === 'create' ? 'Create Backup' : 'Edit Backup Note'}
+        initialNote={backupNoteModal.initialNote}
+        placeholder={backupNoteModal.type === 'create' ? 'Enter a note for this backup...' : 'Edit the backup note...'}
+      />
     </div>
   );
 };
