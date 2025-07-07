@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { type Role, type Permission, type CreateRoleData, type UpdateRoleData } from '../services/roleApiService';
+import RolePermissionAssigner from './RolePermissionAssigner';
 
 interface RoleModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
     name: '',
     description: '',
     isActive: true,
-    permissionIds: [] as string[]
+    selectedPermissions: [] as string[]
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -37,14 +38,14 @@ export const RoleModal: React.FC<RoleModalProps> = ({
           name: role.name,
           description: role.description,
           isActive: role.isActive,
-          permissionIds: role.permissions?.map(p => p.id) || []
+          selectedPermissions: role.permissions?.map(p => `${p.resource}:${p.action}`) || []
         });
       } else {
         setFormData({
           name: '',
           description: '',
           isActive: true,
-          permissionIds: []
+          selectedPermissions: []
         });
       }
       setErrors({});
@@ -73,22 +74,27 @@ export const RoleModal: React.FC<RoleModalProps> = ({
       return;
     }
 
+    // Convert selected permissions back to permission IDs for the API
+    const permissionIds = formData.selectedPermissions.length > 0 
+      ? permissions
+          .filter(p => formData.selectedPermissions.includes(`${p.resource}:${p.action}`))
+          .map(p => p.id)
+      : undefined;
+
     const submitData: CreateRoleData | UpdateRoleData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
       isActive: formData.isActive,
-      permissionIds: formData.permissionIds.length > 0 ? formData.permissionIds : undefined
+      permissionIds
     };
 
     onSubmit(submitData);
   };
 
-  const handlePermissionChange = (permissionId: string, checked: boolean) => {
+  const handlePermissionsChange = (selectedPermissions: string[]) => {
     setFormData(prev => ({
       ...prev,
-      permissionIds: checked 
-        ? [...prev.permissionIds, permissionId]
-        : prev.permissionIds.filter(id => id !== permissionId)
+      selectedPermissions
     }));
   };
 
@@ -179,39 +185,12 @@ export const RoleModal: React.FC<RoleModalProps> = ({
 
           {/* Permissions */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Permissions ({formData.permissionIds.length} selected)
-            </label>
-            <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
-              {permissions.length > 0 ? (
-                <div className="grid grid-cols-1 gap-2">
-                  {permissions.map((permission) => (
-                    <div key={permission.id} className="flex items-start">
-                      <input
-                        type="checkbox"
-                        id={`permission-${permission.id}`}
-                        checked={formData.permissionIds.includes(permission.id)}
-                        onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
-                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 mt-1"
-                        disabled={isLoading}
-                      />
-                      <div className="ml-2">
-                        <label htmlFor={`permission-${permission.id}`} className="text-sm font-medium text-gray-700">
-                          {permission.resource}:{permission.action}
-                        </label>
-                        {permission.description && (
-                          <p className="text-xs text-gray-500">{permission.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No permissions available. Create permissions first.
-                </p>
-              )}
-            </div>
+            <RolePermissionAssigner
+              selectedPermissions={formData.selectedPermissions}
+              onPermissionsChange={handlePermissionsChange}
+              allPermissions={permissions}
+              disabled={isLoading}
+            />
           </div>
 
           {/* Form Actions */}

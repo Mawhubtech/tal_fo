@@ -25,7 +25,8 @@ import {
   Eye,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Settings
 } from 'lucide-react';
 import {
   useRoles,
@@ -42,6 +43,7 @@ import {
 import { type Role, type Permission, type CreateRoleData, type UpdateRoleData, type CreatePermissionData } from '../../services/roleApiService';
 import { RoleModal } from '../../components/RoleModal';
 import { PermissionModal } from '../../components/PermissionModal';
+import { RolePermissionModal } from '../../components/RolePermissionModal';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 
 const RoleManagementPage: React.FC = () => {
@@ -56,8 +58,10 @@ const RoleManagementPage: React.FC = () => {
   // Modal states
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+  const [isRolePermissionModalOpen, setIsRolePermissionModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
+  const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<Role | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   // Debounce search term
@@ -203,6 +207,34 @@ const RoleManagementPage: React.FC = () => {
     setIsRoleModalOpen(true);
   };
 
+  const handleManageRolePermissions = (role: Role) => {
+    setSelectedRoleForPermissions(role);
+    setIsRolePermissionModalOpen(true);
+  };
+
+  const handleSaveRolePermissions = async (roleId: string, permissionIds: string[]) => {
+    try {
+      // First remove all current permissions
+      if (selectedRoleForPermissions?.permissions) {
+        const currentPermissionIds = selectedRoleForPermissions.permissions.map(p => p.id);
+        if (currentPermissionIds.length > 0) {
+          await removePermissions.mutateAsync({ roleId, permissionIds: currentPermissionIds });
+        }
+      }
+      
+      // Then assign new permissions
+      if (permissionIds.length > 0) {
+        await assignPermissions.mutateAsync({ roleId, permissionIds });
+      }
+      
+      toast.success('Permissions Updated', 'Role permissions have been updated successfully.');
+      setIsRolePermissionModalOpen(false);
+      setSelectedRoleForPermissions(null);
+    } catch (error) {
+      toast.error('Update Failed', 'Failed to update role permissions. Please try again.');
+    }
+  };
+
   const handleCreateNewPermission = () => {
     setSelectedPermission(null);
     setIsEditing(false);
@@ -212,8 +244,10 @@ const RoleManagementPage: React.FC = () => {
   const handleCloseModals = () => {
     setIsRoleModalOpen(false);
     setIsPermissionModalOpen(false);
+    setIsRolePermissionModalOpen(false);
     setSelectedRole(null);
     setSelectedPermission(null);
+    setSelectedRoleForPermissions(null);
     setIsEditing(false);
   };
 
@@ -318,6 +352,7 @@ const RoleManagementPage: React.FC = () => {
           error={rolesError}
           onEdit={handleEditRole}
           onDelete={handleDeleteRole}
+          onManagePermissions={handleManageRolePermissions}
           getStatusBadge={getStatusBadge}
           getStatusIcon={getStatusIcon}
         />
@@ -378,6 +413,16 @@ const RoleManagementPage: React.FC = () => {
         isEditing={false}
       />
 
+      {/* Role Permission Assigner Modal */}
+      <RolePermissionModal
+        isOpen={isRolePermissionModalOpen}
+        onClose={handleCloseModals}
+        role={selectedRoleForPermissions}
+        permissions={allPermissions}
+        onSave={handleSaveRolePermissions}
+        isLoading={assignPermissions.isPending || removePermissions.isPending}
+      />
+
       {/* Toast Container */}
       <ToastContainer position="top-right" />
     </div>
@@ -391,6 +436,7 @@ interface RolesTableProps {
   error: any;
   onEdit: (role: Role) => void;
   onDelete: (role: Role) => void;
+  onManagePermissions: (role: Role) => void;
   getStatusBadge: (isActive: boolean) => string;
   getStatusIcon: (isActive: boolean) => React.ReactNode;
 }
@@ -401,6 +447,7 @@ const RolesTable: React.FC<RolesTableProps> = ({
   error,
   onEdit,
   onDelete,
+  onManagePermissions,
   getStatusBadge,
   getStatusIcon
 }) => {
@@ -501,6 +548,14 @@ const RolesTable: React.FC<RolesTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => onManagePermissions(role)}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                      title="Manage Permissions"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Permissions</span>
+                    </button>
                     <button 
                       onClick={() => onEdit(role)}
                       className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1"

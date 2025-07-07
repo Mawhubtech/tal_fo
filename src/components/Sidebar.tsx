@@ -4,7 +4,7 @@ import {
   Search, Users, MessageSquare, 
   Settings, HelpCircle, ChevronDown, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
   Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3, GitBranch, KeyRound, // Added for Jobs and Admin
-  Mail, UserCircle // Added for Outreach
+  Mail, UserCircle, Atom
 } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useMyAssignment } from '../hooks/useUserAssignment';
@@ -246,7 +246,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               title={!isExpanded ? "My Jobs" : ""}
             >
               <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/my-jobs') ? '#7e22ce' : '#9ca3af' }}>
-                <Briefcase className="w-4 h-4" />
+                <Atom className="w-4 h-4" />
               </div>
               {isExpanded && "My Jobs"}
             </Link>
