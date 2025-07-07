@@ -146,6 +146,8 @@ export const candidatesService = {  // Get candidates with filtering and paginat
   async processBulkCVs(zipFile: File, options?: {
     maxConcurrency?: number;
     batchSize?: number;
+    aiProcessingMode?: 'parallel' | 'sequential' | 'batch';
+    enableProgressTracking?: boolean;
   }) {
     const formData = new FormData();
     formData.append('zipFile', zipFile);
@@ -157,8 +159,52 @@ export const candidatesService = {  // Get candidates with filtering and paginat
     if (options?.batchSize) {
       formData.append('batchSize', options.batchSize.toString());
     }
+    if (options?.aiProcessingMode) {
+      formData.append('aiProcessingMode', options.aiProcessingMode);
+    }
+    if (options?.enableProgressTracking) {
+      formData.append('enableProgressTracking', 'true');
+    }
     
     const response = await apiClient.post('/candidates/process-bulk', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Check bulk processing progress (for long-running operations)
+  async getBulkProcessingProgress(processingId: string) {
+    const response = await apiClient.get(`/candidates/bulk-progress/${processingId}`);
+    return response.data;
+  },
+
+  // Start bulk processing with background processing
+  async startBulkProcessing(zipFile: File, options?: {
+    maxConcurrency?: number;
+    batchSize?: number;
+    aiProcessingMode?: 'parallel' | 'sequential' | 'batch';
+    notificationEmail?: string;
+  }) {
+    const formData = new FormData();
+    formData.append('zipFile', zipFile);
+    
+    // Add options
+    if (options?.maxConcurrency) {
+      formData.append('maxConcurrency', options.maxConcurrency.toString());
+    }
+    if (options?.batchSize) {
+      formData.append('batchSize', options.batchSize.toString());
+    }
+    if (options?.aiProcessingMode) {
+      formData.append('aiProcessingMode', options.aiProcessingMode);
+    }
+    if (options?.notificationEmail) {
+      formData.append('notificationEmail', options.notificationEmail);
+    }
+    
+    const response = await apiClient.post('/candidates/process-bulk-async', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

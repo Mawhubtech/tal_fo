@@ -7,8 +7,9 @@ const BulkCVProcessing: React.FC = () => {
   const [processedResults, setProcessedResults] = useState<any[] | null>(null);
   const [expandedResults, setExpandedResults] = useState<Record<string, boolean>>({});
   const [processingStep, setProcessingStep] = useState<'upload' | 'results'>('upload');
-  const [maxConcurrency, setMaxConcurrency] = useState(3);
-  const [batchSize, setBatchSize] = useState(10);
+  const [maxConcurrency, setMaxConcurrency] = useState(2);
+  const [batchSize, setBatchSize] = useState(5);
+  const [aiProcessingMode, setAiProcessingMode] = useState<'parallel' | 'sequential' | 'batch'>('parallel');
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [processingOptions, setProcessingOptions] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +33,9 @@ const BulkCVProcessing: React.FC = () => {
     try {
       const options = {
         maxConcurrency,
-        batchSize
+        batchSize,
+        aiProcessingMode,
+        enableProgressTracking: true
       };
       
       const result = await processBulkCVs(selectedFile, options);
@@ -90,6 +93,74 @@ const BulkCVProcessing: React.FC = () => {
     }
   };
 
+  const handleCreateAllCandidates = async () => {
+    if (!processedResults) return;
+    
+    // Filter for successful results that haven't been created yet
+    const eligibleResults = processedResults.filter(
+      (result, index) => result.success && !result.candidateCreated && result.structuredData
+    );
+    
+    if (eligibleResults.length === 0) {
+      alert('No eligible candidates to create. All successful results have already been processed.');
+      return;
+    }
+    
+    const confirmMessage = `This will create ${eligibleResults.length} candidates from the processed CVs. Are you sure you want to continue?`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+    
+    let successCount = 0;
+    let failureCount = 0;
+    
+    try {
+      // Process each eligible result
+      for (let i = 0; i < processedResults.length; i++) {
+        const result = processedResults[i];
+        
+        if (result.success && !result.candidateCreated && result.structuredData) {
+          try {
+            console.log(`Creating candidate ${i + 1}/${eligibleResults.length}: ${result.filename}`);
+            await createFromProcessed(result.structuredData);
+            
+            // Mark as created
+            setProcessedResults(prev => {
+              if (!prev) return prev;
+              const updated = [...prev];
+              updated[i] = {
+                ...updated[i],
+                candidateCreated: true
+              };
+              return updated;
+            });
+            
+            successCount++;
+            
+            // Small delay between creations to avoid overwhelming the backend
+            if (i < processedResults.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+          } catch (err) {
+            console.error(`Error creating candidate for ${result.filename}:`, err);
+            failureCount++;
+          }
+        }
+      }
+      
+      // Show completion message
+      if (successCount > 0) {
+        alert(`Successfully created ${successCount} candidates! ${failureCount > 0 ? `${failureCount} failed.` : ''}`);
+      } else {
+        alert('No candidates were created. Please check the console for errors.');
+      }
+      
+    } catch (err) {
+      console.error('Error in bulk candidate creation:', err);
+      alert('An error occurred during bulk candidate creation. Please try again.');
+    }
+  };
+
   return (
     <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
@@ -100,11 +171,11 @@ const BulkCVProcessing: React.FC = () => {
               <Zap className="w-5 h-5 text-purple-600 ml-2" />
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Process multiple CVs at once from a ZIP file with optimized parallel processing
+              Process multiple CVs with AI-optimized parallel processing
             </p>
           </div>
           <div className="text-xs text-gray-500">
-            {maxConcurrency}x concurrent • {batchSize} per batch
+            {maxConcurrency}x concurrent • {batchSize} per batch • {aiProcessingMode} AI
           </div>
         </div>
       </div>
@@ -171,43 +242,63 @@ const BulkCVProcessing: React.FC = () => {
               {showAdvancedSettings && (
                 <div className="p-4 space-y-4">
                   <div className="text-sm text-gray-600 mb-4">
-                    Optimize processing speed by adjusting these settings based on your system capabilities and file size.
+                    Optimize processing speed and AI performance by adjusting these settings based on your system capabilities, file size, and AI service rate limits.
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Max Concurrency
-                        <span className="text-xs text-gray-500 ml-1">(1-10)</span>
+                        <span className="text-xs text-gray-500 ml-1">(1-5)</span>
                       </label>
                       <input
                         type="number"
                         min="1"
-                        max="10"
+                        max="5"
                         value={maxConcurrency}
-                        onChange={(e) => setMaxConcurrency(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
+                        onChange={(e) => setMaxConcurrency(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Number of files to process simultaneously. Higher values = faster processing but more CPU usage.
+                        Files processed simultaneously. Lower values recommended for AI processing.
                       </p>
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Batch Size
-                        <span className="text-xs text-gray-500 ml-1">(1-50)</span>
+                        <span className="text-xs text-gray-500 ml-1">(1-20)</span>
                       </label>
                       <input
                         type="number"
                         min="1"
-                        max="50"
+                        max="20"
                         value={batchSize}
-                        onChange={(e) => setBatchSize(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                        onChange={(e) => setBatchSize(Math.min(20, Math.max(1, parseInt(e.target.value) || 1)))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Number of files to process per batch. Larger batches = better memory management for large sets.
+                        Files per batch. Smaller batches reduce memory usage.
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        AI Processing Mode
+                      </label>
+                      <select
+                        value={aiProcessingMode}
+                        onChange={(e) => setAiProcessingMode(e.target.value as 'parallel' | 'sequential' | 'batch')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="parallel">Parallel</option>
+                        <option value="sequential">Sequential</option>
+                        <option value="batch">Batch</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {aiProcessingMode === 'parallel' && 'Fastest but may hit rate limits'}
+                        {aiProcessingMode === 'sequential' && 'Slowest but most reliable'}
+                        {aiProcessingMode === 'batch' && 'Balanced speed and reliability'}
                       </p>
                     </div>
                   </div>
@@ -218,8 +309,9 @@ const BulkCVProcessing: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          setMaxConcurrency(2);
-                          setBatchSize(5);
+                          setMaxConcurrency(1);
+                          setBatchSize(3);
+                          setAiProcessingMode('sequential');
                         }}
                         className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 bg-blue-50 rounded"
                       >
@@ -228,8 +320,9 @@ const BulkCVProcessing: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          setMaxConcurrency(3);
-                          setBatchSize(10);
+                          setMaxConcurrency(2);
+                          setBatchSize(5);
+                          setAiProcessingMode('batch');
                         }}
                         className="text-xs text-purple-600 hover:text-purple-700 font-medium px-2 py-1 bg-purple-50 rounded"
                       >
@@ -238,8 +331,9 @@ const BulkCVProcessing: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          setMaxConcurrency(5);
-                          setBatchSize(20);
+                          setMaxConcurrency(3);
+                          setBatchSize(8);
+                          setAiProcessingMode('parallel');
                         }}
                         className="text-xs text-green-600 hover:text-green-700 font-medium px-2 py-1 bg-green-50 rounded"
                       >
@@ -250,7 +344,7 @@ const BulkCVProcessing: React.FC = () => {
                   
                   <div className="flex items-center space-x-4 pt-2">
                     <div className="flex items-center space-x-2 text-xs text-gray-500">
-                      <span>Current: {maxConcurrency} concurrent, {batchSize} per batch</span>
+                      <span>Current: {maxConcurrency} concurrent, {batchSize} per batch, {aiProcessingMode} AI mode</span>
                     </div>
                   </div>
                 </div>
@@ -278,7 +372,7 @@ const BulkCVProcessing: React.FC = () => {
                     <Package className="w-4 h-4 mr-2" />
                     Process ZIP File
                     <span className="ml-2 text-xs bg-purple-500 px-2 py-1 rounded-full">
-                      {maxConcurrency}x{batchSize}
+                      {maxConcurrency}x{batchSize} {aiProcessingMode}
                     </span>
                   </>
                 )}
@@ -308,6 +402,14 @@ const BulkCVProcessing: React.FC = () => {
                 <div>📊 {processedResults.length} files processed total</div>
                 <div>✅ {processedResults.filter(r => r.success).length} successful</div>
                 <div>❌ {processedResults.filter(r => !r.success).length} failed</div>
+                <div>👥 {processedResults.filter(r => r.candidateCreated).length} candidates created</div>
+                {processedResults.filter(r => r.success && !r.candidateCreated).length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1 mt-2">
+                    <span className="text-blue-700 font-medium">
+                      🚀 {processedResults.filter(r => r.success && !r.candidateCreated).length} candidates ready to create
+                    </span>
+                  </div>
+                )}
                 {processingOptions && (
                   <div className="mt-2 pt-2 border-t border-green-200">
                     <div className="flex items-center text-xs text-green-600">
@@ -322,7 +424,32 @@ const BulkCVProcessing: React.FC = () => {
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
                 <h3 className="text-sm font-medium text-gray-700">Processed CV Results</h3>
-                <div className="text-sm text-gray-500">Click on a result to expand details</div>
+                <div className="flex items-center space-x-4">
+                  {processedResults.some(result => result.success && !result.candidateCreated) && (
+                    <button
+                      type="button"
+                      onClick={handleCreateAllCandidates}
+                      disabled={loading}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
+                        loading
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {loading ? (
+                        <>
+                          <span className="animate-spin mr-1">⌛</span>
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          Create All ({processedResults.filter(r => r.success && !r.candidateCreated).length})
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <div className="text-sm text-gray-500">Click on a result to expand details</div>
+                </div>
               </div>
               
               <div className="divide-y divide-gray-200">
@@ -489,7 +616,7 @@ const BulkCVProcessing: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex gap-3 justify-end">
+            <div className="flex gap-3 justify-between">
               <button
                 type="button"
                 onClick={() => setProcessingStep('upload')}
@@ -498,13 +625,39 @@ const BulkCVProcessing: React.FC = () => {
                 Back
               </button>
               
-              <button
-                type="button"
-                onClick={() => window.location.href = '/dashboard/candidates'}
-                className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700"
-              >
-                View All Candidates
-              </button>
+              <div className="flex gap-3">
+                {processedResults.some(result => result.success && !result.candidateCreated) && (
+                  <button
+                    type="button"
+                    onClick={handleCreateAllCandidates}
+                    disabled={loading}
+                    className={`px-4 py-2 rounded-md text-sm font-medium ${
+                      loading
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <span className="animate-spin mr-2">⌛</span>
+                        Creating All...
+                      </>
+                    ) : (
+                      <>
+                        Create All Candidates ({processedResults.filter(r => r.success && !r.candidateCreated).length})
+                      </>
+                    )}
+                  </button>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={() => window.location.href = '/dashboard/candidates'}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700"
+                >
+                  View All Candidates
+                </button>
+              </div>
             </div>
           </div>
         )}

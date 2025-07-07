@@ -65,6 +65,8 @@ export const useCVProcessing = () => {
     options?: {
       maxConcurrency?: number;
       batchSize?: number;
+      aiProcessingMode?: 'parallel' | 'sequential' | 'batch';
+      enableProgressTracking?: boolean;
     }
   ): Promise<BulkProcessingResult | null> => {
     setLoading(true);
