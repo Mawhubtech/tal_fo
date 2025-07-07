@@ -2,14 +2,22 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../contexts/AuthContext';
 import { isExternalUser } from '../utils/userUtils';
+import { useRoutePermissions } from '../hooks/usePermissionCheck';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiresPermissions?: boolean; // New prop to enable permission checking
+  fallbackComponent?: React.ReactNode; // Optional fallback component
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requiresPermissions = false,
+  fallbackComponent = null
+}) => {
   const { isAuthenticated, isLoading, user } = useAuthContext();
+  const { canAccessRoute, isSuperAdmin } = useRoutePermissions();
   const location = useLocation();
 
   if (isLoading) {
@@ -40,6 +48,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     
     // For all other dashboard routes, redirect external users to their dashboard
     return <Navigate to="/external/jobs" replace />;
+  }
+
+  // Check route permissions if enabled
+  if (requiresPermissions && !isSuperAdmin) {
+    if (!canAccessRoute(location.pathname)) {
+      // If fallback component is provided, show it instead of redirecting
+      if (fallbackComponent) {
+        return <>{fallbackComponent}</>;
+      }
+      
+      // Default behavior: redirect to dashboard
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return <>{children}</>;

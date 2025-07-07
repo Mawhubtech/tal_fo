@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom'; // Import Routes and Route
 import Sidebar from '../components/Sidebar';   // Your Sidebar component
 import TopNavbar from '../components/TopNavbar'; // Your TopNavbar component
+import RoutePermissionGuard from '../components/RoutePermissionGuard'; // Route permission guard
 import { useAuthContext } from '../contexts/AuthContext';
 import { isExternalUser } from '../utils/userUtils';
 import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
@@ -110,67 +111,306 @@ const Dashboard: React.FC = () => {
           <TopNavbar
             onNewSearch={handleNewSearch}
           />
-        )}        {/* Main content area */}        <main className="flex-1 p-4 overflow-y-auto"> {/* Removed flex items-center justify-center and added overflow-y-auto if not already present for scrolling */}          <Routes> {/* Add Routes component here */}
-            <Route path="/" element={<DashboardOverview />} /> {/* Dashboard Overview as default route */}            <Route path="search" element={<Search />} /> {/* Search talents page */}
-            <Route path="projects" element={<div className="p-6"><h1 className="text-2xl font-bold">Projects</h1><p>Projects page coming soon...</p></div>} />
-            <Route path="shortlist" element={<div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>} />
-            <Route path="search-results" element={<SearchResults />} /> {/* Route for SearchResults */}
-            <Route path="resume-processing" element={<ResumeProcessingPage />} /> {/* Route for ResumeProcessingPage */}            <Route path="sequences" element={<EmailSequencesPage />} /> {/* Route for EmailSequencesPage */}
-            <Route path="contacts" element={<UnifiedContactsPage />} /> {/* Route for Unified Contact Management */}            {/* Jobs redirect to organizations - hierarchical approach */}
+        )}        {/* Main content area */}        
+        <main className="flex-1 p-4 overflow-y-auto"> {/* Removed flex items-center justify-center and added overflow-y-auto if not already present for scrolling */}          
+          <Routes> {/* Add Routes component here */}
+            <Route path="/" element={
+              <RoutePermissionGuard>
+                <DashboardOverview />
+              </RoutePermissionGuard>
+            } /> {/* Dashboard Overview as default route */}            
+            
+            <Route path="search" element={
+              <RoutePermissionGuard>
+                <Search />
+              </RoutePermissionGuard>
+            } /> {/* Search talents page */}
+            
+            <Route path="projects" element={
+              <RoutePermissionGuard>
+                <div className="p-6"><h1 className="text-2xl font-bold">Projects</h1><p>Projects page coming soon...</p></div>
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="shortlist" element={
+              <RoutePermissionGuard>
+                <div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="search-results" element={
+              <RoutePermissionGuard>
+                <SearchResults />
+              </RoutePermissionGuard>
+            } /> {/* Route for SearchResults */}
+            
+            <Route path="resume-processing" element={
+              <RoutePermissionGuard>
+                <ResumeProcessingPage />
+              </RoutePermissionGuard>
+            } /> {/* Route for ResumeProcessingPage */}            
+            
+            <Route path="sequences" element={
+              <RoutePermissionGuard>
+                <EmailSequencesPage />
+              </RoutePermissionGuard>
+            } /> {/* Route for EmailSequencesPage */}
+            
+            <Route path="contacts" element={
+              <RoutePermissionGuard>
+                <UnifiedContactsPage />
+              </RoutePermissionGuard>
+            } /> {/* Route for Unified Contact Management */}            
+            
+            {/* Jobs redirect to organizations - hierarchical approach */}
             <Route path="jobs" element={<Navigate to="/dashboard/organizations" replace />} />
             
             {/* My Jobs - Show AllJobsPage */}
-            <Route path="my-jobs" element={<AllJobsPage />} />
+            <Route path="my-jobs" element={
+              <RoutePermissionGuard>
+                <AllJobsPage />
+              </RoutePermissionGuard>
+            } />
             
             {/* Candidates and Clients standalone routes */}
-            <Route path="candidates" element={<CandidatesPage />} />
-            <Route path="clients" element={<ClientManagementPage />} />
-            <Route path="clients/create-department" element={<CreateDepartmentPage />} />
-            <Route path="clients/:clientId" element={<ClientDetailPage />} />
+            <Route path="candidates" element={
+              <RoutePermissionGuard>
+                <CandidatesPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="clients" element={
+              <RoutePermissionGuard>
+                <ClientManagementPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="clients/create-department" element={
+              <RoutePermissionGuard>
+                <CreateDepartmentPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="clients/:clientId" element={
+              <RoutePermissionGuard>
+                <ClientDetailPage />
+              </RoutePermissionGuard>
+            } />
             
             {/* New Hierarchical Recruitment Flow */}
-            <Route path="organizations" element={<OrganizationsPage />} />
-            <Route path="organizations/:organizationId" element={<OrganizationDetailPage />} />
-            <Route path="organizations/:organizationId/departments" element={<DepartmentsPage />} />
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs" element={<DepartmentJobsPage />} />
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/ats" element={<JobATSPage />} />
-              {/* Job Creation - Integrated with hierarchical flow */}
-            <Route path="organizations/:organizationId/create-job" element={<CreateJobPage />} />
-            <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={<CreateJobPage />} />
+            <Route path="organizations" element={
+              <RoutePermissionGuard>
+                <OrganizationsPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId" element={
+              <RoutePermissionGuard>
+                <OrganizationDetailPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments" element={
+              <RoutePermissionGuard>
+                <DepartmentsPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs" element={
+              <RoutePermissionGuard>
+                <DepartmentJobsPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/ats" element={
+              <RoutePermissionGuard>
+                <JobATSPage />
+              </RoutePermissionGuard>
+            } />
+            
+            {/* Job Creation - Integrated with hierarchical flow */}
+            <Route path="organizations/:organizationId/create-job" element={
+              <RoutePermissionGuard>
+                <CreateJobPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={
+              <RoutePermissionGuard>
+                <CreateJobPage />
+              </RoutePermissionGuard>
+            } />
             
             {/* Organization-specific hiring teams */}
-            <Route path="organizations/:organizationId/hiring-teams" element={<HiringTeamsPage />} />
+            <Route path="organizations/:organizationId/hiring-teams" element={
+              <RoutePermissionGuard>
+                <HiringTeamsPage />
+              </RoutePermissionGuard>
+            } />
 
             {/* Candidate Outreach Routes (under sourcing) */}
-            <Route path="sourcing/outreach" element={<CandidateOutreachOverview />} />
-            <Route path="sourcing/outreach/prospects" element={<CandidateOutreachProspects />} />
-            <Route path="sourcing/outreach/campaigns" element={<CandidateOutreachCampaigns />} />
-            <Route path="sourcing/outreach/templates" element={<CandidateOutreachTemplates />} />
-            <Route path="sourcing/outreach/analytics" element={<CandidateOutreachAnalytics />} />            {/* Client Outreach Routes (separate section) */}
-            <Route path="client-outreach" element={<ClientOutreachOverview />} />
-            <Route path="client-outreach/prospects" element={<ClientOutreachProspects />} />
-            <Route path="client-outreach/campaigns" element={<ClientOutreachCampaigns />} />
-            <Route path="client-outreach/templates" element={<ClientOutreachTemplates />} />
-            <Route path="client-outreach/analytics" element={<ClientOutreachAnalytics />} />
-            <Route path="client-outreach/search" element={<ClientOutreachSearch />} />
+            <Route path="sourcing/outreach" element={
+              <RoutePermissionGuard>
+                <CandidateOutreachOverview />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/outreach/prospects" element={
+              <RoutePermissionGuard>
+                <CandidateOutreachProspects />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/outreach/campaigns" element={
+              <RoutePermissionGuard>
+                <CandidateOutreachCampaigns />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/outreach/templates" element={
+              <RoutePermissionGuard>
+                <CandidateOutreachTemplates />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/outreach/analytics" element={
+              <RoutePermissionGuard>
+                <CandidateOutreachAnalytics />
+              </RoutePermissionGuard>
+            } />            
+
+            {/* Client Outreach Routes (separate section) */}
+            <Route path="client-outreach" element={
+              <RoutePermissionGuard>
+                <ClientOutreachOverview />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="client-outreach/prospects" element={
+              <RoutePermissionGuard>
+                <ClientOutreachProspects />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="client-outreach/campaigns" element={
+              <RoutePermissionGuard>
+                <ClientOutreachCampaigns />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="client-outreach/templates" element={
+              <RoutePermissionGuard>
+                <ClientOutreachTemplates />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="client-outreach/analytics" element={
+              <RoutePermissionGuard>
+                <ClientOutreachAnalytics />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="client-outreach/search" element={
+              <RoutePermissionGuard>
+                <ClientOutreachSearch />
+              </RoutePermissionGuard>
+            } />
 
             {/* Admin Pages with Layout */}
-            <Route path="admin" element={<AdminLayout />}>
-              <Route index element={<AdminOverviewPage />} />
-              <Route path="users" element={<UserManagementPage />} />
-              <Route path="roles" element={<RoleManagementPage />} />
-              <Route path="email-management" element={<EmailManagementPage />} />
-              <Route path="team-management" element={<TeamManagementPage />} />
-              <Route path="pipelines" element={<PipelinesPage />} />
-              <Route path="hiring-teams" element={<HiringTeamsPage />} />
-              <Route path="hiring-teams/:teamId" element={<HiringTeamDetailPage />} />
-              <Route path="hiring-teams/:teamId/members" element={<HiringTeamMembersPage />} />
-              <Route path="candidates" element={<CandidateProfilesPage />} />
-              <Route path="clients" element={<ClientManagementPage />} />
-              <Route path="clients/create-department" element={<CreateDepartmentPage />} />
-              <Route path="job-boards" element={<JobBoardConfigPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="settings" element={<SystemSettingsPage />} />
+            <Route path="admin" element={
+              <RoutePermissionGuard>
+                <AdminLayout />
+              </RoutePermissionGuard>
+            }>
+              <Route index element={
+                <RoutePermissionGuard>
+                  <AdminOverviewPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="users" element={
+                <RoutePermissionGuard>
+                  <UserManagementPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="roles" element={
+                <RoutePermissionGuard>
+                  <RoleManagementPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="email-management" element={
+                <RoutePermissionGuard>
+                  <EmailManagementPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="team-management" element={
+                <RoutePermissionGuard>
+                  <TeamManagementPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="pipelines" element={
+                <RoutePermissionGuard>
+                  <PipelinesPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="hiring-teams" element={
+                <RoutePermissionGuard>
+                  <HiringTeamsPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="hiring-teams/:teamId" element={
+                <RoutePermissionGuard>
+                  <HiringTeamDetailPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="hiring-teams/:teamId/members" element={
+                <RoutePermissionGuard>
+                  <HiringTeamMembersPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="candidates" element={
+                <RoutePermissionGuard>
+                  <CandidateProfilesPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="clients" element={
+                <RoutePermissionGuard>
+                  <ClientManagementPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="clients/create-department" element={
+                <RoutePermissionGuard>
+                  <CreateDepartmentPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="job-boards" element={
+                <RoutePermissionGuard>
+                  <JobBoardConfigPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="analytics" element={
+                <RoutePermissionGuard>
+                  <AnalyticsPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="settings" element={
+                <RoutePermissionGuard>
+                  <SystemSettingsPage />
+                </RoutePermissionGuard>
+              } />
             </Route>
           </Routes>
 
