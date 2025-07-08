@@ -11,6 +11,25 @@ interface JobPreviewModalProps {
 const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job }) => {
   if (!isOpen) return null;
 
+  // Helper function to safely parse string or array fields
+  const parseStringOrArray = (field: string | string[] | undefined | null): string[] => {
+    if (!field) return [];
+    if (Array.isArray(field)) return field.filter(Boolean);
+    if (typeof field === 'string') {
+      // Handle empty strings
+      if (field.trim() === '') return [];
+      // Split by comma and clean up each item
+      return field.split(',').map(item => item.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
+  // Parse requirements, responsibilities, benefits, and skills
+  const requirements = parseStringOrArray(job.requirements);
+  const responsibilities = parseStringOrArray(job.responsibilities);
+  const benefits = parseStringOrArray(job.benefits);
+  const skills = parseStringOrArray(job.skills);
+
   const formatSalary = (job: any) => {
     // Handle the newer schema with salaryMin/salaryMax
     if (job.salaryMin && job.salaryMax) {
@@ -172,11 +191,11 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             )}
 
             {/* Requirements */}
-            {job.requirements && job.requirements.length > 0 && (
+            {requirements.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h3>
                 <ul className="space-y-2">
-                  {job.requirements.map((requirement, index) => (
+                  {requirements.map((requirement, index) => (
                     <li key={index} className="flex items-start space-x-2">
                       <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{requirement}</span>
@@ -187,11 +206,11 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             )}
 
             {/* Responsibilities */}
-            {job.responsibilities && job.responsibilities.length > 0 && (
+            {responsibilities.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Responsibilities</h3>
                 <ul className="space-y-2">
-                  {job.responsibilities.map((responsibility, index) => (
+                  {responsibilities.map((responsibility, index) => (
                     <li key={index} className="flex items-start space-x-2">
                       <CheckCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{responsibility}</span>
@@ -202,11 +221,11 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             )}
 
             {/* Skills */}
-            {job.skills && job.skills.length > 0 && (
+            {skills.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Required Skills</h3>
                 <div className="flex flex-wrap gap-2">
-                  {job.skills.map((skill, index) => (
+                  {skills.map((skill, index) => (
                     <span
                       key={index}
                       className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full"
@@ -219,11 +238,11 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             )}
 
             {/* Benefits */}
-            {job.benefits && job.benefits.length > 0 && (
+            {benefits.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Benefits</h3>
                 <ul className="space-y-2">
-                  {job.benefits.map((benefit, index) => (
+                  {benefits.map((benefit, index) => (
                     <li key={index} className="flex items-start space-x-2">
                       <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{benefit}</span>
