@@ -52,6 +52,7 @@ import {
 import { type User, type CreateUserData, type UpdateUserData, type UserQueryParams } from '../../services/adminUserApiService';
 import { UserModal } from '../../components/UserModal';
 import { UserDetailsModal } from '../../components/UserDetailsModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 
 const UserManagementPage: React.FC = () => {
@@ -66,7 +67,9 @@ const UserManagementPage: React.FC = () => {
   // Modal states
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   // Debounce search term
@@ -147,15 +150,22 @@ const UserManagementPage: React.FC = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return;
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setUserToDelete(user);
+      setIsDeleteModalOpen(true);
     }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
     
     try {
-      await deleteUser.mutateAsync(userId);
+      await deleteUser.mutateAsync(userToDelete.id);
       toast.success('User Deleted', 'User has been deleted successfully.');
       setIsDetailsModalOpen(false);
       setSelectedUser(null);
+      setUserToDelete(null);
     } catch (error) {
       toast.error('Delete Failed', 'Failed to delete user. Please try again.');
     }
@@ -228,7 +238,9 @@ const UserManagementPage: React.FC = () => {
   const handleCloseModals = () => {
     setIsUserModalOpen(false);
     setIsDetailsModalOpen(false);
+    setIsDeleteModalOpen(false);
     setSelectedUser(null);
+    setUserToDelete(null);
     setIsEditing(false);
   };
 
@@ -547,6 +559,18 @@ const UserManagementPage: React.FC = () => {
         onStatusChange={handleStatusChange}
         onSendPasswordReset={handleSendPasswordReset}
         onSendEmailVerification={handleSendEmailVerification}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteUser}
+        title="Delete User"
+        message={`Are you sure you want to delete ${userToDelete?.firstName} ${userToDelete?.lastName}? This action cannot be undone.`}
+        confirmText="Delete User"
+        cancelText="Cancel"
+        type="danger"
       />
 
       {/* Toast Container */}
