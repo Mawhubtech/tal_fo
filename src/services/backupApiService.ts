@@ -4,7 +4,7 @@ export interface BackupItem {
   filename: string;
   filepath: string;
   size: number;
-  created: string;
+  created: string; // Date comes as ISO string from API
   type: 'manual' | 'scheduled';
   note?: string;
 }
@@ -43,7 +43,7 @@ export interface BackupStatsResponse {
 }
 
 export class BackupApiService {
-  private static readonly BASE_URL = '/api/v1/backup';
+  private static readonly BASE_URL = '/backup';
 
   /**
    * Create a new database backup
@@ -67,7 +67,9 @@ export class BackupApiService {
    */
   static async listBackups(): Promise<BackupListResponse> {
     try {
+      console.log('Fetching backups from API...');
       const response = await apiClient.get(`${this.BASE_URL}/list`);
+      console.log('Backups API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching backups:', error);

@@ -42,11 +42,16 @@ const SystemSettingsPage: React.FC = () => {
   });
 
   // Backup hooks
-  const { data: backupsData, isLoading: backupsLoading } = useBackups();
+  const { data: backupsData, isLoading: backupsLoading, error: backupsError } = useBackups();
   const createBackupMutation = useCreateBackup();
   const deleteBackupMutation = useDeleteBackup();
   const downloadBackupMutation = useDownloadBackup();
   const updateBackupNoteMutation = useUpdateBackupNote();
+
+  // Debug logging
+  console.log('SystemSettingsPage: backupsData:', backupsData);
+  console.log('SystemSettingsPage: backupsLoading:', backupsLoading);
+  console.log('SystemSettingsPage: backupsError:', backupsError);
 
   const sections: SettingsSection[] = [
     { id: 'general', name: 'General', icon: Globe },

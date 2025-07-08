@@ -15,7 +15,17 @@ export const backupKeys = {
 export function useBackups() {
   return useQuery({
     queryKey: backupKeys.list(),
-    queryFn: BackupApiService.listBackups,
+    queryFn: async () => {
+      console.log('useBackups: Calling BackupApiService.listBackups...');
+      try {
+        const result = await BackupApiService.listBackups();
+        console.log('useBackups: Success with data:', result);
+        return result;
+      } catch (error) {
+        console.error('useBackups: Error:', error);
+        throw error;
+      }
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: true,
   });
