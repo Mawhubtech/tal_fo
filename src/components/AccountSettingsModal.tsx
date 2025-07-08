@@ -503,6 +503,13 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                             {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
+                        {passwordData.newPassword && (
+                          <div className="mt-2">
+                            <div className={`text-xs ${passwordData.newPassword.length >= 6 ? 'text-green-600' : 'text-red-600'}`}>
+                              {passwordData.newPassword.length >= 6 ? '✓' : '✗'} At least 6 characters
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -527,18 +534,36 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                             {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
+                        {passwordData.confirmPassword && (
+                          <div className="mt-2">
+                            <div className={`text-xs ${passwordData.newPassword === passwordData.confirmPassword ? 'text-green-600' : 'text-red-600'}`}>
+                              {passwordData.newPassword === passwordData.confirmPassword ? '✓' : '✗'} Passwords match
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="pt-4">
+                      <div className="pt-4 flex justify-end space-x-3">
+                        <button
+                          type="button"
+                          onClick={() => setPasswordData({
+                            currentPassword: '',
+                            newPassword: '',
+                            confirmPassword: '',
+                          })}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                        >
+                          Cancel
+                        </button>
                         <button
                           type="submit"
-                          disabled={changePasswordMutation.isPending}
-                          className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                          disabled={changePasswordMutation.isPending || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                          className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {changePasswordMutation.isPending ? (
                             <>
                               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                              Changing...
+                              Changing Password...
                             </>
                           ) : (
                             <>

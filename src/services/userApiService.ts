@@ -39,7 +39,7 @@ export class UserApiService {
   }
 
   static async changePassword(data: ChangePasswordData): Promise<void> {
-    await apiClient.patch('/auth/change-password', data);
+    await apiClient.post('/auth/change-password', data);
   }
 
   static async updateNotificationPreferences(preferences: NotificationPreferences): Promise<void> {
