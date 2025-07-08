@@ -10,6 +10,7 @@ interface UserModalProps {
   user?: User | null;
   isEditing?: boolean;
   roles: Role[];
+  filterAdminRoles?: boolean; // Filter out admin/super-admin roles for team management
 }
 
 export const UserModal: React.FC<UserModalProps> = ({
@@ -19,7 +20,8 @@ export const UserModal: React.FC<UserModalProps> = ({
   isLoading,
   user,
   isEditing = false,
-  roles
+  roles,
+  filterAdminRoles = false
 }) => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -31,6 +33,11 @@ export const UserModal: React.FC<UserModalProps> = ({
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Filter roles based on context (exclude admin roles for team management)
+  const availableRoles = filterAdminRoles 
+    ? roles.filter(role => !['admin', 'super-admin'].includes(role.name.toLowerCase()))
+    : roles;
 
   // Reset form when modal opens/closes or user changes
   useEffect(() => {
@@ -276,7 +283,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           <div className="space-y-4">
             <h4 className="text-md font-medium text-gray-900">Roles</h4>
             <div className="space-y-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-              {roles.map((role) => (
+              {availableRoles.map((role) => (
                 <div key={role.id} className="border-b border-gray-100 pb-3 last:border-b-0">
                   <div className="flex items-center mb-2">
                     <input
@@ -311,7 +318,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                   )}
                 </div>
               ))}
-              {roles.length === 0 && (
+              {availableRoles.length === 0 && (
                 <p className="text-sm text-gray-500">No roles available</p>
               )}
             </div>

@@ -22,8 +22,10 @@ import {
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { 
-  useUsers, 
-  useCreateUser, 
+  useUsers,
+  useTeamMembers,
+  useCreateUser,
+  useCreateTeamMember, 
   useUpdateUser,
   useDeleteUser,
   useAssignClient, 
@@ -36,9 +38,11 @@ import {
   useSendPasswordReset,
   useSendEmailVerification,
   useArchiveUser,
-  useRestoreUser
+  useRestoreUser,
+  useInviteUserToTeam,
+  useClients,
+  useCurrentUserClients
 } from '../../hooks/useAdminUsers';
-import { useClients } from '../../hooks/useOrganizations';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { UserModal } from '../../components/UserModal';
 import { UserDetailsModal } from '../../components/UserDetailsModal';
@@ -64,6 +68,10 @@ interface UserWithClients {
 
 const TeamManagementPage: React.FC = () => {
   const { user: currentUser } = useAuthContext();
+  
+  // Check if current user is super-admin
+  const isSuperAdmin = currentUser?.roles?.some(role => role.name === 'super-admin') || false;
+  
   const [selectedUser, setSelectedUser] = useState<UserWithClients | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithClients | null>(null);
@@ -73,19 +81,32 @@ const TeamManagementPage: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [bulkMode, setBulkMode] = useState(false);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // API hooks - pass pagination parameters
-  const { data: usersResponse, isLoading: loadingUsers, error: usersError, refetch: refetchUsers } = useUsers({
-    page: currentPage,
-    limit: itemsPerPage
-  });
-  const { data: allClients = [], isLoading: loadingClients } = useClients();
+  // Super-admin sees all users, regular users see only team members
+  const { data: usersResponse, isLoading: loadingUsers, error: usersError, refetch: refetchUsers } = isSuperAdmin
+    ? useUsers({
+        page: currentPage,
+        limit: itemsPerPage
+      })
+    : useTeamMembers({
+        page: currentPage,
+        limit: itemsPerPage
+      });
+  
+  // Super-admin sees all clients, regular users see only their assigned clients  
+  const { data: clientsResponse, isLoading: loadingClients } = isSuperAdmin 
+    ? useClients()
+    : useCurrentUserClients();
+    
   const { data: roles = [] } = useRoles();
-  const createUserMutation = useCreateUser();
+  const createUserMutation = isSuperAdmin ? useCreateUser() : useCreateTeamMember();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
   const assignClientMutation = useAssignClient();
@@ -98,12 +119,23 @@ const TeamManagementPage: React.FC = () => {
   const sendEmailVerificationMutation = useSendEmailVerification();
   const archiveUserMutation = useArchiveUser();
   const restoreUserMutation = useRestoreUser();
+  const inviteUserMutation = useInviteUserToTeam();
 
   // Extract users and roles from response
   const users = usersResponse?.users || [];
   const totalUsers = usersResponse?.total || users.length;
   const totalPages = usersResponse?.pages || Math.ceil(totalUsers / itemsPerPage);
-  const availableRoles = Array.isArray(roles) ? roles : roles?.roles || [];
+  const allRoles = Array.isArray(roles) ? roles : roles?.roles || [];
+  
+  // Extract clients from response
+  const allClients = Array.isArray(clientsResponse) ? clientsResponse : clientsResponse?.clients || [];
+  
+  // Filter out admin/super-admin roles for team management context (except for super-admin users)
+  const availableRoles = isSuperAdmin 
+    ? allRoles // Super-admin can assign any role
+    : allRoles.filter(role => 
+        !['admin', 'super-admin'].includes(role.name.toLowerCase())
+      );
 
   // Convert users to include client information
   const usersWithClients: UserWithClients[] = users
@@ -116,11 +148,39 @@ const TeamManagementPage: React.FC = () => {
       }))
     }));
 
+  // For non-super-admin users, ensure the current user is always shown in the team list
+  // even if not returned by the backend (frontend-only logic)
+  let displayUsers = usersWithClients;
+  if (!isSuperAdmin && currentUser) {
+    const currentUserExists = usersWithClients.some(user => user.id === currentUser.id);
+    if (!currentUserExists) {
+      // Get current user's clients from the clients response
+      const currentUserClients = Array.isArray(allClients) ? allClients : [];
+      
+      // Add current user to the beginning of the list
+      const currentUserWithClients: UserWithClients = {
+        id: currentUser.id,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
+        email: currentUser.email,
+        status: currentUser.status || 'active',
+        avatar: currentUser.avatar,
+        clients: currentUserClients.map(client => ({
+          id: client.id,
+          name: client.name,
+          industry: 'N/A'
+        })),
+        roles: currentUser.roles || []
+      };
+      displayUsers = [currentUserWithClients, ...usersWithClients];
+    }
+  }
+
   // Pagination calculations - backend handles pagination, no need to slice
   const startIndex = (currentPage - 1) * itemsPerPage + 1;
-  const endIndex = Math.min(startIndex + users.length - 1, totalUsers);
-  // Use users directly since backend already returns paginated data
-  const paginatedUsers = usersWithClients;
+  const endIndex = Math.min(startIndex + displayUsers.length - 1, totalUsers);
+  // Use displayUsers since it includes the current user if needed
+  const paginatedUsers = displayUsers;
 
   // Reset selected users when pagination changes
   useEffect(() => {
@@ -238,6 +298,26 @@ const TeamManagementPage: React.FC = () => {
     }
   };
 
+  // Handle user invitation
+  const handleInviteUser = async () => {
+    if (!inviteEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    try {
+      await inviteUserMutation.mutateAsync(inviteEmail.trim());
+      toast.success('User invited to team successfully!');
+      setShowInviteModal(false);
+      setInviteEmail('');
+      refetchUsers();
+    } catch (error: any) {
+      console.error('Error inviting user:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to invite user. Please try again.';
+      toast.error(errorMessage);
+    }
+  };
+
   const handleSelectUser = (userId: string, checked: boolean) => {
     if (checked) {
       setSelectedUsers([...selectedUsers, userId]);
@@ -346,13 +426,20 @@ const TeamManagementPage: React.FC = () => {
                 Admin
               </Link>
               <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
-              <span className="text-gray-900 font-medium">Team Management</span>
+              <span className="text-gray-900 font-medium">
+                {isSuperAdmin ? 'User Management' : 'Team Management'}
+              </span>
             </div>
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {isSuperAdmin ? 'User Management' : 'Team Management'}
+                </h1>
                 <p className="text-gray-600 mt-1">
-                  Create and manage team members and their client access
+                  {isSuperAdmin 
+                    ? 'Manage all users and their access across the platform'
+                    : 'Create and manage team members and their client access'
+                  }
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
@@ -361,8 +448,17 @@ const TeamManagementPage: React.FC = () => {
                   className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   <UserPlus className="h-4 w-4" />
-                  <span>Add Team Member</span>
+                  <span>{isSuperAdmin ? 'Add User' : 'Add Team Member'}</span>
                 </button>
+                {!isSuperAdmin && (
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <UserCheck className="h-4 w-4" />
+                    <span>Invite User</span>
+                  </button>
+                )}
                 <button
                   onClick={() => refetchUsers()}
                   disabled={loadingUsers}
@@ -412,20 +508,47 @@ const TeamManagementPage: React.FC = () => {
               <span>Refresh Page</span>
             </button>
           </div>
-        ) : usersWithClients.length === 0 ? (
+        ) : displayUsers.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-            <p className="text-gray-600">No users are currently in the system.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {isSuperAdmin ? 'No users found' : 'No team members found'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {isSuperAdmin 
+                ? 'No users are currently in the system. Start by adding a new user.'
+                : 'No team members are currently in your team. Start by adding a new team member or inviting an existing user.'
+              }
+            </p>
+            <div className="flex justify-center space-x-3">
+              <button
+                onClick={() => setShowUserModal(true)}
+                className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>{isSuperAdmin ? 'Add User' : 'Add Team Member'}</span>
+              </button>
+              {!isSuperAdmin && (
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  <span>Invite User</span>
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Users & Client Access</h3>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {isSuperAdmin ? 'Users & Client Access' : 'Team Members & Client Access'}
+                  </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Showing {startIndex}-{endIndex} of {totalUsers} user{totalUsers !== 1 ? 's' : ''}
+                    Showing {startIndex}-{endIndex} of {totalUsers} {isSuperAdmin ? 'user' : 'team member'}{totalUsers !== 1 ? 's' : ''}
                   </p>
                 </div>
                 {totalUsers > itemsPerPage && (
@@ -507,8 +630,15 @@ const TeamManagementPage: React.FC = () => {
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {user.firstName} {user.lastName}
+                            <div className="flex items-center space-x-2">
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.firstName} {user.lastName}
+                              </div>
+                              {user.id === currentUser?.id && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  You
+                                </span>
+                              )}
                             </div>
                             <div className="text-sm text-gray-500">{user.email}</div>
                           </div>
@@ -791,7 +921,7 @@ const TeamManagementPage: React.FC = () => {
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {selectedUsers.slice(0, 5).map(userId => {
-                          const user = usersWithClients.find(u => u.id === userId);
+                          const user = displayUsers.find(u => u.id === userId);
                           return user ? (
                             <span key={userId} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                               {user.firstName} {user.lastName}
@@ -896,7 +1026,8 @@ const TeamManagementPage: React.FC = () => {
           user={editingUser as any}
           isEditing={!!editingUser}
           isLoading={editingUser ? updateUserMutation.isPending : createUserMutation.isPending}
-          roles={availableRoles}
+          roles={allRoles}
+          filterAdminRoles={!isSuperAdmin}
         />
       )}
 
@@ -921,6 +1052,76 @@ const TeamManagementPage: React.FC = () => {
           onSendPasswordReset={(userId) => sendPasswordResetMutation.mutate(userId)}
           onSendEmailVerification={(userId) => sendEmailVerificationMutation.mutate(userId)}
         />
+      )}
+
+      {/* Invite User Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Invite User to Team
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowInviteModal(false);
+                    setInviteEmail('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Enter the email address of an existing user to invite them to your team. 
+                    They will be given access to the same clients as you.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="inviteEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="inviteEmail"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    disabled={inviteUserMutation.isPending}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setInviteEmail('');
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={inviteUserMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleInviteUser}
+                disabled={inviteUserMutation.isPending || !inviteEmail.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {inviteUserMutation.isPending ? 'Inviting...' : 'Send Invitation'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <ToastContainer />

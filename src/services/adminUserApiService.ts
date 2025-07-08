@@ -205,6 +205,12 @@ export class AdminUserApiService {
     return response.data;
   }
 
+  // Get current user's clients
+  static async getCurrentUserClients(): Promise<{ clients: Client[]; message: string }> {
+    const response = await apiClient.get('/users/me/clients');
+    return response.data;
+  }
+
   // Get user's jobs
   static async getUserJobs(userId: string): Promise<{ jobs: any[]; message: string }> {
     const response = await apiClient.get(`/users/${userId}/jobs`);
@@ -226,6 +232,32 @@ export class AdminUserApiService {
   // Send email verification
   static async sendEmailVerification(userId: string): Promise<{ message: string }> {
     const response = await apiClient.post(`/users/${userId}/verify-email`);
+    return response.data;
+  }
+
+  // Get team members (users who share clients with current user)
+  static async getTeamMembers(params: UserQueryParams = {}): Promise<UsersResponse> {
+    const searchParams = new URLSearchParams();
+    
+    if (params.page) searchParams.append('page', params.page.toString());
+    if (params.limit) searchParams.append('limit', params.limit.toString());
+    if (params.search) searchParams.append('search', params.search);
+    if (params.status) searchParams.append('status', params.status);
+    if (params.role) searchParams.append('role', params.role);
+
+    const response = await apiClient.get(`/users/team-members?${searchParams.toString()}`);
+    return response.data;
+  }
+
+  // Create a new team member (auto-assigned to creator's clients)
+  static async createTeamMember(userData: CreateUserData): Promise<{ user: User; message: string }> {
+    const response = await apiClient.post('/users/team-member', userData);
+    return response.data;
+  }
+
+  // Invite existing user to team
+  static async inviteUserToTeam(email: string): Promise<{ user: User; message: string }> {
+    const response = await apiClient.post('/users/invite-to-team', { email });
     return response.data;
   }
 }

@@ -5,12 +5,14 @@ import { AdminUserApiService, type User, type CreateUserData, type UpdateUserDat
 export const adminUserKeys = {
   all: ['adminUsers'] as const,
   users: (params?: UserQueryParams) => [...adminUserKeys.all, 'users', params] as const,
+  teamMembers: (params?: UserQueryParams) => [...adminUserKeys.all, 'teamMembers', params] as const,
   user: (id: string) => [...adminUserKeys.all, 'user', id] as const,
   stats: () => [...adminUserKeys.all, 'stats'] as const,
   roles: () => [...adminUserKeys.all, 'roles'] as const,
   clients: () => [...adminUserKeys.all, 'clients'] as const,
   userJobs: (userId: string) => [...adminUserKeys.all, 'userJobs', userId] as const,
   userOrganizations: (userId: string) => [...adminUserKeys.all, 'userOrganizations', userId] as const,
+  currentUserClients: () => [...adminUserKeys.all, 'currentUserClients'] as const,
 };
 
 // Get all users with filters
@@ -18,7 +20,8 @@ export function useUsers(params: UserQueryParams = {}) {
   return useQuery({
     queryKey: adminUserKeys.users(params),
     queryFn: () => AdminUserApiService.getUsers(params),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Always consider data stale to force refetch
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 }
 
@@ -37,7 +40,8 @@ export function useUserStats() {
   return useQuery({
     queryKey: adminUserKeys.stats(),
     queryFn: () => AdminUserApiService.getUserStats(),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 0, // Always consider data stale to force refetch
+    gcTime: 1000 * 60 * 2, // Keep in cache for 2 minutes
   });
 }
 
@@ -55,6 +59,15 @@ export function useClients() {
   return useQuery({
     queryKey: adminUserKeys.clients(),
     queryFn: () => AdminUserApiService.getClients(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+// Get current user's clients
+export function useCurrentUserClients() {
+  return useQuery({
+    queryKey: adminUserKeys.currentUserClients(),
+    queryFn: () => AdminUserApiService.getCurrentUserClients(),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
@@ -79,6 +92,16 @@ export function useUserOrganizations(userId: string) {
   });
 }
 
+// Get team members (users who share clients with current user)
+export function useTeamMembers(params: UserQueryParams = {}) {
+  return useQuery({
+    queryKey: adminUserKeys.teamMembers(params),
+    queryFn: () => AdminUserApiService.getTeamMembers(params),
+    staleTime: 0, // Always consider data stale to force refetch
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+  });
+}
+
 // Create user mutation
 export function useCreateUser() {
   const queryClient = useQueryClient();
@@ -86,8 +109,8 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: (userData: CreateUserData) => AdminUserApiService.createUser(userData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+      // Invalidate all admin user queries
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
     },
   });
 }
@@ -99,10 +122,9 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, userData }: { id: string; userData: UpdateUserData }) => 
       AdminUserApiService.updateUser(id, userData),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.user(id) });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+    onSuccess: () => {
+      // Invalidate all admin user queries
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
     },
   });
 }
@@ -114,8 +136,8 @@ export function useDeleteUser() {
   return useMutation({
     mutationFn: (id: string) => AdminUserApiService.deleteUser(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+      // Invalidate all admin user queries
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
     },
   });
 }
@@ -126,10 +148,9 @@ export function useArchiveUser() {
 
   return useMutation({
     mutationFn: (id: string) => AdminUserApiService.archiveUser(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.user(id) });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+    onSuccess: () => {
+      // Invalidate all admin user queries
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
     },
   });
 }
@@ -140,10 +161,9 @@ export function useRestoreUser() {
 
   return useMutation({
     mutationFn: (id: string) => AdminUserApiService.restoreUser(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.user(id) });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+    onSuccess: () => {
+      // Invalidate all admin user queries
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
     },
   });
 }
@@ -155,10 +175,9 @@ export function useUpdateUserStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'active' | 'inactive' | 'banned' }) => 
       AdminUserApiService.updateUserStatus(id, status),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.user(id) });
-      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+    onSuccess: () => {
+      // Invalidate all admin user queries
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
     },
   });
 }
@@ -272,5 +291,31 @@ export function useSendPasswordReset() {
 export function useSendEmailVerification() {
   return useMutation({
     mutationFn: (userId: string) => AdminUserApiService.sendEmailVerification(userId),
+  });
+}
+
+// Create team member mutation
+export function useCreateTeamMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userData: CreateUserData) => AdminUserApiService.createTeamMember(userData),
+    onSuccess: () => {
+      // Invalidate all admin user queries
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
+    },
+  });
+}
+
+// Invite user to team mutation
+export function useInviteUserToTeam() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (email: string) => AdminUserApiService.inviteUserToTeam(email),
+    onSuccess: () => {
+      // Invalidate all admin user queries
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
+    },
   });
 }

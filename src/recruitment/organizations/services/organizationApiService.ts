@@ -85,10 +85,19 @@ export class OrganizationApiService {
     };
   }
   /**
-   * Get all organizations (using clients API)
+   * Get all organizations (using clients API) - for super-admin only
    */
   async getAllOrganizations(): Promise<Organization[]> {
     const response = await this.clientApiService.getAllClients();
+    // Don't include department count for listing view to avoid excessive API calls
+    return Promise.all(response.clients.map(client => this.mapClientToOrganization(client, false)));
+  }
+
+  /**
+   * Get user's assigned organizations only
+   */
+  async getCurrentUserOrganizations(): Promise<Organization[]> {
+    const response = await this.clientApiService.getCurrentUserClients();
     // Don't include department count for listing view to avoid excessive API calls
     return Promise.all(response.clients.map(client => this.mapClientToOrganization(client, false)));
   }
@@ -119,7 +128,7 @@ export class OrganizationApiService {
   }  
   
   /**
-   * Get all organization page data in a single request
+   * Get all organization page data in a single request - for super-admin only
    */
   async getOrganizationPageData(): Promise<OrganizationPageData> {
     try {
@@ -127,6 +136,36 @@ export class OrganizationApiService {
       return response.data;
     } catch (error) {
       console.error('Error fetching organization page data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get organization page data for current user's assigned clients
+   */
+  async getCurrentUserOrganizationPageData(): Promise<OrganizationPageData> {
+    try {
+      // Get user's assigned clients
+      const organizations = await this.getCurrentUserOrganizations();
+      
+      // Calculate stats from the user's assigned organizations
+      const stats: OrganizationPageStats = {
+        organizations: organizations.length,
+        departments: organizations.reduce((sum, org) => sum + org.departmentCount, 0),
+        activeJobs: organizations.reduce((sum, org) => sum + org.activeJobs, 0),
+        employees: organizations.reduce((sum, org) => sum + org.totalEmployees, 0),
+      };
+
+      // Get unique industries from user's organizations
+      const industries = [...new Set(organizations.map(org => org.industry))].filter(Boolean);
+
+      return {
+        organizations,
+        stats,
+        industries,
+      };
+    } catch (error) {
+      console.error('Error fetching current user organization page data:', error);
       throw error;
     }
   }

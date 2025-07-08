@@ -3,10 +3,17 @@ import { Link } from 'react-router-dom';
 import { Building, Users, Briefcase, ChevronRight, Search } from 'lucide-react';
 import { type Organization } from '../services/organizationApiService';
 import { useOrganizationPageData, usePrefetchOrganization } from '../../../hooks/useOrganizations';
+import { useAuth } from '../../../hooks/useAuth';
 
 const OrganizationsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState<string>('all');
+  
+  // Get current user for role-based access
+  const { user: currentUser } = useAuth();
+  
+  // Check if current user is super-admin
+  const isSuperAdmin = currentUser?.roles?.some(role => role.name === 'super-admin') || false;
   
   // Single optimized API call for all organization page data
   const { 
@@ -79,8 +86,15 @@ const OrganizationsPage: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Select Organization</h1>
-          <p className="text-gray-600 mt-1">Choose an organization to view departments and jobs</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isSuperAdmin ? 'All Organizations' : 'My Organizations'}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {isSuperAdmin 
+              ? 'Choose an organization to view departments and jobs'
+              : 'Choose from your assigned organizations to view departments and jobs'
+            }
+          </p>
         </div>
       </div>
 
@@ -144,7 +158,7 @@ const OrganizationsPage: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search organizations..."
+                placeholder={isSuperAdmin ? "Search all organizations..." : "Search your organizations..."}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -221,8 +235,15 @@ const OrganizationsPage: React.FC = () => {
       {filteredOrganizations.length === 0 && (
         <div className="text-center py-12">
           <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No organizations found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {isSuperAdmin ? 'No organizations found' : 'No assigned organizations found'}
+          </h3>
+          <p className="text-gray-500">
+            {isSuperAdmin 
+              ? 'Try adjusting your search or filter criteria.'
+              : 'You do not have access to any organizations yet.'
+            }
+          </p>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Plus, Edit3, Trash2, Users, MapPin, Globe, Phone, Mail, Calendar, Eye, Home, ChevronRight, Building } from 'lucide-react';
 import { ClientApiService, type Client } from '../../services/clientApiService';
+import { useAuthContext } from '../../contexts/AuthContext';
 import ClientForm from './components/ClientForm';
 import DeleteClientDialog from './components/DeleteClientDialog';
 
@@ -34,6 +35,11 @@ const getInitials = (name: string) => {
 };
 
 const ClientManagementPage: React.FC = () => {
+  const { user: currentUser } = useAuthContext();
+  
+  // Check if current user is super-admin
+  const isSuperAdmin = currentUser?.roles?.some(role => role.name === 'super-admin') || false;
+  
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,19 +54,31 @@ const ClientManagementPage: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const clientService = new ClientApiService();
+  
   useEffect(() => {
     const loadClients = async () => {
       try {
         setLoading(true);
-        const response = await clientService.getAllClients();
+        
+        let response;
+        if (isSuperAdmin) {
+          // Super-admin sees all clients
+          response = await clientService.getAllClients();
+        } else {
+          // Regular users see only their assigned clients
+          response = await clientService.getCurrentUserClients();
+        }
+        
         setClients(response.clients);
       } catch (error) {
         console.error('Error loading clients:', error);
       } finally {
         setLoading(false);
       }
-    };    loadClients();
-  }, []);
+    };
+
+    loadClients();
+  }, [isSuperAdmin]);
 
   // Handler functions for CRUD operations
   const handleAddClient = () => {
@@ -78,7 +96,7 @@ const ClientManagementPage: React.FC = () => {
     setShowDeleteDialog(true);
   };
 
-  const handleClientSaved = (savedClient: Client) => {
+  const handleClientSaved = async (savedClient: Client) => {
     if (editingClient) {
       // Update existing client
       setClients(prev => prev.map(c => c.id === savedClient.id ? savedClient : c));
@@ -88,6 +106,19 @@ const ClientManagementPage: React.FC = () => {
     }
     setShowClientForm(false);
     setEditingClient(null);
+    
+    // Refetch clients to ensure we have the latest data with proper filtering
+    try {
+      let response;
+      if (isSuperAdmin) {
+        response = await clientService.getAllClients();
+      } else {
+        response = await clientService.getCurrentUserClients();
+      }
+      setClients(response.clients);
+    } catch (error) {
+      console.error('Error refetching clients:', error);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -99,6 +130,19 @@ const ClientManagementPage: React.FC = () => {
       setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
       setShowDeleteDialog(false);
       setClientToDelete(null);
+      
+      // Refetch clients to ensure consistency
+      try {
+        let response;
+        if (isSuperAdmin) {
+          response = await clientService.getAllClients();
+        } else {
+          response = await clientService.getCurrentUserClients();
+        }
+        setClients(response.clients);
+      } catch (error) {
+        console.error('Error refetching clients after deletion:', error);
+      }
     } catch (error) {
       console.error('Error deleting client:', error);
       // You might want to show a toast notification here
@@ -162,7 +206,9 @@ const ClientManagementPage: React.FC = () => {
           Dashboard
         </Link>
         <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900 font-medium">Client Management</span>
+        <span className="text-gray-900 font-medium">
+          {isSuperAdmin ? 'Client Management' : 'My Clients'}
+        </span>
       </div>
       
       {/* Action Bar */}
@@ -171,7 +217,10 @@ const ClientManagementPage: React.FC = () => {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />            <input
               type="text"
-              placeholder="Search clients by name, industry, or location..."
+              placeholder={isSuperAdmin 
+                ? "Search clients by name, industry, or location..."
+                : "Search your clients by name, industry, or location..."
+              }
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -217,13 +266,6 @@ const ClientManagementPage: React.FC = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add Client
           </button>
-          <Link 
-            to="/dashboard/clients/create-department"
-            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <Building className="h-4 w-4 mr-2" />
-            Create Department
-          </Link>
         </div>
       </div>
 

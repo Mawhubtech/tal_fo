@@ -49,6 +49,8 @@ import {
   useAssignRole,
   useRemoveRole
 } from '../../hooks/useAdminUsers';
+import { useQueryClient } from '@tanstack/react-query';
+import { adminUserKeys } from '../../hooks/useAdminUsers';
 import { type User, type CreateUserData, type UpdateUserData, type UserQueryParams } from '../../services/adminUserApiService';
 import { UserModal } from '../../components/UserModal';
 import { UserDetailsModal } from '../../components/UserDetailsModal';
@@ -56,6 +58,9 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 
 const UserManagementPage: React.FC = () => {
+  // Query client for manual invalidation
+  const queryClient = useQueryClient();
+  
   // State for filters and modals
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -124,10 +129,26 @@ const UserManagementPage: React.FC = () => {
   // Filter roles for dropdown - show all roles when no filter, show available ones when filtering
   const availableRoles = Array.isArray(roles) ? roles : [];
 
+  // Helper function to force refresh all data
+  const forceRefreshData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all }),
+      queryClient.refetchQueries({ queryKey: adminUserKeys.users(queryParams) }),
+      queryClient.refetchQueries({ queryKey: adminUserKeys.stats() }),
+      queryClient.refetchQueries({ queryKey: adminUserKeys.roles() })
+    ]);
+  };
+
   // Handlers
   const handleCreateUser = async (userData: CreateUserData) => {
     try {
       await createUser.mutateAsync(userData);
+      // Force immediate refresh of all user-related data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminUserKeys.all }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.users(queryParams) }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.stats() })
+      ]);
       toast.success('User Created', 'New user has been created successfully.');
       setIsUserModalOpen(false);
     } catch (error) {
@@ -140,6 +161,12 @@ const UserManagementPage: React.FC = () => {
     
     try {
       await updateUser.mutateAsync({ id: selectedUser.id, userData });
+      // Force immediate refresh of all user-related data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminUserKeys.all }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.users(queryParams) }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.stats() })
+      ]);
       toast.success('User Updated', 'User information has been updated successfully.');
       setIsUserModalOpen(false);
       setSelectedUser(null);
@@ -162,6 +189,12 @@ const UserManagementPage: React.FC = () => {
     
     try {
       await deleteUser.mutateAsync(userToDelete.id);
+      // Force immediate refresh of all user-related data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminUserKeys.all }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.users(queryParams) }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.stats() })
+      ]);
       toast.success('User Deleted', 'User has been deleted successfully.');
       setIsDetailsModalOpen(false);
       setSelectedUser(null);
@@ -174,6 +207,12 @@ const UserManagementPage: React.FC = () => {
   const handleArchiveUser = async (userId: string) => {
     try {
       await archiveUser.mutateAsync(userId);
+      // Force immediate refresh of all user-related data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminUserKeys.all }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.users(queryParams) }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.stats() })
+      ]);
       toast.success('User Archived', 'User has been archived successfully.');
       setIsDetailsModalOpen(false);
       setSelectedUser(null);
@@ -185,6 +224,12 @@ const UserManagementPage: React.FC = () => {
   const handleRestoreUser = async (userId: string) => {
     try {
       await restoreUser.mutateAsync(userId);
+      // Force immediate refresh of all user-related data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminUserKeys.all }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.users(queryParams) }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.stats() })
+      ]);
       toast.success('User Restored', 'User has been restored successfully.');
     } catch (error) {
       toast.error('Restore Failed', 'Failed to restore user. Please try again.');
@@ -194,6 +239,12 @@ const UserManagementPage: React.FC = () => {
   const handleStatusChange = async (userId: string, status: 'active' | 'inactive' | 'banned') => {
     try {
       await updateUserStatus.mutateAsync({ id: userId, status });
+      // Force immediate refresh of all user-related data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminUserKeys.all }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.users(queryParams) }),
+        queryClient.refetchQueries({ queryKey: adminUserKeys.stats() })
+      ]);
       toast.success('Status Updated', `User status has been changed to ${status}.`);
     } catch (error) {
       toast.error('Status Update Failed', 'Failed to update user status. Please try again.');
@@ -308,14 +359,25 @@ const UserManagementPage: React.FC = () => {
           </select>
         </div>
         
-        <button
-          onClick={handleCreateNewUser}
-          disabled={createUser.isPending}
-          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
-        >
-          <Plus className="w-4 h-4" />
-          {createUser.isPending ? 'Creating...' : 'Add User'}
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleCreateNewUser}
+            disabled={createUser.isPending}
+            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+            {createUser.isPending ? 'Creating...' : 'Add User'}
+          </button>
+          
+          <button
+            onClick={forceRefreshData}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            title="Refresh Data"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}

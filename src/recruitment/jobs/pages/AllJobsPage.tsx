@@ -37,15 +37,15 @@ const AllJobsPage: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
 
-  // Internal recruiter state management
+  // Role-based access state management
   const [isInternalRecruiter, setIsInternalRecruiter] = useState(false);
   const [defaultOrganizationId, setDefaultOrganizationId] = useState<string | null>(null);
   const [defaultDepartmentId, setDefaultDepartmentId] = useState<string | null>(null);
 
-  // Get user's organization assignment for internal recruiters
+  // Get user's organization assignment for role-based access
   const { data: userAssignment, isLoading: assignmentLoading, error: assignmentError } = useMyAssignment();
 
-  // Check if user is internal recruiter based on role or organization assignment
+  // Check if user needs client-based filtering based on role or organization assignment
   useEffect(() => {
     if (!user) return;
     
@@ -55,23 +55,26 @@ const AllJobsPage: React.FC = () => {
     // Get user roles
     const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
     
-    // Check for admin roles first (they take precedence)
-    const hasAdminRole = userRoles.some(role => 
-      role === 'admin' || role === 'super-admin'
+    // Check for super-admin role first (they see all jobs)
+    const hasSuperAdminRole = userRoles.some(role => 
+      role === 'super-admin'
     );
     
-    if (hasAdminRole) {
-      // Admins see all jobs, no assignment needed
+    if (hasSuperAdminRole) {
+      // Super-admins see all jobs, no assignment needed
       setIsInternalRecruiter(false);
       setDefaultOrganizationId(null);
       setDefaultDepartmentId(null);
       return;
     }
     
-    // Check for roles that need organization assignment
+    // Check for roles that need organization assignment (including admin, external-hr, freelance-hr)
     const hasAssignmentRole = userRoles.some(role => 
       role === 'internal-recruiter' || 
       role === 'internal-hr' || 
+      role === 'external-hr' ||
+      role === 'freelance-hr' ||
+      role === 'admin' ||
       role === 'user'
     );
     
@@ -93,7 +96,7 @@ const AllJobsPage: React.FC = () => {
   }, [user, userAssignment, assignmentLoading]);
 
   // Use appropriate hook based on user type
-  // For internal recruiters, check if they have an assignment
+  // For users with client assignments, check if they have an assignment
   const shouldFetchJobs = !isInternalRecruiter || (isInternalRecruiter && !!defaultOrganizationId);
   
   // Determine which hooks should be enabled
@@ -129,14 +132,14 @@ const AllJobsPage: React.FC = () => {
 
   // Extract data from response or use defaults
   const jobs = !shouldFetchJobs 
-    ? [] // Internal recruiter with no assignment - show no jobs
+    ? [] // User with no assignment - show no jobs
     : (isInternalRecruiter && defaultOrganizationId
         ? (jobsResponse as { jobs: Job[]; total: number })?.jobs || []
         : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.data || []);
     
   const pagination = {
     total: !shouldFetchJobs 
-      ? 0 // Internal recruiter with no assignment - show 0 total
+      ? 0 // User with no assignment - show 0 total
       : (isInternalRecruiter && defaultOrganizationId
           ? (jobsResponse as { jobs: Job[]; total: number })?.total || 0
           : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.total || 0),
@@ -181,10 +184,10 @@ const AllJobsPage: React.FC = () => {
   // Handler functions for CRUD operations
   const handleEditJob = (job: Job) => {
     if (isInternalRecruiter && defaultOrganizationId && defaultDepartmentId) {
-      // For internal recruiters, use their default organization and department
+      // For users with client assignments, use their default organization and department
       navigate(`/dashboard/organizations/${defaultOrganizationId}/departments/${defaultDepartmentId}/create-job?edit=${job.id}`);
     } else {
-      // For external recruiters, use the job's organization and department
+      // For super-admins, use the job's organization and department
       const organizationId = job.organizationId || 'default-org';
       const departmentId = job.departmentId || 'default-dept';
       navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/create-job?edit=${job.id}`);
@@ -192,28 +195,28 @@ const AllJobsPage: React.FC = () => {
   };
 
   const handleCreateJob = () => {
-    // Prevent internal recruiters with no assignment from creating jobs
+    // Prevent users with no assignment from creating jobs
     if (isInternalRecruiter && !defaultOrganizationId) {
       return;
     }
     
     if (isInternalRecruiter && defaultOrganizationId) {
-      // For internal recruiters, go directly to job creation within their assigned organization
+      // For users with client assignments, go directly to job creation within their assigned organization
       // Since they work across all departments, we can let them choose the department during creation
       navigate(`/dashboard/organizations/${defaultOrganizationId}/create-job`);
     } else {
-      // For external recruiters, navigate to organizations page to choose client
+      // For super-admins, navigate to organizations page to choose client
       navigate('/dashboard/organizations');
     }
   };
 
   const handleJobClick = (job: Job) => {
     if (isInternalRecruiter && defaultOrganizationId) {
-      // For internal recruiters, use their organization and the job's department
+      // For users with client assignments, use their organization and the job's department
       const departmentId = job.departmentId || defaultDepartmentId || 'default-dept';
       navigate(`/dashboard/organizations/${defaultOrganizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
     } else {
-      // For external recruiters, use the job's organization and department
+      // For super-admins, use the job's organization and department
       const organizationId = job.organizationId || 'default-org';
       const departmentId = job.departmentId || 'default-dept';
       navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
@@ -323,20 +326,20 @@ const AllJobsPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">
               {(() => {
                 const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
-                const hasAdminRole = userRoles.some(role => role === 'admin' || role === 'super-admin');
+                const hasSuperAdminRole = userRoles.some(role => role === 'super-admin');
                 
-                if (hasAdminRole) return 'All Jobs';
-                if (isInternalRecruiter) return 'My Jobs';
+                if (hasSuperAdminRole) return 'All Jobs';
+                if (isInternalRecruiter) return 'My Client Jobs';
                 return 'All Jobs';
               })()}
             </h1>
             <p className="text-gray-600">
               {(() => {
                 const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
-                const hasAdminRole = userRoles.some(role => role === 'admin' || role === 'super-admin');
+                const hasSuperAdminRole = userRoles.some(role => role === 'super-admin');
                 
-                if (hasAdminRole) return 'Manage all job openings across the platform (Admin)';
-                if (isInternalRecruiter) return 'Manage job openings for your assigned organization';
+                if (hasSuperAdminRole) return 'Manage all job openings across the platform (Super Admin)';
+                if (isInternalRecruiter) return 'Manage job openings for your assigned client organization';
                 return 'Manage all job openings across your clients';
               })()}
             </p>
@@ -435,11 +438,11 @@ const AllJobsPage: React.FC = () => {
           <div className="p-12 text-center">
             <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             {isInternalRecruiter && !defaultOrganizationId ? (
-              // Internal recruiter with no assignment
+              // User with no assignment
               <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Organization Assignment</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Client Assignment</h3>
                 <p className="text-gray-600 mb-4">
-                  You haven't been assigned to an organization yet. Please contact your administrator to get assigned to an organization before you can view and manage jobs.
+                  You haven't been assigned to a client organization yet. Please contact your administrator to get assigned to a client organization before you can view and manage jobs.
                 </p>
               </>
             ) : (

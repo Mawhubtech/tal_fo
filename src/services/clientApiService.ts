@@ -78,6 +78,11 @@ export class ClientApiService {
     return response.data;
   }
 
+  async getCurrentUserClients(params?: ClientQueryParams): Promise<ClientsResponse> {
+    const response = await apiClient.get('/users/me/clients', { params });
+    return response.data;
+  }
+
   async getClientById(id: string): Promise<Client> {
     const response = await apiClient.get(`${this.basePath}/${id}`);
     return response.data;

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { OrganizationApiService, type Organization } from '../recruitment/organizations/services/organizationApiService';
+import { useAuth } from './useAuth';
 
 const organizationApiService = new OrganizationApiService();
 
@@ -17,23 +18,35 @@ export const organizationKeys = {
   departmentJobs: (organizationId: string, departmentId: string) => [...organizationKeys.departments(organizationId), departmentId, 'jobs'] as const,
 };
 
-// Get all organizations
+// Get all organizations (role-based)
 export function useOrganizations() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.roles?.some(role => role.name === 'super-admin') || false;
+
   return useQuery({
     queryKey: organizationKeys.lists(),
-    queryFn: () => organizationApiService.getAllOrganizations(),
+    queryFn: () => isSuperAdmin 
+      ? organizationApiService.getAllOrganizations()
+      : organizationApiService.getCurrentUserOrganizations(),
     staleTime: 1000 * 60 * 10, // 10 minutes - organizations don't change frequently
     gcTime: 1000 * 60 * 15, // 15 minutes garbage collection
+    enabled: !!user, // Only fetch when user is loaded
   });
 }
 
-// Get all organization page data in a single optimized request
+// Get all organization page data in a single optimized request (role-based)
 export function useOrganizationPageData() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.roles?.some(role => role.name === 'super-admin') || false;
+
   return useQuery({
     queryKey: [...organizationKeys.all, 'page-data'],
-    queryFn: () => organizationApiService.getOrganizationPageData(),
+    queryFn: () => isSuperAdmin 
+      ? organizationApiService.getOrganizationPageData()
+      : organizationApiService.getCurrentUserOrganizationPageData(),
     staleTime: 1000 * 60 * 10, // 10 minutes - page data doesn't change frequently
     gcTime: 1000 * 60 * 15, // 15 minutes garbage collection
+    enabled: !!user, // Only fetch when user is loaded
   });
 }
 
