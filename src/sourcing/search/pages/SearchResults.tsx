@@ -7,7 +7,7 @@ import type { SearchFilters } from '../../../services/searchService';
 
 // Assuming ProfilePage.tsx and its types are in the same directory or adjust path
 import type { UserStructuredData } from '../../../components/ProfileSidePanel';
-import ProfileSidePanel, { type PanelState } from '../../../components/ProfileSidePanel'; // Import the PanelState type
+import SourcingProfileSidePanel, { type PanelState } from '../../../components/SourcingProfileSidePanel'; // Import the PanelState type
 
 const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -276,7 +276,7 @@ const SearchResultsPage: React.FC = () => {
             ></div>
           )}
           {/* Panel */}
-          <ProfileSidePanel
+          <SourcingProfileSidePanel
             userData={selectedUserDataForPanel}
             panelState={panelState}
             onStateChange={handlePanelStateChange}
