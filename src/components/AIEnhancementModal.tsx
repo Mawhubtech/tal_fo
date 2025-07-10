@@ -19,7 +19,7 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
 
   const handleUseQuery = () => {
     onUseEnhancedQuery(content);
-    onClose();
+    // Don't call onClose() here - let the parent component handle it
   };
 
   return (

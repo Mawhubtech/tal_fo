@@ -296,6 +296,8 @@ const Search: React.FC = () => {
   const handleClearFilters = () => {
     setCurrentFilters({});
     setShowAIFilters(false);
+    // Clear the location state to prevent restoration on refresh
+    navigate(location.pathname, { replace: true, state: null });
   };
 
   // Effect to handle state from SearchResults page
@@ -364,6 +366,8 @@ const Search: React.FC = () => {
                         setCurrentFilters({});
                         setShowAIFilters(false);
                         aiQuery.reset(); // Reset AI query state as well
+                        // Clear the location state to prevent restoration on refresh
+                        navigate(location.pathname, { replace: true, state: null });
                       }}
                       className="text-gray-400 hover:text-gray-600 p-1 rounded-md transition-colors"
                       title="Clear search"
@@ -504,10 +508,14 @@ const Search: React.FC = () => {
         isOpen={isAIEnhancementModalOpen}
         onClose={() => {
           setIsAIEnhancementModalOpen(false);
-          aiQuery.reset(); // Reset AI query state when modal is closed
+          aiQuery.reset(); // Reset AI query state when modal is closed/cancelled
         }}
         content={aiQuery.data?.content || ''}
-        onUseEnhancedQuery={(enhancedQuery) => setSearchQuery(enhancedQuery)}
+        onUseEnhancedQuery={(enhancedQuery) => {
+          setSearchQuery(enhancedQuery);
+          setIsAIEnhancementModalOpen(false);
+          aiQuery.reset(); // Reset AI query state after using enhanced query
+        }}
       />
     </div>
   );
