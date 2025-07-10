@@ -1,5 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { jobApplicationApiService, type JobApplication } from '../services/jobApplicationApiService';
+import { jobApplicationApiService, type JobApplication, type CreateJobApplicationData } from '../services/jobApplicationApiService';
+import { jobApiService } from '../services/jobApiService';
+
+// Interface for creating job application with pipeline handling
+export interface CreateJobApplicationWithPipelineData {
+  jobId: string;
+  candidateId: string;
+  status?: 'Applied' | 'Screening' | 'Phone Interview' | 'Technical Interview' | 'Final Interview' | 'Offer Extended' | 'Hired' | 'Rejected' | 'Withdrawn';
+  appliedDate?: string;
+  notes?: string;
+  coverLetter?: string;
+  score?: number;
+  resumeUrl?: string;
+  portfolioUrl?: string;
+  customFields?: Record<string, any>;
+}
 
 // Query Keys
 export const jobApplicationKeys = {
@@ -59,6 +74,86 @@ export const useCreateJobApplication = () => {
           queryKey: jobApplicationKeys.byCandidate(newApplication.candidateId) 
         });
       }
+    },
+  });
+};
+
+// Create job application with automatic pipeline stage assignment
+export const useCreateJobApplicationWithPipeline = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data: CreateJobApplicationWithPipelineData): Promise<JobApplication> => {
+      try {
+        // Fetch job with pipeline information
+        const job = await jobApiService.getJobWithPipeline(data.jobId);
+        
+        // Prepare application data with pipeline information
+        const applicationData: CreateJobApplicationData = {
+          ...data,
+          stage: 'Application', // Default stage
+        };
+
+        // Set pipeline information if available
+        if (job.pipeline && job.pipeline.stages && job.pipeline.stages.length > 0) {
+          // Sort stages by order and get the first one
+          const sortedStages = job.pipeline.stages.sort((a: any, b: any) => a.order - b.order);
+          const firstStage = sortedStages[0];
+
+          applicationData.pipelineId = job.pipeline.id;
+          applicationData.currentPipelineStageId = firstStage.id;
+          applicationData.currentPipelineStageName = firstStage.name;
+          applicationData.stageEnteredAt = new Date().toISOString();
+          
+          // Use the pipeline stage name instead of generic 'Application'
+          applicationData.stage = firstStage.name as any;
+
+          console.log('[useCreateJobApplicationWithPipeline] Setting pipeline stage:', {
+            pipelineId: job.pipeline.id,
+            stageId: firstStage.id,
+            stageName: firstStage.name,
+            stageOrder: firstStage.order,
+            totalStages: sortedStages.length
+          });
+        } else if (job.pipelineId) {
+          // If job has pipelineId but no pipeline data, set the ID
+          applicationData.pipelineId = job.pipelineId;
+          console.log('[useCreateJobApplicationWithPipeline] Job has pipelineId but no pipeline data:', job.pipelineId);
+        } else {
+          console.warn('[useCreateJobApplicationWithPipeline] No pipeline information available for job:', data.jobId);
+        }
+
+        // Log the final application data
+        console.log('[useCreateJobApplicationWithPipeline] Final application data:', applicationData);
+
+        // Create the job application
+        return await jobApplicationApiService.createJobApplication(applicationData);
+      } catch (error) {
+        console.error('[useCreateJobApplicationWithPipeline] Error:', error);
+        throw error;
+      }
+    },
+    onSuccess: (newApplication) => {
+      // Invalidate job applications queries
+      queryClient.invalidateQueries({ queryKey: jobApplicationKeys.all });
+      
+      // If we have the jobId, update the specific job applications cache
+      if (newApplication.jobId) {
+        queryClient.invalidateQueries({ 
+          queryKey: jobApplicationKeys.byJob(newApplication.jobId) 
+        });
+      }
+      
+      // If we have the candidateId, update the specific candidate applications cache
+      if (newApplication.candidateId) {
+        queryClient.invalidateQueries({ 
+          queryKey: jobApplicationKeys.byCandidate(newApplication.candidateId) 
+        });
+      }
+
+      // Also invalidate job-related queries that might be affected
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
     },
   });
 };

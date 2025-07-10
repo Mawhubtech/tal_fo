@@ -56,7 +56,7 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
   );
 
   const getCandidatesByStage = (stage: string) => {
-    return candidates.filter(candidate => {
+    const stageCandidates = candidates.filter(candidate => {
       // If candidate is being moved, show it in the target stage
       const movingInfo = movingCandidates.get(candidate.id);
       if (movingInfo) {
@@ -64,6 +64,8 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
       }
       return candidate.stage === stage;
     });
+    
+    return stageCandidates;
   };
 
   const handleDragStart = (event: DragStartEvent) => {

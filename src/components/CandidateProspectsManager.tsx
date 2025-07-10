@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Star, AlertCircle, CheckCircle, Clock, Briefcase, MapPin, Building, ExternalLink } from 'lucide-react';
-import { useJobApplicationsByCandidate, useCreateJobApplication } from '../hooks/useJobApplications';
+import { useJobApplicationsByCandidate, useCreateJobApplicationWithPipeline } from '../hooks/useJobApplications';
 import { useSourcingProspects } from '../hooks/useSourcingProspects';
 import { useJobSuggestions } from '../hooks/useJobs';
 import { useCandidate } from '../hooks/useCandidates';
@@ -71,23 +71,24 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
     { enabled: !!candidateId }
   );
 
-  // Mutations
-  const createJobApplicationMutation = useCreateJobApplication();
-
-  const jobApplications = jobApplicationsData?.applications || [];
-  const prospects = prospectsData?.prospects || [];
-  
-  // Get candidate rating from database (convert to number for display)
-  const candidateRating = candidateData ? parseFloat(candidateData.rating?.toString() || '0') : 0;
-  
-  // Get raw suggestions from backend and apply additional client-side filtering as safeguard
+  // Get job suggestions and apply filtering
   const rawJobSuggestions = jobSuggestionsData?.suggestions || [];
+  const jobApplications = jobApplicationsData?.applications || [];
   const appliedJobIds = new Set(jobApplications.map(app => app.jobId).filter(Boolean));
   
   // Double-check: filter out any jobs the candidate has already applied to
   const jobSuggestions = rawJobSuggestions.filter(suggestion => 
     !appliedJobIds.has(suggestion.job.id)
   );
+
+  // Mutations
+  const createJobApplicationWithPipelineMutation = useCreateJobApplicationWithPipeline();
+
+  // Get all the data arrays
+  const prospects = prospectsData?.prospects || [];
+  
+  // Get candidate rating from database (convert to number for display)
+  const candidateRating = candidateData ? parseFloat(candidateData.rating?.toString() || '0') : 0;
 
   // Debug logging
   console.log(`[CandidateProspectsManager] Applied job IDs:`, Array.from(appliedJobIds));
@@ -103,24 +104,32 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
     status: prospects[0]?.status
   };
 
-  // Handle adding candidate to job
+  // Handle adding candidate to job using the new hook
   const handleAddToJob = async (jobId: string) => {
     try {
       setIsAddingToJob(true);
       setSelectedJobId(jobId);
 
-      await createJobApplicationMutation.mutateAsync({
+      console.log(`[CandidateProspectsManager] Starting to add candidate ${candidateId} to job ${jobId}`);
+
+      // Prepare the application data
+      const applicationData = {
         jobId: jobId,
         candidateId: candidateId,
-        status: 'Applied',
-        stage: 'Application',
+        status: 'Applied' as const,
         appliedDate: new Date().toISOString().split('T')[0],
         notes: `Added from prospects management`
-      });
+      };
 
+      console.log('[CandidateProspectsManager] Submitting application data:', applicationData);
+
+      await createJobApplicationWithPipelineMutation.mutateAsync(applicationData);
+
+      console.log('[CandidateProspectsManager] Successfully created job application with pipeline');
       toast.success('Candidate Added', `${candidateName} has been added to the job pipeline`);
     } catch (error) {
-      toast.error('Failed to Add', 'Could not add candidate to job. They may already be applied.');
+      console.error('[CandidateProspectsManager] Error adding candidate to job:', error);
+      toast.error('Failed to Add', error instanceof Error ? error.message : 'Could not add candidate to job. Please try again.');
     } finally {
       setIsAddingToJob(false);
       setSelectedJobId(null);

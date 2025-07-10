@@ -9,6 +9,7 @@ export const jobKeys = {
   list: (filters: JobFilters) => [...jobKeys.lists(), { filters }] as const,
   details: () => [...jobKeys.all, 'detail'] as const,
   detail: (id: string) => [...jobKeys.details(), id] as const,
+  detailWithPipeline: (id: string) => [...jobKeys.details(), id, 'with-pipeline'] as const,
   stats: (organizationId?: string) => [...jobKeys.all, 'stats', organizationId || 'all'] as const,
   byOrganization: (organizationId: string) => [...jobKeys.all, 'organization', organizationId] as const,
   byDepartment: (departmentId: string) => [...jobKeys.all, 'department', departmentId] as const,
@@ -30,6 +31,16 @@ export function useJob(jobId: string) {
     queryKey: jobKeys.detail(jobId),
     queryFn: () => jobApiService.getJobById(jobId),
     enabled: !!jobId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+// Get job by ID with pipeline data
+export function useJobWithPipeline(jobId: string, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: jobKeys.detailWithPipeline(jobId),
+    queryFn: () => jobApiService.getJobWithPipeline(jobId),
+    enabled: (options.enabled ?? true) && !!jobId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

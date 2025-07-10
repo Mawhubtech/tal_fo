@@ -40,6 +40,7 @@ export interface CreateJobApplicationData {
   currentPipelineStageId?: string;
   currentPipelineStageName?: string;
   pipelineId?: string;
+  stageEnteredAt?: string;
 }
 
 export interface JobApplicationFilters {

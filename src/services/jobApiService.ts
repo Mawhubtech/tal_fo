@@ -90,6 +90,37 @@ class JobApiService {
     }
   }
 
+  async getJobWithPipeline(id: string): Promise<Job> {
+    try {
+      const response = await apiClient.get(`/jobs/${id}`);
+      const job = response.data;
+      
+      // If job has pipeline included, return it
+      if (job.pipeline && job.pipeline.stages) {
+        return job;
+      }
+      
+      // If job has pipelineId but no pipeline data, fetch pipeline separately
+      if (job.pipelineId) {
+        try {
+          const pipelineResponse = await apiClient.get(`/pipelines/${job.pipelineId}`);
+          const pipeline = pipelineResponse.data.pipeline || pipelineResponse.data;
+          
+          // Attach pipeline to job
+          job.pipeline = pipeline;
+        } catch (pipelineError) {
+          console.warn('Could not fetch pipeline details:', pipelineError);
+          // Continue without pipeline data
+        }
+      }
+      
+      return job;
+    } catch (error) {
+      console.error('Error fetching job with pipeline:', error);
+      throw error;
+    }
+  }
+
   async createJob(jobData: CreateJobData): Promise<Job> {
     try {
       const response = await apiClient.post('/jobs', jobData);
