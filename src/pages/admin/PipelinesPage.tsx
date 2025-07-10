@@ -16,6 +16,7 @@ import { useActionMenu } from '../../hooks/useActionMenu';
 
 const PipelinesPage: React.FC = () => {
   const [isCreatingDefault, setIsCreatingDefault] = useState(false);
+  const [defaultCreationType, setDefaultCreationType] = useState<'recruitment' | 'sourcing' | 'client' | 'custom'>('recruitment');
   const [viewDetailsPipeline, setViewDetailsPipeline] = useState<Pipeline | null>(null);
   const [deleteConfirmPipeline, setDeleteConfirmPipeline] = useState<Pipeline | null>(null);
 
@@ -50,6 +51,8 @@ const PipelinesPage: React.FC = () => {
     setVisibilityFilter,
     statusFilter,
     setStatusFilter,
+    typeFilter,
+    setTypeFilter,
     filteredPipelines,
     hasActiveFilters,
   } = usePipelineFilters(pipelines);
@@ -88,11 +91,31 @@ const PipelinesPage: React.FC = () => {
     }
   };
 
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'recruitment': return <Briefcase className="w-4 h-4" />;
+      case 'sourcing': return <Search className="w-4 h-4" />;
+      case 'client': return <Building className="w-4 h-4" />;
+      case 'custom': return <Settings className="w-4 h-4" />;
+      default: return <Briefcase className="w-4 h-4" />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'recruitment': return 'text-purple-700 bg-purple-50 border-purple-200';
+      case 'sourcing': return 'text-green-700 bg-green-50 border-green-200';
+      case 'client': return 'text-red-700 bg-red-50 border-red-200';
+      case 'custom': return 'text-gray-700 bg-gray-50 border-gray-200';
+      default: return 'text-purple-700 bg-purple-50 border-purple-200';
+    }
+  };
+
   const handleCreateDefault = async () => {
     try {
       setIsCreatingDefault(true);
-      await createDefaultPipeline();
-      toast.success('Default Pipeline Created', 'The default pipeline has been created successfully.');
+      await createDefaultPipeline(defaultCreationType);
+      toast.success('Default Pipeline Created', `The default ${defaultCreationType} pipeline has been created successfully.`);
     } catch (err) {
       console.error('Error creating default pipeline:', err);
       toast.error('Creation Failed', 'Failed to create default pipeline. Please try again.');
@@ -198,18 +221,31 @@ const PipelinesPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Recruitment Pipelines</h1>
-          <p className="text-gray-600">Create and manage custom recruitment workflows</p>
+          <h1 className="text-2xl font-bold text-gray-900">Pipeline Management</h1>
+          <p className="text-gray-600">Create and manage custom workflows for recruitment, sourcing, clients, and more</p>
         </div>
         <div className="flex gap-3">
-          <button 
-            className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            onClick={handleCreateDefault}
-            disabled={isCreatingDefault || pipelines.some(p => p.isDefault)}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            {isCreatingDefault ? 'Creating...' : 'Create Default'}
-          </button>
+          <div className="flex gap-2">
+            <select
+              value={defaultCreationType}
+              onChange={(e) => setDefaultCreationType(e.target.value as 'recruitment' | 'sourcing' | 'client' | 'custom')}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              disabled={isCreatingDefault}
+            >
+              <option value="recruitment">Recruitment</option>
+              <option value="sourcing">Sourcing</option>
+              <option value="client">Client</option>
+              <option value="custom">Custom</option>
+            </select>
+            <button 
+              className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              onClick={handleCreateDefault}
+              disabled={isCreatingDefault || pipelines.some(p => p.isDefault && p.type === defaultCreationType)}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              {isCreatingDefault ? 'Creating...' : 'Create Default'}
+            </button>
+          </div>
           <button 
             className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             onClick={openCreateModal}
@@ -251,6 +287,17 @@ const PipelinesPage: React.FC = () => {
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
           <option value="archived">Archived</option>
+        </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        >
+          <option value="all">All Types</option>
+          <option value="recruitment">Recruitment</option>
+          <option value="sourcing">Sourcing</option>
+          <option value="client">Client</option>
+          <option value="custom">Custom</option>
         </select>
       </div>
 
@@ -377,15 +424,19 @@ const PipelinesPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Status and Visibility */}
+              {/* Status, Visibility, and Type */}
               <div className="flex items-center justify-between">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(pipeline.status)}`}>
                     {pipeline.status}
                   </span>
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getVisibilityColor(pipeline.visibility)}`}>
                     {getVisibilityIcon(pipeline.visibility)}
                     <span className="ml-1">{pipeline.visibility}</span>
+                  </span>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getTypeColor(pipeline.type)}`}>
+                    {getTypeIcon(pipeline.type)}
+                    <span className="ml-1">{pipeline.type}</span>
                   </span>
                 </div>
               </div>

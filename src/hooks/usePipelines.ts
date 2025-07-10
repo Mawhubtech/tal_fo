@@ -96,10 +96,10 @@ export const usePipelines = () => {
     }
   }, [loadPipelines]);
 
-  const createDefaultPipeline = useCallback(async () => {
+  const createDefaultPipeline = useCallback(async (type?: 'recruitment' | 'sourcing' | 'client' | 'custom') => {
     try {
       setError(null);
-      await pipelineService.createDefaultPipeline();
+      await pipelineService.createDefaultPipeline(type);
       await loadPipelines();
       return true;
     } catch (err) {

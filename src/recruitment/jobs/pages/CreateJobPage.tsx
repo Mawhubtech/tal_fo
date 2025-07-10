@@ -43,7 +43,7 @@ const CreateJobPage: React.FC = () => {
     isLoading: pipelinesLoading,
     error: pipelinesError,
     refetch: refetchActivePipelines
-  } = useActivePipelines();
+  } = useActivePipelines('recruitment');
 
   const {
     data: hiringTeams = [],
@@ -166,7 +166,7 @@ const CreateJobPage: React.FC = () => {
     } else if (departmentsError) {
       setError('Failed to load departments. Please try again.');
     } else if (pipelinesError) {
-      setError('Failed to load hiring pipelines. Please check your pipelines configuration.');
+      setError('Failed to load recruitment pipelines. Please check your pipelines configuration.');
     } else if (hiringTeamsError && !hiringTeamsError.message?.includes('404') && !hiringTeamsError.message?.includes('Not Found')) {
       setError('Failed to load hiring teams. Please check your teams configuration.');
     } else if (jobError && isEditMode) {
@@ -245,7 +245,7 @@ const CreateJobPage: React.FC = () => {
       }
 
       if (!selectedPipelineId.trim()) {
-        setError('Hiring pipeline is required');
+        setError('Recruitment pipeline is required');
         return;
       }
 
@@ -363,7 +363,13 @@ const CreateJobPage: React.FC = () => {
   // Pipeline creation handler
   const handleCreatePipeline = async (data: CreatePipelineDto) => {
     try {
-      await createPipeline(data);
+      // Ensure we're creating a recruitment pipeline
+      const recruitmentPipelineData = {
+        ...data,
+        type: 'recruitment' as const
+      };
+      
+      await createPipeline(recruitmentPipelineData);
       // Refetch active pipelines to include the newly created one
       await refetchActivePipelines();
       closePipelineModal();
@@ -371,7 +377,7 @@ const CreateJobPage: React.FC = () => {
       // Find the newly created pipeline and set it as selected
       // Since we can't get the exact ID from createPipeline, we'll refetch and find by name
       const updatedPipelines = await refetchActivePipelines();
-      const newPipeline = updatedPipelines.data?.find(p => p.name === data.name);
+      const newPipeline = updatedPipelines.data?.find(p => p.name === data.name && p.type === 'recruitment');
       if (newPipeline) {
         setSelectedPipelineId(newPipeline.id);
       }
@@ -960,7 +966,7 @@ const CreateJobPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label htmlFor="pipeline" className="block text-sm font-semibold text-gray-700">
-                    Hiring Pipeline *
+                    Recruitment Pipeline *
                   </label>
                   <button
                     type="button"
@@ -980,7 +986,7 @@ const CreateJobPage: React.FC = () => {
                   disabled={pipelinesLoading}
                   required
                 >
-                  <option value="">Select a pipeline *</option>
+                  <option value="">Select a recruitment pipeline *</option>
                   {activePipelines.map((pipeline) => (
                     <option key={pipeline.id} value={pipeline.id}>
                       {pipeline.name} {pipeline.isDefault ? '(Default)' : ''}
@@ -991,7 +997,7 @@ const CreateJobPage: React.FC = () => {
                   <p className="text-xs text-gray-500 mt-1">Loading pipelines...</p>
                 )}
                 {!pipelinesLoading && activePipelines.length === 0 && (
-                  <p className="text-xs text-red-500 mt-1">No active pipelines found. Please create a pipeline first before creating jobs.</p>
+                  <p className="text-xs text-red-500 mt-1">No active recruitment pipelines found. Please create a recruitment pipeline first before creating jobs.</p>
                 )}
                 
                 {/* Show selected pipeline stages */}

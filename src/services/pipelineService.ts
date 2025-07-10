@@ -19,6 +19,7 @@ export interface Pipeline {
   description?: string;
   visibility: 'public' | 'private' | 'organization';
   status: 'active' | 'inactive' | 'archived';
+  type: 'recruitment' | 'sourcing' | 'client' | 'custom';
   isDefault: boolean;
   color?: string;
   icon?: string;
@@ -41,6 +42,7 @@ export interface CreatePipelineDto {
   description?: string;
   visibility?: 'public' | 'private' | 'organization';
   status?: 'active' | 'inactive' | 'archived';
+  type?: 'recruitment' | 'sourcing' | 'client' | 'custom';
   isDefault?: boolean;
   color?: string;
   icon?: string;
@@ -99,8 +101,26 @@ export const pipelineService = {
     }
 
     // Backend handles user filtering via createdByMe=true parameter
-    // Find the default pipeline from the user's own pipelines
-    const userDefault = pipelines.find((p: Pipeline) => p.isDefault && p.status === 'active');
+    // Find the default recruitment pipeline first, or any default pipeline
+    const userDefault = pipelines.find((p: Pipeline) => p.isDefault && p.status === 'active' && p.type === 'recruitment') ||
+                       pipelines.find((p: Pipeline) => p.isDefault && p.status === 'active');
+    return userDefault || null;
+  },
+
+  async getUserDefaultPipelineByType(type: 'recruitment' | 'sourcing' | 'client' | 'custom'): Promise<Pipeline | null> {
+    const response = await fetch(`${config.apiBaseUrl}/pipelines?isDefault=true&status=active&createdByMe=true&type=${type}`, {
+      headers: getAuthHeaders(),
+    });
+    
+    const data = await handleResponse(response);
+    const pipelines = data.pipelines || data;
+    
+    if (!Array.isArray(pipelines)) {
+      return null;
+    }
+
+    // Find the default pipeline for the specific type
+    const userDefault = pipelines.find((p: Pipeline) => p.isDefault && p.status === 'active' && p.type === type);
     return userDefault || null;
   },
 
@@ -158,8 +178,9 @@ export const pipelineService = {
     return data.pipeline || data; // Handle both response formats
   },
 
-  async createDefaultPipeline(): Promise<Pipeline> {
-    const response = await fetch(`${config.apiBaseUrl}/pipelines/default`, {
+  async createDefaultPipeline(type?: 'recruitment' | 'sourcing' | 'client' | 'custom'): Promise<Pipeline> {
+    const url = type ? `${config.apiBaseUrl}/pipelines/default?type=${type}` : `${config.apiBaseUrl}/pipelines/default`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: getAuthHeaders(),
     });

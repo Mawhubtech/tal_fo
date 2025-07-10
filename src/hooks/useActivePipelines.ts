@@ -1,13 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
 import { pipelineService, Pipeline } from '../services/pipelineService';
 
-export const useActivePipelines = () => {
+export const useActivePipelines = (type?: 'recruitment' | 'sourcing' | 'client' | 'custom') => {
   return useQuery<Pipeline[]>({
-    queryKey: ['pipelines', 'active'],
+    queryKey: ['pipelines', 'active', type],
     queryFn: async () => {
       const pipelines = await pipelineService.getAllPipelines();
-      // Filter to only return active pipelines for job creation
-      return pipelines.filter(pipeline => pipeline.status === 'active');
+      // Filter to only return active pipelines
+      let activePipelines = pipelines.filter(pipeline => pipeline.status === 'active');
+      
+      // If type is specified, filter by type
+      if (type) {
+        activePipelines = activePipelines.filter(pipeline => pipeline.type === type);
+      }
+      
+      // Sort pipelines to show default ones first, then by name
+      activePipelines.sort((a, b) => {
+        // Default pipelines come first
+        if (a.isDefault && !b.isDefault) return -1;
+        if (!a.isDefault && b.isDefault) return 1;
+        
+        // Then sort by name
+        return a.name.localeCompare(b.name);
+      });
+      
+      return activePipelines;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

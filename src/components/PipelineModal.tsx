@@ -57,6 +57,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
     description: '',
     visibility: 'private' as 'public' | 'private' | 'organization',
     status: 'active' as 'active' | 'inactive' | 'archived',
+    type: 'recruitment' as 'recruitment' | 'sourcing' | 'client' | 'custom',
     isDefault: false,
     color: '#7C3AED',
     icon: 'briefcase',
@@ -72,6 +73,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
         description: pipeline.description || '',
         visibility: pipeline.visibility,
         status: pipeline.status,
+        type: pipeline.type,
         isDefault: pipeline.isDefault,
         color: pipeline.color || '#7C3AED',
         icon: pipeline.icon || 'briefcase',
@@ -308,7 +310,23 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="recruitment">Recruitment</option>
+                    <option value="sourcing">Sourcing</option>
+                    <option value="client">Client</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Visibility
