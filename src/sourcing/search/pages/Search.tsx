@@ -17,133 +17,171 @@ import { useAIQuery } from '../../../hooks/ai';
 import { extractKeywords, convertKeywordsToFilters } from '../../../services/searchService';
 import type { SearchFilters } from '../../../services/searchService';
 
-// New component for displaying AI filters
-const AIFiltersDisplay: React.FC<{
+// Component for displaying detailed AI filters with full keywords
+const DetailedFiltersDisplay: React.FC<{
   filters: SearchFilters;
   onEditFilters: () => void;
   onClearFilters: () => void;
   onSearch: () => void;
   isSearching: boolean;
 }> = ({ filters, onEditFilters, onClearFilters, onSearch, isSearching }) => {
-  // Function to get summary of filters
-  const getFilterSummary = () => {
-    const summary: string[] = [];
-    
-    // Job titles
-    if (filters.job?.titles && filters.job.titles.length > 0) {
-      if (filters.job.titles.length > 1) {
-        summary.push(`${filters.job.titles.length} job titles`);
-      } else {
-        summary.push(`Job title: ${filters.job.titles[0]}`);
-      }
-    }
-    
-    // Skills
-    if (filters.job?.skills && filters.job.skills.length > 0) {
-      if (filters.job.skills.length > 3) {
-        summary.push(`${filters.job.skills.length} skills`);
-      } else {
-        summary.push(`Skills: ${filters.job.skills.join(', ')}`);
-      }
-    }
-    
-    // Locations
-    if (filters.location?.currentLocations && filters.location.currentLocations.length > 0) {
-      if (filters.location.currentLocations.length > 1) {
-        summary.push(`${filters.location.currentLocations.length} locations`);
-      } else {
-        summary.push(`Location: ${filters.location.currentLocations[0]}`);
-      }
-    }
-    
-    // Companies
-    if (filters.company?.names && filters.company.names.length > 0) {
-      if (filters.company.names.length > 2) {
-        summary.push(`${filters.company.names.length} companies`);
-      } else {
-        summary.push(`Companies: ${filters.company.names.join(', ')}`);
-      }
-    }
-    
-    // Experience
-    if (filters.general?.minExperience || filters.general?.maxExperience) {
-      const min = filters.general.minExperience || '0';
-      const max = filters.general.maxExperience || '∞';
-      
-      if (min !== '0' || max !== '∞') {
-        summary.push(`Experience: ${min}${max !== '∞' ? '-' + max : '+'} years`);
-      }
-    }
-    
-    // Keywords
-    if (filters.skillsKeywords?.items && filters.skillsKeywords.items.length > 0) {
-      summary.push(`${filters.skillsKeywords.items.length} keywords`);
-    }
-
-    // Requirements
-    if (filters.skillsKeywords?.requirements && filters.skillsKeywords.requirements.length > 0) {
-      summary.push(`${filters.skillsKeywords.requirements.length} requirements`);
-    }
-    
-    return summary.length > 0 ? summary : ['No filters applied'];
-  };
-
   const hasFilters = Object.keys(filters).length > 0;
-  const filterSummary = getFilterSummary();
   
   if (!hasFilters) return null;
-    return (
-    <div className="w-full max-w-lg mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg shadow-md">
-      <div className="flex items-center justify-between mb-2">
+
+  return (
+    <div className="w-full p-6 bg-blue-50 border border-blue-200 rounded-lg shadow-md">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-blue-700" />
-          <h3 className="text-sm font-medium text-blue-700">AI Extracted Keywords</h3>
+          <Filter className="w-5 h-5 text-blue-700" />
+          <h3 className="text-lg font-medium text-blue-700">AI Extracted Keywords & Filters</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button 
             onClick={onEditFilters}
-            className="bg-blue-100 hover:bg-blue-200 text-blue-700 p-1.5 rounded-md transition-colors"
+            className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-md transition-colors flex items-center gap-2"
             title="Edit filters"
           >
-            <Edit className="w-3.5 h-3.5" />
+            <Edit className="w-4 h-4" />
+            Edit Filters
           </button>
           <button 
             onClick={onClearFilters}
-            className="text-blue-500 hover:text-blue-700 p-1"
+            className="text-blue-500 hover:text-blue-700 px-3 py-2 flex items-center gap-2"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
+            Clear All
           </button>
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-2 mt-3">
-        {filterSummary.map((item, index) => (
-          <span 
-            key={index}
-            className="bg-white px-3 py-1 text-xs rounded-full border border-blue-200 text-blue-800"
-          >
-            {item}
-          </span>
-        ))}
-      </div>
-        <div className="flex justify-between items-center mt-3">
-        <button 
-          onClick={onEditFilters}
-          className="text-xs text-blue-700 hover:text-blue-800 underline"
-        >
-          Edit these filters
-        </button>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+        {/* Job Titles */}
+        {filters.job?.titles && filters.job.titles.length > 0 && (
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Job Titles</h4>
+            <div className="flex flex-wrap gap-2">
+              {filters.job.titles.map((title, index) => (
+                <span 
+                  key={index}
+                  className="bg-blue-100 text-blue-800 px-2 py-1 text-xs rounded-md"
+                >
+                  {title}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
+        {/* Skills */}
+        {filters.job?.skills && filters.job.skills.length > 0 && (
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Skills</h4>
+            <div className="flex flex-wrap gap-2">
+              {filters.job.skills.map((skill, index) => (
+                <span 
+                  key={index}
+                  className="bg-green-100 text-green-800 px-2 py-1 text-xs rounded-md"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Locations */}
+        {filters.location?.currentLocations && filters.location.currentLocations.length > 0 && (
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Locations</h4>
+            <div className="flex flex-wrap gap-2">
+              {filters.location.currentLocations.map((location, index) => (
+                <span 
+                  key={index}
+                  className="bg-purple-100 text-purple-800 px-2 py-1 text-xs rounded-md"
+                >
+                  {location}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Companies */}
+        {filters.company?.names && filters.company.names.length > 0 && (
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Companies</h4>
+            <div className="flex flex-wrap gap-2">
+              {filters.company.names.map((company, index) => (
+                <span 
+                  key={index}
+                  className="bg-orange-100 text-orange-800 px-2 py-1 text-xs rounded-md"
+                >
+                  {company}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Experience */}
+        {(filters.general?.minExperience || filters.general?.maxExperience) && (
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Experience</h4>
+            <div className="flex flex-wrap gap-2">
+              <span className="bg-gray-100 text-gray-800 px-2 py-1 text-xs rounded-md">
+                {filters.general.minExperience || '0'} - {filters.general.maxExperience || '∞'} years
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Keywords */}
+        {filters.skillsKeywords?.items && filters.skillsKeywords.items.length > 0 && (
+          <div className="bg-white p-4 rounded-lg border border-blue-200 xl:col-span-2">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Keywords</h4>
+            <div className="flex flex-wrap gap-2">
+              {filters.skillsKeywords.items.map((keyword, index) => (
+                <span 
+                  key={index}
+                  className="bg-yellow-100 text-yellow-800 px-2 py-1 text-xs rounded-md"
+                >
+                  {keyword}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Requirements */}
+        {filters.skillsKeywords?.requirements && filters.skillsKeywords.requirements.length > 0 && (
+          <div className="bg-white p-4 rounded-lg border border-blue-200 xl:col-span-2">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Requirements</h4>
+            <div className="flex flex-wrap gap-2">
+              {filters.skillsKeywords.requirements.map((requirement, index) => (
+                <span 
+                  key={index}
+                  className="bg-red-100 text-red-800 px-2 py-1 text-xs rounded-md"
+                >
+                  {requirement}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-center">
         <button
           onClick={onSearch}
           disabled={isSearching}
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2"
+          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-md text-sm flex items-center gap-2 font-medium"
         >
           {isSearching ? (
-            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           ) : (
             <>
-              <SearchIcon className="w-3.5 h-3.5" />
+              <SearchIcon className="w-4 h-4" />
               Search with these keywords
             </>
           )}
@@ -261,154 +299,183 @@ const Search: React.FC = () => {
   }, [location.state]);
 
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto px-4 py-6">
-      {/* Logo and title */}
-      <div className="text-center mb-8">
-       
-         <p className="text-gray-500 text-sm mt-1">
-          Find exactly who you're looking for, in seconds.
-          <a href="#" className="ml-1 text-purple-700 hover:text-purple-800 hover:underline transition-colors">
-            See how it works.
-          </a>
-        </p>
-      </div>
-      
-      {/* Who are you looking for section */}
-      <div className="w-full max-w-lg mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <SearchIcon className="w-4 h-4 text-gray-500" />
-          <h2 className="text-base font-medium text-gray-700">Who are you looking for?</h2>
-        </div>
-        
-        <div className="relative">
-          <div className="bg-white p-3 rounded-lg flex items-center gap-2 border border-gray-200 shadow-sm hover:shadow transition-shadow">
-            <SearchIcon className="w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Software Engineers with 5+ yrs of experience at fintech companies in the Bay Area"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400 text-sm"
-            />
-            {searchQuery.trim() && !aiQuery.loading && (
-              <button 
-                onClick={enhanceSearchWithAI}
-                className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-1.5 rounded-md transition-colors mr-1"
-                title="Enhance with AI"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {aiQuery.loading && (
-              <div className="mr-1 p-1.5">
-                <div className="w-3.5 h-3.5 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex flex-col lg:flex-row min-h-screen">
+        {/* PART 1: Search Section - Left Column */}
+        <div className="lg:w-1/3 xl:w-2/5 bg-white border-r border-gray-200 flex flex-col">
+          <div className="flex flex-col items-center justify-center w-full px-6 py-8 flex-1">
+            {/* Logo and title */}
+            <div className="text-center mb-8">
+              <p className="text-gray-500 text-sm mt-1">
+                Find exactly who you're looking for, in seconds.
+                <a href="#" className="ml-1 text-purple-700 hover:text-purple-800 hover:underline transition-colors">
+                  See how it works.
+                </a>
+              </p>
+            </div>
+            
+            {/* Who are you looking for section */}
+            <div className="w-full max-w-md mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <SearchIcon className="w-4 h-4 text-gray-500" />
+                <h2 className="text-base font-medium text-gray-700">Who are you looking for?</h2>
+              </div>
+              
+              <div className="relative">
+                <div className="bg-white p-3 rounded-lg flex items-center gap-2 border border-gray-200 shadow-sm hover:shadow transition-shadow">
+                  <SearchIcon className="w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Software Engineers with 5+ yrs of experience at fintech companies..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400 text-sm"
+                  />
+                  {searchQuery.trim() && !aiQuery.loading && (
+                    <button 
+                      onClick={enhanceSearchWithAI}
+                      className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-1.5 rounded-md transition-colors mr-1"
+                      title="Enhance with AI"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {aiQuery.loading && (
+                    <div className="mr-1 p-1.5">
+                      <div className="w-3.5 h-3.5 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  <button 
+                    onClick={handleAISearch}
+                    disabled={!searchQuery.trim() || isSearching}
+                    className="bg-purple-700 hover:bg-purple-800 disabled:bg-gray-400 text-white p-1.5 rounded-md transition-colors"
+                    title="Extract keywords from search query"
+                  >
+                    {isSearching ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <SearchIcon className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Enhancement Display */}
+            {showAIEnhancement && aiQuery.data && (
+              <div className="w-full max-w-md mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-purple-700" />
+                  <h3 className="text-sm font-medium text-purple-700">AI Enhanced Search</h3>
+                  <button 
+                    onClick={() => setShowAIEnhancement(false)}
+                    className="ml-auto text-purple-500 hover:text-purple-700"
+                  >
+                    ×
+                  </button>
+                </div>
+                <p className="text-sm text-purple-800 leading-relaxed">{aiQuery.data.content}</p>
+                <button 
+                  onClick={() => setSearchQuery(aiQuery.data?.content || '')}
+                  className="mt-2 text-xs text-purple-700 hover:text-purple-800 underline"
+                >
+                  Use this enhanced search
+                </button>
               </div>
             )}
-            <button 
-              onClick={handleAISearch}
-              disabled={!searchQuery.trim() || isSearching}
-              className="bg-purple-700 hover:bg-purple-800 disabled:bg-gray-400 text-white p-1.5 rounded-md transition-colors"
-              title="Extract keywords from search query"
-            >              {isSearching ? (
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <SearchIcon className="w-3.5 h-3.5" />
-              )}
-            </button>
+
+            {/* AI Error Display */}
+            {aiQuery.error && (
+              <div className="w-full max-w-md mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700">Error enhancing search: {aiQuery.error}</p>
+                <button 
+                  onClick={aiQuery.reset}
+                  className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="w-full max-w-md space-y-3 mt-6">
+              <Button
+                variant="primary"
+                className="w-full gap-2 text-sm bg-purple-700 hover:bg-purple-800 text-white px-4 py-3 rounded-md"
+                onClick={() => setIsJobDescriptionDialogOpen(true)}
+              >
+                <FileText className="w-4 h-4 text-white" />
+                Search by Job Description
+              </Button>
+
+              <Button
+                variant="primary"
+                className="w-full gap-2 text-sm bg-purple-700 hover:bg-purple-800 text-white px-4 py-3 rounded-md"
+                onClick={() => setIsBooleanDialogOpen(true)}
+              >
+                <ToggleRight className="w-4 h-4 text-white" />
+                Boolean Search
+              </Button>
+              
+              <Button
+                variant="primary"
+                className="w-full gap-2 text-sm bg-purple-700 hover:bg-purple-800 text-white px-4 py-3 rounded-md"
+                onClick={() => setIsFilterDialogOpen(true)}
+              >
+                <Filter className="w-4 h-4 text-white" />
+                Manual Filter Selection
+              </Button>
+            </div>
           </div>
-        </div>  
-            </div>      {/* AI Filters Display */}
-      {console.log('Filters display conditions:', { showAIFilters, filterCount: Object.keys(currentFilters).length, currentFilters })}
-      {showAIFilters && Object.keys(currentFilters).length > 0 && (
-        <AIFiltersDisplay 
-          filters={currentFilters}
-          onEditFilters={() => setIsFilterDialogOpen(true)}
-          onClearFilters={handleClearFilters}
-          onSearch={() => runSearch(currentFilters)}
-          isSearching={isSearching}
-        />
-      )}
-
-      {/* AI Enhancement Display */}
-      {showAIEnhancement && aiQuery.data && (
-        <div className="w-full max-w-lg mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-purple-700" />
-            <h3 className="text-sm font-medium text-purple-700">AI Enhanced Search</h3>
-            <button 
-              onClick={() => setShowAIEnhancement(false)}
-              className="ml-auto text-purple-500 hover:text-purple-700"
-            >
-              ×
-            </button>
-          </div>
-          <p className="text-sm text-purple-800 leading-relaxed">{aiQuery.data.content}</p>
-          <button 
-            onClick={() => setSearchQuery(aiQuery.data?.content || '')}
-            className="mt-2 text-xs text-purple-700 hover:text-purple-800 underline"
-          >
-            Use this enhanced search
-          </button>
         </div>
-      )}
 
-      {/* AI Error Display */}
-      {aiQuery.error && (
-        <div className="w-full max-w-lg mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">Error enhancing search: {aiQuery.error}</p>
-          <button 
-            onClick={aiQuery.reset}
-            className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
-          >
-            Dismiss
-          </button>
+        {/* PART 2: Keywords Display Section - Right Column */}
+        <div className="lg:w-2/3 xl:w-3/5 bg-gray-50 flex flex-col">
+          {showAIFilters && Object.keys(currentFilters).length > 0 ? (
+            <div className="p-6 flex-1 overflow-y-auto">
+              <DetailedFiltersDisplay 
+                filters={currentFilters}
+                onEditFilters={() => setIsFilterDialogOpen(true)}
+                onClearFilters={handleClearFilters}
+                onSearch={() => runSearch(currentFilters)}
+                isSearching={isSearching}
+              />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-6">
+              <div className="text-center max-w-md">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <SearchIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">No Keywords Yet</h3>
+                <p className="text-gray-500 text-sm">
+                  Enter a search query in the left panel and click the search button to extract AI-powered keywords and filters.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      )}      {/* Action buttons */}      <div className="flex gap-3 mt-6 flex-wrap justify-center">
-        
-        <Button
-          variant="primary"
-          className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-md"
-          onClick={() => setIsJobDescriptionDialogOpen(true)}
-        >
-          <FileText className="w-3.5 h-3.5 text-white" />
-          Job Description
-        </Button>
+      </div>
 
-        <Button
-          variant="primary"
-          className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-md"
-          onClick={() => setIsBooleanDialogOpen(true)}
-        >
-          <ToggleRight className="w-3.5 h-3.5 text-white" />
-          Boolean
-        </Button>
-        <Button
-          variant="primary"
-          className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded-md"
-          onClick={() => setIsFilterDialogOpen(true)}
-        >
-          <Filter className="w-3.5 h-3.5 text-white" />
-          Select Manually
-        </Button>
-       
-      </div>      {/* Filter Dialog */}
-     <FilterDialog
+      {/* Filter Dialog */}
+      <FilterDialog
         isOpen={isFilterDialogOpen}
         onClose={() => setIsFilterDialogOpen(false)}
         onApplyFilters={handleApplyFilters}
-        initialFilters={currentFilters} // <-- PASS currentFilters HERE
+        initialFilters={currentFilters}
       />
       
       {/* Boolean Search Dialog */}
       <BooleanSearchDialog
         isOpen={isBooleanDialogOpen}
         onClose={() => setIsBooleanDialogOpen(false)}
-      />      {/* Job Description Dialog */}
+      />
+
+      {/* Job Description Dialog */}
       <JobDescriptionDialog
         isOpen={isJobDescriptionDialogOpen}
         onClose={() => setIsJobDescriptionDialogOpen(false)}
       />
-
     </div>
   );
 };
