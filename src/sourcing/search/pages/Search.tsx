@@ -16,6 +16,7 @@ import JobDescriptionDialog from '../../../recruitment/components/JobDescription
 import { useAIQuery } from '../../../hooks/ai';
 import { extractKeywords, convertKeywordsToFilters } from '../../../services/searchService';
 import type { SearchFilters } from '../../../services/searchService';
+import SearchFiltersSection from '../../../components/SearchFilterSection';
 
 // Component for displaying detailed AI filters with full keywords
 const DetailedFiltersDisplay: React.FC<{
@@ -240,7 +241,7 @@ const Search: React.FC = () => {
       const keywords = await extractKeywords(searchQuery);
       
       // Convert to filters
-      const filters = convertKeywordsToFilters(keywords);
+      const filters = await convertKeywordsToFilters(keywords);
       
       console.log("AI extracted filters:", filters);
       // Set filters and show them before searching
@@ -299,10 +300,10 @@ const Search: React.FC = () => {
   }, [location.state]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex flex-col lg:flex-row min-h-screen">
+    <div className="h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-full">
         {/* PART 1: Search Section - Left Column */}
-        <div className="lg:w-1/3 xl:w-2/5 bg-white border-r border-gray-200 flex flex-col">
+        <div className="lg:w-1/3 xl:w-2/5 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
           <div className="flex flex-col items-center justify-center w-full px-6 py-8 flex-1">
             {/* Logo and title */}
             <div className="text-center mb-8">
@@ -398,47 +399,65 @@ const Search: React.FC = () => {
             )}
 
             {/* Action buttons */}
-            <div className="w-full max-w-md space-y-3 mt-6">
-              <Button
-                variant="primary"
-                className="w-full gap-2 text-sm bg-purple-700 hover:bg-purple-800 text-white px-4 py-3 rounded-md"
-                onClick={() => setIsJobDescriptionDialogOpen(true)}
-              >
-                <FileText className="w-4 h-4 text-white" />
-                Search by Job Description
-              </Button>
+            <div className="w-full max-w-md space-y-2">
+			<div className='flex flex-row space-x-2 justify-center'>
 
-              <Button
-                variant="primary"
-                className="w-full gap-2 text-sm bg-purple-700 hover:bg-purple-800 text-white px-4 py-3 rounded-md"
+              <button
+           
+                className="flex items-center justify-center bg-purple-700 hover:bg-purple-800 text-white p-2 rounded-md"
+                onClick={() => setIsJobDescriptionDialogOpen(true)}
+				title='View Job Description'
+				>
+                <FileText className="w-5 h-5 text-white" />
+              </button>
+
+              <button
+                
+                className="flex items-center justify-center bg-purple-700 hover:bg-purple-800 text-white p-3 rounded-md"
                 onClick={() => setIsBooleanDialogOpen(true)}
-              >
-                <ToggleRight className="w-4 h-4 text-white" />
-                Boolean Search
-              </Button>
+				title='Boolean Search'
+				>
+                <ToggleRight className="w-5 h-5 text-white" />
+              </button>
               
-              <Button
-                variant="primary"
-                className="w-full gap-2 text-sm bg-purple-700 hover:bg-purple-800 text-white px-4 py-3 rounded-md"
+              <button
+                
+                className="flex items-center justify-center bg-purple-700 hover:bg-purple-800 text-white p-3 rounded-md"
                 onClick={() => setIsFilterDialogOpen(true)}
-              >
-                <Filter className="w-4 h-4 text-white" />
-                Manual Filter Selection
-              </Button>
+				title='Filter Search'
+				>
+                <Filter className="w-5 h-5 text-white" />
+              </button>
+
+				  </div>
+              {/* Search with Filters Button */}
+              {showAIFilters && Object.keys(currentFilters).length > 0 && (
+                <button
+                  onClick={() => runSearch(currentFilters)}
+                  disabled={isSearching}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-4 py-3 rounded-md text-sm flex items-center justify-center gap-2 font-medium shadow-sm"
+                >
+                  {isSearching ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <SearchIcon className="w-4 h-4" />
+                      Search with filters
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* PART 2: Keywords Display Section - Right Column */}
-        <div className="lg:w-2/3 xl:w-3/5 bg-gray-50 flex flex-col">
+        <div className="lg:w-2/3 xl:w-3/5 bg-gray-50 flex flex-col min-h-0">
           {showAIFilters && Object.keys(currentFilters).length > 0 ? (
-            <div className="p-6 flex-1 overflow-y-auto">
-              <DetailedFiltersDisplay 
-                filters={currentFilters}
-                onEditFilters={() => setIsFilterDialogOpen(true)}
-                onClearFilters={handleClearFilters}
-                onSearch={() => runSearch(currentFilters)}
-                isSearching={isSearching}
+            <div className="flex-1 overflow-y-auto p-4">
+              <SearchFiltersSection
+                onApplyFilters={handleApplyFilters}
+                initialFilters={currentFilters}
               />
             </div>
           ) : (

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles } from 'lucide-react';
 import Button from '../../../components/Button';
-import { searchUsers } from '../../../services/searchService';
+import FilterDialog from '../../../components/FilterDialog';
+import { useSearch } from '../../../hooks/useSearch';
+import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
 import type { SearchFilters } from '../../../services/searchService';
 
 // Assuming ProfilePage.tsx and its types are in the same directory or adjust path
@@ -12,10 +14,16 @@ import SourcingProfileSidePanel, { type PanelState } from '../../../components/S
 const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
   const [results, setResults] = useState<any[]>([]);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [candidateSummaries, setCandidateSummaries] = useState<{ [key: string]: any }>({});
+  
+  // Use hooks
+  const { executeSearch, isLoading, error, data } = useSearch();
+  const { generateSummary, isLoading: summaryLoading } = useCandidateSummary();
+  
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
@@ -32,14 +40,39 @@ const SearchResultsPage: React.FC = () => {
   }, [location.state, navigate]);
 
   const fetchResults = async (filters: SearchFilters, query?: string) => {
-    setIsLoading(true);
     try {
-      const searchResults = await searchUsers(filters, query);
-      setResults(searchResults);
+      const searchParams = {
+        filters,
+        searchText: query,
+        pagination: { page: 1, limit: 20 }
+      };
+      
+      const searchResults = await executeSearch(searchParams);
+      console.log('Search results:', searchResults); // Debug log
+      
+      // Handle the response structure from backend
+      if (searchResults && typeof searchResults === 'object' && 'results' in searchResults) {
+        setResults((searchResults as any).results || []);
+      } else if (Array.isArray(searchResults)) {
+        setResults(searchResults);
+      } else {
+        setResults([]);
+      }
     } catch (error) {
       console.error('Error fetching search results:', error);
-    } finally {
-      setIsLoading(false);
+      setResults([]);
+    }
+  };
+
+  const handleSummarize = async (candidateId: string) => {
+    try {
+      const summary = await generateSummary(candidateId);
+      setCandidateSummaries(prev => ({
+        ...prev,
+        [candidateId]: summary
+      }));
+    } catch (error) {
+      console.error('Error generating summary:', error);
     }
   };
 
@@ -50,6 +83,17 @@ const SearchResultsPage: React.FC = () => {
         query: searchQuery
       }
     });
+  };
+
+  const handleEditFilters = () => {
+    setIsFilterDialogOpen(true);
+  };
+
+  const handleApplyFilters = (newFilters: SearchFilters) => {
+    setFilters(newFilters);
+    setIsFilterDialogOpen(false);
+    // Perform new search with updated filters
+    fetchResults(newFilters, searchQuery);
   };
   // Handlers for the profile side panel
   const handleOpenProfilePanel = (userData: UserStructuredData) => {
@@ -75,17 +119,15 @@ const SearchResultsPage: React.FC = () => {
         {/* Header with back button */}
         <div className="flex items-center justify-between py-6 mb-4">
           <Button
-            variant="primary"
-            className="flex items-center gap-2 bg-primary-600 text-gray-600 hover:text-gray-800"
+            className="flex items-center gap-2 bg-purple-600 text-white hover:bg-purple-700"
             onClick={handleBackToSearchForm} // Changed from handleBack
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Search
           </Button>          <div className="flex items-center gap-3">
-            <Button variant="primary" className="text-sm bg-primary-600">Share</Button>
+            <Button className="text-sm bg-purple-600 text-white hover:bg-purple-700">Share</Button>
             <Button
-              variant="primary"
-              className="text-sm bg-primary-600 hover:bg-primary-700 text-white"
+              className="text-sm bg-purple-600 text-white hover:bg-purple-700"
               onClick={() => navigate('/dashboard', { replace: true })}
             >
               New Search
@@ -98,14 +140,12 @@ const SearchResultsPage: React.FC = () => {
               <h1 className="text-xl font-semibold text-gray-900">Search Query & Filters</h1>
             </div>
             <button
-              className="text-gray-500 hover:text-primary-600 transition-colors duration-200"
-              onClick={() => navigate('/dashboard', { state: { editFilters: filters, query: searchQuery } })}
+              className="flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-primary-600 hover:bg-gray-50 rounded-md transition-colors duration-200"
+              onClick={handleEditFilters}
               title="Edit Filters"
             >
-              <span className="sr-only">Edit</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-              </svg>
+              <Edit className="h-4 w-4" />
+              <span className="text-sm font-medium">Edit Filters</span>
             </button>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -125,7 +165,7 @@ const SearchResultsPage: React.FC = () => {
             ))}
             <button
               className="text-sm text-primary-600 hover:text-primary-700 font-medium ml-auto underline transition-colors duration-200"
-              onClick={() => navigate('/dashboard', { state: { editFilters: filters, query: searchQuery } })}
+              onClick={handleEditFilters}
             >
               Edit Filters
             </button>
@@ -178,22 +218,53 @@ const SearchResultsPage: React.FC = () => {
           ) : (
             <div>
               {results.map((result, index) => {
-                const { user } = result; // Assuming result structure from searchService
-                // Ensure user and user.structuredData exist
-                if (!user || !user.structuredData) {
-                    console.warn("User data is missing for result:", result);
+                const { candidate, score, matchCriteria } = result; // Backend returns CandidateMatchDto with candidate property and match criteria
+                // Ensure candidate exists
+                if (!candidate) {
+                    console.warn("Candidate data is missing for result:", result);
                     return null; // Skip rendering this item
                 }
-                const { personalInfo, experience, skills } = user.structuredData;                return (
-                  <div key={result.id || index} className={`px-6 py-6 hover:bg-gray-50 transition-colors duration-200 ${index !== results.length - 1 ? 'border-b border-gray-200' : ''}`}>
+                
+                // Map backend candidate structure to frontend expected structure
+                const personalInfo = {
+                  fullName: candidate.fullName || 'Unknown',
+                  email: candidate.email || '',
+                  location: candidate.location || 'Location not specified',
+                  linkedIn: candidate.linkedIn || '',
+                  github: candidate.github || ''
+                };
+                
+                const experience = candidate.experience || [];
+                // Extract skills from skillMappings structure
+                const skills = candidate.skillMappings 
+                  ? candidate.skillMappings.map(mapping => mapping.skill?.name).filter(Boolean)
+                  : (candidate.skills ? candidate.skills.map(skill => skill.name || skill) : []);
+                const candidateSummary = candidateSummaries[candidate.id];
+                
+                return (
+                  <div key={candidate.id || index} className={`px-6 py-6 hover:bg-gray-50 transition-colors duration-200 ${index !== results.length - 1 ? 'border-b border-gray-200' : ''}`}>
                     <div className="flex items-start">
                       <input type="checkbox" className="mt-2 mr-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
                       <div className="flex-1">
+                        
+                        {/* Header with name, score, and actions */}
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <h3
                               className="text-lg font-semibold cursor-pointer hover:text-primary-600 transition-colors duration-200 flex items-center gap-2"
-                              onClick={() => handleOpenProfilePanel(user.structuredData)} // Open panel
+                              onClick={() => handleOpenProfilePanel({
+                                personalInfo,
+                                experience,
+                                skills,
+                                summary: candidate.summary || '',
+                                education: candidate.education || [],
+                                certifications: candidate.certifications || [],
+                                awards: candidate.awards || [],
+                                projects: candidate.projects || [],
+                                languages: candidate.languages || [],
+                                interests: candidate.interests || [],
+                                references: candidate.references || []
+                              })}
                             >
                               {personalInfo.fullName}
                               {/* Icon indicates clickable, panel will open */}
@@ -201,6 +272,16 @@ const SearchResultsPage: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
                             </h3>
+                            
+                            {/* Match Score Badge */}
+                            {score > 0 && (
+                              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                                <CheckCircle className="h-3 w-3" />
+                                {Math.round(score * 100)}% match
+                              </div>
+                            )}
+                            
+                            {/* Social Links */}
                             {personalInfo.linkedIn && (
                                 <a href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-600 transition-colors duration-200" title="LinkedIn">
                                 <span className="sr-only">LinkedIn</span>
@@ -215,23 +296,132 @@ const SearchResultsPage: React.FC = () => {
                             )}
                           </div>
                           <div className="flex items-center gap-3">
-                            <Button variant="primary" size="sm" className="text-sm border-primary-200 bg-primary-600 text-primary-600 hover:bg-primary-50">Shortlist</Button>
-                            <Button variant="primary" size="sm" className="text-sm border-primary-200 bg-primary-600 text-primary-600 hover:bg-primary-50">Summarize</Button>
+                            <Button size="sm" className="text-sm bg-purple-600 text-white hover:bg-purple-700">Shortlist</Button>
+                            <Button 
+                              size="sm" 
+                              className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
+                              onClick={() => handleSummarize(candidate.id)}
+                              disabled={summaryLoading}
+                            >
+                              {summaryLoading ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Sparkles className="h-3 w-3" />
+                              )}
+                              Summarize
+                            </Button>
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500">
+
+                        {/* Current Position */}
+                        <div className="text-sm text-gray-500 mb-3">
                           {experience && experience.length > 0 && (
-                            <p>
+                            <p className="flex items-center gap-1">
+                              <Building className="h-4 w-4" />
                               {experience[0].position} at {experience[0].company}
                               <span className="mx-1.5">•</span>
-                              {personalInfo.location || 'Location not specified'}
+                              <MapPin className="h-4 w-4" />
+                              {personalInfo.location}
                             </p>
                           )}
                         </div>
+
+                        {/* Match Criteria */}
+                        {matchCriteria && (
+                          <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-1">
+                              <Search className="h-4 w-4" />
+                              Match Criteria
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {matchCriteria.titleMatch && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                  ✓ Job Title Match
+                                </span>
+                              )}
+                              {matchCriteria.locationMatch && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                  ✓ Location Match
+                                </span>
+                              )}
+                              {matchCriteria.companyMatch && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                  ✓ Company Experience
+                                </span>
+                              )}
+                              {matchCriteria.skillMatch && matchCriteria.skillMatch.length > 0 && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                                  <Code className="h-3 w-3 mr-1" />
+                                  {matchCriteria.skillMatch.length} Skills: {matchCriteria.skillMatch.slice(0, 2).join(', ')}
+                                  {matchCriteria.skillMatch.length > 2 && ` +${matchCriteria.skillMatch.length - 2} more`}
+                                </span>
+                              )}
+                              {matchCriteria.keywordMatches && matchCriteria.keywordMatches.length > 0 && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                  Keywords: {matchCriteria.keywordMatches.slice(0, 3).join(', ')}
+                                  {matchCriteria.keywordMatches.length > 3 && ` +${matchCriteria.keywordMatches.length - 3} more`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* AI Summary */}
+                        {candidateSummary && (
+                          <div className="mb-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                            <h4 className="text-sm font-medium text-purple-900 mb-2 flex items-center gap-1">
+                              <Sparkles className="h-4 w-4" />
+                              AI Summary
+                            </h4>
+                            <p className="text-sm text-gray-700 mb-3">{candidateSummary.summary}</p>
+                            
+                            {candidateSummary.keyStrengths && candidateSummary.keyStrengths.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-xs font-medium text-purple-900 mb-1">Key Strengths:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {candidateSummary.keyStrengths.map((strength: string, i: number) => (
+                                    <span key={i} className="inline-block px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">
+                                      {strength}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {candidateSummary.matchHighlights && candidateSummary.matchHighlights.length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium text-purple-900 mb-1">Match Highlights:</p>
+                                <ul className="text-xs text-gray-600 space-y-1">
+                                  {candidateSummary.matchHighlights.map((highlight: string, i: number) => (
+                                    <li key={i} className="flex items-start gap-1">
+                                      <span className="text-purple-600 mt-0.5">•</span>
+                                      {highlight}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Experience Summary */}
                         <div className="mt-2">
-                          <p className="text-sm text-gray-600">                            <span
+                          <p className="text-sm text-gray-600">
+                            <span
                               className="font-medium cursor-pointer hover:text-primary-600 transition-colors"
-                              onClick={() => handleOpenProfilePanel(user.structuredData)} // Open panel
+                              onClick={() => handleOpenProfilePanel({
+                                personalInfo,
+                                experience,
+                                skills,
+                                summary: candidate.summary || '',
+                                education: candidate.education || [],
+                                certifications: candidate.certifications || [],
+                                awards: candidate.awards || [],
+                                projects: candidate.projects || [],
+                                languages: candidate.languages || [],
+                                interests: candidate.interests || [],
+                                references: candidate.references || []
+                              })}
                             >
                               {personalInfo.fullName.split(' ')[0]}
                             </span>
@@ -240,6 +430,8 @@ const SearchResultsPage: React.FC = () => {
                             {experience && experience.length > 1 && experience[1].position && `, with prior experience as a ${experience[1].position}`}.
                           </p>
                         </div>
+
+                        {/* Skills */}
                         <div className="mt-3">
                           {skills && skills.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
@@ -283,6 +475,14 @@ const SearchResultsPage: React.FC = () => {
           />
         </>
       )}
+
+      {/* Filter Dialog */}
+      <FilterDialog
+        isOpen={isFilterDialogOpen}
+        onClose={() => setIsFilterDialogOpen(false)}
+        onApplyFilters={handleApplyFilters}
+        initialFilters={filters}
+      />
     </>
   );
 };

@@ -17,12 +17,12 @@ import {
   Command,
 } from 'lucide-react';
 
-import type { SearchFilters } from '../services/searchService';
+// Assuming searchService.ts is located at '../../services/searchService'
+// Adjust the path if necessary
+import type { SearchFilters } from '../../services/searchService';
 
 // Types
 interface FilterDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
   onApplyFilters?: (filters: FilterState) => void;
   initialFilters?: SearchFilters;
 }
@@ -314,10 +314,8 @@ const ActiveFiltersSummary: React.FC<{
 };
 
 
-// Main FilterDialog component
-const FilterDialog: React.FC<FilterDialogProps> = ({
-  isOpen,
-  onClose,
+// Main SearchFilters component
+const SearchFiltersSection: React.FC<FilterDialogProps> = ({
   onApplyFilters,
   initialFilters,
 }) => {
@@ -329,56 +327,54 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (isOpen) {
-      const defaults = createDefaultFilterState();
-      if (initialFilters && Object.keys(initialFilters).length > 0) {
-        setFilters({
-          general: { ...defaults.general, ...initialFilters.general },
-          location: {
-            ...defaults.location,
-            ...initialFilters.location,
-            currentLocations: initialFilters.location?.currentLocations || defaults.location.currentLocations,
-            pastLocations: initialFilters.location?.pastLocations || defaults.location.pastLocations,
-          },
-          job: {
-            ...defaults.job,
-            ...initialFilters.job,
-            titles: initialFilters.job?.titles || defaults.job.titles,
-            skills: initialFilters.job?.skills || defaults.job.skills,
-          },
-          company: {
-            ...defaults.company,
-            ...initialFilters.company,
-            names: initialFilters.company?.names || defaults.company.names,
-            industries: initialFilters.company?.industries || defaults.company.industries,
-          },
-          funding: { ...defaults.funding, /* ...initialFilters.funding if defined */ },
-          skillsKeywords: {
-            ...defaults.skillsKeywords,
-            items: initialFilters.skillsKeywords?.items || defaults.skillsKeywords.items,
-            requirements: initialFilters.skillsKeywords?.requirements || defaults.skillsKeywords.requirements,
-          },
-          power: { ...defaults.power, ...initialFilters.power },
-          likelyToSwitch: { ...defaults.likelyToSwitch, ...initialFilters.likelyToSwitch },
-          education: {
-            ...defaults.education,
-            ...initialFilters.education,
-            schools: initialFilters.education?.schools || defaults.education.schools,
-            degrees: initialFilters.education?.degrees || defaults.education.degrees,
-            majors: initialFilters.education?.majors || defaults.education.majors,
-          },
-          languages: {
-            ...defaults.languages,
-            ...initialFilters.languages,
-            items: initialFilters.languages?.items || defaults.languages.items,
-          },
-          boolean: { ...defaults.boolean, ...initialFilters.boolean },
-        });
-      } else {
-        setFilters(defaults);
-      }
+    const defaults = createDefaultFilterState();
+    if (initialFilters && Object.keys(initialFilters).length > 0) {
+      setFilters({
+        general: { ...defaults.general, ...initialFilters.general },
+        location: {
+          ...defaults.location,
+          ...initialFilters.location,
+          currentLocations: initialFilters.location?.currentLocations || defaults.location.currentLocations,
+          pastLocations: initialFilters.location?.pastLocations || defaults.location.pastLocations,
+        },
+        job: {
+          ...defaults.job,
+          ...initialFilters.job,
+          titles: initialFilters.job?.titles || defaults.job.titles,
+          skills: initialFilters.job?.skills || defaults.job.skills,
+        },
+        company: {
+          ...defaults.company,
+          ...initialFilters.company,
+          names: initialFilters.company?.names || defaults.company.names,
+          industries: initialFilters.company?.industries || defaults.company.industries,
+        },
+        funding: { ...defaults.funding, /* ...initialFilters.funding if defined */ },
+        skillsKeywords: {
+          ...defaults.skillsKeywords,
+          items: initialFilters.skillsKeywords?.items || defaults.skillsKeywords.items,
+          requirements: initialFilters.skillsKeywords?.requirements || defaults.skillsKeywords.requirements,
+        },
+        power: { ...defaults.power, ...initialFilters.power },
+        likelyToSwitch: { ...defaults.likelyToSwitch, ...initialFilters.likelyToSwitch },
+        education: {
+          ...defaults.education,
+          ...initialFilters.education,
+          schools: initialFilters.education?.schools || defaults.education.schools,
+          degrees: initialFilters.education?.degrees || defaults.education.degrees,
+          majors: initialFilters.education?.majors || defaults.education.majors,
+        },
+        languages: {
+          ...defaults.languages,
+          ...initialFilters.languages,
+          items: initialFilters.languages?.items || defaults.languages.items,
+        },
+        boolean: { ...defaults.boolean, ...initialFilters.boolean },
+      });
+    } else {
+      setFilters(defaults);
     }
-  }, [isOpen, initialFilters]);
+  }, [initialFilters]);
 
   const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
@@ -435,76 +431,45 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
 
   const handleApplyFiltersCallback = useCallback(() => {
     onApplyFilters?.(filters);
-    onClose();
-  }, [filters, onApplyFilters, onClose]);
+  }, [filters, onApplyFilters]);
 
   const handleClearAll = useCallback(() => {
     setFilters(createDefaultFilterState());
   }, []);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between border-b border-gray-200 p-6">
+    <div className="w-fullmx-auto">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col">
+        <div className="flex items-center justify-between border-b border-gray-200 p-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Search Filters</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Search Filters</h2>
             <p className="text-sm text-gray-500 mt-1">
               {totalActiveFiltersCount > 0 ? `${totalActiveFiltersCount} active filter category${totalActiveFiltersCount !== 1 ? 'ies' : 'y'}` : 'No active filters'}
             </p>
           </div>
-          <div className="flex items-center gap-3">
 
-            <button
-              onClick={handleClearAll}
-              className="text-sm text-gray-600 hover:text-gray-800 px-3 py-1 border border-gray-300 rounded-md transition-colors"
-            >
-              Clear All
-            </button>
-            <button
-              onClick={handleApplyFiltersCallback}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Apply Filters
-            </button>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 p-1 rounded-md transition-colors"
-            >
-              <X size={24} />
-            </button>
-          </div>
         </div>
 
-        <div className="flex flex-1 min-h-0">
-          {/* Left Column - Search and Active Filters */}
-          <div className="w-1/3 border-r border-gray-200 flex flex-col">
-            <div className="p-6 border-b border-gray-200">
-              <div className="relative">
-                <SearchIconUI size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search filters (e.g., 'Location', 'Skills')..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-6">
-              <ActiveFiltersSummary 
-                filters={filters} 
-                onRemoveFilter={handleRemoveFilterItem}
-                onClearAllFilters={handleClearAll}
-              />
-            </div>
+        <div className="p-4 border-b border-gray-200">
+          <div className="relative">
+            <SearchIconUI size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search filters (e.g., 'Location', 'Skills')..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
           </div>
+        </div>
+        
+        <ActiveFiltersSummary 
+            filters={filters} 
+            onRemoveFilter={handleRemoveFilterItem}
+            onClearAllFilters={handleClearAll}
+        />
 
-          {/* Right Column - Filter Sections */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-6">
+        <div className="overflow-y-auto p-4">
           <div className="space-y-4">
             {/* General Filters */}
             <FilterSection
@@ -798,12 +763,19 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
             </FilterSection>
           </div>
         </div>
-		</div>
 
-</div>
+        <div className="border-t border-gray-200 p-4 bg-gray-50">
+          <div className="flex items-center justify-center">
+            <div className="text-sm text-gray-600">
+              {totalActiveFiltersCount > 0 && (
+                <span>{totalActiveFiltersCount} active filter categor{totalActiveFiltersCount !== 1 ? 'ies' : 'y'} applied</span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default FilterDialog;
+export default SearchFiltersSection;
