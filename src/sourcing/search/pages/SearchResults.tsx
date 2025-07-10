@@ -10,6 +10,7 @@ import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useSourcingProspects } from '../../../hooks/useSourcingProspects';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
+import { useMyTeams } from '../../../hooks/useRecruitmentTeams';
 import type { SearchFilters } from '../../../services/searchService';
 import { sourcingApiService, CreateSourcingProspectDto } from '../../../services/sourcingApiService';
 
@@ -165,10 +166,16 @@ const SearchResultsPage: React.FC = () => {
   const { generateSummary, isLoading: summaryLoading } = useCandidateSummary();
   const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
   const { data: existingProspects } = useSourcingProspects({ createdBy: user?.id });
+  const { data: recruitmentTeams } = useMyTeams();
   const { addToast } = useToast();
+  
+  // State for team sharing
+  const [showTeamShare, setShowTeamShare] = useState<{ [key: string]: boolean }>({});
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
 
   useEffect(() => {
@@ -257,8 +264,9 @@ const SearchResultsPage: React.FC = () => {
     fetchResults(newFilters, searchQuery);
   };
   // Handlers for the profile side panel
-  const handleOpenProfilePanel = (userData: UserStructuredData) => {
+  const handleOpenProfilePanel = (userData: UserStructuredData, candidateId?: string) => {
     setSelectedUserDataForPanel(userData);
+    setSelectedCandidateId(candidateId || null);
     setPanelState('expanded');
     document.body.style.overflow = 'hidden'; // Prevent background scroll
   };
@@ -267,11 +275,12 @@ const SearchResultsPage: React.FC = () => {
     setPanelState(newState);
     if (newState === 'closed') {
       setSelectedUserDataForPanel(null);
+      setSelectedCandidateId(null);
       document.body.style.overflow = 'auto'; // Restore background scroll
     }
   };
 
-  const handleShortlist = async (candidate: any) => {
+  const handleShortlist = async (candidate: any, teamId?: string) => {
     try {
       // Start shortlisting process
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: true }));
@@ -297,13 +306,15 @@ const SearchResultsPage: React.FC = () => {
         status: 'new',
         source: 'linkedin',
         rating: 3, // Default rating
-        notes: `Added from search on ${new Date().toLocaleDateString()}`,
+        notes: `Added from search on ${new Date().toLocaleDateString()}${teamId ? ' (shared with team)' : ''}`,
         pipelineId: defaultPipeline.id,
         currentStageId: firstStage.id,
+        ...(teamId && { sharedWithTeamId: teamId }),
         metadata: {
           searchScore: candidate.score || 0,
           addedFromSearch: true,
-          searchDate: new Date().toISOString()
+          searchDate: new Date().toISOString(),
+          ...(teamId && { sharedWithTeam: true })
         }
       };
 
@@ -314,10 +325,11 @@ const SearchResultsPage: React.FC = () => {
       setShortlistedCandidates(prev => ({ ...prev, [candidate.id]: true }));
 
       // Show success feedback
+      const teamName = teamId ? recruitmentTeams?.find(t => t.id === teamId)?.name : null;
       addToast({
         type: 'success',
         title: 'Candidate Shortlisted',
-        message: `${candidate.fullName} has been added to the ${defaultPipeline.name} pipeline`,
+        message: `${candidate.fullName} has been added to the ${defaultPipeline.name} pipeline${teamName ? ` and shared with ${teamName}` : ''}`,
         duration: 5000
       });
       
@@ -333,8 +345,31 @@ const SearchResultsPage: React.FC = () => {
     } finally {
       // Stop shortlisting process
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: false }));
+      // Hide team share dropdown
+      setShowTeamShare(prev => ({ ...prev, [candidate.id]: false }));
     }
   };
+
+  const handleShowTeamShare = (candidateId: string) => {
+    setShowTeamShare(prev => ({ ...prev, [candidateId]: !prev[candidateId] }));
+  };
+
+  const handleTeamShare = async (candidate: any, teamId: string) => {
+    await handleShortlist(candidate, teamId);
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-dropdown-container]')) {
+        setShowTeamShare({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <> {/* Added React.Fragment to wrap main content and panel */}
@@ -528,19 +563,56 @@ const SearchResultsPage: React.FC = () => {
                                 Shortlisted
                               </div>
                             ) : (
-                              <Button 
-                                size="sm" 
-                                className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
-                                onClick={() => handleShortlist(candidate)}
-                                disabled={shortlistingCandidates[candidate.id] || pipelinesLoading}
-                              >
-                                {shortlistingCandidates[candidate.id] ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="h-3 w-3" />
+                              <div className="relative" data-dropdown-container>
+                                {/* Main Shortlist Button */}
+                                <div className="flex items-center">
+                                  <Button 
+                                    size="sm" 
+                                    className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 rounded-r-none"
+                                    onClick={() => handleShortlist(candidate)}
+                                    disabled={shortlistingCandidates[candidate.id] || pipelinesLoading}
+                                  >
+                                    {shortlistingCandidates[candidate.id] ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <CheckCircle className="h-3 w-3" />
+                                    )}
+                                    Shortlist
+                                  </Button>
+                                  {/* Team Share Dropdown Trigger */}
+                                  {recruitmentTeams && recruitmentTeams.length > 0 && (
+                                    <button
+                                      className="bg-purple-600 hover:bg-purple-700 text-white px-2 py-2 text-sm border-l border-purple-500 rounded-r"
+                                      onClick={() => handleShowTeamShare(candidate.id)}
+                                      disabled={shortlistingCandidates[candidate.id] || pipelinesLoading}
+                                    >
+                                      <ChevronDown className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                                
+                                {/* Team Share Dropdown Menu */}
+                                {showTeamShare[candidate.id] && recruitmentTeams && recruitmentTeams.length > 0 && (
+                                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
+                                    <div className="py-1">
+                                      <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b">
+                                        Share with Team
+                                      </div>
+                                      {recruitmentTeams.map((team) => (
+                                        <button
+                                          key={team.id}
+                                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                          onClick={() => handleTeamShare(candidate, team.id)}
+                                          disabled={shortlistingCandidates[candidate.id]}
+                                        >
+                                          <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                                          {team.name}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
-                                Shortlist
-                              </Button>
+                              </div>
                             )}
                             <Button 
                               size="sm" 

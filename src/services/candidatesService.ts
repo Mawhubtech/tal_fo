@@ -347,4 +347,10 @@ export const candidatesService = {  // Get candidates with filtering and paginat
     });
     return response.data;
   },
+
+  // Update candidate rating
+  async updateCandidateRating(id: string, rating: number) {
+    const response = await apiClient.patch(`/candidates/${id}/rating`, { rating });
+    return response.data;
+  },
 };

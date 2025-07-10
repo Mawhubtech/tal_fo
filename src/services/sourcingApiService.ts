@@ -86,7 +86,7 @@ export interface ConversionRate {
 export const sourcingApiService = {
   // Prospect management
   async createProspect(data: CreateSourcingProspectDto): Promise<SourcingProspect> {
-    const response = await apiClient.post('/api/v1/sourcing/prospects', data);
+    const response = await apiClient.post('/sourcing/prospects', data);
     return response.data;
   },
 
@@ -103,65 +103,65 @@ export const sourcingApiService = {
       return acc;
     }, {} as any);
 
-    const response = await apiClient.get('/api/v1/sourcing/prospects', { params: filteredParams });
+    const response = await apiClient.get('/sourcing/prospects', { params: filteredParams });
     return response.data;
   },
 
   async getProspect(id: string): Promise<SourcingProspect> {
-    const response = await apiClient.get(`/api/v1/sourcing/prospects/${id}`);
+    const response = await apiClient.get(`/sourcing/prospects/${id}`);
     return response.data;
   },
 
   async updateProspect(id: string, data: Partial<CreateSourcingProspectDto>): Promise<SourcingProspect> {
-    const response = await apiClient.patch(`/api/v1/sourcing/prospects/${id}`, data);
+    const response = await apiClient.patch(`/sourcing/prospects/${id}`, data);
     return response.data;
   },
 
   async deleteProspect(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/sourcing/prospects/${id}`);
+    await apiClient.delete(`/sourcing/prospects/${id}`);
   },
 
   async moveProspectToStage(id: string, data: MoveSourcingProspectStageDto): Promise<SourcingProspect> {
-    const response = await apiClient.patch(`/api/v1/sourcing/prospects/${id}/move-stage`, data);
+    const response = await apiClient.patch(`/sourcing/prospects/${id}/move-stage`, data);
     return response.data;
   },
 
   // Pipeline-specific endpoints
   async getProspectsByPipeline(pipelineId: string): Promise<SourcingProspect[]> {
-    const response = await apiClient.get(`/api/v1/sourcing/prospects/pipeline/${pipelineId}`);
+    const response = await apiClient.get(`/sourcing/prospects/pipeline/${pipelineId}`);
     return response.data;
   },
 
   async getProspectsByStage(stageId: string): Promise<SourcingProspect[]> {
-    const response = await apiClient.get(`/api/v1/sourcing/prospects/stage/${stageId}`);
+    const response = await apiClient.get(`/sourcing/prospects/stage/${stageId}`);
     return response.data;
   },
 
   // Statistics
   async getProspectStats(): Promise<SourcingStats> {
-    const response = await apiClient.get('/api/v1/sourcing/prospects/stats');
+    const response = await apiClient.get('/sourcing/prospects/stats');
     return response.data;
   },
 
   async getPipelineStats(pipelineId: string): Promise<PipelineStats> {
-    const response = await apiClient.get(`/api/v1/sourcing/pipeline/${pipelineId}/stats`);
+    const response = await apiClient.get(`/sourcing/pipeline/${pipelineId}/stats`);
     return response.data;
   },
 
   async getConversionRates(pipelineId: string): Promise<ConversionRate[]> {
-    const response = await apiClient.get(`/api/v1/sourcing/pipeline/${pipelineId}/conversion-rates`);
+    const response = await apiClient.get(`/sourcing/pipeline/${pipelineId}/conversion-rates`);
     return response.data;
   },
 
   // Pipeline management
   async getDefaultPipeline(): Promise<any> {
-    const response = await apiClient.get('/api/v1/sourcing/pipeline/default');
+    const response = await apiClient.get('/sourcing/pipeline/default');
     return response.data;
   },
 
   // Bulk operations
   async bulkMoveProspects(prospectIds: string[], targetStageId: string, notes?: string): Promise<SourcingProspect[]> {
-    const response = await apiClient.post('/api/v1/sourcing/prospects/bulk-move', {
+    const response = await apiClient.post('/sourcing/prospects/bulk-move', {
       prospectIds,
       targetStageId,
       notes,

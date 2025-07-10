@@ -489,6 +489,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       </Link>
                     )}
                     
+                    <Link to="/dashboard/admin/recruitment-teams" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/recruitment-teams') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Users className="w-3 h-3 mr-2" />
+                      Recruitment Teams
+                    </Link>
+                    
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_JOB_BOARDS) && (
                       <Link to="/dashboard/admin/job-boards" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Target className="w-3 h-3 mr-2" />
@@ -576,6 +581,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                             Hiring Teams
                           </Link>
                         )}
+                        
+                        <Link to="/dashboard/admin/recruitment-teams" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/recruitment-teams') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                          <Users className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/recruitment-teams') ? '#7e22ce' : '' }} />
+                          Recruitment Teams
+                        </Link>
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_JOB_BOARDS) && (
                           <Link to="/dashboard/admin/job-boards" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>

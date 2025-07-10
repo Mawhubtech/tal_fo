@@ -52,6 +52,8 @@ import PipelinesPage from './admin/PipelinesPage'; // Import PipelinesPage
 import HiringTeamsPage from './admin/HiringTeamsPage'; // Import HiringTeamsPage
 import HiringTeamDetailPage from './admin/HiringTeamDetailPage'; // Import HiringTeamDetailPage
 import HiringTeamMembersPage from './admin/HiringTeamMembersPage'; // Import HiringTeamMembersPage
+import RecruitmentTeamsPage from './recruitment-teams/RecruitmentTeamsPage'; // Import RecruitmentTeamsPage
+import RecruitmentTeamDetailPage from './recruitment-teams/RecruitmentTeamDetailPage'; // Import RecruitmentTeamDetailPage
 import CandidateProfilesPage from '../recruitment/candidates/pages/CandidateProfilesPage'; // Import CandidateProfilesPage
 import { ClientManagementPage, ClientDetailPage, CreateDepartmentPage } from './clients'; // Import ClientManagementPage, ClientDetailPage, and CreateDepartmentPage
 import JobBoardConfigPage from '../recruitment/jobs/pages/JobBoardConfigPage'; // Import JobBoardConfigPage
@@ -375,6 +377,18 @@ const Dashboard: React.FC = () => {
               <Route path="hiring-teams/:teamId/members" element={
                 <RoutePermissionGuard>
                   <HiringTeamMembersPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="recruitment-teams" element={
+                <RoutePermissionGuard>
+                  <RecruitmentTeamsPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="recruitment-teams/:teamId" element={
+                <RoutePermissionGuard>
+                  <RecruitmentTeamDetailPage />
                 </RoutePermissionGuard>
               } />
               

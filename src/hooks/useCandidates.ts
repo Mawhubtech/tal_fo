@@ -90,10 +90,11 @@ export const useUpdateCandidateRating = () => {
   
   return useMutation({
     mutationFn: ({ id, rating }: { id: string; rating: number }) => 
-      candidatesService.updateRating(id, rating),
-    onSuccess: () => {
-      // Invalidate and refetch candidates
+      candidatesService.updateCandidateRating(id, rating),
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch candidates and stats
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.candidates] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.candidateDetails, variables.id] });
     },
   });
 };

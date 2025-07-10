@@ -142,6 +142,20 @@ export function useIncrementApplicantCount() {
   });
 }
 
+// Get job suggestions for a candidate
+export function useJobSuggestions(
+  candidateId: string,
+  organizationId?: string,
+  options: { enabled?: boolean } = {}
+) {
+  return useQuery({
+    queryKey: [...jobKeys.all, 'suggestions', candidateId, organizationId],
+    queryFn: () => jobApiService.getJobSuggestions(candidateId, organizationId),
+    enabled: (options.enabled ?? true) && !!candidateId,
+    staleTime: 1000 * 60 * 3, // 3 minutes
+  });
+}
+
 // Invalidation helpers
 export function useInvalidateJobs() {
   const queryClient = useQueryClient();

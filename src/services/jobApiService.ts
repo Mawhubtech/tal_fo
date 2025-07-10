@@ -207,6 +207,26 @@ class JobApiService {
       throw error;
     }
   }
+
+  async getJobSuggestions(
+    candidateId: string, 
+    organizationId?: string,
+    limit: number = 5,
+    minScore: number = 30
+  ): Promise<{ suggestions: any[]; total: number }> {
+    try {
+      const params: any = { limit, minScore };
+      if (organizationId) {
+        params.organizationId = organizationId;
+      }
+      
+      const response = await apiClient.get(`/jobs/suggestions/${candidateId}`, { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching job suggestions:', error);
+      throw error;
+    }
+  }
 }
 
 export const jobApiService = new JobApiService();

@@ -3,8 +3,8 @@ import { Search, Plus, LayoutGrid, List, X } from 'lucide-react';
 import { useSourcingProspects, useSourcingDefaultPipeline, useMoveSourcingProspectStage, useDeleteSourcingProspect } from '../../hooks/useSourcingProspects';
 import { useCandidate } from '../../hooks/useCandidates';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { PipelineKanbanView } from '../../recruitment/organizations/components/ats/pipeline/PipelineKanbanView';
-import { PipelineListView } from '../../recruitment/organizations/components/ats/pipeline/PipelineListView';
+import { SourcingKanbanView } from '../components/pipeline/SourcingKanbanView';
+import { SourcingListView } from '../components/pipeline/SourcingListView';
 import { PipelineStats } from '../../recruitment/organizations/components/ats/pipeline/PipelineStats';
 import { SourcingProspect } from '../../services/sourcingApiService';
 import SourcingProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/SourcingProfileSidePanel';
@@ -24,8 +24,8 @@ import SourcingProfileSidePanel, { type PanelState, type UserStructuredData } fr
  * - Integration with existing pipeline system
  */
 
-// Transform prospect to match Candidate interface expected by pipeline components
-interface PipelineCandidate {
+// Transform prospect to match SourcingCandidate interface expected by sourcing pipeline components
+interface SourcingCandidate {
   id: string;
   name: string;
   avatar: string;
@@ -37,6 +37,7 @@ interface PipelineCandidate {
   tags: string[];
   source: string;
   appliedDate: string;
+  candidateRating?: number; // Overall candidate rating from database
 }
 
 const CandidateOutreachProspects: React.FC = () => {
@@ -72,8 +73,8 @@ const CandidateOutreachProspects: React.FC = () => {
   const prospects = sourcingData?.prospects || [];
   const activePipeline = defaultPipeline;
 
-  // Transform prospects to match pipeline candidate interface
-  const transformProspectToPipelineCandidate = (prospect: SourcingProspect): PipelineCandidate => {
+  // Transform prospects to match sourcing candidate interface
+  const transformProspectToSourcingCandidate = (prospect: SourcingProspect): SourcingCandidate => {
     // Extract candidate data (with fallbacks for when candidate is not loaded)
     const candidate = prospect.candidate;
     const candidateName = candidate?.fullName || `Candidate ${prospect.candidateId}`;
@@ -85,6 +86,26 @@ const CandidateOutreachProspects: React.FC = () => {
       ? candidate.skillMappings.map((mapping: any) => mapping.skill?.name).filter(Boolean)
       : (candidate?.skills ? candidate.skills.map((skill: any) => skill.name || skill) : []);
 
+    // Safely extract and validate ratings
+    const prospectRating = typeof prospect.rating === 'number' ? prospect.rating : 0;
+    const candidateRating = candidate?.rating;
+    
+    // Convert string rating to number if needed
+    let validCandidateRating: number | undefined = undefined;
+    if (candidateRating !== undefined && candidateRating !== null) {
+      if (typeof candidateRating === 'string') {
+        const parsed = parseFloat(candidateRating);
+        if (!isNaN(parsed) && parsed > 0) {
+          validCandidateRating = parsed;
+        }
+      } else if (typeof candidateRating === 'number' && candidateRating > 0) {
+        validCandidateRating = candidateRating;
+      }
+    }
+
+    // Debug logging to verify rating conversion
+    console.log(`Candidate ${candidateName}: Original rating = ${candidateRating} (${typeof candidateRating}), Converted = ${validCandidateRating}`);
+
     return {
       id: prospect.id,
       name: candidateName,
@@ -92,11 +113,12 @@ const CandidateOutreachProspects: React.FC = () => {
       email: candidateEmail,
       phone: candidatePhone,
       stage: prospect.currentStage?.name || prospect.status, // Use actual stage name, fallback to status
-      score: prospect.rating,
+      score: prospectRating,
       lastUpdated: prospect.lastContact || prospect.updatedAt,
       tags: [prospect.source, ...(candidateSkills.slice(0, 2) || [])], // Combine source and top skills as tags
       source: prospect.source,
       appliedDate: prospect.createdAt,
+      candidateRating: validCandidateRating, // Overall candidate rating (properly converted)
     };
   };
 
@@ -112,16 +134,16 @@ const CandidateOutreachProspects: React.FC = () => {
   // Apply additional filtering (API already handles search, status, skills)
   const filteredProspects = prospects;
 
-  // Transform filtered prospects to pipeline candidates
-  const pipelineCandidates = filteredProspects.map(transformProspectToPipelineCandidate);
+  // Transform filtered prospects to sourcing candidates
+  const sourcingCandidates = filteredProspects.map(transformProspectToSourcingCandidate);
 
   // Helper function for pipeline stats
   const getCandidatesByStage = (stageName: string) => {
-    return pipelineCandidates.filter(candidate => candidate.stage === stageName);
+    return sourcingCandidates.filter(candidate => candidate.stage === stageName);
   };
 
   // Pipeline handlers
-  const handleCandidateClick = (candidate: PipelineCandidate) => {
+  const handleCandidateClick = (candidate: SourcingCandidate) => {
     console.log('Candidate clicked:', candidate);
     // Find the prospect by candidate ID to get the candidateId
     const prospect = prospects.find(p => p.id === candidate.id);
@@ -191,7 +213,7 @@ const CandidateOutreachProspects: React.FC = () => {
     }
   };
 
-  const handleCandidateRemove = async (candidate: PipelineCandidate) => {
+  const handleCandidateRemove = async (candidate: SourcingCandidate) => {
     console.log('Remove candidate:', candidate);
     
     try {
@@ -236,10 +258,10 @@ const CandidateOutreachProspects: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">Candidate Prospects</h1>
             <p className="text-gray-600 mt-1">Manage your candidate pipeline and outreach efforts</p>
           </div>
-          <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+          {/* <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
             <Plus className="w-4 h-4" />
             <span>Add Candidate</span>
-          </button>
+          </button> */}
         </div>
 
       {/* Filters and Controls */}
@@ -318,8 +340,8 @@ const CandidateOutreachProspects: React.FC = () => {
         {activePipeline ? (
           <>
             {view === 'kanban' && (
-              <PipelineKanbanView
-                candidates={pipelineCandidates}
+              <SourcingKanbanView
+                candidates={sourcingCandidates}
                 pipeline={activePipeline}
                 onCandidateClick={handleCandidateClick}
                 onCandidateStageChange={handleCandidateStageChange}
@@ -328,8 +350,8 @@ const CandidateOutreachProspects: React.FC = () => {
             )}
 
             {view === 'list' && (
-              <PipelineListView
-                candidates={pipelineCandidates}
+              <SourcingListView
+                candidates={sourcingCandidates}
                 pipeline={activePipeline}
                 onCandidateClick={handleCandidateClick}
                 onCandidateStageChange={handleCandidateStageChange}
@@ -361,6 +383,7 @@ const CandidateOutreachProspects: React.FC = () => {
             userData={transformCandidateToUserStructuredData(selectedCandidateData)}
             panelState={panelState}
             onStateChange={handlePanelStateChange}
+            candidateId={selectedCandidateId || undefined}
           />
         </div>
       )}

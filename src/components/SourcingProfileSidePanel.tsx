@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, Award, FileBadge2, Heart, Mail, Phone, Languages } from 'lucide-react'; // Ensure these icons are installed
 import Button from './Button'; // Adjust path to your Button component if necessary
+import CandidateProspectsManager from './CandidateProspectsManager';
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
 // Define interfaces for type safety - ADD 'export' HERE
@@ -157,9 +158,10 @@ interface ProfileSidePanelProps {
   userData: UserStructuredData | null;
   panelState: PanelState;
   onStateChange: (state: PanelState) => void;
+  candidateId?: string; // Add optional candidateId prop for prospects management
 }
 
-const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange }) => {
+const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, candidateId }) => {
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs
   const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(false); // For collapsing candidate actions
@@ -280,10 +282,10 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
 
   // Side panel tabs for the 1/3 section (candidate management)
   const sideTabs = [
-    { name: 'Sequences', icon: FolderOpen, index: 0, count: 0 },
-    { name: 'Notes', icon: FileText, index: 1, count: 0 },
-    { name: 'Activity', icon: Clock, index: 2, count: 0 },
-    { name: 'Pipeline', icon: Briefcase, index: 3, count: 0 },
+	  { name: 'Prospects', icon: Briefcase, index: 0, count: 0 },
+    { name: 'Sequences', icon: FolderOpen, index: 1, count: 0 },
+    { name: 'Notes', icon: FileText, index: 2, count: 0 },
+    { name: 'Activity', icon: Clock, index: 3, count: 0 },
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
   if (panelState === 'collapsed') {
     return (
@@ -1633,8 +1635,25 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
 
             {/* Side Tab Content */}
             <div className="flex-1 overflow-y-auto p-4">
+
+              {/* Prospects Tab */}
+              {activeSideTab === 0 && candidateId && (
+                <CandidateProspectsManager
+                  candidateId={candidateId}
+                  candidateName={personalInfo?.fullName || 'Unknown Candidate'}
+                  candidateEmail={personalInfo?.email || ''}
+                  candidateSkills={skills?.map(skill => typeof skill === 'string' ? skill : skill.name).filter(Boolean) || []}
+                  candidateExperience={experience || []}
+                />
+              )}
+              {activeSideTab === 0 && !candidateId && (
+                <div className="p-4 text-center text-gray-500">
+                  <p>Candidate ID not available for prospects management.</p>
+                </div>
+              )}
+
               {/* Sequences Tab */}
-              {activeSideTab === 0 && (
+              {activeSideTab === 1 && (
                 <div className="space-y-4">
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                     <div className="flex items-center justify-between mb-3">
@@ -1667,7 +1686,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Notes Tab */}
-              {activeSideTab === 1 && (
+              {activeSideTab === 2 && (
                 <div className="space-y-4">
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                     <div className="flex items-center justify-between mb-3">
@@ -1700,7 +1719,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Activity Tab */}
-              {activeSideTab === 2 && (
+              {activeSideTab === 3 && (
                 <div className="space-y-4">
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                     <h4 className="font-medium text-gray-900 mb-3">Recent Activity</h4>
@@ -1742,83 +1761,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* Pipeline Tab */}
-              {activeSideTab === 3 && (
-                <div className="space-y-4">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-gray-900">Pipeline Status</h4>
-                      <Button variant="primary" size="sm" className="text-xs bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700">
-                        <Plus className="w-3 h-3 mr-1" />
-                        Add to Job
-                      </Button>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      <p>Not currently in any pipeline.</p>
-                      <p className="mt-2">Add this candidate to a job pipeline to track their progress.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">Available Jobs</h4>
-                    <div className="space-y-2">
-                      <div className="p-3 border border-gray-100 rounded-lg hover:border-purple-200 cursor-pointer transition-colors">
-                        <div className="font-medium text-sm">Senior Software Engineer</div>
-                        <div className="text-xs text-gray-500">Tech Corp • Remote</div>
-                      </div>
-                      <div className="p-3 border border-gray-100 rounded-lg hover:border-purple-200 cursor-pointer transition-colors">
-                        <div className="font-medium text-sm">Full Stack Developer</div>
-                        <div className="text-xs text-gray-500">StartupXYZ • San Francisco</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">Candidate Rating</h4>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Overall Rating</label>
-                        <div className="flex space-x-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              className="w-6 h-6 text-gray-300 hover:text-yellow-400 transition-colors"
-                            >
-                              ⭐
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Technical Skills</label>
-                        <div className="flex space-x-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              className="w-6 h-6 text-gray-300 hover:text-yellow-400 transition-colors"
-                            >
-                              ⭐
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Cultural Fit</label>
-                        <div className="flex space-x-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              className="w-6 h-6 text-gray-300 hover:text-yellow-400 transition-colors"
-                            >
-                              ⭐
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+
             </div>
           </>
         )}
