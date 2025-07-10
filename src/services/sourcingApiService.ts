@@ -41,6 +41,7 @@ export interface SourcingProspectQueryParams {
   minRating?: number;
   pipelineId?: string;
   stageId?: string;
+  createdBy?: string;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }

@@ -9,6 +9,7 @@ import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useSourcingProspects } from '../../../hooks/useSourcingProspects';
 import { useToast } from '../../../contexts/ToastContext';
+import { useAuthContext } from '../../../contexts/AuthContext';
 import type { SearchFilters } from '../../../services/searchService';
 import { sourcingApiService, CreateSourcingProspectDto } from '../../../services/sourcingApiService';
 
@@ -156,11 +157,14 @@ const SearchResultsPage: React.FC = () => {
   const [shortlistingCandidates, setShortlistingCandidates] = useState<{ [key: string]: boolean }>({});
   const [shortlistedCandidates, setShortlistedCandidates] = useState<{ [key: string]: boolean }>({});
   
+  // Get current user context
+  const { user } = useAuthContext();
+  
   // Use hooks
   const { executeSearch, isLoading, error, data } = useSearch();
   const { generateSummary, isLoading: summaryLoading } = useCandidateSummary();
   const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
-  const { data: existingProspects } = useSourcingProspects({});
+  const { data: existingProspects } = useSourcingProspects({ createdBy: user?.id });
   const { addToast } = useToast();
   
   // State for the profile side panel

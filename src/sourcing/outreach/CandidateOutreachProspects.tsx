@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, Plus, LayoutGrid, List, X } from 'lucide-react';
 import { useSourcingProspects, useSourcingDefaultPipeline, useMoveSourcingProspectStage, useDeleteSourcingProspect } from '../../hooks/useSourcingProspects';
 import { useCandidate } from '../../hooks/useCandidates';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { PipelineKanbanView } from '../../recruitment/organizations/components/ats/pipeline/PipelineKanbanView';
 import { PipelineListView } from '../../recruitment/organizations/components/ats/pipeline/PipelineListView';
 import { PipelineStats } from '../../recruitment/organizations/components/ats/pipeline/PipelineStats';
@@ -48,11 +49,15 @@ const CandidateOutreachProspects: React.FC = () => {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
 
-  // Load sourcing prospects and pipeline
+  // Get current user context
+  const { user } = useAuthContext();
+
+  // Load sourcing prospects and pipeline (filtered by current user)
   const { data: sourcingData, isLoading: prospectsLoading, error: prospectsError } = useSourcingProspects({
     search: searchTerm || undefined,
     status: selectedStatus || undefined,
     skills: selectedSkill ? [selectedSkill] : undefined,
+    createdBy: user?.id, // Only load prospects created by current user
   });
   
   const { data: defaultPipeline, isLoading: pipelineLoading } = useSourcingDefaultPipeline();
