@@ -6,7 +6,11 @@ import Button from '../../../components/Button';
 import FilterDialog from '../../../components/FilterDialog';
 import { useSearch } from '../../../hooks/useSearch';
 import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
+import { useActivePipelines } from '../../../hooks/useActivePipelines';
+import { useSourcingProspects } from '../../../hooks/useSourcingProspects';
+import { useToast } from '../../../contexts/ToastContext';
 import type { SearchFilters } from '../../../services/searchService';
+import { sourcingApiService, CreateSourcingProspectDto } from '../../../services/sourcingApiService';
 
 // Assuming ProfilePage.tsx and its types are in the same directory or adjust path
 import type { UserStructuredData } from '../../../components/ProfileSidePanel';
@@ -149,10 +153,15 @@ const SearchResultsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [candidateSummaries, setCandidateSummaries] = useState<{ [key: string]: any }>({});
+  const [shortlistingCandidates, setShortlistingCandidates] = useState<{ [key: string]: boolean }>({});
+  const [shortlistedCandidates, setShortlistedCandidates] = useState<{ [key: string]: boolean }>({});
   
   // Use hooks
   const { executeSearch, isLoading, error, data } = useSearch();
   const { generateSummary, isLoading: summaryLoading } = useCandidateSummary();
+  const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
+  const { data: existingProspects } = useSourcingProspects({});
+  const { addToast } = useToast();
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
@@ -168,6 +177,24 @@ const SearchResultsPage: React.FC = () => {
       navigate('/');
     }
   }, [location.state, navigate]);
+
+  // Check for existing prospects and mark candidates as shortlisted
+  useEffect(() => {
+    if (existingProspects?.prospects && results.length > 0) {
+      const shortlistedCandidateIds = new Set(
+        existingProspects.prospects.map(prospect => prospect.candidateId)
+      );
+      
+      const shortlistedStatus: { [key: string]: boolean } = {};
+      results.forEach(result => {
+        if (result.candidate && shortlistedCandidateIds.has(result.candidate.id)) {
+          shortlistedStatus[result.candidate.id] = true;
+        }
+      });
+      
+      setShortlistedCandidates(prev => ({ ...prev, ...shortlistedStatus }));
+    }
+  }, [existingProspects, results]);
 
   const fetchResults = async (filters: SearchFilters, query?: string) => {
     try {
@@ -239,6 +266,72 @@ const SearchResultsPage: React.FC = () => {
       document.body.style.overflow = 'auto'; // Restore background scroll
     }
   };
+
+  const handleShortlist = async (candidate: any) => {
+    try {
+      // Start shortlisting process
+      setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: true }));
+
+      // Get the default sourcing pipeline
+      if (!sourcingPipelines || sourcingPipelines.length === 0) {
+        throw new Error('No sourcing pipelines available. Please create a sourcing pipeline first.');
+      }
+
+      // Find the default sourcing pipeline (should be first due to sorting in useActivePipelines)
+      const defaultPipeline = sourcingPipelines.find(p => p.isDefault) || sourcingPipelines[0];
+      
+      if (!defaultPipeline.stages || defaultPipeline.stages.length === 0) {
+        throw new Error('The sourcing pipeline has no stages configured.');
+      }
+
+      // Get the first stage of the pipeline
+      const firstStage = defaultPipeline.stages.sort((a, b) => a.order - b.order)[0];
+
+      // Create the prospect data with just the candidate reference
+      const prospectData: CreateSourcingProspectDto = {
+        candidateId: candidate.id,
+        status: 'new',
+        source: 'linkedin',
+        rating: 3, // Default rating
+        notes: `Added from search on ${new Date().toLocaleDateString()}`,
+        pipelineId: defaultPipeline.id,
+        currentStageId: firstStage.id,
+        metadata: {
+          searchScore: candidate.score || 0,
+          addedFromSearch: true,
+          searchDate: new Date().toISOString()
+        }
+      };
+
+      // Create the prospect
+      await sourcingApiService.createProspect(prospectData);
+
+      // Mark candidate as shortlisted
+      setShortlistedCandidates(prev => ({ ...prev, [candidate.id]: true }));
+
+      // Show success feedback
+      addToast({
+        type: 'success',
+        title: 'Candidate Shortlisted',
+        message: `${candidate.fullName} has been added to the ${defaultPipeline.name} pipeline`,
+        duration: 5000
+      });
+      
+    } catch (error) {
+      console.error('Error shortlisting candidate:', error);
+      // Show error toast
+      addToast({
+        type: 'error',
+        title: 'Shortlisting Failed',
+        message: error instanceof Error ? error.message : 'Failed to shortlist candidate. Please try again.',
+        duration: 7000
+      });
+    } finally {
+      // Stop shortlisting process
+      setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: false }));
+    }
+  };
+
   return (
     <> {/* Added React.Fragment to wrap main content and panel */}
       <div className={`container mx-auto px-6 py-4 max-w-full bg-gray-50 min-h-screen transition-all duration-300 ${
@@ -425,7 +518,26 @@ const SearchResultsPage: React.FC = () => {
                             )}
                           </div>
                           <div className="flex items-center gap-3">
-                            <Button size="sm" className="text-sm bg-purple-600 text-white hover:bg-purple-700">Shortlist</Button>
+                            {shortlistedCandidates[candidate.id] ? (
+                              <div className="flex items-center gap-1 px-3 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
+                                <CheckCircle className="h-3 w-3" />
+                                Shortlisted
+                              </div>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"
+                                onClick={() => handleShortlist(candidate)}
+                                disabled={shortlistingCandidates[candidate.id] || pipelinesLoading}
+                              >
+                                {shortlistingCandidates[candidate.id] ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="h-3 w-3" />
+                                )}
+                                Shortlist
+                              </Button>
+                            )}
                             <Button 
                               size="sm" 
                               className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1"

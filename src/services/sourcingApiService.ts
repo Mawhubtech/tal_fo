@@ -2,21 +2,12 @@ import apiClient from '../lib/api';
 
 export interface SourcingProspect {
   id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  location?: string;
-  position: string;
-  company: string;
-  skills: string[];
-  experience: string;
+  candidateId: string;
+  candidate?: any; // This will contain the full candidate data
   status: 'new' | 'contacted' | 'responded' | 'interested' | 'not_interested' | 'closed';
   lastContact?: string;
   source: 'linkedin' | 'linkedin_chrome_extension' | 'github' | 'indeed' | 'referral' | 'direct_application' | 'recruitment_agency' | 'other';
   rating: number;
-  salaryExpectation?: string;
-  availability?: string;
-  linkedinUrl?: string;
   notes?: string;
   metadata?: Record<string, any>;
   pipelineId?: string;
@@ -29,20 +20,10 @@ export interface SourcingProspect {
 }
 
 export interface CreateSourcingProspectDto {
-  name: string;
-  email: string;
-  phone?: string;
-  location?: string;
-  position: string;
-  company: string;
-  skills: string[];
-  experience: string;
+  candidateId: string;
   status?: 'new' | 'contacted' | 'responded' | 'interested' | 'not_interested' | 'closed';
   source?: 'linkedin' | 'linkedin_chrome_extension' | 'github' | 'indeed' | 'referral' | 'direct_application' | 'recruitment_agency' | 'other';
   rating?: number;
-  salaryExpectation?: string;
-  availability?: string;
-  linkedinUrl?: string;
   notes?: string;
   pipelineId?: string;
   currentStageId?: string;

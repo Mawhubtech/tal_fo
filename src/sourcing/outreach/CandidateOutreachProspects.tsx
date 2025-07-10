@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Search, Plus, LayoutGrid, List } from 'lucide-react';
+import { Search, Plus, LayoutGrid, List, X } from 'lucide-react';
 import { useSourcingProspects, useSourcingDefaultPipeline, useMoveSourcingProspectStage, useDeleteSourcingProspect } from '../../hooks/useSourcingProspects';
+import { useCandidate } from '../../hooks/useCandidates';
 import { PipelineKanbanView } from '../../recruitment/organizations/components/ats/pipeline/PipelineKanbanView';
 import { PipelineListView } from '../../recruitment/organizations/components/ats/pipeline/PipelineListView';
 import { PipelineStats } from '../../recruitment/organizations/components/ats/pipeline/PipelineStats';
 import { SourcingProspect } from '../../services/sourcingApiService';
+import SourcingProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/SourcingProfileSidePanel';
 
 /**
  * CandidateOutreachProspects Component
@@ -41,6 +43,10 @@ const CandidateOutreachProspects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  
+  // State for the profile side panel
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [panelState, setPanelState] = useState<PanelState>('closed');
 
   // Load sourcing prospects and pipeline
   const { data: sourcingData, isLoading: prospectsLoading, error: prospectsError } = useSourcingProspects({
@@ -51,6 +57,9 @@ const CandidateOutreachProspects: React.FC = () => {
   
   const { data: defaultPipeline, isLoading: pipelineLoading } = useSourcingDefaultPipeline();
   
+  // Load candidate data for side panel
+  const { data: selectedCandidateData, isLoading: candidateLoading } = useCandidate(selectedCandidateId || '');
+  
   // Mutations
   const moveProspectMutation = useMoveSourcingProspectStage();
   const deleteProspectMutation = useDeleteSourcingProspect();
@@ -59,22 +68,41 @@ const CandidateOutreachProspects: React.FC = () => {
   const activePipeline = defaultPipeline;
 
   // Transform prospects to match pipeline candidate interface
-  const transformProspectToPipelineCandidate = (prospect: SourcingProspect): PipelineCandidate => ({
-    id: prospect.id,
-    name: prospect.name,
-    avatar: '', // Default empty avatar
-    email: prospect.email,
-    phone: prospect.phone || '',
-    stage: prospect.status, // Map status to stage
-    score: prospect.rating,
-    lastUpdated: prospect.lastContact || prospect.updatedAt,
-    tags: [prospect.source, prospect.experience, ...prospect.skills.slice(0, 2)], // Combine source, experience, and top skills as tags
-    source: prospect.source,
-    appliedDate: prospect.createdAt,
-  });
+  const transformProspectToPipelineCandidate = (prospect: SourcingProspect): PipelineCandidate => {
+    // Extract candidate data (with fallbacks for when candidate is not loaded)
+    const candidate = prospect.candidate;
+    const candidateName = candidate?.fullName || `Candidate ${prospect.candidateId}`;
+    const candidateEmail = candidate?.email || '';
+    const candidatePhone = candidate?.phone || '';
+    
+    // Extract skills from candidate's skillMappings or fallback to empty array
+    const candidateSkills = candidate?.skillMappings 
+      ? candidate.skillMappings.map((mapping: any) => mapping.skill?.name).filter(Boolean)
+      : (candidate?.skills ? candidate.skills.map((skill: any) => skill.name || skill) : []);
+
+    return {
+      id: prospect.id,
+      name: candidateName,
+      avatar: candidate?.avatar || '', // Use candidate avatar if available
+      email: candidateEmail,
+      phone: candidatePhone,
+      stage: prospect.currentStage?.name || prospect.status, // Use actual stage name, fallback to status
+      score: prospect.rating,
+      lastUpdated: prospect.lastContact || prospect.updatedAt,
+      tags: [prospect.source, ...(candidateSkills.slice(0, 2) || [])], // Combine source and top skills as tags
+      source: prospect.source,
+      appliedDate: prospect.createdAt,
+    };
+  };
 
   // Get all unique skills from prospects
-  const allSkills = Array.from(new Set(prospects.flatMap(p => p.skills)));
+  const allSkills = Array.from(new Set(prospects.flatMap(p => {
+    const candidate = p.candidate;
+    const candidateSkills = candidate?.skillMappings 
+      ? candidate.skillMappings.map((mapping: any) => mapping.skill?.name).filter(Boolean)
+      : (candidate?.skills ? candidate.skills.map((skill: any) => skill.name || skill) : []);
+    return candidateSkills;
+  })));
 
   // Apply additional filtering (API already handles search, status, skills)
   const filteredProspects = prospects;
@@ -83,23 +111,68 @@ const CandidateOutreachProspects: React.FC = () => {
   const pipelineCandidates = filteredProspects.map(transformProspectToPipelineCandidate);
 
   // Helper function for pipeline stats
-  const getCandidatesByStage = (stage: string) => {
-    return pipelineCandidates.filter(candidate => candidate.stage === stage);
+  const getCandidatesByStage = (stageName: string) => {
+    return pipelineCandidates.filter(candidate => candidate.stage === stageName);
   };
 
   // Pipeline handlers
   const handleCandidateClick = (candidate: PipelineCandidate) => {
     console.log('Candidate clicked:', candidate);
-    // TODO: Open candidate detail modal or navigate to candidate page
+    // Find the prospect by candidate ID to get the candidateId
+    const prospect = prospects.find(p => p.id === candidate.id);
+    if (prospect && prospect.candidateId) {
+      setSelectedCandidateId(prospect.candidateId);
+      setPanelState('expanded');
+      document.body.style.overflow = 'hidden'; // Prevent background scroll
+    }
   };
 
-  const handleCandidateStageChange = async (candidateId: string, newStage: string) => {
-    console.log('Stage change:', candidateId, newStage);
+  // Panel state management
+  const handlePanelStateChange = (newState: PanelState) => {
+    setPanelState(newState);
+    if (newState === 'closed') {
+      setSelectedCandidateId(null);
+      document.body.style.overflow = 'auto'; // Restore background scroll
+    }
+  };
+
+  // Transform candidate data to UserStructuredData format for side panel
+  const transformCandidateToUserStructuredData = (candidate: any): UserStructuredData | null => {
+    if (!candidate) return null;
+
+    return {
+      personalInfo: {
+        fullName: candidate.fullName || '',
+        email: candidate.email || '',
+        phone: candidate.phone || '',
+        location: candidate.location || '',
+        website: candidate.website || '',
+        linkedIn: candidate.linkedIn || '',
+        github: candidate.github || '',
+        avatar: candidate.avatar || ''
+      },
+      summary: candidate.summary || '',
+      experience: candidate.experience || [],
+      education: candidate.education || [],
+      skills: candidate.skillMappings?.map((mapping: any) => mapping.skill?.name || mapping).filter(Boolean) || 
+               candidate.skills || [],
+      projects: candidate.projects || [],
+      certifications: candidate.certifications || [],
+      awards: candidate.awards || [],
+      interests: candidate.interests || [],
+      languages: candidate.languages || [],
+      references: candidate.references || [],
+      customFields: candidate.customFields || []
+    };
+  };
+
+  const handleCandidateStageChange = async (candidateId: string, newStageName: string) => {
+    console.log('Stage change:', candidateId, newStageName);
     
-    // Find the stage ID from the pipeline
-    const stage = activePipeline?.stages?.find(s => s.name === newStage);
+    // Find the stage object from the pipeline
+    const stage = activePipeline?.stages?.find(s => s.name === newStageName);
     if (!stage) {
-      console.error('Stage not found:', newStage);
+      console.error('Stage not found:', newStageName);
       return;
     }
 
@@ -146,18 +219,23 @@ const CandidateOutreachProspects: React.FC = () => {
   }
 
   return (
-    <div className="w-full p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Candidate Prospects</h1>
-          <p className="text-gray-600 mt-1">Manage your candidate pipeline and outreach efforts</p>
+    <>
+      <div className={`w-full p-6 transition-all duration-300 ${
+        panelState === 'expanded' ? 'mr-[66.666667%] overflow-hidden' : 
+        panelState === 'collapsed' ? 'mr-[33.333333%] overflow-hidden' : 
+        ''
+      }`}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Candidate Prospects</h1>
+            <p className="text-gray-600 mt-1">Manage your candidate pipeline and outreach efforts</p>
+          </div>
+          <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+            <Plus className="w-4 h-4" />
+            <span>Add Candidate</span>
+          </button>
         </div>
-        <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Add Candidate</span>
-        </button>
-      </div>
 
       {/* Filters and Controls */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
@@ -221,7 +299,7 @@ const CandidateOutreachProspects: React.FC = () => {
       </div>
 
       {/* Pipeline Stats */}
-      {activePipeline && (
+      {/* {activePipeline && (
         <div className="mb-6">
           <PipelineStats 
             candidates={pipelineCandidates}
@@ -229,38 +307,59 @@ const CandidateOutreachProspects: React.FC = () => {
             getCandidatesByStage={getCandidatesByStage}
           />
         </div>
-      )}
+      )} */}
 
-      {/* Pipeline Views */}
-      {activePipeline ? (
-        <>
-          {view === 'kanban' && (
-            <PipelineKanbanView
-              candidates={pipelineCandidates}
-              pipeline={activePipeline}
-              onCandidateClick={handleCandidateClick}
-              onCandidateStageChange={handleCandidateStageChange}
-              onCandidateRemove={handleCandidateRemove}
-            />
-          )}
+        {/* Pipeline Views */}
+        {activePipeline ? (
+          <>
+            {view === 'kanban' && (
+              <PipelineKanbanView
+                candidates={pipelineCandidates}
+                pipeline={activePipeline}
+                onCandidateClick={handleCandidateClick}
+                onCandidateStageChange={handleCandidateStageChange}
+                onCandidateRemove={handleCandidateRemove}
+              />
+            )}
 
-          {view === 'list' && (
-            <PipelineListView
-              candidates={pipelineCandidates}
-              pipeline={activePipeline}
-              onCandidateClick={handleCandidateClick}
-              onCandidateStageChange={handleCandidateStageChange}
-              onCandidateRemove={handleCandidateRemove}
-            />
+            {view === 'list' && (
+              <PipelineListView
+                candidates={pipelineCandidates}
+                pipeline={activePipeline}
+                onCandidateClick={handleCandidateClick}
+                onCandidateStageChange={handleCandidateStageChange}
+                onCandidateRemove={handleCandidateRemove}
+              />
+            )}
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500 mb-4">No pipeline available for outreach candidates.</p>
+            <p className="text-sm text-gray-400">Please configure a default pipeline in your settings.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Side Panel */}
+      {panelState !== 'closed' && (
+        <div className="fixed right-0 top-0 h-full bg-white border-l border-gray-200 overflow-hidden z-50">
+          {/* Close button for expanded panel */}
+          {panelState === 'expanded' && (
+            <button
+              className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-gray-600 bg-white rounded-full shadow-md"
+              onClick={() => handlePanelStateChange('closed')}
+            >
+              <X className="w-5 h-5" />
+            </button>
           )}
-        </>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">No pipeline available for outreach candidates.</p>
-          <p className="text-sm text-gray-400">Please configure a default pipeline in your settings.</p>
+          <SourcingProfileSidePanel
+            userData={transformCandidateToUserStructuredData(selectedCandidateData)}
+            panelState={panelState}
+            onStateChange={handlePanelStateChange}
+          />
         </div>
       )}
-    </div>
+    </>
   );
 };
 
