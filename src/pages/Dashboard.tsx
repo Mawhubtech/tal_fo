@@ -120,7 +120,9 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } /> {/* Dashboard Overview as default route */}            
             
-            <Route path="search" element={
+            <Route path="search" element={<Navigate to="/dashboard/sourcing/search" replace />} />
+            
+            <Route path="sourcing/search" element={
               <RoutePermissionGuard>
                 <Search />
               </RoutePermissionGuard>

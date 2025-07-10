@@ -132,7 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                   )}
 				  
                   {hasPermission(SIDEBAR_PERMISSIONS.SEARCH_CANDIDATES) && (
-                    <Link to="/dashboard/search" className={`flex items-center py-1 text-sm ${isActive('/dashboard/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <Link to="/dashboard/sourcing/search" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                       <Search className="w-3 h-3 mr-2" />
                       Search
                     </Link>
@@ -184,8 +184,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       )}
                       
                       {hasPermission(SIDEBAR_PERMISSIONS.SEARCH_CANDIDATES) && (
-                        <Link to="/dashboard/search" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/search') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'}`}>
-                          <Search className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/search') ? '#7e22ce' : '' }} />
+                        <Link to="/dashboard/sourcing/search" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/sourcing/search') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'}`}>
+                          <Search className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/sourcing/search') ? '#7e22ce' : '' }} />
                           Search
                         </Link>
                       )}

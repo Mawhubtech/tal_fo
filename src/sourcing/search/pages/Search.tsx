@@ -13,6 +13,7 @@ import Button from '../../../components/Button';
 import FilterDialog from '../../../components/FilterDialog';
 import BooleanSearchDialog from '../components/BooleanSearchDialog';
 import JobDescriptionDialog from '../../../recruitment/components/JobDescriptionDialog';
+import AIEnhancementModal from '../../../components/AIEnhancementModal';
 import { useAIQuery } from '../../../hooks/ai';
 import { extractKeywords, convertKeywordsToFilters } from '../../../services/searchService';
 import type { SearchFilters } from '../../../services/searchService';
@@ -199,7 +200,7 @@ const Search: React.FC = () => {
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
-  const [showAIEnhancement, setShowAIEnhancement] = useState(false);
+  const [isAIEnhancementModalOpen, setIsAIEnhancementModalOpen] = useState(false);
   // Search filters state
   const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
   const [isSearching, setIsSearching] = useState(false);
@@ -225,13 +226,24 @@ const Search: React.FC = () => {
   const enhanceSearchWithAI = async () => {
     if (!searchQuery.trim()) return;
 
-    await aiQuery.query({
-      prompt: `Enhance this job search query to be more specific and effective: "${searchQuery}"`,
-      systemPrompt: "You are a recruitment specialist. Help enhance job search queries to be more effective and specific.",
-      model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
-    });
-    setShowAIEnhancement(true);
-  };  // Main function for AI keyword extraction (without automatic search)
+    try {
+      await aiQuery.query({
+        prompt: `Enhance this job search query to be more specific and effective: "${searchQuery}"`,
+        systemPrompt: "You are a recruitment specialist. Help enhance job search queries to be more effective and specific.",
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+        max_tokens: 500
+      });
+    } catch (error) {
+      console.error('Error enhancing search with AI:', error);
+    }
+  };
+
+  // Effect to open modal when AI enhancement completes successfully
+  useEffect(() => {
+    if (aiQuery.data?.content && !aiQuery.loading && !aiQuery.error) {
+      setIsAIEnhancementModalOpen(true);
+    }
+  }, [aiQuery.data, aiQuery.loading, aiQuery.error]);  // Main function for AI keyword extraction (without automatic search)
   const handleAISearch = async () => {
     if (!searchQuery.trim()) return;
 
@@ -305,6 +317,19 @@ const Search: React.FC = () => {
         {/* PART 1: Search Section - Left Column */}
         <div className="lg:w-1/3 xl:w-2/5 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
           <div className="flex flex-col items-center justify-center w-full px-6 py-8 flex-1">
+            {/* AI Error Display */}
+            {aiQuery.error && (
+              <div className="w-full max-w-md mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700">Error enhancing search: {aiQuery.error}</p>
+                <button 
+                  onClick={aiQuery.reset}
+                  className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {/* Logo and title */}
             <div className="text-center mb-8">
               <p className="text-gray-500 text-sm mt-1">
@@ -332,17 +357,31 @@ const Search: React.FC = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400 text-sm"
                   />
+                  {searchQuery.trim() && (
+                    <button 
+                      onClick={() => {
+                        setSearchQuery('');
+                        setCurrentFilters({});
+                        setShowAIFilters(false);
+                        aiQuery.reset(); // Reset AI query state as well
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-1 rounded-md transition-colors"
+                      title="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {searchQuery.trim() && !aiQuery.loading && (
                     <button 
                       onClick={enhanceSearchWithAI}
-                      className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-1.5 rounded-md transition-colors mr-1"
+                      className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-1.5 rounded-md transition-colors"
                       title="Enhance with AI"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                     </button>
                   )}
                   {aiQuery.loading && (
-                    <div className="mr-1 p-1.5">
+                    <div className="p-1.5">
                       <div className="w-3.5 h-3.5 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   )}
@@ -361,42 +400,6 @@ const Search: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* AI Enhancement Display */}
-            {showAIEnhancement && aiQuery.data && (
-              <div className="w-full max-w-md mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-purple-700" />
-                  <h3 className="text-sm font-medium text-purple-700">AI Enhanced Search</h3>
-                  <button 
-                    onClick={() => setShowAIEnhancement(false)}
-                    className="ml-auto text-purple-500 hover:text-purple-700"
-                  >
-                    ×
-                  </button>
-                </div>
-                <p className="text-sm text-purple-800 leading-relaxed">{aiQuery.data.content}</p>
-                <button 
-                  onClick={() => setSearchQuery(aiQuery.data?.content || '')}
-                  className="mt-2 text-xs text-purple-700 hover:text-purple-800 underline"
-                >
-                  Use this enhanced search
-                </button>
-              </div>
-            )}
-
-            {/* AI Error Display */}
-            {aiQuery.error && (
-              <div className="w-full max-w-md mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-700">Error enhancing search: {aiQuery.error}</p>
-                <button 
-                  onClick={aiQuery.reset}
-                  className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
 
             {/* Action buttons */}
             <div className="w-full max-w-md space-y-2">
@@ -494,6 +497,17 @@ const Search: React.FC = () => {
       <JobDescriptionDialog
         isOpen={isJobDescriptionDialogOpen}
         onClose={() => setIsJobDescriptionDialogOpen(false)}
+      />
+
+      {/* AI Enhancement Modal */}
+      <AIEnhancementModal
+        isOpen={isAIEnhancementModalOpen}
+        onClose={() => {
+          setIsAIEnhancementModalOpen(false);
+          aiQuery.reset(); // Reset AI query state when modal is closed
+        }}
+        content={aiQuery.data?.content || ''}
+        onUseEnhancedQuery={(enhancedQuery) => setSearchQuery(enhancedQuery)}
       />
     </div>
   );

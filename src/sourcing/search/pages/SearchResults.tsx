@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import Button from '../../../components/Button';
 import FilterDialog from '../../../components/FilterDialog';
 import { useSearch } from '../../../hooks/useSearch';
@@ -10,6 +11,135 @@ import type { SearchFilters } from '../../../services/searchService';
 // Assuming ProfilePage.tsx and its types are in the same directory or adjust path
 import type { UserStructuredData } from '../../../components/ProfileSidePanel';
 import SourcingProfileSidePanel, { type PanelState } from '../../../components/SourcingProfileSidePanel'; // Import the PanelState type
+
+// Component for displaying search query with markdown support and expandable functionality
+const SearchQueryDisplay: React.FC<{ searchQuery: string }> = ({ searchQuery }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  if (!searchQuery) return null;
+  
+  // Check if the query contains markdown formatting (basic check)
+  const hasMarkdown = /[*_#`\[\]()>-]/g.test(searchQuery) || searchQuery.includes('**') || searchQuery.includes('*') || searchQuery.includes('#');
+  
+  // Function to truncate text to approximately 2 lines (about 100 characters for better line height)
+  const truncateText = (text: string, maxLength: number = 100) => {
+    if (text.length <= maxLength) return text;
+    const truncated = text.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(' ');
+    return (lastSpace > 0 ? truncated.substring(0, lastSpace) : truncated) + '...';
+  };
+  
+  if (!hasMarkdown) {
+    // Display as regular text if no markdown detected
+    const displayText = isExpanded ? searchQuery : truncateText(searchQuery);
+    const needsExpansion = searchQuery.length > 100;
+    
+    return (
+      <div className="w-full px-4 py-3 rounded-lg bg-purple-100 text-sm text-purple-700 border border-purple-200">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 mr-3">
+            <span className="font-medium">Search Query:</span> 
+            <div className={`font-semibold ml-1 ${!isExpanded && needsExpansion ? 'overflow-hidden' : ''}`} 
+                 style={!isExpanded && needsExpansion ? {
+                   display: '-webkit-box',
+                   WebkitLineClamp: 2,
+                   WebkitBoxOrient: 'vertical' as const,
+                   lineHeight: '1.5em',
+                   maxHeight: '3em'
+                 } : {}}>
+              {displayText}
+            </div>
+          </div>
+          {needsExpansion && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-purple-600 hover:text-purple-800 flex items-center gap-1 text-xs whitespace-nowrap mt-0.5"
+            >
+              {isExpanded ? (
+                <>
+                  <span>Show less</span>
+                  <ChevronUp className="w-3 h-3" />
+                </>
+              ) : (
+                <>
+                  <span>Read more</span>
+                  <ChevronDown className="w-3 h-3" />
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
+  // Display as markdown if markdown formatting is detected
+  const displayContent = isExpanded ? searchQuery : truncateText(searchQuery);
+  const needsExpansion = searchQuery.length > 100;
+  
+  return (
+    <div className="w-full px-4 py-3 rounded-lg bg-purple-100 border border-purple-200">
+      <div className="flex items-start justify-between mb-2">
+        <span className="font-medium text-purple-700 text-sm flex items-center gap-1">
+          <Sparkles className="w-3 h-3" />
+          Enhanced Search Query:
+        </span>
+        {needsExpansion && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-purple-600 hover:text-purple-800 flex items-center gap-1 text-xs whitespace-nowrap"
+          >
+            {isExpanded ? (
+              <>
+                Show less
+                <ChevronUp className="w-3 h-3" />
+              </>
+            ) : (
+              <>
+                Read more
+                <ChevronDown className="w-3 h-3" />
+              </>
+            )}
+          </button>
+        )}
+      </div>
+      <div className={`prose prose-sm prose-purple max-w-none text-purple-800 ${!isExpanded && needsExpansion ? 'overflow-hidden' : ''}`}
+           style={!isExpanded && needsExpansion ? {
+             display: '-webkit-box',
+             WebkitLineClamp: 2,
+             WebkitBoxOrient: 'vertical' as const,
+             lineHeight: '1.5em',
+             maxHeight: '3em'
+           } : {}}>
+        <ReactMarkdown 
+          components={{
+            p: ({ children }) => <p className="mb-1 last:mb-0 text-sm leading-relaxed">{children}</p>,
+            strong: ({ children }) => <strong className="font-semibold text-purple-900">{children}</strong>,
+            em: ({ children }) => <em className="italic text-purple-700">{children}</em>,
+            ul: ({ children }) => <ul className="list-disc list-inside mb-1 space-y-0.5">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal list-inside mb-1 space-y-0.5">{children}</ol>,
+            li: ({ children }) => <li className="text-sm">{children}</li>,
+            code: ({ children }) => (
+              <code className="bg-purple-200 text-purple-900 px-1 py-0.5 rounded text-xs font-mono">
+                {children}
+              </code>
+            ),
+            h1: ({ children }) => <h1 className="text-base font-semibold text-purple-900 mb-1">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-sm font-medium text-purple-900 mb-1">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-sm font-medium text-purple-900 mb-1">{children}</h3>,
+            blockquote: ({ children }) => (
+              <blockquote className="border-l-2 border-purple-300 pl-2 italic text-purple-700 mb-1 text-sm">
+                {children}
+              </blockquote>
+            ),
+          }}
+        >
+          {displayContent}
+        </ReactMarkdown>
+      </div>
+    </div>
+  );
+};
 
 const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -77,7 +207,7 @@ const SearchResultsPage: React.FC = () => {
   };
 
   const handleBackToSearchForm = () => {
-    navigate('/dashboard', {
+    navigate('/dashboard/sourcing/search', {
       state: {
         editFilters: filters,
         query: searchQuery
@@ -124,11 +254,11 @@ const SearchResultsPage: React.FC = () => {
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Search
-          </Button>          <div className="flex items-center gap-3">
-            <Button className="text-sm bg-purple-600 text-white hover:bg-purple-700">Share</Button>
+          </Button>          
+		  <div className="flex items-center gap-3">
             <Button
               className="text-sm bg-purple-600 text-white hover:bg-purple-700"
-              onClick={() => navigate('/dashboard', { replace: true })}
+              onClick={() => navigate('/dashboard/sourcing/search')}
             >
               New Search
             </Button>
@@ -148,13 +278,11 @@ const SearchResultsPage: React.FC = () => {
               <span className="text-sm font-medium">Edit Filters</span>
             </button>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="space-y-3">
              {searchQuery && (
-                <div className="inline-flex items-center px-3 py-2 rounded-lg bg-purple-100 text-sm text-purple-700 border border-purple-200">
-                    <span className="font-medium">Keyword:</span> 
-                    <span className="font-semibold ml-1">{searchQuery}</span>
-                </div>
+                <SearchQueryDisplay searchQuery={searchQuery} />
              )}
+             <div className="flex items-center gap-3 flex-wrap">
             {Object.entries(filters).map(([key, value]) => (
               value && (typeof value === 'string' || typeof value === 'number') && (
                 <div key={key} className="inline-flex items-center px-3 py-2 rounded-lg bg-gray-100 text-sm text-gray-700 border border-gray-200">
@@ -169,6 +297,7 @@ const SearchResultsPage: React.FC = () => {
             >
               Edit Filters
             </button>
+            </div>
           </div>
         </div>        {/* All Profiles Header */}
         <div className="bg-white shadow-sm rounded-xl mb-6 border border-gray-200 overflow-hidden">
