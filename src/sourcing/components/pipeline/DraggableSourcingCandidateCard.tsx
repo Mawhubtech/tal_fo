@@ -169,7 +169,7 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
                 {candidate.candidateRating !== undefined && 
                  candidate.candidateRating !== null && 
                  typeof candidate.candidateRating === 'number' && 
-                 candidate.candidateRating > 0 ? (
+                 candidate.candidateRating >= 0 ? (
                   <>
                     {renderStarRating(candidate.candidateRating, 'yellow', 'sm')}
                     <span className="ml-1 text-xs text-gray-600">{candidate.candidateRating.toFixed(1)}</span>

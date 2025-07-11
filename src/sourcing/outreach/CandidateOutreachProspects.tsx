@@ -123,16 +123,13 @@ const CandidateOutreachProspects: React.FC = () => {
     if (candidateRating !== undefined && candidateRating !== null) {
       if (typeof candidateRating === 'string') {
         const parsed = parseFloat(candidateRating);
-        if (!isNaN(parsed) && parsed > 0) {
+        if (!isNaN(parsed) && parsed >= 0) { // Allow 0 as a valid rating
           validCandidateRating = parsed;
         }
-      } else if (typeof candidateRating === 'number' && candidateRating > 0) {
+      } else if (typeof candidateRating === 'number' && candidateRating >= 0) { // Allow 0 as a valid rating
         validCandidateRating = candidateRating;
       }
     }
-
-    // Debug logging to verify rating conversion
-    console.log(`Candidate ${candidateName}: Original rating = ${candidateRating} (${typeof candidateRating}), Converted = ${validCandidateRating}`);
 
     return {
       id: prospect.id,

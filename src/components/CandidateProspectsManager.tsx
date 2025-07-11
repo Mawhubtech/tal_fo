@@ -70,7 +70,7 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
   });
 
   // Fetch active pipelines for shortlisting
-  const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines();
+  const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
 
   // Fetch job suggestions from backend
   const { data: jobSuggestionsData, isLoading: jobsLoading } = useJobSuggestions(
@@ -154,15 +154,30 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
         throw new Error('No sourcing pipelines available. Please create a sourcing pipeline first.');
       }
 
+      console.log('[CandidateProspectsManager] Available sourcing pipelines:', sourcingPipelines);
+
       // Find the default sourcing pipeline (should be first due to sorting in useActivePipelines)
       const defaultPipeline = sourcingPipelines.find(p => p.isDefault) || sourcingPipelines[0];
       
+      console.log('[CandidateProspectsManager] Selected pipeline:', {
+        id: defaultPipeline.id,
+        name: defaultPipeline.name,
+        type: defaultPipeline.type,
+        isDefault: defaultPipeline.isDefault
+      });
+
       if (!defaultPipeline.stages || defaultPipeline.stages.length === 0) {
         throw new Error('The sourcing pipeline has no stages configured.');
       }
 
       // Get the first stage of the pipeline
       const firstStage = defaultPipeline.stages.sort((a, b) => a.order - b.order)[0];
+      
+      console.log('[CandidateProspectsManager] Selected first stage:', {
+        id: firstStage.id,
+        name: firstStage.name,
+        order: firstStage.order
+      });
 
       // Create candidate object for the prospect data
       const candidate = {
@@ -184,6 +199,8 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
           addedDate: new Date().toISOString()
         }
       };
+
+      console.log('[CandidateProspectsManager] Creating prospect with data:', prospectData);
 
       // Create the prospect
       await sourcingApiService.createProspect(prospectData);
@@ -304,7 +321,7 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
             renderStarRating(candidateRating, 'md', 'yellow')
           )}
           <p className="text-sm text-gray-600 mt-1">
-            {candidateLoading ? 'Loading...' : candidateRating > 0 ? `${candidateRating.toFixed(1)}/5` : 'Not rated'}
+            {candidateLoading ? 'Loading...' : candidateRating >= 0 ? `${candidateRating.toFixed(1)}/5` : 'Not rated'}
           </p>
         </div>
       </div>

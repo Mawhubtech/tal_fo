@@ -91,7 +91,7 @@ export const SourcingListView: React.FC<SourcingListViewProps> = ({
           );
         })}
         <span className="ml-2 text-sm font-medium text-gray-700">
-          {validRating > 0 ? validRating.toFixed(1) : 'No rating'}
+          {validRating >= 0 ? validRating.toFixed(1) : 'No rating'}
         </span>
       </div>
     );
@@ -99,7 +99,7 @@ export const SourcingListView: React.FC<SourcingListViewProps> = ({
 
   // Render star rating for overall candidate score
   const renderCandidateRating = (rating?: number) => {
-    if (!rating || typeof rating !== 'number' || isNaN(rating) || rating <= 0) {
+    if (!rating || typeof rating !== 'number' || isNaN(rating) || rating < 0) {
       return (
         <div className="flex items-center">
           {[1, 2, 3, 4, 5].map((star) => (
