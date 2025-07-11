@@ -271,7 +271,7 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } />
             
-            <Route path="sourcing/outreach/templates" element={
+            <Route path="sourcing/sequences" element={
               <RoutePermissionGuard>
                 <CandidateOutreachTemplates />
               </RoutePermissionGuard>

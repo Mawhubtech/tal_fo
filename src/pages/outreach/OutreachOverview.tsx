@@ -258,12 +258,12 @@ const OutreachOverview: React.FC = () => {
           </Link>
           
           <Link 
-            to="/dashboard/outreach/templates"
+            to="/dashboard/sourcing/sequences"
             className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
           >
             <MessageSquare className="w-8 h-8 text-purple-600 mb-3" />
-            <h3 className="font-medium text-gray-900 mb-1">Email Templates</h3>
-            <p className="text-sm text-gray-500">Create and manage email templates</p>
+            <h3 className="font-medium text-gray-900 mb-1">Email Sequences</h3>
+            <p className="text-sm text-gray-500">Create and manage email sequences</p>
           </Link>
           
           <Link 
