@@ -7,7 +7,7 @@ import { useAuthContext } from '../contexts/AuthContext';
 import { isExternalUser } from '../utils/userUtils';
 import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
 // Sourcing imports
-import { Search, SearchResults, EmailSequencesPage } from '../sourcing';
+import { Search, SearchResults } from '../sourcing';
 import UnifiedContactsPage from '../sourcing/contacts/pages/UnifiedContactsPage'; // Import UnifiedContactsPage
 import { 
   CandidateOutreachOverview, 
@@ -49,6 +49,7 @@ import RoleManagementPage from './admin/RoleManagementPage'; // Import RoleManag
 import EmailManagementPage from './admin/EmailManagementPage'; // Import EmailManagementPage
 import TeamManagementPage from './admin/TeamManagementPage'; // Import TeamManagementPage
 import PipelinesPage from './admin/PipelinesPage'; // Import PipelinesPage
+import EmailSequencesPage from './admin/EmailSequencesPage'; // Import EmailSequencesPage
 import HiringTeamsPage from './admin/HiringTeamsPage'; // Import HiringTeamsPage
 import HiringTeamDetailPage from './admin/HiringTeamDetailPage'; // Import HiringTeamDetailPage
 import HiringTeamMembersPage from './admin/HiringTeamMembersPage'; // Import HiringTeamMembersPage
@@ -156,9 +157,9 @@ const Dashboard: React.FC = () => {
             
             <Route path="sequences" element={
               <RoutePermissionGuard>
-                <EmailSequencesPage />
+                <CandidateOutreachTemplates />
               </RoutePermissionGuard>
-            } /> {/* Route for EmailSequencesPage */}
+            } /> {/* Route for User Sequences Page */}
             
             <Route path="contacts" element={
               <RoutePermissionGuard>
@@ -359,6 +360,12 @@ const Dashboard: React.FC = () => {
               <Route path="pipelines" element={
                 <RoutePermissionGuard>
                   <PipelinesPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="email-sequences" element={
+                <RoutePermissionGuard>
+                  <EmailSequencesPage />
                 </RoutePermissionGuard>
               } />
               

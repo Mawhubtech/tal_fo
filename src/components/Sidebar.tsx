@@ -482,6 +482,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       </Link>
                     )}
                     
+                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_EMAIL_MANAGEMENT) && (
+                      <Link to="/dashboard/admin/email-sequences" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/email-sequences') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                        <MessageSquare className="w-3 h-3 mr-2" />
+                        Email Sequences
+                      </Link>
+                    )}
+                    
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
                       <Link to="/dashboard/admin/hiring-teams" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/hiring-teams') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Users className="w-3 h-3 mr-2" />
@@ -573,6 +580,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                           <Link to="/dashboard/admin/pipelines" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/pipelines') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                             <GitBranch className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/pipelines') ? '#7e22ce' : '' }} />
                             Pipelines
+                          </Link>
+                        )}
+                        
+                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_EMAIL_MANAGEMENT) && (
+                          <Link to="/dashboard/admin/email-sequences" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/email-sequences') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/email-sequences') ? '#7e22ce' : '' }} />
+                            Email Sequences
                           </Link>
                         )}
                         

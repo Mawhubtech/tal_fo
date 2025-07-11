@@ -121,6 +121,7 @@ export const SIDEBAR_PERMISSIONS = {
   
   // Admin - System
   ADMIN_PIPELINES: 'admin:pipelines',
+  ADMIN_EMAIL_SEQUENCES: 'admin:email-sequences',
   ADMIN_HIRING_TEAMS: 'admin:hiring-teams',
   ADMIN_JOB_BOARDS: 'admin:job-boards',
   ADMIN_ANALYTICS: 'admin:analytics',
@@ -169,6 +170,7 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   '/dashboard/admin/email-management': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS, SIDEBAR_PERMISSIONS.ADMIN_EMAIL_MANAGEMENT],
   '/dashboard/admin/team-management': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS, SIDEBAR_PERMISSIONS.ADMIN_TEAM_MANAGEMENT],
   '/dashboard/admin/pipelines': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS, SIDEBAR_PERMISSIONS.ADMIN_PIPELINES],
+  '/dashboard/admin/email-sequences': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS, SIDEBAR_PERMISSIONS.ADMIN_EMAIL_SEQUENCES],
   '/dashboard/admin/hiring-teams': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS, SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS],
   '/dashboard/admin/job-boards': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS, SIDEBAR_PERMISSIONS.ADMIN_JOB_BOARDS],
   '/dashboard/admin/analytics': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS, SIDEBAR_PERMISSIONS.ADMIN_ANALYTICS],
