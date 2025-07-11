@@ -4,9 +4,12 @@ import { useJobApplicationsByCandidate, useCreateJobApplicationWithPipeline } fr
 import { useSourcingProspects } from '../hooks/useSourcingProspects';
 import { useJobSuggestions } from '../hooks/useJobs';
 import { useCandidate } from '../hooks/useCandidates';
+import { useActivePipelines } from '../hooks/useActivePipelines';
 import { useAuthContext } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import Button from './Button';
 import { toast } from '../components/ToastContainer';
+import { sourcingApiService, CreateSourcingProspectDto } from '../services/sourcingApiService';
 
 interface CandidateProspectsManagerProps {
   candidateId: string;
@@ -49,8 +52,10 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
   candidateExperience = []
 }) => {
   const { user } = useAuthContext();
+  const { addToast } = useToast();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [isAddingToJob, setIsAddingToJob] = useState(false);
+  const [isAddingToPipeline, setIsAddingToPipeline] = useState(false);
 
   // Fetch candidate's current job applications
   const { data: jobApplicationsData, isLoading: applicationsLoading } = useJobApplicationsByCandidate(candidateId);
@@ -59,10 +64,13 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
   const { data: candidateData, isLoading: candidateLoading } = useCandidate(candidateId);
   
   // Fetch candidate's prospect status
-  const { data: prospectsData, isLoading: prospectsLoading } = useSourcingProspects({
+  const { data: prospectsData, isLoading: prospectsLoading, refetch: refetchProspects } = useSourcingProspects({
     search: candidateEmail,
     createdBy: user?.id
   });
+
+  // Fetch active pipelines for shortlisting
+  const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines();
 
   // Fetch job suggestions from backend
   const { data: jobSuggestionsData, isLoading: jobsLoading } = useJobSuggestions(
@@ -133,6 +141,75 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
     } finally {
       setIsAddingToJob(false);
       setSelectedJobId(null);
+    }
+  };
+
+  // Handle adding candidate to sourcing pipeline (shortlisting)
+  const handleAddToPipeline = async () => {
+    try {
+      setIsAddingToPipeline(true);
+
+      // Get the default sourcing pipeline
+      if (!sourcingPipelines || sourcingPipelines.length === 0) {
+        throw new Error('No sourcing pipelines available. Please create a sourcing pipeline first.');
+      }
+
+      // Find the default sourcing pipeline (should be first due to sorting in useActivePipelines)
+      const defaultPipeline = sourcingPipelines.find(p => p.isDefault) || sourcingPipelines[0];
+      
+      if (!defaultPipeline.stages || defaultPipeline.stages.length === 0) {
+        throw new Error('The sourcing pipeline has no stages configured.');
+      }
+
+      // Get the first stage of the pipeline
+      const firstStage = defaultPipeline.stages.sort((a, b) => a.order - b.order)[0];
+
+      // Create candidate object for the prospect data
+      const candidate = {
+        id: candidateId,
+        fullName: candidateName
+      };
+
+      // Create the prospect data with just the candidate reference
+      const prospectData: CreateSourcingProspectDto = {
+        candidateId: candidate.id,
+        status: 'new',
+        source: 'linkedin',
+        rating: 3, // Default rating
+        notes: `Added from candidate management on ${new Date().toLocaleDateString()}`,
+        pipelineId: defaultPipeline.id,
+        currentStageId: firstStage.id,
+        metadata: {
+          addedFromCandidateManagement: true,
+          addedDate: new Date().toISOString()
+        }
+      };
+
+      // Create the prospect
+      await sourcingApiService.createProspect(prospectData);
+
+      // Refresh prospects data to show the updated status
+      await refetchProspects();
+
+      // Show success feedback
+      addToast({
+        type: 'success',
+        title: 'Candidate Added to Pipeline',
+        message: `${candidate.fullName} has been added to the ${defaultPipeline.name} pipeline`,
+        duration: 5000
+      });
+      
+    } catch (error) {
+      console.error('Error adding candidate to pipeline:', error);
+      // Show error toast
+      addToast({
+        type: 'error',
+        title: 'Pipeline Addition Failed',
+        message: error instanceof Error ? error.message : 'Failed to add candidate to pipeline. Please try again.',
+        duration: 7000
+      });
+    } finally {
+      setIsAddingToPipeline(false);
     }
   };
 
@@ -241,9 +318,20 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
               variant="primary" 
               size="sm" 
               className="text-xs bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+              onClick={handleAddToPipeline}
+              disabled={isAddingToPipeline || pipelinesLoading}
             >
-              <Plus className="w-3 h-3 mr-1" />
-              Add to Pipeline
+              {isAddingToPipeline ? (
+                <>
+                  <Clock className="w-3 h-3 mr-1 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add to Pipeline
+                </>
+              )}
             </Button>
           )}
         </div>
