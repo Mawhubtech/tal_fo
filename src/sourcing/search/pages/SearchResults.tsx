@@ -525,7 +525,7 @@ const SearchResultsPage: React.FC = () => {
                                 languages: candidate.languages || [],
                                 interests: candidate.interests || [],
                                 references: candidate.references || []
-                              })}
+                              }, candidate.id)}
                             >
                               {personalInfo.fullName}
                               {/* Icon indicates clickable, panel will open */}
@@ -738,7 +738,7 @@ const SearchResultsPage: React.FC = () => {
                                 languages: candidate.languages || [],
                                 interests: candidate.interests || [],
                                 references: candidate.references || []
-                              })}
+                              }, candidate.id)}
                             >
                               {personalInfo.fullName.split(' ')[0]}
                             </span>
@@ -789,6 +789,7 @@ const SearchResultsPage: React.FC = () => {
             userData={selectedUserDataForPanel}
             panelState={panelState}
             onStateChange={handlePanelStateChange}
+            candidateId={selectedCandidateId || undefined}
           />
         </>
       )}
