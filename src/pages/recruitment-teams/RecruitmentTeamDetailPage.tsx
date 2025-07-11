@@ -385,7 +385,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Shield className="h-4 w-4 text-blue-600" />;
+        return <Shield className="h-4 w-4 text-purple-600" />;
       default:
         return <User className="h-4 w-4 text-gray-400" />;
     }
@@ -394,7 +394,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
-        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
           <Shield className="h-3 w-3 mr-1" />
           Admin
         </span>;
@@ -414,7 +414,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
       </span>;
     }
     if (roles.some(role => role.name === 'admin')) {
-      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
         <Settings className="h-3 w-3 mr-1" />
         Admin
       </span>;
@@ -520,30 +520,28 @@ const RecruitmentTeamDetailPage: React.FC = () => {
         {displayClients.map((client) => (
           <span
             key={client.id}
-            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
           >
             <Building className="h-3 w-3 mr-1" />
             {client.name}
           </span>
         ))}
-        {hasMore && (
-          <button
-            onClick={() => toggleExpandedClients(userId)}
-            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 transition-colors cursor-pointer"
-            title={isExpanded ? 'Show less clients' : `Show ${clients.length - 3} more clients`}
-          >
-            {isExpanded ? 'Show less' : `+${clients.length - 3} more`}
-          </button>
-        )}
-        {isEditable && (
-          <button
-            onClick={() => openAssignModal(userId)}
-            className="text-blue-600 hover:text-blue-800 text-xs ml-1"
-            title="Manage client access"
-          >
-            <Edit className="h-3 w-3" />
-          </button>
-        )}
+        {hasMore && (                        <button
+                          onClick={() => toggleExpandedClients(userId)}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors cursor-pointer"
+                          title={isExpanded ? 'Show less clients' : `Show ${clients.length - 3} more clients`}
+                        >
+                          {isExpanded ? 'Show less' : `+${clients.length - 3} more`}
+                        </button>
+        )}                        {isEditable && (
+                          <button
+                            onClick={() => openAssignModal(userId)}
+                            className="text-purple-600 hover:text-purple-800 text-xs ml-1"
+                            title="Manage client access"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </button>
+                        )}
       </div>
     );
   };
@@ -655,7 +653,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                           setEditingTeam(false);
                           setTeamForm({ name: team.name, description: team.description || '' });
                         }}
-                        className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="flex items-center space-x-2 px-4 py-2 bg-white text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
                         disabled={updateTeamMutation.isPending}
                       >
                         <X className="h-4 w-4" />
@@ -704,7 +702,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setShowInviteModal(true)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
                       <UserCheck className="h-4 w-4" />
                       <span>Add Existing User</span>
@@ -714,7 +712,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                         setSelectedClients([]); // Clear previous selections
                         setShowLinkClientsModal(true);
                       }}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
                       <LinkIcon className="h-4 w-4" />
                       <span>Link Clients</span>
@@ -724,7 +722,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                 <button
                   onClick={() => refetchMembers()}
                   disabled={membersLoading}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  className="flex items-center space-x-2 px-4 py-2 bg-white text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors disabled:opacity-50"
                 >
                   <RefreshCw className={`h-4 w-4 ${membersLoading ? 'animate-spin' : ''}`} />
                   <span>Refresh</span>
@@ -772,11 +770,11 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {/* Team Owner */}
-                  <tr className="bg-blue-50">
+                  <tr className="bg-purple-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-purple-600 flex items-center justify-center">
                             <Crown className="h-5 w-5 text-white" />
                           </div>
                         </div>
@@ -804,7 +802,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                       }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                         <Crown className="h-3 w-3 mr-1" />
                         Owner
                       </span>
@@ -833,7 +831,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                           return (
                             <div className="flex items-center gap-1">
                               <span className="text-sm text-gray-500">Owner access</span>
-                              <Crown className="h-3 w-3 text-blue-600" />
+                              <Crown className="h-3 w-3 text-purple-600" />
                             </div>
                           );
                         }
@@ -918,7 +916,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                                 {isAdmin && (
                                   <button
                                     onClick={() => openAssignModal(member.userId)}
-                                    className="text-blue-600 hover:text-blue-800 text-xs"
+                                    className="text-purple-600 hover:text-purple-800 text-xs"
                                     title="Assign clients to this member"
                                   >
                                     <Plus className="h-3 w-3" />
@@ -935,7 +933,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                             <>
                               <button
                                 onClick={() => handleToggleMemberRole(member)}
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200 transition-colors"
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded hover:bg-purple-200 transition-colors"
                                 disabled={updateMemberMutation.isPending}
                               >
                                 <Settings className="h-3 w-3 mr-1" />
@@ -1022,7 +1020,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                     setShowInviteModal(false);
                     setInviteEmail('');
                   }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 bg-white text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
                   disabled={false}
                 >
                   Cancel
@@ -1030,7 +1028,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                 <button
                   onClick={handleInviteUser}
                   disabled={!inviteEmail.trim() || addMemberMutation.isPending}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {addMemberMutation.isPending ? 'Adding...' : 'Add to Team'}
                 </button>
@@ -1064,8 +1062,8 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                     <p className="text-sm text-gray-600 mb-4">
                       Select clients to link with this team. These clients will be added to all current team members' access lists.
                     </p>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-blue-800 font-medium">
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-purple-800 font-medium">
                         This will give access to ALL team members ({totalMembers} members)
                       </p>
                     </div>
@@ -1115,8 +1113,8 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                   )}
 
                   {selectedClients.length > 0 && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800">
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <p className="text-sm text-purple-800">
                         <Check className="h-4 w-4 inline mr-1" />
                         {selectedClients.length} client{selectedClients.length > 1 ? 's' : ''} selected to link to {totalMembers} team member{totalMembers > 1 ? 's' : ''}
                       </p>
@@ -1131,14 +1129,14 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                     setShowLinkClientsModal(false);
                     setSelectedClients([]);
                   }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 bg-white text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleLinkClients}
                   disabled={updateUserClientsMutation.isPending || selectedClients.length === 0}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {updateUserClientsMutation.isPending ? 'Linking...' : `Link to Team`}
                 </button>
@@ -1221,8 +1219,8 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                   )}
 
                   {selectedClients.length > 0 && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800">
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <p className="text-sm text-purple-800">
                         <Check className="h-4 w-4 inline mr-1" />
                         {selectedClients.length} client{selectedClients.length > 1 ? 's' : ''} selected
                       </p>
@@ -1238,7 +1236,7 @@ const RecruitmentTeamDetailPage: React.FC = () => {
                     setSelectedUser(null);
                     setSelectedClients([]);
                   }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 bg-white text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
                 >
                   Cancel
                 </button>

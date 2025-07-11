@@ -42,7 +42,7 @@ const RecruitmentTeamsPage: React.FC = () => {
 
   const getTeamRoleBadge = (team: RecruitmentTeam) => {
     if (team.createdById === user?.id) {
-      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
         <Crown className="h-3 w-3 mr-1" />
         Owner
       </span>;
@@ -226,7 +226,7 @@ const RecruitmentTeamsPage: React.FC = () => {
                                   setSelectedTeam(team);
                                   setShowDetailsModal(true);
                                 }}
-                                className="text-blue-600 hover:text-blue-900 transition-colors"
+                                className="text-purple-600 hover:text-purple-900 transition-colors"
                                 title="Edit team"
                               >
                                 <Edit2 className="h-4 w-4" />
