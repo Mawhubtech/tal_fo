@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, Award, FileBadge2, Heart, Mail, Phone, Languages } from 'lucide-react'; // Ensure these icons are installed
-import Button from './Button'; // Adjust path to your Button component if necessary
-import CandidateProspectsManager from './CandidateProspectsManager';
+import Button from '../../../components/Button'; // Adjust path to your Button component if necessary
+import CandidateProspectsManager from '../../../components/CandidateProspectsManager';
+import CandidateNotes from './CandidateNotes';
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
 // Define interfaces for type safety - ADD 'export' HERE
@@ -1686,35 +1687,15 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Notes Tab */}
-              {activeSideTab === 2 && (
-                <div className="space-y-4">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-gray-900">Candidate Notes</h4>
-                      <Button variant="primary" size="sm" className="text-xs bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700">
-                        <Plus className="w-3 h-3 mr-1" />
-                        Add Note
-                      </Button>
-                    </div>
-                    <div className="space-y-3">
-                      <textarea
-                        placeholder="Add a note about this candidate..."
-                        className="w-full p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        rows={3}
-                      />
-                      <Button variant="primary" size="sm" className="w-full bg-purple-600 text-white hover:bg-purple-700">
-                        Save Note
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">Previous Notes</h4>
-                    <div className="text-sm text-gray-500">
-                      <p>No notes added yet.</p>
-                      <p className="mt-2">Start documenting your interactions and observations about this candidate.</p>
-                    </div>
-                  </div>
+              {activeSideTab === 2 && candidateId && (
+                <CandidateNotes 
+                  candidateId={candidateId} 
+                  candidateName={personalInfo?.fullName}
+                />
+              )}
+              {activeSideTab === 2 && !candidateId && (
+                <div className="p-4 text-center text-gray-500">
+                  <p>Candidate ID not available for notes management.</p>
                 </div>
               )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, LayoutGrid, List, X } from 'lucide-react';
 import { useSourcingProspects, useSourcingDefaultPipeline, useMoveSourcingProspectStage, useDeleteSourcingProspect } from '../../hooks/useSourcingProspects';
 import { useCandidate } from '../../hooks/useCandidates';
@@ -7,7 +7,7 @@ import { SourcingKanbanView } from '../components/pipeline/SourcingKanbanView';
 import { SourcingListView } from '../components/pipeline/SourcingListView';
 import { PipelineStats } from '../../recruitment/organizations/components/ats/pipeline/PipelineStats';
 import { SourcingProspect } from '../../services/sourcingApiService';
-import SourcingProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/SourcingProfileSidePanel';
+import SourcingProfileSidePanel, { type PanelState, type UserStructuredData } from './components/SourcingProfileSidePanel';
 
 /**
  * CandidateOutreachProspects Component
@@ -50,8 +50,36 @@ const CandidateOutreachProspects: React.FC = () => {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
 
+  // Ref for the side panel to detect clicks outside
+  const sidePanelRef = useRef<HTMLDivElement>(null);
+
   // Get current user context
   const { user } = useAuthContext();
+
+  // Handle click outside and escape key to close panel
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidePanelRef.current && !sidePanelRef.current.contains(event.target as Node)) {
+        handlePanelStateChange('closed');
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && panelState !== 'closed') {
+        handlePanelStateChange('closed');
+      }
+    };
+
+    if (panelState !== 'closed') {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [panelState]);
 
   // Load sourcing prospects and pipeline (filtered by current user)
   const { data: sourcingData, isLoading: prospectsLoading, error: prospectsError } = useSourcingProspects({
@@ -369,23 +397,35 @@ const CandidateOutreachProspects: React.FC = () => {
 
       {/* Side Panel */}
       {panelState !== 'closed' && (
-        <div className="fixed right-0 top-0 h-full bg-white border-l border-gray-200 overflow-hidden z-50">
-          {/* Close button for expanded panel */}
-          {panelState === 'expanded' && (
-            <button
-              className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-gray-600 bg-white rounded-full shadow-md"
-              onClick={() => handlePanelStateChange('closed')}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-          <SourcingProfileSidePanel
-            userData={transformCandidateToUserStructuredData(selectedCandidateData)}
-            panelState={panelState}
-            onStateChange={handlePanelStateChange}
-            candidateId={selectedCandidateId || undefined}
+        <>
+          {/* Overlay for click outside detection */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            aria-hidden="true"
           />
-        </div>
+          
+          {/* Side Panel */}
+          <div 
+            ref={sidePanelRef}
+            className="fixed right-0 top-0 h-full bg-white border-l border-gray-200 overflow-hidden z-50"
+          >
+            {/* Close button for expanded panel */}
+            {panelState === 'expanded' && (
+              <button
+                className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-gray-600 bg-white rounded-full shadow-md"
+                onClick={() => handlePanelStateChange('closed')}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+            <SourcingProfileSidePanel
+              userData={transformCandidateToUserStructuredData(selectedCandidateData)}
+              panelState={panelState}
+              onStateChange={handlePanelStateChange}
+              candidateId={selectedCandidateId || undefined}
+            />
+          </div>
+        </>
       )}
     </>
   );

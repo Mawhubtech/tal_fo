@@ -16,7 +16,7 @@ import { sourcingApiService, CreateSourcingProspectDto } from '../../../services
 
 // Assuming ProfilePage.tsx and its types are in the same directory or adjust path
 import type { UserStructuredData } from '../../../components/ProfileSidePanel';
-import SourcingProfileSidePanel, { type PanelState } from '../../../components/SourcingProfileSidePanel'; // Import the PanelState type
+import SourcingProfileSidePanel, { type PanelState } from '../../outreach/components/SourcingProfileSidePanel'; // Import the PanelState type
 
 // Component for displaying search query with markdown support and expandable functionality
 const SearchQueryDisplay: React.FC<{ searchQuery: string }> = ({ searchQuery }) => {
