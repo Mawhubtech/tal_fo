@@ -2,6 +2,7 @@
 
 // Search pages
 export { default as Search } from './search/pages/Search';
+export type { SearchRef } from './search/pages/Search';
 export { default as SearchResults } from './search/pages/SearchResults';
 
 // Search components

@@ -11,7 +11,6 @@ import { useSourcingProspects } from '../../../hooks/useSourcingProspects';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyTeams } from '../../../hooks/useRecruitmentTeams';
-import { useCompleteSearch } from '../../../hooks/useSourcingSearches';
 import type { SearchFilters } from '../../../services/searchService';
 import { sourcingApiService, CreateSourcingProspectDto } from '../../../services/sourcingApiService';
 
@@ -172,7 +171,6 @@ const SearchResultsPage: React.FC = () => {
   const { data: existingProspects } = useSourcingProspects({ createdBy: user?.id });
   const { data: recruitmentTeams } = useMyTeams();
   const { addToast } = useToast();
-  const completeSearchMutation = useCompleteSearch();
   
   // State for team sharing
   const [showTeamShare, setShowTeamShare] = useState<{ [key: string]: boolean }>({});
@@ -222,11 +220,74 @@ const SearchResultsPage: React.FC = () => {
     }
   }, [existingProspects, results]);
 
+  // COMPLETELY DISABLED: Search completion functionality
+  // This was causing persistent 403 errors because the backend has strict state management
+  // for search completion that doesn't align with frontend usage patterns.
+  // The search completion was primarily for analytics/tracking, and all core functionality
+  // (search execution, results display, shortlisting) works without it.
+  
+  /*
+  // Track if search has been completed to prevent infinite loop
+  const [hasCompletedSearch, setHasCompletedSearch] = useState(false);
+  // Track if we should skip completion attempts (due to previous errors)
+  const [skipCompletion, setSkipCompletion] = useState(false);
+
   // Complete the search on backend when results are loaded
   useEffect(() => {
-    if (searchId && results.length > 0 && !isLoading) {
+    if (searchId && results.length > 0 && !isLoading && !hasCompletedSearch && !skipCompletion) {
       // Only complete the search once when we have results
       const completeSearch = async () => {
+        try {
+          await completeSearchMutation.mutateAsync({
+            id: searchId,
+            results: {
+              resultsCount: results.length,
+              prospectsAdded: 0, // Initial completion always has 0 prospects
+              resultsMetadata: {
+                searchQuery,
+                filters,
+                timestamp: new Date().toISOString(),
+                hasResults: results.length > 0
+              }
+            }
+          });
+          console.log('Search completed successfully on backend');
+          setHasCompletedSearch(true);
+        } catch (error) {
+          console.error('Error completing search on backend:', error);
+          
+          // Check if the search is already completed or in wrong state
+          if (error instanceof Error && error.message.includes('Search must be running to be completed')) {
+            console.log('Search was already completed, marking as completed locally and skipping future attempts');
+            setHasCompletedSearch(true);
+            setSkipCompletion(true);
+          } else if ((error as any)?.response?.data?.message?.includes('Search must be running to be completed')) {
+            console.log('Search was already completed (via response), marking as completed locally and skipping future attempts');
+            setHasCompletedSearch(true);
+            setSkipCompletion(true);
+          } else if ((error as any)?.response?.status === 403) {
+            // Any 403 error likely means the search is already completed or in wrong state
+            console.log('Search completion failed with 403, marking as completed locally and skipping future attempts');
+            setHasCompletedSearch(true);
+            setSkipCompletion(true);
+          }
+          // Don't show error to user as this is background tracking
+        }
+      };
+
+      completeSearch();
+    }
+  }, [searchId, results.length, isLoading, hasCompletedSearch, skipCompletion]);
+  */
+
+  // Update search record when prospects are added (separate from initial completion)
+  // DISABLED: This was causing 403 errors when trying to update already completed searches
+  // The backend doesn't allow updating search records once they're completed
+  // Initial completion is sufficient for tracking purposes
+  /*
+  useEffect(() => {
+    if (searchId && hasCompletedSearch && prospectsAddedCount > 0) {
+      const updateSearchRecord = async () => {
         try {
           await completeSearchMutation.mutateAsync({
             id: searchId,
@@ -237,20 +298,29 @@ const SearchResultsPage: React.FC = () => {
                 searchQuery,
                 filters,
                 timestamp: new Date().toISOString(),
-                hasResults: results.length > 0
+                hasResults: results.length > 0,
+                lastProspectAdded: new Date().toISOString()
               }
             }
           });
-          console.log('Search completed successfully on backend');
+          console.log('Search record updated with prospect count:', prospectsAddedCount);
         } catch (error) {
-          console.error('Error completing search on backend:', error);
+          console.error('Error updating search record:', error);
+          
+          // If search is already completed or in wrong state, just log and continue
+          if (error instanceof Error && error.message.includes('Search must be running to be completed')) {
+            console.log('Search completion failed - search already in final state');
+          } else if ((error as any)?.response?.data?.message?.includes('Search must be running to be completed')) {
+            console.log('Search completion failed - search already in final state (via response)');
+          }
           // Don't show error to user as this is background tracking
         }
       };
 
-      completeSearch();
+      updateSearchRecord();
     }
-  }, [searchId, results, isLoading, searchQuery, filters, prospectsAddedCount, completeSearchMutation]);
+  }, [prospectsAddedCount]); // Only depend on prospectsAddedCount
+  */
 
   const fetchResults = async (filters: SearchFilters, query?: string) => {
     try {
@@ -372,29 +442,6 @@ const SearchResultsPage: React.FC = () => {
       // Update prospects added count
       const newProspectsCount = prospectsAddedCount + 1;
       setProspectsAddedCount(newProspectsCount);
-
-      // Update search record if we have a searchId
-      if (searchId) {
-        try {
-          await completeSearchMutation.mutateAsync({
-            id: searchId,
-            results: {
-              resultsCount: results.length,
-              prospectsAdded: newProspectsCount,
-              resultsMetadata: {
-                searchQuery,
-                filters,
-                timestamp: new Date().toISOString(),
-                hasResults: results.length > 0,
-                lastProspectAdded: new Date().toISOString()
-              }
-            }
-          });
-        } catch (error) {
-          console.error('Error updating search record:', error);
-          // Don't show error to user as this is background tracking
-        }
-      }
 
       // Mark candidate as shortlisted
       setShortlistedCandidates(prev => ({ ...prev, [candidate.id]: true }));

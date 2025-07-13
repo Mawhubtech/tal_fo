@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Upload, Sparkles } from 'lucide-react';
 import { useAIStructuredQuery, useAIQuery, useDocumentProcessing } from '../../hooks/ai';
-import type { SearchFilters } from '../../services/searchService';
+import { extractKeywords, convertKeywordsToFilters } from '../../services/searchService';
+import type { SearchFilters, ExtractedKeywords } from '../../services/searchService';
 
 interface JobDescriptionDialogProps {
   isOpen: boolean;
@@ -12,8 +13,10 @@ interface JobDescriptionDialogProps {
 const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onClose, onSearch }) => {
   const [jobDescription, setJobDescription] = useState('');
   const [extractedCriteria, setExtractedCriteria] = useState<any>(null);
+  const [extractedKeywords, setExtractedKeywords] = useState<ExtractedKeywords | null>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [generatePrompt, setGeneratePrompt] = useState('');
+  const [isExtractingKeywords, setIsExtractingKeywords] = useState(false);
   // Add a state for document processing errors
   const [documentError, setDocumentError] = useState<string | null>(null);
   // AI hooks for different purposes
@@ -27,19 +30,13 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
       setJobDescription(aiQuery.data.content);
     }
   }, [aiQuery.data]);
+  
   // Effect to update document error from document processor
   useEffect(() => {
     if (documentProcessor.error) {
       setDocumentError(documentProcessor.error);
     }
   }, [documentProcessor.error]);
-
-  // Effect to update extracted criteria when structured query completes
-  useEffect(() => {
-    if (structuredQuery.data && structuredQuery.data.data) {
-      setExtractedCriteria(structuredQuery.data.data);
-    }
-  }, [structuredQuery.data]);
   
   if (!isOpen) return null;
   
@@ -88,59 +85,40 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
   const extractSearchCriteria = async () => {
     if (!jobDescription.trim()) return;
     
-    // Define schema for structured keyword extraction
-    const searchCriteriaSchema = {
-      type: 'object',
-      properties: {
-        skills: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Technical skills and competencies required'
-        },
-        experienceLevel: {
-          type: 'string',
-          description: 'Required experience level (e.g., Junior, Mid-level, Senior, Lead)'
-        },
-        jobTitles: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Relevant job titles and positions'
-        },
-        industries: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Relevant industries or sectors'
-        },
-        locations: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Required or preferred locations'
-        },
-        keywords: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Important keywords and terms for search'
-        },
-        requirements: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Key requirements and qualifications'
-        },
-        workType: {
-          type: 'string',
-          description: 'Work arrangement (e.g., Remote, On-site, Hybrid)'
-        }
-      },
-      required: ['skills', 'experienceLevel', 'jobTitles']
-    };
-      await structuredQuery.structuredQuery({
-      prompt: `Extract key search criteria from this job description for talent search: "${jobDescription}"`,
-      schema: searchCriteriaSchema,
-      systemPrompt: "You are a recruitment specialist. Extract structured search criteria from job descriptions including required skills, experience level, location, industry, and job titles. Respond only with valid JSON that matches the provided schema.",
-      model: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
-    });
-    
-    // The useEffect will handle updating extractedCriteria when structuredQuery.data changes
+    setIsExtractingKeywords(true);
+    try {
+      // Step 1: Extract keywords from job description using backend AI service (same as normal search)
+      console.log('Extracting keywords from job description...');
+      const keywords = await extractKeywords(jobDescription);
+      console.log('Extracted keywords:', keywords);
+      
+      // Step 2: Limit keywords to ~10 total items for better performance
+      const limitedKeywords: ExtractedKeywords = {
+        ...keywords,
+        skills: keywords.skills.slice(0, 6), // Limit to 6 skills
+        keywords: keywords.keywords.slice(0, 4), // Limit to 4 keywords
+        requirements: keywords.requirements.slice(0, 3), // Limit to 3 requirements
+        jobTitles: keywords.jobTitles.slice(0, 3), // Limit to 3 job titles
+        companies: keywords.companies.slice(0, 2), // Limit to 2 companies
+        locations: keywords.locations.slice(0, 2), // Limit to 2 locations
+        industries: keywords.industries.slice(0, 2), // Limit to 2 industries
+      };
+      
+      console.log('Limited keywords for backend:', limitedKeywords);
+      setExtractedKeywords(limitedKeywords);
+      
+      // Step 3: Convert keywords to filters (same as normal search)
+      const filters = await convertKeywordsToFilters(limitedKeywords);
+      console.log('Converted filters:', filters);
+      
+      // Set the filters as extracted criteria for display
+      setExtractedCriteria(limitedKeywords);
+      
+    } catch (error) {
+      console.error('Error extracting keywords:', error);
+    } finally {
+      setIsExtractingKeywords(false);
+    }
   };
 
   const generateJobDescription = async () => {
@@ -159,7 +137,9 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
   };
 
   // Function to convert extracted criteria to SearchFilters format
-  const convertCriteriaToFilters = (criteria: any): SearchFilters => {
+  const convertCriteriaToFilters = (criteria: ExtractedKeywords): SearchFilters => {
+    if (!criteria) return {};
+    
     return {
       general: {
         minExperience: criteria.experienceLevel || '',
@@ -173,6 +153,7 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
       },
       company: {
         industries: criteria.industries || [],
+        names: criteria.companies || [],
       },
       skillsKeywords: {
         items: criteria.keywords || [],
@@ -185,8 +166,8 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
   };
 
   // Function to handle search execution
-  const handleSearchWithCriteria = () => {
-    console.log('handleSearchWithCriteria called', { extractedCriteria, onSearch, jobDescription });
+  const handleSearchWithCriteria = async () => {
+    console.log('handleSearchWithCriteria called', { extractedKeywords, onSearch, jobDescription });
     
     if (!onSearch) {
       console.log('No onSearch function provided');
@@ -201,20 +182,32 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
     let filters: SearchFilters;
     let searchQuery: string;
     
-    if (extractedCriteria) {
-      // Use extracted criteria if available
-      filters = convertCriteriaToFilters(extractedCriteria);
-      searchQuery = jobDescription.substring(0, 100) + (jobDescription.length > 100 ? '...' : '');
-      console.log('Using extracted criteria:', extractedCriteria);
+    if (extractedKeywords) {
+      // Use extracted keywords following the same flow as normal search
+      console.log('Using extracted keywords for search:', extractedKeywords);
+      
+      // Convert keywords to filters using the backend service (same as normal search)
+      try {
+        filters = await convertKeywordsToFilters(extractedKeywords);
+        console.log('Converted to filters:', filters);
+      } catch (error) {
+        console.error('Error converting keywords to filters:', error);
+        // Fallback to manual conversion
+        filters = convertCriteriaToFilters(extractedKeywords);
+      }
+      
+      // Create a brief search query from keywords
+      const keywordList = [
+        ...(extractedKeywords.skills || []).slice(0, 3),
+        ...(extractedKeywords.jobTitles || []).slice(0, 2),
+        ...(extractedKeywords.keywords || []).slice(0, 2)
+      ];
+      searchQuery = keywordList.join(', ');
     } else {
-      // Use job description as keywords if no extracted criteria
-      filters = {
-        skillsKeywords: {
-          items: [jobDescription],
-        }
-      };
-      searchQuery = jobDescription.substring(0, 100) + (jobDescription.length > 100 ? '...' : '');
-      console.log('Using job description as keywords');
+      // Fallback: Extract keywords first if not already done
+      console.log('No extracted keywords found, extracting now...');
+      await extractSearchCriteria();
+      return; // Will be called again once keywords are extracted
     }
     
     console.log('Calling onSearch with:', { searchQuery, filters });
@@ -236,9 +229,9 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
               <button 
                 className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md text-sm flex items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
                 onClick={handleSearchWithCriteria}
-                disabled={!jobDescription.trim() || !onSearch}
+                disabled={!jobDescription.trim() || !onSearch || isExtractingKeywords}
               >
-                Save & Search →
+                {isExtractingKeywords ? 'Processing...' : (extractedKeywords ? 'Search with Keywords →' : 'Save & Search →')}
               </button>
               <button 
                 onClick={onClose} 
@@ -252,27 +245,26 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
         </div>
 
         {/* AI Extracted Criteria - Top Section */}
-        {extractedCriteria && (
+        {extractedKeywords && (
           <div className="p-6 bg-green-50 border-b border-green-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-green-700" />
-                <h3 className="text-base font-medium text-green-700">AI Extracted Search Criteria</h3>
+                <h3 className="text-base font-medium text-green-700">Extracted Keywords (AI Processed)</h3>
               </div>
               <div className="flex gap-2">
                 <button
                   className="text-xs text-green-700 hover:text-green-800 underline"
-                  onClick={() => {
-                    // You would use this criteria for the actual search
-                    console.log('Using structured criteria:', extractedCriteria);
-                    onClose();
-                  }}
+                  onClick={handleSearchWithCriteria}
                 >
-                  Use These Criteria
+                  Search with Keywords
                 </button>
                 <button
                   className="text-xs text-green-600 hover:text-green-700 underline"
-                  onClick={() => setExtractedCriteria(null)}
+                  onClick={() => {
+                    setExtractedKeywords(null);
+                    setExtractedCriteria(null);
+                  }}
                 >
                   Clear
                 </button>
@@ -280,66 +272,73 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              {extractedCriteria.jobTitles && extractedCriteria.jobTitles.length > 0 && (
+              {extractedKeywords.jobTitles && extractedKeywords.jobTitles.length > 0 && (
                 <div className="bg-white p-3 rounded border">
-                  <span className="font-medium text-green-800 block mb-1">Job Titles</span>
-                  <span className="text-green-700">{extractedCriteria.jobTitles.join(', ')}</span>
+                  <span className="font-medium text-green-800 block mb-1">Job Titles ({extractedKeywords.jobTitles.length})</span>
+                  <span className="text-green-700">{extractedKeywords.jobTitles.join(', ')}</span>
                 </div>
               )}
               
-              {extractedCriteria.skills && extractedCriteria.skills.length > 0 && (
+              {extractedKeywords.skills && extractedKeywords.skills.length > 0 && (
                 <div className="bg-white p-3 rounded border">
-                  <span className="font-medium text-green-800 block mb-1">Skills</span>
-                  <span className="text-green-700">{extractedCriteria.skills.join(', ')}</span>
+                  <span className="font-medium text-green-800 block mb-1">Skills ({extractedKeywords.skills.length})</span>
+                  <span className="text-green-700">{extractedKeywords.skills.join(', ')}</span>
                 </div>
               )}
               
-              {extractedCriteria.experienceLevel && (
+              {extractedKeywords.experienceLevel && (
                 <div className="bg-white p-3 rounded border">
                   <span className="font-medium text-green-800 block mb-1">Experience Level</span>
-                  <span className="text-green-700">{extractedCriteria.experienceLevel}</span>
+                  <span className="text-green-700">{extractedKeywords.experienceLevel}</span>
                 </div>
               )}
               
-              {extractedCriteria.workType && (
+              {extractedKeywords.workType && (
                 <div className="bg-white p-3 rounded border">
                   <span className="font-medium text-green-800 block mb-1">Work Type</span>
-                  <span className="text-green-700">{extractedCriteria.workType}</span>
+                  <span className="text-green-700">{extractedKeywords.workType}</span>
                 </div>
               )}
               
-              {extractedCriteria.locations && extractedCriteria.locations.length > 0 && (
+              {extractedKeywords.locations && extractedKeywords.locations.length > 0 && (
                 <div className="bg-white p-3 rounded border">
-                  <span className="font-medium text-green-800 block mb-1">Locations</span>
-                  <span className="text-green-700">{extractedCriteria.locations.join(', ')}</span>
+                  <span className="font-medium text-green-800 block mb-1">Locations ({extractedKeywords.locations.length})</span>
+                  <span className="text-green-700">{extractedKeywords.locations.join(', ')}</span>
                 </div>
               )}
               
-              {extractedCriteria.industries && extractedCriteria.industries.length > 0 && (
+              {extractedKeywords.industries && extractedKeywords.industries.length > 0 && (
                 <div className="bg-white p-3 rounded border">
-                  <span className="font-medium text-green-800 block mb-1">Industries</span>
-                  <span className="text-green-700">{extractedCriteria.industries.join(', ')}</span>
+                  <span className="font-medium text-green-800 block mb-1">Industries ({extractedKeywords.industries.length})</span>
+                  <span className="text-green-700">{extractedKeywords.industries.join(', ')}</span>
                 </div>
               )}
               
-              {extractedCriteria.keywords && extractedCriteria.keywords.length > 0 && (
+              {extractedKeywords.companies && extractedKeywords.companies.length > 0 && (
                 <div className="bg-white p-3 rounded border">
-                  <span className="font-medium text-green-800 block mb-1">Keywords</span>
-                  <span className="text-green-700">{extractedCriteria.keywords.join(', ')}</span>
+                  <span className="font-medium text-green-800 block mb-1">Companies ({extractedKeywords.companies.length})</span>
+                  <span className="text-green-700">{extractedKeywords.companies.join(', ')}</span>
                 </div>
               )}
               
-              {extractedCriteria.requirements && extractedCriteria.requirements.length > 0 && (
+              {extractedKeywords.keywords && extractedKeywords.keywords.length > 0 && (
+                <div className="bg-white p-3 rounded border">
+                  <span className="font-medium text-green-800 block mb-1">Keywords ({extractedKeywords.keywords.length})</span>
+                  <span className="text-green-700">{extractedKeywords.keywords.join(', ')}</span>
+                </div>
+              )}
+              
+              {extractedKeywords.requirements && extractedKeywords.requirements.length > 0 && (
                 <div className="bg-white p-3 rounded border md:col-span-2">
-                  <span className="font-medium text-green-800 block mb-1">Requirements</span>
-                  <span className="text-green-700">{extractedCriteria.requirements.join(', ')}</span>
+                  <span className="font-medium text-green-800 block mb-1">Requirements ({extractedKeywords.requirements.length})</span>
+                  <span className="text-green-700">{extractedKeywords.requirements.join(', ')}</span>
                 </div>
               )}
             </div>
             
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
               <p className="text-blue-800">
-                <strong>Review the extracted criteria above.</strong> You can edit the job description below to regenerate the criteria, or click "Use These Criteria" to proceed with the search.
+                <strong>Keywords extracted and limited to ~10 items for optimal search performance.</strong> Click "Search with Keywords" to use these for candidate search, or edit the job description below to re-extract.
               </p>
             </div>
           </div>
@@ -350,15 +349,14 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-base font-medium">Job Description</h3>
             <div className="flex gap-2">
-              {jobDescription.trim() && (
-                <button
-                  className="flex items-center gap-1 text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded-md"
-                  onClick={extractSearchCriteria}
-                  disabled={structuredQuery.loading}
-                >
-                  <Sparkles size={16} />
-                  {structuredQuery.loading ? 'Extracting...' : 'Extract Criteria'}
-                </button>
+              {jobDescription.trim() && (              <button
+                className="flex items-center gap-1 text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded-md disabled:opacity-50"
+                onClick={extractSearchCriteria}
+                disabled={isExtractingKeywords}
+              >
+                <Sparkles size={16} />
+                {isExtractingKeywords ? 'Extracting...' : 'Extract Keywords'}
+              </button>
               )}              <button
                 className="flex items-center gap-1 text-sm border border-gray-300 px-3 py-1 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleUpload}
@@ -405,16 +403,14 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
             onChange={(e) => setJobDescription(e.target.value)}
             className="w-full h-48 p-4 border border-gray-300 rounded-lg text-sm resize-none"
             placeholder="Paste your job description here..."          />          {/* Error Displays */}
-          {(aiQuery.error || structuredQuery.error || documentError) && (
+          {(aiQuery.error || documentError) && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-700 font-medium mb-1">Error:</p>
               {aiQuery.error && <p className="text-sm text-red-700 mb-1">• AI Query: {aiQuery.error}</p>}
-              {structuredQuery.error && <p className="text-sm text-red-700 mb-1">• Structure Extraction: {structuredQuery.error}</p>}
               {documentError && <p className="text-sm text-red-700 mb-1">• Document Processing: {documentError}</p>}
               <button 
                 onClick={() => {
                   aiQuery.reset();
-                  structuredQuery.reset();
                   setDocumentError(null);
                   documentProcessor.reset();
                 }}
