@@ -21,12 +21,14 @@ import ExternalJobsPage from './pages/external/ExternalJobsPage';
 import ExternalJobDetailPage from './pages/external/ExternalJobDetailPage';
 import ExternalSettingsPage from './pages/external/ExternalSettingsPage';
 import ExternalUserRegisterPage from './pages/external/ExternalUserRegisterPage';
+import { QueryProvider } from './providers/QueryProvider';
 
 function App() {
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <AuthProvider>        <Router>          <Routes>
+      <QueryProvider>
+        <ToastProvider>
+          <AuthProvider>        <Router>          <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/jobs" element={<JobBoardPage />} />
             <Route
@@ -108,6 +110,7 @@ function App() {
         </Router>
         </AuthProvider>
         </ToastProvider>
+      </QueryProvider>
     </ErrorBoundary>
   );
 }

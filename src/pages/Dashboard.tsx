@@ -16,6 +16,17 @@ import {
   CandidateOutreachTemplates, 
   CandidateOutreachAnalytics 
 } from '../sourcing/outreach';
+// Sourcing Projects imports
+import SourcingProjectsPage from './sourcing/SourcingProjectsPage';
+import ProjectDetailPage from './sourcing/ProjectDetailPage';
+import CreateProjectPage from './sourcing/CreateProjectPage';
+import EditProjectPage from './sourcing/EditProjectPage';
+import CreateSearchPage from './sourcing/CreateSearchPage';
+// Project section pages
+import ProjectSearchesPage from './sourcing/ProjectSearchesPage';
+import ProjectProspectsPage from './sourcing/ProjectProspectsPage';
+import ProjectSequencesPage from './sourcing/ProjectSequencesPage';
+import ProjectAnalyticsPage from './sourcing/ProjectAnalyticsPage';
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
 // Job Pages - Only keep CreateJobPage for the new flow
 import CreateJobPage from '../recruitment/jobs/pages/CreateJobPage'; // Import CreateJobPage
@@ -130,6 +141,88 @@ const Dashboard: React.FC = () => {
                 <Search />
               </RoutePermissionGuard>
             } /> {/* Search talents page */}
+            
+            {/* Sourcing Projects Routes */}
+            <Route path="sourcing/projects" element={
+              <RoutePermissionGuard>
+                <SourcingProjectsPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/create" element={
+              <RoutePermissionGuard>
+                <CreateProjectPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId" element={
+              <RoutePermissionGuard>
+                <ProjectDetailPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/edit" element={
+              <RoutePermissionGuard>
+                <EditProjectPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/searches/create" element={
+              <RoutePermissionGuard>
+                <CreateSearchPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/searches" element={
+              <RoutePermissionGuard>
+                <ProjectSearchesPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/prospects" element={
+              <RoutePermissionGuard>
+                <ProjectProspectsPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/sequences" element={
+              <RoutePermissionGuard>
+                <ProjectSequencesPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/analytics" element={
+              <RoutePermissionGuard>
+                <ProjectAnalyticsPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/searches/:searchId" element={
+              <RoutePermissionGuard>
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold">Search Details</h1>
+                  <p>Search details page coming soon...</p>
+                </div>
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/sequences/create" element={
+              <RoutePermissionGuard>
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold">Create Sequence</h1>
+                  <p>Create sequence page coming soon...</p>
+                </div>
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/sequences/:sequenceId" element={
+              <RoutePermissionGuard>
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold">Sequence Details</h1>
+                  <p>Sequence details page coming soon...</p>
+                </div>
+              </RoutePermissionGuard>
+            } />
             
             <Route path="projects" element={
               <RoutePermissionGuard>

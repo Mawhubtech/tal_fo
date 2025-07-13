@@ -87,9 +87,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           )}
         </button>
       </div>
+
         {/* Navigation Menu */}
       <div className="flex-1 pt-2">
-        <nav className="space-y-1">          
+        <nav className="space-y-1">
           {/* Dashboard/Overview */}
           {hasPermission(SIDEBAR_PERMISSIONS.DASHBOARD_ACCESS) && (
             <Link 
@@ -104,124 +105,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             </Link>
           )}
 
-		  {/* Talent Sourcing Section */}
+          {/* Sourcing Section - single menu item, renamed from Projects */}
           {hasPermission(SIDEBAR_PERMISSIONS.SOURCING_ACCESS) && (
-            <div className="relative group">
-              <button 
-                onClick={() => isExpanded && toggleSection('sourcing')}
-                className={`flex items-center w-full ${isExpanded ? 'px-4 justify-between' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`}
-                title={!isExpanded ? "Sourcing" : ""}
-              >
-                <div className="flex items-center">
-                  <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
-                    <Search className="w-4 h-4" />
-                  </div>
-                  {isExpanded && "Sourcing"}
-                </div>
-                {isExpanded && <ChevronDown className={`w-4 h-4 transform transition-transform ${openSections['sourcing'] ? 'rotate-180' : ''}`} />}
-              </button>
-              
-              {/* Expanded menu */}           
-			   {openSections['sourcing'] && isExpanded && (
-                <nav className="pl-8 space-y-1 py-1">
-                  {hasPermission(SIDEBAR_PERMISSIONS.SOURCING_OVERVIEW) && (
-                    <Link to="/dashboard/sourcing/outreach" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach') && !location.pathname.includes('/dashboard/sourcing/outreach/') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                      <LayoutGrid className="w-3 h-3 mr-2" />
-                      Overview
-                    </Link>
-                  )}
-				  
-                  {hasPermission(SIDEBAR_PERMISSIONS.SEARCH_CANDIDATES) && (
-                    <Link to="/dashboard/sourcing/search" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                      <Search className="w-3 h-3 mr-2" />
-                      Search
-                    </Link>
-                  )}
-                  
-                  {hasPermission(SIDEBAR_PERMISSIONS.OUTREACH_PROSPECTS) && (
-                    <Link to="/dashboard/sourcing/outreach/prospects" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach/prospects') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                      <UserCircle className="w-3 h-3 mr-2" />
-                      Prospects
-                    </Link>
-                  )}
-                  
-                  {hasPermission(SIDEBAR_PERMISSIONS.OUTREACH_CAMPAIGNS) && (
-                    <Link to="/dashboard/sourcing/outreach/campaigns" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach/campaigns') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                      <Mail className="w-3 h-3 mr-2" />
-                      Campaigns
-                    </Link>
-                  )}
-                  
-                  {hasPermission(SIDEBAR_PERMISSIONS.OUTREACH_TEMPLATES) && (
-                    <Link to="/dashboard/sourcing/sequences" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/sequences') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                      <MessageSquare className="w-3 h-3 mr-2" />
-                      Sequences
-                    </Link>
-                  )}
-                  
-                  {hasPermission(SIDEBAR_PERMISSIONS.OUTREACH_ANALYTICS) && (
-                    <Link to="/dashboard/sourcing/outreach/analytics" className={`flex items-center py-1 text-sm ${isActive('/dashboard/sourcing/outreach/analytics') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                      <BarChart3 className="w-3 h-3 mr-2" />
-                      Analytics
-                    </Link>
-                  )}
-                </nav>
-              )}
-              
-              {/* Collapsed hover menu */}
-              {!isExpanded && (
-                <div className="absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="p-2">
-                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-2">
-                      Sourcing
-                    </div>               
-				     <nav className="space-y-1">
-                      {hasPermission(SIDEBAR_PERMISSIONS.SOURCING_OVERVIEW) && (
-                        <Link to="/dashboard/sourcing/outreach" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/sourcing/outreach') && !location.pathname.includes('/dashboard/sourcing/outreach/') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'}`}>
-                          <LayoutGrid className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/sourcing/outreach') && !location.pathname.includes('/dashboard/sourcing/outreach/') ? '#7e22ce' : '' }} />
-                          Overview
-                        </Link>
-                      )}
-                      
-                      {hasPermission(SIDEBAR_PERMISSIONS.SEARCH_CANDIDATES) && (
-                        <Link to="/dashboard/sourcing/search" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/sourcing/search') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'}`}>
-                          <Search className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/sourcing/search') ? '#7e22ce' : '' }} />
-                          Search
-                        </Link>
-                      )}
-                      
-                      {hasPermission(SIDEBAR_PERMISSIONS.OUTREACH_PROSPECTS) && (
-                        <Link to="/dashboard/sourcing/outreach/prospects" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/sourcing/outreach/prospects') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          <UserCircle className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/sourcing/outreach/prospects') ? '#7e22ce' : '' }} />
-                          Prospects
-                        </Link>
-                      )}
-                      
-                      {hasPermission(SIDEBAR_PERMISSIONS.OUTREACH_CAMPAIGNS) && (
-                        <Link to="/dashboard/sourcing/outreach/campaigns" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/sourcing/outreach/campaigns') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          <Mail className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/sourcing/outreach/campaigns') ? '#7e22ce' : '' }} />
-                          Campaigns
-                        </Link>
-                      )}
-                      
-                      {hasPermission(SIDEBAR_PERMISSIONS.OUTREACH_TEMPLATES) && (
-                        <Link to="/dashboard/sourcing/sequences" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/sourcing/sequences') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/sourcing/sequences') ? '#7e22ce' : '' }} />
-                          Sequences
-                        </Link>
-                      )}
-                      
-                      {hasPermission(SIDEBAR_PERMISSIONS.OUTREACH_ANALYTICS) && (
-                        <Link to="/dashboard/sourcing/outreach/analytics" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/sourcing/outreach/analytics') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          <BarChart3 className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/sourcing/outreach/analytics') ? '#7e22ce' : '' }} />
-                          Analytics
-                        </Link>
-                      )}
-                    </nav>
-                  </div>
-                </div>
-              )}
-            </div>
+            <Link 
+              to="/dashboard/sourcing/projects" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/sourcing/projects') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              title={!isExpanded ? "Sourcing" : ""}
+            >
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/sourcing/projects') ? '#7e22ce' : '#9ca3af' }}>
+                <Target className="w-4 h-4" />
+              </div>
+              {isExpanded && "Sourcing"}
+            </Link>
           )}
           
           {/* Jobs Section */}
@@ -276,10 +171,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/clients') ? '#7e22ce' : '#9ca3af' }}>
                 <Building className="w-4 h-4" />
               </div>            
-			  {isExpanded && "Clients"}
+        {isExpanded && "Clients"}
             </Link>
           )}         
-		   {/* Client Outreach Section */}
+       {/* Client Outreach Section */}
           {hasPermission(SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS) && (
             <div className="relative group">
               <button 
@@ -350,7 +245,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 mb-2">
                       Client Outreach
                     </div>                  
-				    <nav className="space-y-1">
+            <nav className="space-y-1">
                       {hasPermission(SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_OVERVIEW) && (
                         <Link to="/dashboard/client-outreach" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/client-outreach') && !location.pathname.includes('/dashboard/client-outreach/') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                           <LayoutGrid className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/client-outreach') && !location.pathname.includes('/dashboard/client-outreach/') ? '#7e22ce' : '' }} />
@@ -416,7 +311,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {/* Admin Section */}
           {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ACCESS) && (
             <div className="relative group">           
-			   <button 
+         <button 
                 onClick={() => isExpanded && toggleSection('admin')}
                 className={`flex items-center w-full ${isExpanded ? 'px-4 justify-between' : 'px-0 justify-center'} py-2 text-sm font-medium ${location.pathname.includes('/dashboard/admin') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
                 title={!isExpanded ? "Admin" : ""}
@@ -432,7 +327,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               
               {/* Expanded menu */}
               {openSections['admin'] && isExpanded && (            
-				  <nav className="pl-8 space-y-1 py-1">
+          <nav className="pl-8 space-y-1 py-1">
                   {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_OVERVIEW) && (
                     <Link to="/dashboard/admin" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin') && !location.pathname.includes('/dashboard/admin/') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                       <LayoutGrid className="w-3 h-3 mr-2" />
@@ -496,12 +391,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       </Link>
                     )}
                     
-					  {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_TEAM_MANAGEMENT) && (
+            {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_TEAM_MANAGEMENT) && (
                     <Link to="/dashboard/admin/recruitment-teams" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/recruitment-teams') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                       <Users className="w-3 h-3 mr-2" />
                       Recruitment Teams
                     </Link>
-					  )}
+            )}
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_JOB_BOARDS) && (
                       <Link to="/dashboard/admin/job-boards" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Target className="w-3 h-3 mr-2" />
