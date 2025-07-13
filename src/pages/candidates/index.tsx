@@ -472,9 +472,9 @@ const CandidatesPage: React.FC = () => {
                 <FileText className="h-4 w-4 mr-2" />
                 Process CV
               </Link>
-			<Link to="/dashboard/search" className="flex items-center px-4 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors">
+			<Link to="/dashboard/sourcing/projects" className="flex items-center px-4 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors">
 				<SearchCheckIcon className="h-4 w-4 mr-2" />
-				Search Talents
+				Sourcing Projects
 			</Link>              <button 
                 className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm"
                 onClick={() => setIsAddModalOpen(true)}

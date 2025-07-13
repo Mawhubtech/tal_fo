@@ -78,7 +78,6 @@ const testRoles = {
 const testRoutes = [
   '/dashboard',
   '/dashboard/sourcing/outreach',
-  '/dashboard/search',
   '/dashboard/candidates',
   '/dashboard/clients',
   '/dashboard/client-outreach',
@@ -132,9 +131,6 @@ function testPermissionSystem() {
             break;
           case '/dashboard/sourcing/outreach':
             hasAccess = permissions.includes('sourcing:access') && permissions.includes('sourcing:overview');
-            break;
-          case '/dashboard/search':
-            hasAccess = permissions.includes('sourcing:access') && permissions.includes('search:candidates');
             break;
           case '/dashboard/candidates':
             hasAccess = permissions.includes('candidates:access');

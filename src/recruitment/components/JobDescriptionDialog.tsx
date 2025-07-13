@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Upload, Sparkles } from 'lucide-react';
 import { useAIStructuredQuery, useAIQuery, useDocumentProcessing } from '../../hooks/ai';
+import type { SearchFilters } from '../../services/searchService';
 
 interface JobDescriptionDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onSearch?: (query: string, filters: SearchFilters) => void;
 }
 
-const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onClose }) => {
+const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onClose, onSearch }) => {
   const [jobDescription, setJobDescription] = useState('');
   const [extractedCriteria, setExtractedCriteria] = useState<any>(null);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
@@ -156,6 +158,70 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
     setGeneratePrompt('');
   };
 
+  // Function to convert extracted criteria to SearchFilters format
+  const convertCriteriaToFilters = (criteria: any): SearchFilters => {
+    return {
+      general: {
+        minExperience: criteria.experienceLevel || '',
+      },
+      location: {
+        currentLocations: criteria.locations || [],
+      },
+      job: {
+        titles: criteria.jobTitles || [],
+        skills: criteria.skills || [],
+      },
+      company: {
+        industries: criteria.industries || [],
+      },
+      skillsKeywords: {
+        items: criteria.keywords || [],
+        requirements: criteria.requirements || [],
+      },
+      power: {
+        isOpenToRemote: criteria.workType === 'Remote' || criteria.workType === 'Hybrid',
+      }
+    };
+  };
+
+  // Function to handle search execution
+  const handleSearchWithCriteria = () => {
+    console.log('handleSearchWithCriteria called', { extractedCriteria, onSearch, jobDescription });
+    
+    if (!onSearch) {
+      console.log('No onSearch function provided');
+      return;
+    }
+    
+    if (!jobDescription.trim()) {
+      console.log('No job description provided');
+      return;
+    }
+    
+    let filters: SearchFilters;
+    let searchQuery: string;
+    
+    if (extractedCriteria) {
+      // Use extracted criteria if available
+      filters = convertCriteriaToFilters(extractedCriteria);
+      searchQuery = jobDescription.substring(0, 100) + (jobDescription.length > 100 ? '...' : '');
+      console.log('Using extracted criteria:', extractedCriteria);
+    } else {
+      // Use job description as keywords if no extracted criteria
+      filters = {
+        skillsKeywords: {
+          items: [jobDescription],
+        }
+      };
+      searchQuery = jobDescription.substring(0, 100) + (jobDescription.length > 100 ? '...' : '');
+      console.log('Using job description as keywords');
+    }
+    
+    console.log('Calling onSearch with:', { searchQuery, filters });
+    onSearch(searchQuery, filters);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -168,14 +234,9 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
             </div>
             <div className="flex items-center gap-3">
               <button 
-                className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md text-sm flex items-center"
-                onClick={() => {
-                  // Handle search with extracted criteria
-                  if (extractedCriteria) {
-                    console.log('Using structured criteria:', extractedCriteria);
-                  }
-                  onClose();
-                }}
+                className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md text-sm flex items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                onClick={handleSearchWithCriteria}
+                disabled={!jobDescription.trim() || !onSearch}
               >
                 Save & Search →
               </button>

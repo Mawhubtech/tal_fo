@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import Button from '../../../components/Button';
@@ -11,6 +11,7 @@ import { useSourcingProspects } from '../../../hooks/useSourcingProspects';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyTeams } from '../../../hooks/useRecruitmentTeams';
+import { useCompleteSearch } from '../../../hooks/useSourcingSearches';
 import type { SearchFilters } from '../../../services/searchService';
 import { sourcingApiService, CreateSourcingProspectDto } from '../../../services/sourcingApiService';
 
@@ -150,9 +151,12 @@ const SearchQueryDisplay: React.FC<{ searchQuery: string }> = ({ searchQuery }) 
 const SearchResultsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { projectId } = useParams<{ projectId: string }>();
   const [results, setResults] = useState<any[]>([]);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchId, setSearchId] = useState<string | null>(null);
+  const [prospectsAddedCount, setProspectsAddedCount] = useState<number>(0);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [candidateSummaries, setCandidateSummaries] = useState<{ [key: string]: any }>({});
   const [shortlistingCandidates, setShortlistingCandidates] = useState<{ [key: string]: boolean }>({});
@@ -168,6 +172,7 @@ const SearchResultsPage: React.FC = () => {
   const { data: existingProspects } = useSourcingProspects({ createdBy: user?.id });
   const { data: recruitmentTeams } = useMyTeams();
   const { addToast } = useToast();
+  const completeSearchMutation = useCompleteSearch();
   
   // State for team sharing
   const [showTeamShare, setShowTeamShare] = useState<{ [key: string]: boolean }>({});
@@ -178,16 +183,26 @@ const SearchResultsPage: React.FC = () => {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
 
+  // Redirect to projects page if no projectId (global search no longer supported)
+  useEffect(() => {
+    if (!projectId) {
+      navigate('/dashboard/sourcing/projects', { replace: true });
+      return;
+    }
+  }, [projectId, navigate]);
+
   useEffect(() => {
     if (location.state) {
-      const { query, filters } = location.state;
+      const { query, filters, searchId: stateSearchId } = location.state;
       setSearchQuery(query || '');
       setFilters(filters || {});
+      setSearchId(stateSearchId || null);
       fetchResults(filters, query);
     } else {
-      navigate('/');
+      // Navigate back to project searches if no state
+      navigate(`/dashboard/sourcing/projects/${projectId}/searches`);
     }
-  }, [location.state, navigate]);
+  }, [location.state, navigate, projectId]);
 
   // Check for existing prospects and mark candidates as shortlisted
   useEffect(() => {
@@ -206,6 +221,36 @@ const SearchResultsPage: React.FC = () => {
       setShortlistedCandidates(prev => ({ ...prev, ...shortlistedStatus }));
     }
   }, [existingProspects, results]);
+
+  // Complete the search on backend when results are loaded
+  useEffect(() => {
+    if (searchId && results.length > 0 && !isLoading) {
+      // Only complete the search once when we have results
+      const completeSearch = async () => {
+        try {
+          await completeSearchMutation.mutateAsync({
+            id: searchId,
+            results: {
+              resultsCount: results.length,
+              prospectsAdded: prospectsAddedCount,
+              resultsMetadata: {
+                searchQuery,
+                filters,
+                timestamp: new Date().toISOString(),
+                hasResults: results.length > 0
+              }
+            }
+          });
+          console.log('Search completed successfully on backend');
+        } catch (error) {
+          console.error('Error completing search on backend:', error);
+          // Don't show error to user as this is background tracking
+        }
+      };
+
+      completeSearch();
+    }
+  }, [searchId, results, isLoading, searchQuery, filters, prospectsAddedCount, completeSearchMutation]);
 
   const fetchResults = async (filters: SearchFilters, query?: string) => {
     try {
@@ -245,7 +290,10 @@ const SearchResultsPage: React.FC = () => {
   };
 
   const handleBackToSearchForm = () => {
-    navigate('/dashboard/sourcing/search', {
+    // Navigate to project searches
+    const searchPath = `/dashboard/sourcing/projects/${projectId}/searches`;
+    
+    navigate(searchPath, {
       state: {
         editFilters: filters,
         query: searchQuery
@@ -321,6 +369,33 @@ const SearchResultsPage: React.FC = () => {
       // Create the prospect
       await sourcingApiService.createProspect(prospectData);
 
+      // Update prospects added count
+      const newProspectsCount = prospectsAddedCount + 1;
+      setProspectsAddedCount(newProspectsCount);
+
+      // Update search record if we have a searchId
+      if (searchId) {
+        try {
+          await completeSearchMutation.mutateAsync({
+            id: searchId,
+            results: {
+              resultsCount: results.length,
+              prospectsAdded: newProspectsCount,
+              resultsMetadata: {
+                searchQuery,
+                filters,
+                timestamp: new Date().toISOString(),
+                hasResults: results.length > 0,
+                lastProspectAdded: new Date().toISOString()
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Error updating search record:', error);
+          // Don't show error to user as this is background tracking
+        }
+      }
+
       // Mark candidate as shortlisted
       setShortlistedCandidates(prev => ({ ...prev, [candidate.id]: true }));
 
@@ -386,11 +461,14 @@ const SearchResultsPage: React.FC = () => {
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Search
-          </Button>          
-		  <div className="flex items-center gap-3">
+          </Button>          <div className="flex items-center gap-3">
             <Button
               className="text-sm bg-purple-600 text-white hover:bg-purple-700"
-              onClick={() => navigate('/dashboard/sourcing/search')}
+              onClick={() => {
+                // Navigate to project searches
+                const searchPath = `/dashboard/sourcing/projects/${projectId}/searches`;
+                navigate(searchPath);
+              }}
             >
               New Search
             </Button>

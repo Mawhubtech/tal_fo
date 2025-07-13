@@ -134,14 +134,6 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } /> {/* Dashboard Overview as default route */}            
             
-            <Route path="search" element={<Navigate to="/dashboard/sourcing/search" replace />} />
-            
-            <Route path="sourcing/search" element={
-              <RoutePermissionGuard>
-                <Search />
-              </RoutePermissionGuard>
-            } /> {/* Search talents page */}
-            
             {/* Sourcing Projects Routes */}
             <Route path="sourcing/projects" element={
               <RoutePermissionGuard>
@@ -176,6 +168,12 @@ const Dashboard: React.FC = () => {
             <Route path="sourcing/projects/:projectId/searches" element={
               <RoutePermissionGuard>
                 <ProjectSearchesPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="sourcing/projects/:projectId/search-results" element={
+              <RoutePermissionGuard>
+                <SearchResults />
               </RoutePermissionGuard>
             } />
             
@@ -235,12 +233,6 @@ const Dashboard: React.FC = () => {
                 <div className="p-6"><h1 className="text-2xl font-bold">Shortlist</h1><p>Shortlist page coming soon...</p></div>
               </RoutePermissionGuard>
             } />
-            
-            <Route path="search-results" element={
-              <RoutePermissionGuard>
-                <SearchResults />
-              </RoutePermissionGuard>
-            } /> {/* Route for SearchResults */}
             
             <Route path="resume-processing" element={
               <RoutePermissionGuard>

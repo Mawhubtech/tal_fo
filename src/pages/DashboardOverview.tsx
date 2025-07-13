@@ -28,7 +28,7 @@ const DashboardOverview: React.FC = () => {
   ];
 
   const quickActions = [
-    { title: 'Search Talents', description: 'Find the perfect candidates', icon: Search, link: '/dashboard/search', color: 'purple' },
+    { title: 'Sourcing Projects', description: 'Access your sourcing projects', icon: Search, link: '/dashboard/sourcing/projects', color: 'purple' },
     { title: 'Create Job', description: 'Post a new position', icon: UserPlus, link: '/dashboard/jobs/create', color: 'blue' },
     { title: 'Start Sequence', description: 'Launch outreach campaign', icon: Send, link: '/dashboard/sequences', color: 'green' },
     { title: 'View Analytics', description: 'Check performance metrics', icon: BarChart3, link: '/dashboard/admin/analytics', color: 'orange' },
@@ -188,7 +188,7 @@ const DashboardOverview: React.FC = () => {
             </div>
             <h4 className="font-semibold text-gray-900 mb-2">Talent Sourcing</h4>
             <p className="text-sm text-gray-600 mb-3">Search, shortlist, and manage candidates across multiple projects and sequences.</p>
-            <Link to="/dashboard/search" className="text-purple-600 hover:text-purple-700 text-sm font-medium">
+            <Link to="/dashboard/sourcing/projects" className="text-purple-600 hover:text-purple-700 text-sm font-medium">
               Start Sourcing →
             </Link>
           </div>

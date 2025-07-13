@@ -75,7 +75,7 @@ const ProjectDetailPage: React.FC = () => {
       icon: Search,
       count: searches.length,
       link: `/dashboard/sourcing/projects/${project.id}/searches`,
-      color: 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+      color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     },
     {
       title: 'Prospects',
@@ -83,7 +83,7 @@ const ProjectDetailPage: React.FC = () => {
       icon: Users,
       count: project.progress?.totalProspects || 0,
       link: `/dashboard/sourcing/projects/${project.id}/prospects`,
-      color: 'bg-green-50 border-green-200 hover:bg-green-100'
+      color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     },
     {
       title: 'Sequences',
@@ -99,7 +99,7 @@ const ProjectDetailPage: React.FC = () => {
       icon: BarChart3,
       count: null,
       link: `/dashboard/sourcing/projects/${project.id}/analytics`,
-      color: 'bg-orange-50 border-orange-200 hover:bg-orange-100'
+      color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     }
   ];
 
@@ -143,14 +143,14 @@ const ProjectDetailPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <Link
               to={`/dashboard/sourcing/projects/${project.id}/edit`}
-              className="inline-flex items-center px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="inline-flex items-center px-3 py-2 text-purple-700 bg-purple-50 border border-purple-300 rounded-lg hover:bg-purple-100"
             >
               <Edit className="w-4 h-4 mr-2" />
               Edit
             </Link>
             
             <div className="relative">
-              <button className="inline-flex items-center px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+              <button className="inline-flex items-center px-3 py-2 text-purple-700 bg-purple-50 border border-purple-300 rounded-lg hover:bg-purple-100">
                 <MoreVertical className="w-4 h-4" />
               </button>
             </div>
@@ -166,7 +166,7 @@ const ProjectDetailPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">Total Searches</p>
               <p className="text-2xl font-bold text-gray-900">{searches.length}</p>
             </div>
-            <Search className="w-8 h-8 text-blue-600" />
+            <Search className="w-8 h-8 text-purple-600" />
           </div>
         </div>
         
@@ -176,7 +176,7 @@ const ProjectDetailPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">Total Prospects</p>
               <p className="text-2xl font-bold text-gray-900">{project.progress?.totalProspects || 0}</p>
             </div>
-            <Users className="w-8 h-8 text-green-600" />
+            <Users className="w-8 h-8 text-purple-600" />
           </div>
         </div>
         
@@ -196,7 +196,7 @@ const ProjectDetailPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">Response Rate</p>
               <p className="text-2xl font-bold text-gray-900">{project.progress?.responseRate || 0}%</p>
             </div>
-            <TrendingUp className="w-8 h-8 text-orange-600" />
+            <TrendingUp className="w-8 h-8 text-purple-600" />
           </div>
         </div>
       </div>
@@ -208,7 +208,7 @@ const ProjectDetailPage: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Details</h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
+                <Calendar className="w-5 h-5 text-purple-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Start Date</p>
                   <p className="text-sm text-gray-600">
@@ -218,7 +218,7 @@ const ProjectDetailPage: React.FC = () => {
               </div>
               
               <div className="flex items-center gap-3">
-                <Target className="w-5 h-5 text-gray-400" />
+                <Target className="w-5 h-5 text-purple-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Hire Target</p>
                   <p className="text-sm text-gray-600">{project.requirements?.targetHires || 'Not set'}</p>
@@ -227,7 +227,7 @@ const ProjectDetailPage: React.FC = () => {
               
               {project.assignedToTeam && (
                 <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-gray-400" />
+                  <Users className="w-5 h-5 text-purple-500" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">Assigned Team</p>
                     <p className="text-sm text-gray-600">{project.assignedToTeam.name}</p>
@@ -247,7 +247,7 @@ const ProjectDetailPage: React.FC = () => {
                 className={`w-full flex items-center justify-center px-4 py-2 rounded-lg font-medium ${
                   project.status === 'active'
                     ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                    : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
                 }`}
               >
                 {project.status === 'active' ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
@@ -256,7 +256,7 @@ const ProjectDetailPage: React.FC = () => {
               
               <button
                 onClick={handleArchive}
-                className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-medium"
+                className="w-full flex items-center justify-center px-4 py-2 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 font-medium"
               >
                 <Archive className="w-4 h-4 mr-2" />
                 Archive Project
@@ -280,20 +280,20 @@ const ProjectDetailPage: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-white rounded-lg">
-                      <IconComponent className="w-6 h-6 text-gray-600" />
+                    <div className="p-3 bg-white rounded-lg border border-purple-200">
+                      <IconComponent className="w-6 h-6 text-purple-600" />
                     </div>
                     <div>
                       <h4 className="text-lg font-semibold text-gray-900">{card.title}</h4>
                       <p className="text-sm text-gray-600">{card.description}</p>
                       {card.count !== null && (
-                        <p className="text-sm font-medium text-gray-900 mt-1">
+                        <p className="text-sm font-medium text-purple-700 mt-1">
                           {card.count} {card.title.toLowerCase()}
                         </p>
                       )}
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                  <ChevronRight className="w-5 h-5 text-purple-400" />
                 </div>
               </Link>
             );

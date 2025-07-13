@@ -1,13 +1,29 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import type { SearchFilters } from '../../../services/searchService';
 
 interface BooleanSearchDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onSearch?: (query: string, filters: SearchFilters) => void;
 }
 
-const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClose }) => {
+const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClose, onSearch }) => {
   const [booleanExpression, setBooleanExpression] = useState('(software OR engineer) AND (python OR java)');
+
+  const handleSearch = () => {
+    if (!booleanExpression.trim() || !onSearch) return;
+
+    // Convert boolean expression to basic filters
+    const filters: SearchFilters = {
+      skillsKeywords: {
+        items: [booleanExpression], // Store the boolean expression as a keyword
+      }
+    };
+
+    onSearch(booleanExpression, filters);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -45,10 +61,8 @@ const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClo
           <div className="flex justify-end">
             <button 
               className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md text-sm flex items-center"
-              onClick={() => {
-                // Handle search
-                onClose();
-              }}
+              onClick={handleSearch}
+              disabled={!booleanExpression.trim() || !onSearch}
             >
               Save & Search →
             </button>
