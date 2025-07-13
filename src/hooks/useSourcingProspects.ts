@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { sourcingApiService, SourcingProspectQueryParams, CreateSourcingProspectDto, MoveSourcingProspectStageDto } from '../services/sourcingApiService';
+import { sourcingApiService, SourcingProspectQueryParams, CreateSourcingProspectDto, AddProspectsToProjectDto, MoveSourcingProspectStageDto } from '../services/sourcingApiService';
 
 // Query keys for React Query
 const SOURCING_QUERY_KEYS = {
@@ -11,6 +11,8 @@ const SOURCING_QUERY_KEYS = {
   defaultPipeline: 'sourcing_default_pipeline',
   prospectsByPipeline: 'sourcing_prospects_by_pipeline',
   prospectsByStage: 'sourcing_prospects_by_stage',
+  projectProspects: 'project_prospects',
+  projectStats: 'project_stats',
 };
 
 // Hook to fetch sourcing prospects with filters and pagination
@@ -19,6 +21,26 @@ export const useSourcingProspects = (params: SourcingProspectQueryParams = {}) =
     queryKey: [SOURCING_QUERY_KEYS.prospects, params],
     queryFn: () => sourcingApiService.getProspects(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Hook to fetch prospects for a specific project
+export const useProjectProspects = (projectId: string) => {
+  return useQuery({
+    queryKey: [SOURCING_QUERY_KEYS.projectProspects, projectId],
+    queryFn: () => sourcingApiService.getProjectProspects(projectId),
+    enabled: !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Hook to fetch stats for a specific project
+export const useProjectStats = (projectId: string) => {
+  return useQuery({
+    queryKey: [SOURCING_QUERY_KEYS.projectStats, projectId],
+    queryFn: () => sourcingApiService.getProjectStats(projectId),
+    enabled: !!projectId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };
 
@@ -96,8 +118,34 @@ export const useCreateSourcingProspect = () => {
 
   return useMutation({
     mutationFn: (data: CreateSourcingProspectDto) => sourcingApiService.createProspect(data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       // Invalidate and refetch prospects
+      queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospects] });
+      queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospectStats] });
+      queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.pipelineStats] });
+      
+      // If projectId is provided, also invalidate project-specific queries
+      if (variables.projectId) {
+        queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.projectProspects, variables.projectId] });
+        queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.projectStats, variables.projectId] });
+      }
+    },
+  });
+};
+
+// Mutation hook to add prospects to a project (bulk operation)
+export const useAddProspectsToProject = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, data }: { projectId: string; data: AddProspectsToProjectDto }) => 
+      sourcingApiService.addProspectsToProject(projectId, data),
+    onSuccess: (_, variables) => {
+      // Invalidate project-specific queries
+      queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.projectProspects, variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.projectStats, variables.projectId] });
+      
+      // Also invalidate general prospect queries
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospects] });
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospectStats] });
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.pipelineStats] });

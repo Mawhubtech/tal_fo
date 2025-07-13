@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, ChevronDown, ChevronUp, X } from 'lucide-react';
 import Button from '../../../components/Button';
 import FilterDialog from '../../../components/FilterDialog';
 import { useSearch } from '../../../hooks/useSearch';
 import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
-import { useSourcingProspects } from '../../../hooks/useSourcingProspects';
+import { useProjectProspects, useAddProspectsToProject } from '../../../hooks/useSourcingProspects';
+import { useProject } from '../../../hooks/useSourcingProjects';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyTeams } from '../../../hooks/useRecruitmentTeams';
 import type { SearchFilters } from '../../../services/searchService';
-import { sourcingApiService, CreateSourcingProspectDto } from '../../../services/sourcingApiService';
+import type { AddProspectsToProjectDto } from '../../../services/sourcingApiService';
 
 // Assuming ProfilePage.tsx and its types are in the same directory or adjust path
 import type { UserStructuredData } from '../../../components/ProfileSidePanel';
@@ -160,6 +161,8 @@ const SearchResultsPage: React.FC = () => {
   const [candidateSummaries, setCandidateSummaries] = useState<{ [key: string]: any }>({});
   const [shortlistingCandidates, setShortlistingCandidates] = useState<{ [key: string]: boolean }>({});
   const [shortlistedCandidates, setShortlistedCandidates] = useState<{ [key: string]: boolean }>({});
+  const [showStageSelector, setShowStageSelector] = useState<{ [key: string]: boolean }>({});
+  const [selectedStageId, setSelectedStageId] = useState<{ [key: string]: string }>({});
   
   // Get current user context
   const { user } = useAuthContext();
@@ -168,9 +171,11 @@ const SearchResultsPage: React.FC = () => {
   const { executeSearch, isLoading, error, data } = useSearch();
   const { generateSummary, isLoading: summaryLoading } = useCandidateSummary();
   const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
-  const { data: existingProspects } = useSourcingProspects({ createdBy: user?.id });
+  const { data: existingProspects } = useProjectProspects(projectId!);
+  const { data: projectData, isLoading: projectLoading } = useProject(projectId || '', !!projectId);
   const { data: recruitmentTeams } = useMyTeams();
   const { addToast } = useToast();
+  const addProspectsToProjectMutation = useAddProspectsToProject();
   
   // State for team sharing
   const [showTeamShare, setShowTeamShare] = useState<{ [key: string]: boolean }>({});
@@ -180,6 +185,14 @@ const SearchResultsPage: React.FC = () => {
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
+
+  // Determine which pipeline to use (similar to CandidateProspectsManager)
+  const pipelineToUse = projectData?.pipeline || sourcingPipelines?.find(p => p.isDefault) || sourcingPipelines?.[0];
+  const availableStages = pipelineToUse?.stages?.sort((a, b) => a.order - b.order) || [];
+  
+  // Determine if stages start from 0 or 1 to display human-readable numbers
+  const minOrder = availableStages.length > 0 ? Math.min(...availableStages.map(s => s.order)) : 0;
+  const orderOffset = minOrder === 0 ? 1 : 0;
 
   // Redirect to projects page if no projectId (global search no longer supported)
   useEffect(() => {
@@ -204,9 +217,9 @@ const SearchResultsPage: React.FC = () => {
 
   // Check for existing prospects and mark candidates as shortlisted
   useEffect(() => {
-    if (existingProspects?.prospects && results.length > 0) {
+    if (existingProspects && results.length > 0) {
       const shortlistedCandidateIds = new Set(
-        existingProspects.prospects.map(prospect => prospect.candidateId)
+        existingProspects.map(prospect => prospect.candidateId)
       );
       
       const shortlistedStatus: { [key: string]: boolean } = {};
@@ -398,7 +411,39 @@ const SearchResultsPage: React.FC = () => {
     }
   };
 
-  const handleShortlist = async (candidate: any, teamId?: string) => {
+  // Handle showing stage selector for a specific candidate
+  const handleShowStageSelector = (candidateId: string) => {
+    if (!pipelineToUse) {
+      addToast({
+        type: 'error',
+        title: 'No Pipeline Available',
+        message: 'No sourcing pipeline is available. Please create a sourcing pipeline first.',
+        duration: 7000
+      });
+      return;
+    }
+
+    if (availableStages.length === 0) {
+      addToast({
+        type: 'error',
+        title: 'No Stages Available',
+        message: 'The sourcing pipeline has no stages configured.',
+        duration: 7000
+      });
+      return;
+    }
+
+    setShowStageSelector(prev => ({ ...prev, [candidateId]: true }));
+    setSelectedStageId(prev => ({ ...prev, [candidateId]: availableStages[0]?.id || '' })); // Default to first stage
+  };
+
+  // Handle closing stage selector for a specific candidate
+  const handleCloseStageSelector = (candidateId: string) => {
+    setShowStageSelector(prev => ({ ...prev, [candidateId]: false }));
+    setSelectedStageId(prev => ({ ...prev, [candidateId]: '' }));
+  };
+
+  const handleShortlist = async (candidate: any, teamId?: string, stageId?: string) => {
     try {
       // Start shortlisting process
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: true }));
@@ -415,29 +460,18 @@ const SearchResultsPage: React.FC = () => {
         throw new Error('The sourcing pipeline has no stages configured.');
       }
 
-      // Get the first stage of the pipeline
-      const firstStage = defaultPipeline.stages.sort((a, b) => a.order - b.order)[0];
-
-      // Create the prospect data with just the candidate reference
-      const prospectData: CreateSourcingProspectDto = {
-        candidateId: candidate.id,
-        status: 'new',
-        source: 'linkedin',
-        rating: 3, // Default rating
-        notes: `Added from search on ${new Date().toLocaleDateString()}${teamId ? ' (shared with team)' : ''}`,
-        pipelineId: defaultPipeline.id,
-        currentStageId: firstStage.id,
-        ...(teamId && { sharedWithTeamId: teamId }),
-        metadata: {
-          searchScore: candidate.score || 0,
-          addedFromSearch: true,
-          searchDate: new Date().toISOString(),
-          ...(teamId && { sharedWithTeam: true })
-        }
+      // Create the prospects data using the bulk addition endpoint
+      const prospectsData: AddProspectsToProjectDto = {
+        candidateIds: [candidate.id],
+        searchId: searchId || undefined,
+        stageId: stageId // Pass the selected stage ID if provided
       };
 
-      // Create the prospect
-      await sourcingApiService.createProspect(prospectData);
+      // Add the prospects to the project
+      await addProspectsToProjectMutation.mutateAsync({
+        projectId: projectId!,
+        data: prospectsData
+      });
 
       // Update prospects added count
       const newProspectsCount = prospectsAddedCount + 1;
@@ -446,12 +480,18 @@ const SearchResultsPage: React.FC = () => {
       // Mark candidate as shortlisted
       setShortlistedCandidates(prev => ({ ...prev, [candidate.id]: true }));
 
+      // Close stage selector if it was open
+      handleCloseStageSelector(candidate.id);
+
       // Show success feedback
       const teamName = teamId ? recruitmentTeams?.find(t => t.id === teamId)?.name : null;
+      const selectedStage = stageId ? availableStages.find(stage => stage.id === stageId) : null;
+      const pipelineName = pipelineToUse?.name || defaultPipeline.name;
+      
       addToast({
         type: 'success',
         title: 'Candidate Shortlisted',
-        message: `${candidate.fullName} has been added to the ${defaultPipeline.name} pipeline${teamName ? ` and shared with ${teamName}` : ''}`,
+        message: `${candidate.fullName} has been added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}${teamName ? ` and shared with ${teamName}` : ''}`,
         duration: 5000
       });
       
@@ -477,7 +517,8 @@ const SearchResultsPage: React.FC = () => {
   };
 
   const handleTeamShare = async (candidate: any, teamId: string) => {
-    await handleShortlist(candidate, teamId);
+    const stageId = selectedStageId[candidate.id];
+    await handleShortlist(candidate, teamId, stageId);
   };
 
   // Close dropdowns when clicking outside
@@ -486,6 +527,7 @@ const SearchResultsPage: React.FC = () => {
       const target = event.target as HTMLElement;
       if (!target.closest('[data-dropdown-container]')) {
         setShowTeamShare({});
+        setShowStageSelector({});
       }
     };
 
@@ -689,13 +731,95 @@ const SearchResultsPage: React.FC = () => {
                               </div>
                             ) : (
                               <div className="relative" data-dropdown-container>
+                                {/* Stage Selector Modal */}
+                                {showStageSelector[candidate.id] && pipelineToUse && (
+                                  <>
+                                    {/* Backdrop */}
+                                    <div 
+                                      className="fixed inset-0 bg-black bg-opacity-25 z-40"
+                                      onClick={() => handleCloseStageSelector(candidate.id)}
+                                    />
+                                    {/* Modal */}
+                                    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border border-purple-200 rounded-lg shadow-xl z-50 w-96 max-h-[100vh]">
+                                    <div className="p-4">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h5 className="font-medium text-gray-900">Select Pipeline Stage</h5>
+                                        <button
+                                          onClick={() => handleCloseStageSelector(candidate.id)}
+                                          className="text-gray-400 hover:text-gray-600"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                      
+                                      <div className="mb-3">
+                                        <p className="text-sm text-gray-600 mb-2">
+                                          Pipeline: <span className="font-medium">{pipelineToUse.name}</span>
+                                          {projectId && <span className="text-xs text-purple-600 ml-1">(Project Pipeline)</span>}
+                                        </p>
+                                        
+                                        <div className="space-y-2 max-h-80 overflow-y-auto">
+                                          {availableStages.map((stage) => (
+                                            <div
+                                              key={stage.id}
+                                              className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                                selectedStageId[candidate.id] === stage.id
+                                                  ? 'border-purple-500 bg-purple-100'
+                                                  : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                                              }`}
+                                              onClick={() => setSelectedStageId(prev => ({ ...prev, [candidate.id]: stage.id }))}
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <div>
+                                                  <div className="font-medium text-sm">{stage.name}</div>
+                                                  {stage.description && (
+                                                    <div className="text-xs text-gray-500 mt-1">{stage.description}</div>
+                                                  )}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                  Stage {stage.order + orderOffset}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        
+                                        <div className="flex justify-end gap-2 mt-4">
+                                          <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => handleCloseStageSelector(candidate.id)}
+                                          >
+                                            Cancel
+                                          </Button>
+                                          <Button
+                                            variant="primary"
+                                            size="sm"
+                                            onClick={() => handleShortlist(candidate, undefined, selectedStageId[candidate.id])}
+                                            disabled={!selectedStageId[candidate.id] || shortlistingCandidates[candidate.id]}
+                                            className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+                                          >
+                                            {shortlistingCandidates[candidate.id] ? (
+                                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                            ) : (
+                                              <CheckCircle className="h-3 w-3 mr-1" />
+                                            )}
+                                            Add to Stage
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    </div>
+                                  </>
+                                )}
+
                                 {/* Main Shortlist Button */}
                                 <div className="flex items-center">
                                   <Button 
                                     size="sm" 
                                     className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 rounded-r-none"
-                                    onClick={() => handleShortlist(candidate)}
-                                    disabled={shortlistingCandidates[candidate.id] || pipelinesLoading}
+                                    onClick={() => handleShowStageSelector(candidate.id)}
+                                    disabled={shortlistingCandidates[candidate.id] || pipelinesLoading || projectLoading}
                                   >
                                     {shortlistingCandidates[candidate.id] ? (
                                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -727,7 +851,13 @@ const SearchResultsPage: React.FC = () => {
                                         <button
                                           key={team.id}
                                           className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                          onClick={() => handleTeamShare(candidate, team.id)}
+                                          onClick={() => {
+                                            // First show stage selector, then handle team share
+                                            if (!showStageSelector[candidate.id]) {
+                                              handleShowStageSelector(candidate.id);
+                                            }
+                                            setShowTeamShare(prev => ({ ...prev, [candidate.id]: false }));
+                                          }}
                                           disabled={shortlistingCandidates[candidate.id]}
                                         >
                                           <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
@@ -915,6 +1045,7 @@ const SearchResultsPage: React.FC = () => {
             panelState={panelState}
             onStateChange={handlePanelStateChange}
             candidateId={selectedCandidateId || undefined}
+            projectId={projectId}
           />
         </>
       )}

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Star, AlertCircle, CheckCircle, Clock, Briefcase, MapPin, Building, ExternalLink } from 'lucide-react';
+import { Plus, Star, AlertCircle, CheckCircle, Clock, Briefcase, MapPin, Building, ExternalLink, ChevronDown, X } from 'lucide-react';
 import { useJobApplicationsByCandidate, useCreateJobApplicationWithPipeline } from '../hooks/useJobApplications';
-import { useSourcingProspects } from '../hooks/useSourcingProspects';
+import { useSourcingProspects, useAddProspectsToProject } from '../hooks/useSourcingProspects';
 import { useJobSuggestions } from '../hooks/useJobs';
 import { useCandidate } from '../hooks/useCandidates';
 import { useActivePipelines } from '../hooks/useActivePipelines';
+import { useProject } from '../hooks/useSourcingProjects';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import Button from './Button';
 import { toast } from '../components/ToastContainer';
-import { sourcingApiService, CreateSourcingProspectDto } from '../services/sourcingApiService';
+import { sourcingApiService, CreateSourcingProspectDto, AddProspectsToProjectDto } from '../services/sourcingApiService';
 
 interface CandidateProspectsManagerProps {
   candidateId: string;
@@ -17,6 +18,7 @@ interface CandidateProspectsManagerProps {
   candidateEmail: string;
   candidateSkills?: string[];
   candidateExperience?: any[];
+  projectId?: string; // Optional project ID for project-scoped operations
 }
 
 interface JobSuggestion {
@@ -49,13 +51,16 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
   candidateName,
   candidateEmail,
   candidateSkills = [],
-  candidateExperience = []
+  candidateExperience = [],
+  projectId
 }) => {
   const { user } = useAuthContext();
   const { addToast } = useToast();
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [isAddingToJob, setIsAddingToJob] = useState(false);
   const [isAddingToPipeline, setIsAddingToPipeline] = useState(false);
+  const [showStageSelector, setShowStageSelector] = useState(false);
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
 
   // Fetch candidate's current job applications
   const { data: jobApplicationsData, isLoading: applicationsLoading } = useJobApplicationsByCandidate(candidateId);
@@ -71,6 +76,9 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
 
   // Fetch active pipelines for shortlisting
   const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
+
+  // Fetch project details if projectId is provided
+  const { data: projectData, isLoading: projectLoading } = useProject(projectId || '', !!projectId);
 
   // Fetch job suggestions from backend
   const { data: jobSuggestionsData, isLoading: jobsLoading } = useJobSuggestions(
@@ -91,12 +99,21 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
 
   // Mutations
   const createJobApplicationWithPipelineMutation = useCreateJobApplicationWithPipeline();
+  const addProspectsToProjectMutation = useAddProspectsToProject();
 
   // Get all the data arrays
   const prospects = prospectsData?.prospects || [];
   
   // Get candidate rating from database (convert to number for display)
   const candidateRating = candidateData ? parseFloat(candidateData.rating?.toString() || '0') : 0;
+
+  // Determine which pipeline to use
+  const pipelineToUse = projectData?.pipeline || sourcingPipelines?.find(p => p.isDefault) || sourcingPipelines?.[0];
+  const availableStages = pipelineToUse?.stages?.sort((a, b) => a.order - b.order) || [];
+  
+  // Determine if stages start from 0 or 1 to display human-readable numbers
+  const minOrder = availableStages.length > 0 ? Math.min(...availableStages.map(s => s.order)) : 0;
+  const orderOffset = minOrder === 0 ? 1 : 0;
 
   // Debug logging
   console.log(`[CandidateProspectsManager] Applied job IDs:`, Array.from(appliedJobIds));
@@ -144,75 +161,107 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
     }
   };
 
+  // Handle showing stage selector
+  const handleShowStageSelector = () => {
+    if (!pipelineToUse) {
+      addToast({
+        type: 'error',
+        title: 'No Pipeline Available',
+        message: 'No sourcing pipeline is available. Please create a sourcing pipeline first.',
+        duration: 7000
+      });
+      return;
+    }
+
+    if (availableStages.length === 0) {
+      addToast({
+        type: 'error',
+        title: 'No Stages Available',
+        message: 'The sourcing pipeline has no stages configured.',
+        duration: 7000
+      });
+      return;
+    }
+
+    setShowStageSelector(true);
+    setSelectedStageId(availableStages[0]?.id || null); // Default to first stage
+  };
+
   // Handle adding candidate to sourcing pipeline (shortlisting)
   const handleAddToPipeline = async () => {
+    if (!selectedStageId || !pipelineToUse) {
+      addToast({
+        type: 'error',
+        title: 'Stage Required',
+        message: 'Please select a stage to add the candidate to.',
+        duration: 5000
+      });
+      return;
+    }
+
     try {
       setIsAddingToPipeline(true);
 
-      // Get the default sourcing pipeline
-      if (!sourcingPipelines || sourcingPipelines.length === 0) {
-        throw new Error('No sourcing pipelines available. Please create a sourcing pipeline first.');
-      }
-
-      console.log('[CandidateProspectsManager] Available sourcing pipelines:', sourcingPipelines);
-
-      // Find the default sourcing pipeline (should be first due to sorting in useActivePipelines)
-      const defaultPipeline = sourcingPipelines.find(p => p.isDefault) || sourcingPipelines[0];
-      
-      console.log('[CandidateProspectsManager] Selected pipeline:', {
-        id: defaultPipeline.id,
-        name: defaultPipeline.name,
-        type: defaultPipeline.type,
-        isDefault: defaultPipeline.isDefault
+      console.log('[CandidateProspectsManager] Adding to pipeline:', {
+        candidateId,
+        pipelineId: pipelineToUse.id,
+        stageId: selectedStageId,
+        projectId,
+        isProjectBased: !!projectId
       });
 
-      if (!defaultPipeline.stages || defaultPipeline.stages.length === 0) {
-        throw new Error('The sourcing pipeline has no stages configured.');
+      if (projectId) {
+        // Project-based approach: Use bulk addition endpoint
+        const prospectsData: AddProspectsToProjectDto = {
+          candidateIds: [candidateId],
+          searchId: undefined,
+          stageId: selectedStageId // Pass the selected stage ID
+        };
+
+        await addProspectsToProjectMutation.mutateAsync({
+          projectId,
+          data: prospectsData
+        });
+
+        console.log('[CandidateProspectsManager] Successfully added to project pipeline with stage:', selectedStageId);
+      } else {
+        // Global approach: Use individual prospect creation
+        const selectedStage = availableStages.find(stage => stage.id === selectedStageId);
+        
+        const prospectData: CreateSourcingProspectDto = {
+          candidateId: candidateId,
+          status: 'new',
+          source: 'linkedin',
+          rating: 3, // Default rating
+          notes: `Added from candidate management on ${new Date().toLocaleDateString()}`,
+          pipelineId: pipelineToUse.id,
+          currentStageId: selectedStageId,
+          metadata: {
+            addedFromCandidateManagement: true,
+            addedDate: new Date().toISOString(),
+            selectedStage: selectedStage?.name
+          }
+        };
+
+        console.log('[CandidateProspectsManager] Creating prospect with data:', prospectData);
+        await sourcingApiService.createProspect(prospectData);
+
+        console.log('[CandidateProspectsManager] Successfully created individual prospect');
       }
-
-      // Get the first stage of the pipeline
-      const firstStage = defaultPipeline.stages.sort((a, b) => a.order - b.order)[0];
-      
-      console.log('[CandidateProspectsManager] Selected first stage:', {
-        id: firstStage.id,
-        name: firstStage.name,
-        order: firstStage.order
-      });
-
-      // Create candidate object for the prospect data
-      const candidate = {
-        id: candidateId,
-        fullName: candidateName
-      };
-
-      // Create the prospect data with just the candidate reference
-      const prospectData: CreateSourcingProspectDto = {
-        candidateId: candidate.id,
-        status: 'new',
-        source: 'linkedin',
-        rating: 3, // Default rating
-        notes: `Added from candidate management on ${new Date().toLocaleDateString()}`,
-        pipelineId: defaultPipeline.id,
-        currentStageId: firstStage.id,
-        metadata: {
-          addedFromCandidateManagement: true,
-          addedDate: new Date().toISOString()
-        }
-      };
-
-      console.log('[CandidateProspectsManager] Creating prospect with data:', prospectData);
-
-      // Create the prospect
-      await sourcingApiService.createProspect(prospectData);
 
       // Refresh prospects data to show the updated status
       await refetchProspects();
 
+      // Close stage selector
+      setShowStageSelector(false);
+      setSelectedStageId(null);
+
       // Show success feedback
+      const selectedStage = availableStages.find(stage => stage.id === selectedStageId);
       addToast({
         type: 'success',
         title: 'Candidate Added to Pipeline',
-        message: `${candidate.fullName} has been added to the ${defaultPipeline.name} pipeline`,
+        message: `${candidateName} has been added to the ${pipelineToUse.name} pipeline in ${selectedStage?.name} stage`,
         duration: 5000
       });
       
@@ -335,8 +384,8 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
               variant="primary" 
               size="sm" 
               className="text-xs bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
-              onClick={handleAddToPipeline}
-              disabled={isAddingToPipeline || pipelinesLoading}
+              onClick={handleShowStageSelector}
+              disabled={isAddingToPipeline || pipelinesLoading || projectLoading}
             >
               {isAddingToPipeline ? (
                 <>
@@ -352,6 +401,88 @@ const CandidateProspectsManager: React.FC<CandidateProspectsManagerProps> = ({
             </Button>
           )}
         </div>
+
+        {/* Stage Selector Modal */}
+        {showStageSelector && (
+          <div className="mb-4 p-4 border border-purple-200 rounded-lg bg-purple-50">
+            <div className="flex items-center justify-between mb-3">
+              <h5 className="font-medium text-gray-900">Select Pipeline Stage</h5>
+              <button
+                onClick={() => {
+                  setShowStageSelector(false);
+                  setSelectedStageId(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            {pipelineToUse && (
+              <div className="mb-3">
+                <p className="text-sm text-gray-600 mb-2">
+                  Pipeline: <span className="font-medium">{pipelineToUse.name}</span>
+                  {projectId && <span className="text-xs text-purple-600 ml-1">(Project Pipeline)</span>}
+                </p>
+                
+                <div className="space-y-2">
+                  {availableStages.map((stage) => (
+                    <div
+                      key={stage.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedStageId === stage.id
+                          ? 'border-purple-500 bg-purple-100'
+                          : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                      }`}
+                      onClick={() => setSelectedStageId(stage.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-sm">{stage.name}</div>
+                          {stage.description && (
+                            <div className="text-xs text-gray-500 mt-1">{stage.description}</div>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Stage {stage.order + orderOffset}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setShowStageSelector(false);
+                      setSelectedStageId(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleAddToPipeline}
+                    disabled={!selectedStageId || isAddingToPipeline}
+                    className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+                  >
+                    {isAddingToPipeline ? (
+                      <>
+                        <Clock className="w-3 h-3 mr-1 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      'Add to Stage'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {prospectsLoading ? (
           <div className="flex items-center text-sm text-gray-500">

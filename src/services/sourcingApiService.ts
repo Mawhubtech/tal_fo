@@ -21,13 +21,21 @@ export interface SourcingProspect {
 
 export interface CreateSourcingProspectDto {
   candidateId: string;
+  projectId?: string;
   status?: 'new' | 'contacted' | 'responded' | 'interested' | 'not_interested' | 'closed';
   source?: 'linkedin' | 'linkedin_chrome_extension' | 'github' | 'indeed' | 'referral' | 'direct_application' | 'recruitment_agency' | 'other';
   rating?: number;
   notes?: string;
   pipelineId?: string;
   currentStageId?: string;
+  sharedWithTeamId?: string;
   metadata?: Record<string, any>;
+}
+
+export interface AddProspectsToProjectDto {
+  candidateIds: string[];
+  searchId?: string;
+  stageId?: string;
 }
 
 export interface SourcingProspectQueryParams {
@@ -86,7 +94,14 @@ export interface ConversionRate {
 export const sourcingApiService = {
   // Prospect management
   async createProspect(data: CreateSourcingProspectDto): Promise<SourcingProspect> {
+    // Use general prospect creation endpoint (not project-specific)
     const response = await apiClient.post('/sourcing/prospects', data);
+    return response.data;
+  },
+
+  async addProspectsToProject(projectId: string, data: AddProspectsToProjectDto): Promise<SourcingProspect[]> {
+    // Use project-specific bulk addition endpoint
+    const response = await apiClient.post(`/sourcing/projects/${projectId}/prospects`, data);
     return response.data;
   },
 
@@ -104,6 +119,16 @@ export const sourcingApiService = {
     }, {} as any);
 
     const response = await apiClient.get('/sourcing/prospects', { params: filteredParams });
+    return response.data;
+  },
+
+  async getProjectProspects(projectId: string): Promise<SourcingProspect[]> {
+    const response = await apiClient.get(`/sourcing/projects/${projectId}/prospects`);
+    return response.data;
+  },
+
+  async getProjectStats(projectId: string): Promise<any> {
+    const response = await apiClient.get(`/sourcing/projects/${projectId}/stats`);
     return response.data;
   },
 

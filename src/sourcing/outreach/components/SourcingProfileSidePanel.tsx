@@ -160,9 +160,10 @@ interface ProfileSidePanelProps {
   panelState: PanelState;
   onStateChange: (state: PanelState) => void;
   candidateId?: string; // Add optional candidateId prop for prospects management
+  projectId?: string; // Add optional projectId prop for project-scoped operations
 }
 
-const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, candidateId }) => {
+const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, candidateId, projectId }) => {
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs
   const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(false); // For collapsing candidate actions
@@ -1645,6 +1646,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                   candidateEmail={personalInfo?.email || ''}
                   candidateSkills={skills?.map(skill => typeof skill === 'string' ? skill : skill.name).filter(Boolean) || []}
                   candidateExperience={experience || []}
+                  projectId={projectId}
                 />
               )}
               {activeSideTab === 0 && !candidateId && (
