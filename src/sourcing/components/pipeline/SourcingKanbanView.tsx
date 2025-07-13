@@ -161,7 +161,7 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
     >
       <div className="flex flex-col lg:flex-row gap-4 mb-6 min-h-[calc(100vh-400px)]">
         {/* Mobile & Tablet: Stack columns vertically */}
-        <div className="lg:hidden space-y-4">
+        <div className="lg:hidden space-y-1 sm:space-y-2 md:space-y-4">
           {stages.map((stage) => {
             const stageCandidates = getCandidatesByStage(stage);
             return (
@@ -179,8 +179,9 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
           })}
         </div>
         
-        {/* Desktop: Horizontal scrollable layout */}
-        <div className="hidden lg:flex gap-4 overflow-x-auto w-full pb-4">
+        {/* Desktop: Responsive grid layout */}
+        <div className={`hidden lg:${stages.length <= 5 ? 'grid' : 'flex overflow-x-auto'} gap-1 sm:gap-2 md:gap-3 w-full pb-4`} 
+             style={stages.length <= 5 ? { gridTemplateColumns: `repeat(${stages.length}, minmax(140px, 1fr))` } : undefined}>
           {stages.map((stage) => {
             const stageCandidates = getCandidatesByStage(stage);
             return (

@@ -50,28 +50,28 @@ export const SourcingDraggableStageColumn: React.FC<SourcingDraggableStageColumn
   return (
     <div 
       ref={setNodeRef}
-      className={`bg-white rounded-lg shadow-sm w-full lg:min-w-[280px] lg:max-w-[320px] lg:flex-shrink-0 transition-all duration-200 ${
+      className={`bg-white rounded-lg shadow-sm w-full min-w-[140px] sm:min-w-[180px] md:min-w-[220px] transition-all duration-200 ${
         isOver ? 'ring-2 ring-purple-500 ring-opacity-50 bg-purple-50' : ''
       }`}
     >
       {/* Stage Header */}
-      <div className={`px-4 py-3 border-t-4 rounded-t-lg flex justify-between items-center ${getStageColor(stage, pipeline)}`}>
-        <div>
-          <h2 className="font-semibold text-gray-800">{stage}</h2>
-          <p className="text-xs text-gray-500">{candidates.length} prospects</p>
+      <div className={`px-1 py-1 sm:px-1.5 sm:py-1.5 md:px-3 md:py-2 border-t-4 rounded-t-lg flex justify-between items-center ${getStageColor(stage, pipeline)}`}>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-gray-800 text-xs sm:text-sm md:text-base truncate">{stage}</h2>
+          <p className="text-xs text-gray-500">{candidates.length}</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <button className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-white/50">
-            <Plus className="w-4 h-4" />
+        <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0">
+          <button className="text-gray-400 hover:text-gray-600 p-0.5 rounded hover:bg-white/50">
+            <Plus className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-4 md:h-4" />
           </button>
-          <button className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-white/50">
-            <MoreHorizontal className="w-4 h-4" />
+          <button className="text-gray-400 hover:text-gray-600 p-0.5 rounded hover:bg-white/50">
+            <MoreHorizontal className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-4 md:h-4" />
           </button>
         </div>
       </div>
       
       {/* Drop Zone */}
-      <div className={`p-2 overflow-y-auto max-h-[300px] lg:max-h-[calc(100vh-450px)] min-h-[150px] lg:min-h-[300px] transition-colors ${
+      <div className={`p-0.5 sm:p-1 md:p-2 overflow-y-auto max-h-[180px] sm:max-h-[220px] md:max-h-[280px] lg:max-h-[calc(100vh-450px)] min-h-[80px] sm:min-h-[100px] md:min-h-[120px] lg:min-h-[280px] transition-colors ${
         isOver ? 'bg-purple-25' : ''
       }`}>
         <SortableContext items={candidateIds} strategy={verticalListSortingStrategy}>
@@ -93,14 +93,14 @@ export const SourcingDraggableStageColumn: React.FC<SourcingDraggableStageColumn
         
         {/* Empty State for Stage */}
         {candidates.length === 0 && (
-          <div className={`text-center py-8 rounded-lg border-2 border-dashed transition-colors ${
+          <div className={`text-center py-1 sm:py-2 md:py-4 rounded-lg border-2 border-dashed transition-colors ${
             isOver 
               ? 'border-purple-300 bg-purple-50 text-purple-600' 
               : 'border-gray-200 text-gray-400'
           }`}>
-            <Users className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-sm">
-              {isOver ? 'Drop prospect here' : 'No prospects in this stage'}
+            <Users className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6 mx-auto mb-0.5 sm:mb-1" />
+            <p className="text-xs">
+              {isOver ? 'Drop here' : 'No prospects'}
             </p>
           </div>
         )}

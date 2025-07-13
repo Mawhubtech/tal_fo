@@ -104,7 +104,7 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
     <div 
       ref={setNodeRef}
       style={style}
-      className={`bg-white border border-gray-200 rounded-lg p-3 mb-2 transition-all duration-200 ${
+      className={`bg-white border border-gray-200 rounded-lg p-2 sm:p-3 mb-1 sm:mb-2 transition-all duration-200 ${
         isBeingDragged || isDragging
           ? 'shadow-lg ring-2 ring-purple-500 ring-opacity-50 opacity-90 cursor-grabbing' 
           : 'hover:shadow-md cursor-pointer'
@@ -119,26 +119,26 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-50 animate-pulse" />
       )}
       
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-1 sm:gap-2">
         {/* Drag Handle */}
         <div 
           {...attributes}
           {...listeners}
           className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0 mt-1"
         >
-          <GripVertical className="w-4 h-4" />
+          <GripVertical className="w-3 h-3 sm:w-4 sm:h-4" />
         </div>
 
         {/* Card Content */}
         <div className="flex-1 min-w-0">
           {/* Candidate Info */}
-          <div className="flex items-center mb-2 gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
+          <div className="flex items-center mb-1 sm:mb-2 gap-1 sm:gap-2">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
               {candidate.avatar ? (
                 <img 
                   src={candidate.avatar} 
                   alt={candidate.name} 
-                  className="w-8 h-8 rounded-full object-cover" 
+                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover" 
                 />
               ) : (
                 <span className="text-purple-600 font-medium text-xs">
@@ -152,7 +152,7 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
                   e.stopPropagation(); // Prevent card drag from interfering
                   onClick?.();
                 }}
-                className="text-sm font-medium text-gray-900 truncate hover:text-purple-600 hover:underline cursor-pointer transition-colors text-left block w-full"
+                className="text-xs sm:text-sm font-medium text-gray-900 truncate hover:text-purple-600 hover:underline cursor-pointer transition-colors text-left block w-full"
                 title="Click to view full profile"
               >
                 {candidate.name}
@@ -161,7 +161,7 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
           </div>
 
           {/* Dual Rating Display */}
-          <div className="mb-2 space-y-1">
+          <div className="mb-1 sm:mb-2 space-y-0.5 sm:space-y-1">
             {/* Candidate Rating - Always show for consistency */}
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500">Candidate:</span>
@@ -195,14 +195,14 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
             </div>
           </div>
           
-          {/* Contact Info */}
-          <div className="text-xs text-gray-500 mb-2 space-y-1">
+          {/* Contact Info - Show only on larger screens or condensed format */}
+          <div className="text-xs text-gray-500 mb-1 sm:mb-2 space-y-0.5 sm:space-y-1">
             <div className="flex items-center gap-1">
-              <Mail className="w-3 h-3 flex-shrink-0" />
+              <Mail className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
               <span className="truncate flex-1">{candidate.email}</span>
             </div>
             {candidate.phone && (
-              <div className="flex items-center gap-1">
+              <div className="hidden sm:flex items-center gap-1">
                 <Phone className="w-3 h-3 flex-shrink-0" />
                 <span className="truncate">{candidate.phone}</span>
               </div>
@@ -210,11 +210,11 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
           </div>
           
           {/* Tags */}
-          <div className="flex flex-wrap gap-1 mb-2">
+          <div className="flex flex-wrap gap-0.5 sm:gap-1 mb-1 sm:mb-2">
             {candidate.tags.slice(0, 2).map((tag, index) => (
               <span
                 key={index}
-                className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded truncate max-w-[80px]"
+                className="px-1 sm:px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded truncate max-w-[60px] sm:max-w-[80px]"
                 title={tag}
               >
                 {tag}
@@ -222,7 +222,7 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
             ))}
             {candidate.tags.length > 2 && (
               <span 
-                className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
+                className="px-1 sm:px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
                 title={candidate.tags.slice(2).join(', ')}
               >
                 +{candidate.tags.length - 2}
@@ -230,15 +230,15 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
             )}
           </div>
           
-          {/* Applied Date */}
-          <div className="flex items-center text-xs text-gray-400 mb-2 gap-1">
+          {/* Applied Date - Hide on very small screens */}
+          <div className="hidden sm:flex items-center text-xs text-gray-400 mb-1 sm:mb-2 gap-1">
             <Calendar className="w-3 h-3 flex-shrink-0" />
             <span className="truncate">Added {new Date(candidate.appliedDate).toLocaleDateString()}</span>
           </div>
           
           {/* Source */}
           <div className="text-xs">
-            <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-600 rounded-full">
+            <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-600 rounded-full">
               {candidate.source}
             </span>
           </div>
@@ -251,10 +251,10 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
               e.stopPropagation(); // Prevent card click
               onRemove();
             }}
-            className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors flex-shrink-0 self-start"
+            className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-0.5 sm:p-1 rounded transition-colors flex-shrink-0 self-start"
             title="Remove prospect from pipeline"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
         )}
       </div>
