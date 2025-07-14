@@ -26,6 +26,15 @@ interface FilterState {
   appliedBefore: string;
   sortBy: string;
   sortOrder: 'ASC' | 'DESC';
+  // New filters
+  education: string;
+  degreeType: string;
+  position: string;
+  company: string;
+  interests: string[];
+  certifications: string[];
+  awards: string[];
+  languages: string[];
 }
 
 const CANDIDATE_STATUSES = [
@@ -54,6 +63,17 @@ const SORT_OPTIONS = [
   { value: 'rating', label: 'Rating' },
   { value: 'lastActivity', label: 'Last Activity' },
   { value: 'experience', label: 'Experience' },
+];
+
+const DEGREE_TYPES = [
+  { value: '', label: 'All Degrees' },
+  { value: 'associate', label: 'Associate' },
+  { value: 'bachelor', label: 'Bachelor' },
+  { value: 'master', label: 'Master' },
+  { value: 'phd', label: 'PhD' },
+  { value: 'diploma', label: 'Diploma' },
+  { value: 'certificate', label: 'Certificate' },
+  { value: 'other', label: 'Other' },
 ];
 
 const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -90,9 +110,22 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     appliedBefore: '',
     sortBy: 'createdAt',
     sortOrder: 'DESC',
+    // New filters
+    education: '',
+    degreeType: '',
+    position: '',
+    company: '',
+    interests: [],
+    certifications: [],
+    awards: [],
+    languages: [],
   });
 
   const [skillInput, setSkillInput] = useState('');
+  const [interestInput, setInterestInput] = useState('');
+  const [certificationInput, setCertificationInput] = useState('');
+  const [awardInput, setAwardInput] = useState('');
+  const [languageInput, setLanguageInput] = useState('');
 
   const { data: candidatesData, isLoading, error, refetch } = useCandidates(activeQueryParams);
   const createProspectMutation = useCreateSourcingProspect();
@@ -208,7 +241,8 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
   };
 
   const handleSearch = () => {
-    const newQueryParams: CandidateQueryParams = {
+    // Build query params with all supported filters
+    const queryParams: CandidateQueryParams = {
       page: 1, // Reset to first page on new search
       limit: 20,
       ...(filters.search && { search: filters.search }),
@@ -222,6 +256,15 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
       ...(filters.maxExperience !== undefined && { maxExperience: filters.maxExperience }),
       ...(filters.appliedAfter && { appliedAfter: filters.appliedAfter }),
       ...(filters.appliedBefore && { appliedBefore: filters.appliedBefore }),
+      // New comprehensive filters - now fully supported!
+      ...(filters.education && { education: filters.education }),
+      ...(filters.degreeType && { degreeType: filters.degreeType }),
+      ...(filters.position && { position: filters.position }),
+      ...(filters.company && { company: filters.company }),
+      ...(filters.interests.length > 0 && { interests: filters.interests }),
+      ...(filters.certifications.length > 0 && { certifications: filters.certifications }),
+      ...(filters.awards.length > 0 && { awards: filters.awards }),
+      ...(filters.languages.length > 0 && { languages: filters.languages }),
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
     };
@@ -229,7 +272,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     setCurrentPage(1);
     setSearchTriggered(true);
     setIsSearching(true); // Start local loading state
-    setActiveQueryParams(newQueryParams);
+    setActiveQueryParams(queryParams);
   };
 
   const handleResetFilters = () => {
@@ -247,8 +290,21 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
       appliedBefore: '',
       sortBy: 'createdAt',
       sortOrder: 'DESC',
+      // New filters
+      education: '',
+      degreeType: '',
+      position: '',
+      company: '',
+      interests: [],
+      certifications: [],
+      awards: [],
+      languages: [],
     });
     setSkillInput('');
+    setInterestInput('');
+    setCertificationInput('');
+    setAwardInput('');
+    setLanguageInput('');
     setCurrentPage(1);
     
     // Reset to show all candidates (no filters applied)
@@ -271,6 +327,50 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
 
   const handleRemoveSkill = (skillToRemove: string) => {
     handleFilterChange('skills', filters.skills.filter(skill => skill !== skillToRemove));
+  };
+
+  const handleAddInterest = () => {
+    if (interestInput.trim() && !filters.interests.includes(interestInput.trim())) {
+      handleFilterChange('interests', [...filters.interests, interestInput.trim()]);
+      setInterestInput('');
+    }
+  };
+
+  const handleRemoveInterest = (interestToRemove: string) => {
+    handleFilterChange('interests', filters.interests.filter(interest => interest !== interestToRemove));
+  };
+
+  const handleAddCertification = () => {
+    if (certificationInput.trim() && !filters.certifications.includes(certificationInput.trim())) {
+      handleFilterChange('certifications', [...filters.certifications, certificationInput.trim()]);
+      setCertificationInput('');
+    }
+  };
+
+  const handleRemoveCertification = (certToRemove: string) => {
+    handleFilterChange('certifications', filters.certifications.filter(cert => cert !== certToRemove));
+  };
+
+  const handleAddAward = () => {
+    if (awardInput.trim() && !filters.awards.includes(awardInput.trim())) {
+      handleFilterChange('awards', [...filters.awards, awardInput.trim()]);
+      setAwardInput('');
+    }
+  };
+
+  const handleRemoveAward = (awardToRemove: string) => {
+    handleFilterChange('awards', filters.awards.filter(award => award !== awardToRemove));
+  };
+
+  const handleAddLanguage = () => {
+    if (languageInput.trim() && !filters.languages.includes(languageInput.trim())) {
+      handleFilterChange('languages', [...filters.languages, languageInput.trim()]);
+      setLanguageInput('');
+    }
+  };
+
+  const handleRemoveLanguage = (langToRemove: string) => {
+    handleFilterChange('languages', filters.languages.filter(lang => lang !== langToRemove));
   };
 
   const handleCandidateSelect = (candidateId: string) => {
@@ -439,7 +539,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl h-[95vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-[95vw] h-[95vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex-1">
@@ -495,7 +595,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
         {/* Main Content - Split Layout */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left Panel - Search & Filters */}
-          <div className="w-80 border-r border-gray-200 bg-gray-50 flex flex-col">
+          <div className="w-96 border-r border-gray-200 bg-gray-50 flex flex-col">
             {/* Search Section */}
             <div className="p-4 border-b border-gray-200">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -563,6 +663,64 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
                     onChange={(e) => handleFilterChange('location', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                   />
+                </div>
+
+                {/* Work Experience Filters */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Position
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Job title..."
+                    value={filters.position}
+                    onChange={(e) => handleFilterChange('position', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Company
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Company name..."
+                    value={filters.company}
+                    onChange={(e) => handleFilterChange('company', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  />
+                </div>
+
+                {/* Education Filters */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Education
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="School or university..."
+                    value={filters.education}
+                    onChange={(e) => handleFilterChange('education', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Degree Type
+                  </label>
+                  <select
+                    value={filters.degreeType}
+                    onChange={(e) => handleFilterChange('degreeType', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  >
+                    {DEGREE_TYPES.map(degree => (
+                      <option key={degree.value} value={degree.value}>
+                        {degree.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Rating Range */}
@@ -674,6 +832,170 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
                           <button
                             onClick={() => handleRemoveSkill(skill)}
                             className="ml-1 text-purple-600 hover:text-purple-800"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Interests Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Interests
+                  </label>
+                  <div className="flex space-x-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Add interest..."
+                      value={interestInput}
+                      onChange={(e) => setInterestInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddInterest()}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    />
+                    <button
+                      onClick={handleAddInterest}
+                      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {filters.interests.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {filters.interests.map(interest => (
+                        <span
+                          key={interest}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800"
+                        >
+                          {interest}
+                          <button
+                            onClick={() => handleRemoveInterest(interest)}
+                            className="ml-1 text-blue-600 hover:text-blue-800"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Certifications Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Certifications
+                  </label>
+                  <div className="flex space-x-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Add certification..."
+                      value={certificationInput}
+                      onChange={(e) => setCertificationInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddCertification()}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    />
+                    <button
+                      onClick={handleAddCertification}
+                      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {filters.certifications.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {filters.certifications.map(cert => (
+                        <span
+                          key={cert}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800"
+                        >
+                          {cert}
+                          <button
+                            onClick={() => handleRemoveCertification(cert)}
+                            className="ml-1 text-green-600 hover:text-green-800"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Awards Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Awards
+                  </label>
+                  <div className="flex space-x-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Add award..."
+                      value={awardInput}
+                      onChange={(e) => setAwardInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddAward()}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    />
+                    <button
+                      onClick={handleAddAward}
+                      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {filters.awards.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {filters.awards.map(award => (
+                        <span
+                          key={award}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800"
+                        >
+                          {award}
+                          <button
+                            onClick={() => handleRemoveAward(award)}
+                            className="ml-1 text-yellow-600 hover:text-yellow-800"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Languages Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Languages
+                  </label>
+                  <div className="flex space-x-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Add language..."
+                      value={languageInput}
+                      onChange={(e) => setLanguageInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddLanguage()}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    />
+                    <button
+                      onClick={handleAddLanguage}
+                      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {filters.languages.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {filters.languages.map(lang => (
+                        <span
+                          key={lang}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-indigo-100 text-indigo-800"
+                        >
+                          {lang}
+                          <button
+                            onClick={() => handleRemoveLanguage(lang)}
+                            className="ml-1 text-indigo-600 hover:text-indigo-800"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -868,6 +1190,106 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
                     <button
                       onClick={() => handleRemoveSkill(skill)}
                       className="ml-1 text-teal-600 hover:text-teal-800"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {filters.education && (
+                  <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-emerald-100 text-emerald-800">
+                    Education: {filters.education}
+                    <button
+                      onClick={() => handleFilterChange('education', '')}
+                      className="ml-1 text-emerald-600 hover:text-emerald-800"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.degreeType && (
+                  <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-lime-100 text-lime-800">
+                    Degree: {DEGREE_TYPES.find(d => d.value === filters.degreeType)?.label}
+                    <button
+                      onClick={() => handleFilterChange('degreeType', '')}
+                      className="ml-1 text-lime-600 hover:text-lime-800"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.position && (
+                  <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-cyan-100 text-cyan-800">
+                    Position: {filters.position}
+                    <button
+                      onClick={() => handleFilterChange('position', '')}
+                      className="ml-1 text-cyan-600 hover:text-cyan-800"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.company && (
+                  <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-sky-100 text-sky-800">
+                    Company: {filters.company}
+                    <button
+                      onClick={() => handleFilterChange('company', '')}
+                      className="ml-1 text-sky-600 hover:text-sky-800"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.interests.map(interest => (
+                  <span
+                    key={interest}
+                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800"
+                  >
+                    Interest: {interest}
+                    <button
+                      onClick={() => handleRemoveInterest(interest)}
+                      className="ml-1 text-blue-600 hover:text-blue-800"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {filters.certifications.map(cert => (
+                  <span
+                    key={cert}
+                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800"
+                  >
+                    Cert: {cert}
+                    <button
+                      onClick={() => handleRemoveCertification(cert)}
+                      className="ml-1 text-green-600 hover:text-green-800"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {filters.awards.map(award => (
+                  <span
+                    key={award}
+                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800"
+                  >
+                    Award: {award}
+                    <button
+                      onClick={() => handleRemoveAward(award)}
+                      className="ml-1 text-yellow-600 hover:text-yellow-800"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {filters.languages.map(lang => (
+                  <span
+                    key={lang}
+                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-indigo-100 text-indigo-800"
+                  >
+                    Language: {lang}
+                    <button
+                      onClick={() => handleRemoveLanguage(lang)}
+                      className="ml-1 text-indigo-600 hover:text-indigo-800"
                     >
                       <X className="w-3 h-3" />
                     </button>

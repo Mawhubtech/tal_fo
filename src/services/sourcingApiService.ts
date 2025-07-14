@@ -106,14 +106,19 @@ export const sourcingApiService = {
   },
 
   async getProspects(params: SourcingProspectQueryParams = {}): Promise<SourcingProspectResponse> {
-    // Filter out empty string values to avoid validation errors
+    // Filter out empty string values to avoid validation errors and transform arrays
     const filteredParams = Object.entries(params).reduce((acc, [key, value]) => {
       if (value !== '' && value !== null && value !== undefined) {
-        // For arrays, only include if they have elements
-        if (Array.isArray(value) && value.length === 0) {
-          return acc;
+        // For arrays, only include if they have elements and convert to comma-separated string
+        if (Array.isArray(value)) {
+          if (value.length === 0) {
+            return acc;
+          }
+          // Convert array to comma-separated string for proper API parameter handling
+          acc[key] = value.join(',');
+        } else {
+          acc[key] = value;
         }
-        acc[key] = value;
       }
       return acc;
     }, {} as any);

@@ -16,6 +16,15 @@ export interface CandidateQueryParams {
   appliedAfter?: string;
   appliedBefore?: string;
   experienceLevel?: string; // Keep for backward compatibility
+  // New comprehensive filters
+  education?: string;
+  degreeType?: string;
+  position?: string;
+  company?: string;
+  interests?: string[]; // Frontend uses array, gets converted to comma-separated string
+  certifications?: string[]; // Frontend uses array, gets converted to comma-separated string
+  awards?: string[]; // Frontend uses array, gets converted to comma-separated string
+  languages?: string[]; // Frontend uses array, gets converted to comma-separated string
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }
@@ -36,10 +45,32 @@ export const candidatesService = {  // Get candidates with filtering and paginat
       console.log('Fetching candidates with params:', params);
       console.time('API Request Time');
       
-      // Transform skills array to comma-separated string for backend compatibility
+      // Transform array fields to comma-separated strings for backend compatibility
       const transformedParams = { ...params };
+      
+      // Transform skills array
       if (params.skills && Array.isArray(params.skills) && params.skills.length > 0) {
         transformedParams.skills = params.skills.join(',') as any;
+      }
+      
+      // Transform interests array
+      if (params.interests && Array.isArray(params.interests) && params.interests.length > 0) {
+        transformedParams.interests = params.interests.join(',') as any;
+      }
+      
+      // Transform certifications array
+      if (params.certifications && Array.isArray(params.certifications) && params.certifications.length > 0) {
+        transformedParams.certifications = params.certifications.join(',') as any;
+      }
+      
+      // Transform awards array
+      if (params.awards && Array.isArray(params.awards) && params.awards.length > 0) {
+        transformedParams.awards = params.awards.join(',') as any;
+      }
+      
+      // Transform languages array
+      if (params.languages && Array.isArray(params.languages) && params.languages.length > 0) {
+        transformedParams.languages = params.languages.join(',') as any;
       }
       
       console.log('Transformed params for API:', transformedParams);
