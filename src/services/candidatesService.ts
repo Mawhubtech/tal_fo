@@ -6,7 +6,16 @@ export interface CandidateQueryParams {
   limit?: number;
   search?: string;
   status?: string;
-  experienceLevel?: string;
+  source?: string;
+  location?: string;
+  skills?: string[]; // Frontend uses array, gets converted to comma-separated string
+  minRating?: number;
+  maxRating?: number;
+  minExperience?: number;
+  maxExperience?: number;
+  appliedAfter?: string;
+  appliedBefore?: string;
+  experienceLevel?: string; // Keep for backward compatibility
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }
@@ -27,7 +36,15 @@ export const candidatesService = {  // Get candidates with filtering and paginat
       console.log('Fetching candidates with params:', params);
       console.time('API Request Time');
       
-      const response = await apiClient.get('/candidates', { params });
+      // Transform skills array to comma-separated string for backend compatibility
+      const transformedParams = { ...params };
+      if (params.skills && Array.isArray(params.skills) && params.skills.length > 0) {
+        transformedParams.skills = params.skills.join(',') as any;
+      }
+      
+      console.log('Transformed params for API:', transformedParams);
+      
+      const response = await apiClient.get('/candidates', { params: transformedParams });
       
       console.timeEnd('API Request Time');
       console.log('API Response Status:', response.status);

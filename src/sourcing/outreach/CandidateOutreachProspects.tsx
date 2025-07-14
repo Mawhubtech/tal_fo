@@ -8,6 +8,7 @@ import { SourcingListView } from '../components/pipeline/SourcingListView';
 import { PipelineStats } from '../../recruitment/organizations/components/ats/pipeline/PipelineStats';
 import { SourcingProspect } from '../../services/sourcingApiService';
 import SourcingProfileSidePanel, { type PanelState, type UserStructuredData } from './components/SourcingProfileSidePanel';
+import AddCandidateModal from './components/AddCandidateModal';
 
 /**
  * CandidateOutreachProspects Component
@@ -49,6 +50,9 @@ const CandidateOutreachProspects: React.FC = () => {
   // State for the profile side panel
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
+  
+  // State for the add candidate modal
+  const [isAddCandidateModalOpen, setIsAddCandidateModalOpen] = useState(false);
 
   // Ref for the side panel to detect clicks outside
   const sidePanelRef = useRef<HTMLDivElement>(null);
@@ -283,10 +287,13 @@ const CandidateOutreachProspects: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">Candidate Prospects</h1>
             <p className="text-gray-600 mt-1">Manage your candidate pipeline and outreach efforts</p>
           </div>
-          {/* <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+          <button 
+            onClick={() => setIsAddCandidateModalOpen(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+          >
             <Plus className="w-4 h-4" />
             <span>Add Candidate</span>
-          </button> */}
+          </button>
         </div>
 
       {/* Filters and Controls */}
@@ -424,6 +431,16 @@ const CandidateOutreachProspects: React.FC = () => {
           </div>
         </>
       )}
+      
+      {/* Add Candidate Modal */}
+      <AddCandidateModal
+        isOpen={isAddCandidateModalOpen}
+        onClose={() => setIsAddCandidateModalOpen(false)}
+        onSuccess={() => {
+          // Refetch prospects after adding candidates
+          // The useSourcingProspects query will automatically refetch due to React Query invalidation
+        }}
+      />
     </>
   );
 };
