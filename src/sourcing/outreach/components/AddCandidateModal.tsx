@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Filter, X, Plus, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useCandidates } from '../../../hooks/useCandidates';
-import { useCreateSourcingProspect, useSourcingDefaultPipeline } from '../../../hooks/useSourcingProspects';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCandidates, useCandidate } from '../../../hooks/useCandidates';
+import { useCreateSourcingProspect, useSourcingDefaultPipeline, useSourcingProspectsByPipeline } from '../../../hooks/useSourcingProspects';
 import { CandidateQueryParams } from '../../../services/candidatesService';
 import SourcingProfileSidePanel, { type PanelState, type UserStructuredData } from './SourcingProfileSidePanel';
 
@@ -56,10 +57,12 @@ const SORT_OPTIONS = [
 ];
 
 const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const queryClient = useQueryClient();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
   const [searchTriggered, setSearchTriggered] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [activeQueryParams, setActiveQueryParams] = useState<CandidateQueryParams>({
     page: 1,
     limit: 20,
@@ -69,6 +72,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
 
   // Profile side panel state
   const [selectedCandidateForProfile, setSelectedCandidateForProfile] = useState<any>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
   const sidePanelRef = useRef<HTMLDivElement>(null);
 
@@ -93,10 +97,26 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
   const { data: candidatesData, isLoading, error, refetch } = useCandidates(activeQueryParams);
   const createProspectMutation = useCreateSourcingProspect();
   const { data: defaultPipeline } = useSourcingDefaultPipeline();
+  const { data: currentProspects } = useSourcingProspectsByPipeline(defaultPipeline?.id || '');
+  
+  // Load candidate data for side panel (similar to CandidateOutreachProspects.tsx)
+  const { data: selectedCandidateData, isLoading: candidateLoading } = useCandidate(selectedCandidateId || '');
 
   const candidates = candidatesData?.items || [];
   const totalCandidates = candidatesData?.total || 0;
   const totalPages = candidatesData?.totalPages || 1;
+
+  // Create a set of candidate IDs already in the pipeline
+  const candidatesInPipeline = new Set(
+    currentProspects?.map((prospect: any) => prospect.candidateId) || []
+  );
+
+  // Combined loading state
+  const isLoadingCandidates = isLoading || isSearching;
+
+  // State for individual candidate additions
+  const [addingCandidateId, setAddingCandidateId] = useState<string | null>(null);
+  const [showStageDropdown, setShowStageDropdown] = useState<string | null>(null);
 
   // Clear selections when modal closes
   useEffect(() => {
@@ -105,8 +125,19 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
       setCurrentPage(1);
       setPanelState('closed');
       setSelectedCandidateForProfile(null);
+      setSelectedCandidateId(null);
       setSearchTriggered(false);
+      setIsSearching(false);
       // Reset to initial empty state when modal closes
+      setActiveQueryParams({
+        page: 1,
+        limit: 20,
+        sortBy: 'createdAt',
+        sortOrder: 'DESC',
+      });
+    } else {
+      // When modal opens, automatically load all candidates
+      setSearchTriggered(true);
       setActiveQueryParams({
         page: 1,
         limit: 20,
@@ -116,12 +147,40 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     }
   }, [isOpen]);
 
+  // Watch for loading state changes to update local loading state
+  useEffect(() => {
+    if (!isLoading && searchTriggered) {
+      setIsSearching(false);
+    }
+  }, [isLoading, searchTriggered]);
+
+  // Also watch for data/error changes to ensure loading stops
+  useEffect(() => {
+    if (searchTriggered && (candidatesData || error)) {
+      setIsSearching(false);
+    }
+  }, [candidatesData, error, searchTriggered]);
+
+  // Clear selected candidates when prospects data changes to avoid selecting already added candidates
+  useEffect(() => {
+    if (currentProspects) {
+      setSelectedCandidates(prev => {
+        const newSelected = new Set(prev);
+        currentProspects.forEach((prospect: any) => {
+          newSelected.delete(prospect.candidateId);
+        });
+        return newSelected;
+      });
+    }
+  }, [currentProspects]);
+
   // Handle click outside panel to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (sidePanelRef.current && !sidePanelRef.current.contains(event.target as Node)) {
         setPanelState('closed');
         setSelectedCandidateForProfile(null);
+        setSelectedCandidateId(null);
       }
     };
 
@@ -129,6 +188,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
       if (event.key === 'Escape' && panelState !== 'closed') {
         setPanelState('closed');
         setSelectedCandidateForProfile(null);
+        setSelectedCandidateId(null);
       }
     };
 
@@ -167,8 +227,9 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     };
     
     setCurrentPage(1);
-    setActiveQueryParams(newQueryParams);
     setSearchTriggered(true);
+    setIsSearching(true); // Start local loading state
+    setActiveQueryParams(newQueryParams);
   };
 
   const handleResetFilters = () => {
@@ -190,13 +251,14 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     setSkillInput('');
     setCurrentPage(1);
     
-    // Reset the search results to initial state
+    // Reset to show all candidates (no filters applied)
     const initialParams: CandidateQueryParams = {
       page: 1,
       limit: 20,
       sortBy: 'createdAt',
       sortOrder: 'DESC',
     };
+    setSearchTriggered(true);
     setActiveQueryParams(initialParams);
   };
 
@@ -212,6 +274,9 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
   };
 
   const handleCandidateSelect = (candidateId: string) => {
+    // Don't allow selecting candidates already in pipeline
+    if (candidatesInPipeline.has(candidateId)) return;
+    
     const newSelected = new Set(selectedCandidates);
     if (newSelected.has(candidateId)) {
       newSelected.delete(candidateId);
@@ -260,6 +325,9 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
       
       setSelectedCandidates(new Set());
       onSuccess?.();
+      
+      // Invalidate prospects cache to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['sourcing_prospects'] });
       onClose();
     } catch (error) {
       console.error('Failed to add candidates:', error);
@@ -267,10 +335,64 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     }
   };
 
+  // Handle adding individual candidate with stage selection
+  const handleAddSingleCandidate = async (candidateId: string, stageId: string) => {
+    if (!defaultPipeline) {
+      console.error('No default pipeline found');
+      return;
+    }
+
+    try {
+      setAddingCandidateId(candidateId);
+      
+      await createProspectMutation.mutateAsync({
+        candidateId,
+        status: 'new',
+        source: 'other',
+        rating: 0,
+        pipelineId: defaultPipeline.id,
+        currentStageId: stageId,
+        notes: 'Added manually from candidate database',
+      });
+
+      // Remove from selected if it was selected
+      if (selectedCandidates.has(candidateId)) {
+        const newSelected = new Set(selectedCandidates);
+        newSelected.delete(candidateId);
+        setSelectedCandidates(newSelected);
+      }
+
+      setShowStageDropdown(null);
+      onSuccess?.();
+      
+      // Invalidate prospects cache to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['sourcing_prospects'] });
+    } catch (error) {
+      console.error('Failed to add candidate:', error);
+    } finally {
+      setAddingCandidateId(null);
+    }
+  };
+
+  // Close stage dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showStageDropdown && !(event.target as Element).closest('.stage-dropdown')) {
+        setShowStageDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStageDropdown]);
+
   // Handle opening profile panel
-  const handleOpenProfilePanel = (candidateData: any, candidateId: string) => {
-    setSelectedCandidateForProfile(candidateData);
+  const handleOpenProfilePanel = (candidateId: string) => {
+    setSelectedCandidateId(candidateId);
     setPanelState('expanded');
+    document.body.style.overflow = 'hidden'; // Prevent background scroll
   };
 
   // Handle panel state change
@@ -278,10 +400,12 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     setPanelState(newState);
     if (newState === 'closed') {
       setSelectedCandidateForProfile(null);
+      setSelectedCandidateId(null);
+      document.body.style.overflow = 'auto'; // Restore background scroll
     }
   };
 
-  // Transform candidate data to UserStructuredData format
+  // Transform candidate data to UserStructuredData format (same as CandidateOutreachProspects.tsx)
   const transformCandidateToUserStructuredData = (candidate: any): UserStructuredData | null => {
     if (!candidate) return null;
 
@@ -299,7 +423,8 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
       summary: candidate.summary || '',
       experience: candidate.experience || [],
       education: candidate.education || [],
-      skills: candidate.skills || [],
+      skills: candidate.skillMappings?.map((mapping: any) => mapping.skill?.name || mapping).filter(Boolean) || 
+               candidate.skills || [],
       projects: candidate.projects || [],
       certifications: candidate.certifications || [],
       awards: candidate.awards || [],
@@ -332,10 +457,17 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
                   {selectedCandidates.size} candidate{selectedCandidates.size !== 1 ? 's' : ''} selected
                 </span>
                 <button
-                  onClick={handleSelectAll}
+                  onClick={() => {
+                    const availableCandidates = candidates.filter(c => !candidatesInPipeline.has(c.id));
+                    if (selectedCandidates.size === availableCandidates.length) {
+                      setSelectedCandidates(new Set());
+                    } else {
+                      setSelectedCandidates(new Set(availableCandidates.map(c => c.id)));
+                    }
+                  }}
                   className="text-sm text-purple-600 hover:text-purple-700 font-medium"
                 >
-                  {selectedCandidates.size === candidates.length ? 'Deselect All' : 'Select All'}
+                  {selectedCandidates.size === candidates.filter(c => !candidatesInPipeline.has(c.id)).length ? 'Deselect All' : 'Select All Available'}
                 </button>
                 <button
                   onClick={handleAddCandidates}
@@ -583,10 +715,10 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
             <div className="p-4 border-t border-gray-200 space-y-2">
               <button
                 onClick={handleSearch}
-                disabled={isLoading}
+                disabled={isLoadingCandidates}
                 className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center justify-center space-x-2 text-sm transition-colors"
               >
-                {isLoading ? (
+                {isLoadingCandidates ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     <span>Searching...</span>
@@ -600,7 +732,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
               </button>
               <button
                 onClick={handleResetFilters}
-                disabled={isLoading}
+                disabled={isLoadingCandidates}
                 className="w-full px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-lg hover:bg-gray-50 text-sm transition-colors"
               >
                 Reset Filters
@@ -617,18 +749,32 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
             {/* Results Header with Active Filters */}
             <div className="p-4 border-b border-gray-200 bg-white flex-shrink-0">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm text-gray-600">
-                  {isLoading ? 'Loading...' : `${totalCandidates} candidates found`}
-                </p>
-                {candidates.length > 0 && (
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-gray-600">
+                    {isLoadingCandidates ? 'Loading...' : `${totalCandidates} candidates found`}
+                  </p>
+                  {candidatesInPipeline.size > 0 && (
+                    <span className="text-sm text-green-600">
+                      {candidatesInPipeline.size} already in pipeline
+                    </span>
+                  )}
+                </div>
+                {candidates.length > 0 && !isLoadingCandidates && (
                   <label className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      checked={selectedCandidates.size === candidates.length && candidates.length > 0}
-                      onChange={handleSelectAll}
+                      checked={selectedCandidates.size === candidates.filter(c => !candidatesInPipeline.has(c.id)).length && candidates.filter(c => !candidatesInPipeline.has(c.id)).length > 0}
+                      onChange={() => {
+                        const availableCandidates = candidates.filter(c => !candidatesInPipeline.has(c.id));
+                        if (selectedCandidates.size === availableCandidates.length) {
+                          setSelectedCandidates(new Set());
+                        } else {
+                          setSelectedCandidates(new Set(availableCandidates.map(c => c.id)));
+                        }
+                      }}
                       className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                     />
-                    <span className="text-xs text-gray-600">Select all on page</span>
+                    <span className="text-xs text-gray-600">Select all available</span>
                   </label>
                 )}
               </div>
@@ -759,17 +905,12 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
             </div>
             {/* Candidates List - Scrollable */}
             <div className="flex-1 overflow-y-auto">
-              {!searchTriggered ? (
+              {isLoadingCandidates ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-center">
-                    <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 mb-2">Ready to find candidates</p>
-                    <p className="text-sm text-gray-400">Use the search and filters on the left, then click "Search Candidates"</p>
+                    <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-gray-500">Searching candidates...</p>
                   </div>
-                </div>
-              ) : isLoading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-gray-500">Loading candidates...</div>
                 </div>
               ) : error ? (
                 <div className="flex items-center justify-center h-64">
@@ -783,7 +924,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 p-4">
+                <div className="space-y-3 p-4">
                   {candidates.map((candidate, index) => {
                     // Map candidate structure similar to search results
                     const personalInfo = {
@@ -800,129 +941,206 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
                     return (
                       <div
                         key={candidate.id}
-                        className={`border rounded-lg p-3 transition-all cursor-pointer ${
+                        className={`border rounded-lg p-4 transition-all cursor-pointer ${
                           selectedCandidates.has(candidate.id)
                             ? 'border-purple-500 bg-purple-50'
                             : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                         }`}
                         onClick={() => handleCandidateSelect(candidate.id)}
                       >
-                        {/* Header Row */}
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-start space-x-2 flex-1 min-w-0">
+                        <div className="flex items-start space-x-4">
+                          {/* Checkbox and Add button */}
+                          <div className="flex flex-col items-center space-y-2 mt-1">
                             <input
                               type="checkbox"
                               checked={selectedCandidates.has(candidate.id)}
                               onChange={() => handleCandidateSelect(candidate.id)}
-                              className="mt-1 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                              disabled={candidatesInPipeline.has(candidate.id)}
+                              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <div className="flex-1 min-w-0">
-                              <h3
-                                className="font-medium text-gray-900 truncate cursor-pointer hover:text-purple-600 transition-colors text-sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenProfilePanel({
-                                    personalInfo,
-                                    experience,
-                                    skills,
-                                    summary: candidate.summary || '',
-                                    education: candidate.education || [],
-                                    certifications: candidate.certifications || [],
-                                    awards: candidate.awards || [],
-                                    projects: candidate.projects || [],
-                                    languages: candidate.languages || [],
-                                    interests: candidate.interests || [],
-                                    references: candidate.references || []
-                                  }, candidate.id);
-                                }}
-                                title={personalInfo.fullName}
-                              >
-                                {personalInfo.fullName}
-                              </h3>
-                              <p className="text-xs text-gray-600 truncate" title={personalInfo.email}>
-                                {personalInfo.email}
-                              </p>
+                            
+                            {/* Individual Add button with stage selection */}
+                            <div className="relative">
+                              {candidatesInPipeline.has(candidate.id) ? (
+                                <div className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded flex items-center gap-1 min-w-[60px] justify-center">
+                                  <span>✓ Added</span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (showStageDropdown === candidate.id) {
+                                      setShowStageDropdown(null);
+                                    } else {
+                                      setShowStageDropdown(candidate.id);
+                                    }
+                                  }}
+                                  disabled={addingCandidateId === candidate.id}
+                                  className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 min-w-[60px] justify-center"
+                                  title="Add to pipeline"
+                                >
+                                  {addingCandidateId === candidate.id ? (
+                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    <>
+                                      <Plus size={12} />
+                                      <span>Add</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                              
+                              {/* Stage selection dropdown */}
+                              {showStageDropdown === candidate.id && defaultPipeline?.stages && !candidatesInPipeline.has(candidate.id) && (
+                                <div className="stage-dropdown absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-[160px]">
+                                  <div className="py-1">
+                                    <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b border-gray-100">
+                                      Select Stage
+                                    </div>
+                                    {defaultPipeline.stages.map((stage) => {
+                                      // Check if stage orders start from 0, if so display +1
+                                      const minOrder = Math.min(...defaultPipeline.stages.map(s => s.order));
+                                      const displayOrder = minOrder === 0 ? stage.order + 1 : stage.order;
+                                      
+                                      return (
+                                        <button
+                                          key={stage.id}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAddSingleCandidate(candidate.id, stage.id);
+                                          }}
+                                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+                                          disabled={addingCandidateId === candidate.id}
+                                        >
+                                          <span>{stage.name}</span>
+                                          <span className="text-xs text-gray-400">#{displayOrder}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                           
-                          {/* Status and Rating */}
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
-                            {candidate.rating && candidate.rating > 0 && (
-                              <span className="flex items-center">
-                                ★ {candidate.rating}
-                              </span>
+                          {/* Avatar placeholder */}
+                          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-gray-600 font-medium text-sm">
+                              {personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                            </span>
+                          </div>
+                          
+                          {/* Main content */}
+                          <div className="flex-1 min-w-0">
+                            {/* Header row */}
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h3
+                                    className="text-base font-medium text-gray-900 truncate cursor-pointer hover:text-purple-600 transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenProfilePanel(candidate.id);
+                                    }}
+                                    title={personalInfo.fullName}
+                                  >
+                                    {personalInfo.fullName}
+                                  </h3>
+                                  {candidatesInPipeline.has(candidate.id) && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                      In Pipeline
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600 truncate" title={personalInfo.email}>
+                                  {personalInfo.email}
+                                </p>
+                              </div>
+                              
+                              {/* Rating and actions */}
+                              <div className="flex items-center space-x-3 ml-4">
+                                {candidate.rating && candidate.rating > 0 && (
+                                  <span className="flex items-center text-sm text-gray-500">
+                                    <span className="text-yellow-400 mr-1">★</span>
+                                    {candidate.rating}
+                                  </span>
+                                )}
+                                
+                                {/* Social links */}
+                                <div className="flex items-center space-x-2">
+                                  {personalInfo.linkedIn && (
+                                    <a 
+                                      href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="text-gray-400 hover:text-blue-600 transition-colors" 
+                                      title="LinkedIn"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                      </svg>
+                                    </a>
+                                  )}
+                                  {personalInfo.github && (
+                                    <a 
+                                      href={personalInfo.github.startsWith('http') ? personalInfo.github : `https://${personalInfo.github}`} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="text-gray-400 hover:text-gray-600 transition-colors" 
+                                      title="GitHub"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                      </svg>
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Current position and location */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 mb-3">
+                              {experience && experience.length > 0 && (
+                                <div className="text-sm text-gray-700">
+                                  <span className="font-medium">{experience[0].position}</span>
+                                  {experience[0].company && (
+                                    <span> at <span className="font-medium">{experience[0].company}</span></span>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {personalInfo.location && (
+                                <div className="flex items-center text-sm text-gray-500">
+                                  <span className="mr-1">📍</span>
+                                  {personalInfo.location}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Skills */}
+                            {skills && skills.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {skills.slice(0, 5).map((skill, skillIndex) => (
+                                  <span
+                                    key={skillIndex}
+                                    className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
+                                    title={skill}
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                                {skills.length > 5 && (
+                                  <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                                    +{skills.length - 5} more
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
-
-                        {/* Current Position */}
-                        {experience && experience.length > 0 && (
-                          <div className="text-xs text-gray-500 mb-2 truncate" title={`${experience[0].position} at ${experience[0].company}`}>
-                            <span className="font-medium">{experience[0].position}</span> at {experience[0].company}
-                          </div>
-                        )}
-
-                        {/* Location */}
-                        {personalInfo.location && (
-                          <div className="text-xs text-gray-500 mb-2 truncate" title={personalInfo.location}>
-                            📍 {personalInfo.location}
-                          </div>
-                        )}
-
-                        {/* Skills */}
-                        {skills && skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {skills.slice(0, 3).map((skill, skillIndex) => (
-                              <span
-                                key={skillIndex}
-                                className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded truncate"
-                                title={skill}
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                            {skills.length > 3 && (
-                              <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                                +{skills.length - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Social Links */}
-                        {(personalInfo.linkedIn || personalInfo.github) && (
-                          <div className="flex items-center space-x-2 mt-2">
-                            {personalInfo.linkedIn && (
-                              <a 
-                                href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-gray-400 hover:text-blue-600 transition-colors" 
-                                title="LinkedIn"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                </svg>
-                              </a>
-                            )}
-                            {personalInfo.github && (
-                              <a 
-                                href={personalInfo.github.startsWith('http') ? personalInfo.github : `https://${personalInfo.github}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-gray-400 hover:text-gray-600 transition-colors" 
-                                title="GitHub"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                                </svg>
-                              </a>
-                            )}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -1025,9 +1243,10 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
               </button>
             )}
             <SourcingProfileSidePanel
-              userData={transformCandidateToUserStructuredData(selectedCandidateForProfile)}
+              userData={transformCandidateToUserStructuredData(selectedCandidateData)}
               panelState={panelState}
               onStateChange={handlePanelStateChange}
+              candidateId={selectedCandidateId || undefined}
             />
           </div>
         </>
