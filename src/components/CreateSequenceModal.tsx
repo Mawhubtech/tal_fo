@@ -1,21 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, AlertTriangle } from 'lucide-react';
-import { CreateSequenceRequest, EmailSequence } from '../services/emailSequencesApiService';
+import { CreateSequenceRequest, EmailSequence, UpdateSequenceRequest } from '../services/emailSequencesApiService';
 
 interface CreateSequenceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: CreateSequenceRequest) => void;
+  onSave: (data: CreateSequenceRequest | UpdateSequenceRequest) => void;
   isLoading?: boolean;
+  editSequence?: EmailSequence | null;
+  mode?: 'create' | 'edit';
 }
 
 const CreateSequenceModal: React.FC<CreateSequenceModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  isLoading = false
+  isLoading = false,
+  editSequence = null,
+  mode = 'create'
 }) => {
-  const [formData, setFormData] = useState<Partial<CreateSequenceRequest>>({
+  const defaultFormData: Partial<CreateSequenceRequest> = {
     name: '',
     description: '',
     type: 'candidate_outreach',
@@ -61,9 +65,36 @@ Best regards,
       businessHoursOnly: true,
       timezone: 'America/New_York'
     }
-  });
+  };
 
+  const [formData, setFormData] = useState<Partial<CreateSequenceRequest>>(defaultFormData);
   const [newTag, setNewTag] = useState('');
+
+  // Reset form when modal opens/closes or when switching between create/edit modes
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === 'edit' && editSequence) {
+        // Populate form with existing sequence data
+        setFormData({
+          name: editSequence.name,
+          description: editSequence.description,
+          type: editSequence.type,
+          category: editSequence.category,
+          scope: editSequence.scope,
+          status: editSequence.status,
+          isActive: editSequence.isActive,
+          isPreset: editSequence.isPreset,
+          tags: editSequence.tags || [],
+          steps: editSequence.steps || [],
+          timing: editSequence.timing || defaultFormData.timing
+        });
+      } else {
+        // Reset to default form data for create mode
+        setFormData(defaultFormData);
+      }
+      setNewTag('');
+    }
+  }, [isOpen, mode, editSequence]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -247,7 +278,9 @@ Best regards,
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-xl font-semibold text-gray-900">Create System Preset</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {mode === 'edit' ? 'Edit System Preset' : 'Create System Preset'}
+          </h2>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600"
@@ -267,7 +300,10 @@ Best regards,
                 <div>
                   <h3 className="text-sm font-medium text-yellow-800">System Preset Notice</h3>
                   <p className="text-sm text-yellow-700 mt-1">
-                    This sequence will be available as a template to all users and organizations. Make sure the content is appropriate and professional.
+                    {mode === 'edit' 
+                      ? 'Changes to this system preset will affect all users who haven\'t customized this sequence.'
+                      : 'This sequence will be available as a template to all users and organizations. Make sure the content is appropriate and professional.'
+                    }
                   </p>
                 </div>
               </div>
@@ -592,7 +628,10 @@ Best regards,
               disabled={isLoading || !formData.name?.trim()}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Creating...' : 'Create Preset'}
+              {isLoading 
+                ? (mode === 'edit' ? 'Updating...' : 'Creating...') 
+                : (mode === 'edit' ? 'Update Preset' : 'Create Preset')
+              }
             </button>
           </div>
         </form>

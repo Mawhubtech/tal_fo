@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useEmailSequences, useCreateEmailSequence } from '../../hooks/useEmailSequences';
+import { useEmailSequences, useCreateEmailSequence, useUpdateEmailSequence } from '../../hooks/useEmailSequences';
 import { EmailSequence } from '../../services/emailSequencesApiService';
 import CreateSequenceModal from '../../components/CreateSequenceModal';
+import SequencePreviewModal from '../../components/SequencePreviewModal';
 import { useToast } from '../../contexts/ToastContext';
 import { 
   Plus, 
@@ -12,34 +13,70 @@ import {
   BarChart3,
   TrendingUp,
   Users,
-  Zap
+  Zap,
+  Eye,
+  X,
+  Clock,
+  Send
 } from 'lucide-react';
 
 const EmailSequencesPage: React.FC = () => {
   const { data: sequencesData, isLoading, error } = useEmailSequences();
   const createSequenceMutation = useCreateEmailSequence();
+  const updateSequenceMutation = useUpdateEmailSequence();
   const { addToast } = useToast();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [previewSequence, setPreviewSequence] = useState<EmailSequence | null>(null);
+  const [editSequence, setEditSequence] = useState<EmailSequence | null>(null);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
   const handleCreateSequence = async (data: any) => {
     try {
-      await createSequenceMutation.mutateAsync(data);
-      setIsCreateModalOpen(false);
-      addToast({
-        type: 'success',
-        title: 'System Preset Created',
-        message: `The sequence "${data.name}" has been created successfully and is now available to all users.`,
-        duration: 5000
-      });
+      if (modalMode === 'edit' && editSequence) {
+        await updateSequenceMutation.mutateAsync({ id: editSequence.id, data });
+        addToast({
+          type: 'success',
+          title: 'System Preset Updated',
+          message: `The sequence "${data.name}" has been updated successfully.`,
+          duration: 5000
+        });
+      } else {
+        await createSequenceMutation.mutateAsync(data);
+        addToast({
+          type: 'success',
+          title: 'System Preset Created',
+          message: `The sequence "${data.name}" has been created successfully and is now available to all users.`,
+          duration: 5000
+        });
+      }
+      handleCloseModal();
     } catch (error) {
-      console.error('Failed to create sequence:', error);
+      console.error('Failed to save sequence:', error);
       addToast({
         type: 'error',
-        title: 'Failed to Create Preset',
-        message: 'There was an error creating the system preset. Please try again.',
+        title: modalMode === 'edit' ? 'Failed to Update Preset' : 'Failed to Create Preset',
+        message: `There was an error ${modalMode === 'edit' ? 'updating' : 'creating'} the system preset. Please try again.`,
         duration: 5000
       });
     }
+  };
+
+  const handleCreateNew = () => {
+    setModalMode('create');
+    setEditSequence(null);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleEditSequence = (sequence: EmailSequence) => {
+    setModalMode('edit');
+    setEditSequence(sequence);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsCreateModalOpen(false);
+    setEditSequence(null);
+    setModalMode('create');
   };
 
   const renderToggle = (isOn: boolean, onClick: () => void) => (
@@ -89,7 +126,7 @@ const EmailSequencesPage: React.FC = () => {
           <p className="text-gray-600 mt-1">Manage system-wide email sequence templates and settings</p>
         </div>
         <button 
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={handleCreateNew}
           className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -173,7 +210,12 @@ const EmailSequencesPage: React.FC = () => {
             {sequences
               ?.filter(sequence => sequence.type === 'candidate_outreach' && sequence.scope === 'global')
               ?.map((sequence) => (
-                <SequenceCard key={sequence.id} sequence={sequence} />
+                <SequenceCard 
+                  key={sequence.id} 
+                  sequence={sequence} 
+                  onPreview={setPreviewSequence} 
+                  onEdit={handleEditSequence}
+                />
               )) || 
               <EmptyState category="candidate outreach" />
             }
@@ -190,7 +232,12 @@ const EmailSequencesPage: React.FC = () => {
             {sequences
               ?.filter(sequence => sequence.type === 'client_outreach' && sequence.scope === 'global')
               ?.map((sequence) => (
-                <SequenceCard key={sequence.id} sequence={sequence} />
+                <SequenceCard 
+                  key={sequence.id} 
+                  sequence={sequence} 
+                  onPreview={setPreviewSequence} 
+                  onEdit={handleEditSequence}
+                />
               )) || 
               <EmptyState category="client outreach" />
             }
@@ -207,7 +254,12 @@ const EmailSequencesPage: React.FC = () => {
             {sequences
               ?.filter(sequence => sequence.type === 'custom' && sequence.scope === 'global')
               ?.map((sequence) => (
-                <SequenceCard key={sequence.id} sequence={sequence} />
+                <SequenceCard 
+                  key={sequence.id} 
+                  sequence={sequence} 
+                  onPreview={setPreviewSequence} 
+                  onEdit={handleEditSequence}
+                />
               )) || 
               <EmptyState category="general" />
             }
@@ -332,19 +384,34 @@ const EmailSequencesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Create Sequence Modal */}
+      {/* Create/Edit Sequence Modal */}
       <CreateSequenceModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleCreateSequence}
-        isLoading={createSequenceMutation.isPending}
+        isLoading={createSequenceMutation.isPending || updateSequenceMutation.isPending}
+        editSequence={editSequence}
+        mode={modalMode}
       />
+
+      {/* Preview Sequence Modal */}
+      {previewSequence && (
+        <SequencePreviewModal
+          sequence={previewSequence}
+          onClose={() => setPreviewSequence(null)}
+          onEdit={handleEditSequence}
+        />
+      )}
     </div>
   );
 };
 
 // Component for individual sequence cards
-const SequenceCard: React.FC<{ sequence: EmailSequence }> = ({ sequence }) => {
+const SequenceCard: React.FC<{ 
+  sequence: EmailSequence; 
+  onPreview: (sequence: EmailSequence) => void;
+  onEdit: (sequence: EmailSequence) => void;
+}> = ({ sequence, onPreview, onEdit }) => {
   return (
     <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
       <div className="flex-1">
@@ -371,7 +438,18 @@ const SequenceCard: React.FC<{ sequence: EmailSequence }> = ({ sequence }) => {
         }`}>
           {sequence.status === 'active' ? 'Active' : 'Draft'}
         </span>
-        <button className="p-1 text-gray-400 hover:text-gray-600">
+        <button 
+          onClick={() => onPreview(sequence)}
+          className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
+          title="Preview sequence"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={() => onEdit(sequence)}
+          className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
+          title="Edit sequence"
+        >
           <Edit className="w-4 h-4" />
         </button>
       </div>
