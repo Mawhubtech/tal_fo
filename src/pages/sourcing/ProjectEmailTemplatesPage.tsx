@@ -4,13 +4,15 @@ import {
   ArrowLeft, Plus, Search, Filter, Mail, 
   Eye, Edit, Copy, Trash2, MessageSquare, Clock,
   Users, Target, Settings, BarChart3,
-  Calendar, CheckCircle, AlertCircle, Tag
+  Calendar, CheckCircle, AlertCircle, Tag,
+  Zap
 } from 'lucide-react';
 import { useProject } from '../../hooks/useSourcingProjects';
 import { useEmailTemplates, useSourcingTemplates } from '../../hooks/useEmailManagement';
 import { 
   useProjectSequences
 } from '../../hooks/useSourcingSequences';
+import { useSetupDefaultSequences } from '../../hooks/useSourcingProjects';
 import { 
   EmailTemplateCard,
   ProjectEmailSettings,
@@ -31,6 +33,7 @@ const ProjectEmailTemplatesPage: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [isSettingUpSequences, setIsSettingUpSequences] = useState(false);
 
   // Data fetching
   const { data: project, isLoading: projectLoading, error: projectError } = useProject(projectId!);
@@ -43,8 +46,43 @@ const ProjectEmailTemplatesPage: React.FC = () => {
   // Email sequences (campaigns) and analytics
   const { data: emailSequencesData, isLoading: sequencesLoading } = useProjectSequences(projectId!);
   const sequenceAnalytics = { data: null }; // TODO: Implement analytics for sourcing sequences
+  const setupDefaultSequencesMutation = useSetupDefaultSequences();
 
   // Handlers
+  const handleSetupDefaultSequences = async () => {
+    if (!project?.pipelineId) {
+      alert('This project needs a pipeline to setup default sequences. Please assign a pipeline first.');
+      return;
+    }
+
+    if (emailSequencesData && emailSequencesData.length > 0) {
+      alert('This project already has email sequences. Default sequences can only be created for projects without existing sequences.');
+      return;
+    }
+
+    const confirmMessage = `This will create 3 default email sequences with multiple steps and templates based on your pipeline stages:
+
+• Initial Outreach Sequence (3 steps)
+• Response Follow-up Sequence (2 steps) 
+• Interest Nurturing Sequence (2 steps)
+
+These sequences will be automatically triggered when prospects move between pipeline stages. Do you want to proceed?`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setIsSettingUpSequences(true);
+      const result = await setupDefaultSequencesMutation.mutateAsync(projectId!);
+      alert(`Success! ${result.message}`);
+    } catch (error: any) {
+      console.error('Error setting up default sequences:', error);
+      alert(`Error: ${error.response?.data?.message || error.message || 'Failed to setup default sequences'}`);
+    } finally {
+      setIsSettingUpSequences(false);
+    }
+  };
 
   // Filter templates - must be before any conditional returns
   const filteredTemplates = useMemo(() => {
@@ -164,6 +202,17 @@ const ProjectEmailTemplatesPage: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Setup Default Sequences Button - only show if no sequences exist */}
+            {(!emailSequencesData || emailSequencesData.length === 0) && project?.pipelineId && (
+              <button
+                onClick={handleSetupDefaultSequences}
+                disabled={isSettingUpSequences}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {isSettingUpSequences ? 'Setting up...' : 'Setup Default Sequences'}
+              </button>
+            )}
             <button
               onClick={() => setShowSettings(true)}
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"

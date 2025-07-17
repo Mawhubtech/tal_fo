@@ -195,11 +195,20 @@ export const useDeleteSourcingProspect = () => {
 
   return useMutation({
     mutationFn: (id: string) => sourcingApiService.deleteProspect(id),
-    onSuccess: () => {
-      // Invalidate and refetch prospects
+    onSuccess: (_, deletedProspectId) => {
+      // Invalidate and refetch prospects data
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospects] });
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospectStats] });
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.pipelineStats] });
+      
+      // Invalidate project prospects data (used by EnrollCandidatesModal)
+      queryClient.invalidateQueries({ queryKey: ['sourcing-projects'] });
+      
+      // Invalidate sequence enrollments data since a prospect (candidate) was deleted
+      // This will refresh enrollment counts and candidate lists in all sequence components
+      queryClient.invalidateQueries({ queryKey: ['sourcing-sequences'] });
+      
+      console.log(`Cache invalidated for deleted prospect: ${deletedProspectId}`);
     },
   });
 };

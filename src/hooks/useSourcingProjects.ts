@@ -165,3 +165,19 @@ export const useAddProspectsToProject = () => {
     },
   });
 };
+
+export const useSetupDefaultSequences = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (projectId: string) =>
+      sourcingProjectApiService.setupDefaultSequences(projectId),
+    onSuccess: (_, projectId) => {
+      // Invalidate sequences queries to show new sequences
+      queryClient.invalidateQueries({ queryKey: ['sourcing-sequences', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project-sequences', projectId] });
+      // Update project detail
+      queryClient.invalidateQueries({ queryKey: projectQueryKeys.detail(projectId) });
+    },
+  });
+};

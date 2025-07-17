@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Plus, ArrowLeft, Settings, Play, Pause, Trash2, Mail, Users, UserCheck, UserPlus, Edit, Zap, ZapOff } from 'lucide-react';
 import { useProjectSequences, useSendSequenceEmails, useUpdateSequence, useSequenceEnrollments } from '../../../hooks/useSourcingSequences';
+import { useSetupDefaultSequences } from '../../../hooks/useSourcingProjects';
 import { CreateSequenceModal } from './CreateSequenceModal';
 import { ProjectSequenceStepsPage } from './ProjectSequenceStepsPage';
 import { EnrollCandidatesModal } from './EnrollCandidatesModal';
 import { SourcingSequence } from '../../../services/sourcingProjectApiService';
+import { toast } from '../../../components/ToastContainer';
 
 interface ProjectSequencesPageProps {
   projectId: string;
@@ -38,6 +40,7 @@ const SequenceEnrollments: React.FC<{ sequenceId: string }> = ({ sequenceId }) =
   const activeEnrollments = enrollments.filter(e => e.status === 'active');
   const pausedEnrollments = enrollments.filter(e => e.status === 'paused');
   const completedEnrollments = enrollments.filter(e => e.status === 'completed');
+  const failedEnrollments = enrollments.filter(e => e.status === 'failed');
 
   return (
     <div className="mt-3 space-y-2">
@@ -48,7 +51,7 @@ const SequenceEnrollments: React.FC<{ sequenceId: string }> = ({ sequenceId }) =
         </span>
       </div>
       
-      <div className="grid grid-cols-3 gap-2 text-xs">
+      <div className="grid grid-cols-4 gap-1 text-xs">
         <div className="bg-green-50 border border-green-200 rounded px-2 py-1 text-center">
           <div className="font-medium text-green-700">{activeEnrollments.length}</div>
           <div className="text-green-600">Active</div>
@@ -60,6 +63,10 @@ const SequenceEnrollments: React.FC<{ sequenceId: string }> = ({ sequenceId }) =
         <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1 text-center">
           <div className="font-medium text-blue-700">{completedEnrollments.length}</div>
           <div className="text-blue-600">Completed</div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded px-2 py-1 text-center">
+          <div className="font-medium text-red-700">{failedEnrollments.length}</div>
+          <div className="text-red-600">Failed</div>
         </div>
       </div>
 
@@ -126,9 +133,37 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
   const { data: sequences, isLoading, error } = useProjectSequences(projectId);
   const sendSequenceEmailsMutation = useSendSequenceEmails();
   const updateSequenceMutation = useUpdateSequence();
+  const setupDefaultSequencesMutation = useSetupDefaultSequences();
+
+  // Check if default sequences exist
+  const defaultSequenceNames = [
+    'Initial Outreach Sequence',
+    'Response Follow-up Sequence', 
+    'Interest Nurturing Sequence'
+  ];
+  
+  const hasDefaultSequences = sequences && sequences.some(sequence => 
+    defaultSequenceNames.includes(sequence.name)
+  );
 
   const handleCreateSequence = () => {
     setIsCreateModalOpen(true);
+  };
+
+  const handleSetupDefaultSequences = async () => {
+    try {
+      await setupDefaultSequencesMutation.mutateAsync(projectId);
+      toast.success(
+        'Default sequences created!', 
+        'Three default email sequences have been set up for your sourcing pipeline.'
+      );
+    } catch (error) {
+      console.error('Failed to setup default sequences:', error);
+      toast.error(
+        'Failed to setup default sequences', 
+        'Please try again or check your pipeline configuration.'
+      );
+    }
   };
 
   const handleSequenceCreated = (sequenceId: string) => {
@@ -166,13 +201,16 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
       
       // Show success message
       if (result.jobId) {
-        alert(`Email sending started! Job ID: ${result.jobId}\n\n${result.message}`);
+        toast.success(
+          'Email sending started!',
+          `Job ID: ${result.jobId}\n\n${result.message}`
+        );
       } else {
-        alert(result.message);
+        toast.success('Email sequence initiated', result.message);
       }
     } catch (error) {
       console.error('Error sending emails:', error);
-      alert('Failed to send emails. Please try again.');
+      toast.error('Failed to send emails', 'Please try again.');
     } finally {
       setSendingEmailsFor(null);
     }
@@ -185,9 +223,10 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
         id: sequenceId,
         data: { status: 'paused' }
       });
+      toast.success('Sequence paused', 'The sequence has been paused successfully.');
     } catch (error) {
       console.error('Error pausing sequence:', error);
-      alert('Failed to pause sequence. Please try again.');
+      toast.error('Failed to pause sequence', 'Please try again.');
     } finally {
       setUpdatingStatusFor(null);
     }
@@ -200,9 +239,10 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
         id: sequenceId,
         data: { status: 'active' }
       });
+      toast.success('Sequence resumed', 'The sequence has been resumed successfully.');
     } catch (error) {
       console.error('Error resuming sequence:', error);
-      alert('Failed to resume sequence. Please try again.');
+      toast.error('Failed to resume sequence', 'Please try again.');
     } finally {
       setUpdatingStatusFor(null);
     }
@@ -215,9 +255,10 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
         id: sequenceId,
         data: { status: 'active' }
       });
+      toast.success('Sequence activated', 'The sequence has been activated successfully.');
     } catch (error) {
       console.error('Error activating sequence:', error);
-      alert('Failed to activate sequence. Please try again.');
+      toast.error('Failed to activate sequence', 'Please try again.');
     } finally {
       setUpdatingStatusFor(null);
     }
@@ -232,9 +273,15 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
         id: sequenceId,
         data: { trigger: newTrigger }
       });
+      
+      const message = newTrigger === 'stage_change' 
+        ? 'Auto-enrollment has been enabled. New prospects will be automatically enrolled when they reach the target stage.'
+        : 'Auto-enrollment has been disabled. Only manual enrollment is allowed.';
+      
+      toast.success('Auto-enrollment updated', message);
     } catch (error) {
       console.error('Error toggling auto-enrollment:', error);
-      alert('Failed to toggle auto-enrollment. Please try again.');
+      toast.error('Failed to toggle auto-enrollment', 'Please try again.');
     } finally {
       setUpdatingStatusFor(null);
     }
@@ -286,13 +333,15 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
             Create and manage outreach sequences for this project
           </p>
         </div>
-        <button
-          onClick={handleCreateSequence}
-          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Sequence
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleCreateSequence}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Sequence
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -305,7 +354,7 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
           <p className="text-red-600">Failed to load sequences</p>
         </div>
       ) : sequences && sequences.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {sequences.map((sequence: SourcingSequence) => (
             <div key={sequence.id} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
               {/* Sequence Header */}
@@ -343,6 +392,33 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
                     {sequence.status}
                   </span>
                 </div>
+                {/* Target Stages */}
+                {sequence.targetCriteria?.stages && sequence.targetCriteria.stages.length > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Target Stages:</span>
+                    <div className="flex flex-wrap gap-1 max-w-32">
+                      {sequence.targetCriteria.stages.slice(0, 2).map((stageId, index) => {
+                        // Find the stage name from the project's pipeline stages
+                        const stage = project?.pipeline?.stages?.find((s: any) => s.id === stageId);
+                        const stageName = stage?.name || 'Unknown';
+                        return (
+                          <span
+                            key={stageId}
+                            className="inline-block px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded truncate"
+                            title={`${stageName} - Candidates moving to this stage will be auto-enrolled`}
+                          >
+                            {stageName.length > 8 ? stageName.substring(0, 8) + '...' : stageName}
+                          </span>
+                        );
+                      })}
+                      {sequence.targetCriteria.stages.length > 2 && (
+                        <span className="text-xs text-gray-500" title={`${sequence.targetCriteria.stages.length - 2} more target stages`}>
+                          +{sequence.targetCriteria.stages.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -401,7 +477,7 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
                         ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
-                    title={`Auto-enrollment: ${sequence.trigger === 'stage_change' ? 'ON - Automatically enrolls new prospects and stage changes' : 'OFF - Manual enrollment only'} - Click to toggle`}
+                    title={`Auto-enrollment: ${sequence.trigger === 'stage_change' ? 'ON - Automatically enrolls candidates when they move to target stages. Pending emails from non-target stages will be cancelled.' : 'OFF - Manual enrollment only'} - Click to toggle`}
                   >
                     {updatingStatusFor === sequence.id ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -474,16 +550,59 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
             <Settings className="w-8 h-8 text-purple-600" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No sequences yet</h3>
-          <p className="text-gray-600 mb-4">
-            Create your first outreach sequence to get started
-          </p>
-          <button
-            onClick={handleCreateSequence}
-            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Sequence
-          </button>
+          
+          {project?.pipelineId ? (
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Get started quickly with pre-built sequences for your sourcing pipeline.
+                Sequences will automatically manage candidate enrollments as they move through pipeline stages.
+              </p>
+              
+              {!hasDefaultSequences && (
+                <button
+                  onClick={handleSetupDefaultSequences}
+                  disabled={setupDefaultSequencesMutation.isPending}
+                  className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                >
+                  {setupDefaultSequencesMutation.isPending ? (
+                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 mr-2" />
+                  )}
+                  Setup Default Sequences
+                </button>
+              )}
+              
+              <div className="text-gray-500 text-sm">
+                Or create your own custom sequence:
+              </div>
+              
+              <button
+                onClick={handleCreateSequence}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Custom Sequence
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-gray-600 mb-4">
+                Create your first outreach sequence to get started
+              </p>
+              <button
+                onClick={handleCreateSequence}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Sequence
+              </button>
+              
+              <div className="text-xs text-gray-500 mt-2">
+                Tip: Assign a pipeline to this project to enable quick setup with default sequences
+              </div>
+            </div>
+          )}
         </div>
       )}
 

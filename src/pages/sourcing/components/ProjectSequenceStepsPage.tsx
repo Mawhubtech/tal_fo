@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Mail, Clock, Target, ArrowRight, Settings, ArrowLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, Mail, Clock, Target, ArrowRight, Settings, ArrowLeft, Users, UserCheck } from 'lucide-react';
 import { 
   useSequenceSteps, 
   useCreateSequenceStep, 
   useDeleteSequenceStep,
-  useUpdateSequenceStep
+  useUpdateSequenceStep,
+  useSequenceEnrollments
 } from '../../../hooks/useSourcingSequences';
 import { SourcingSequenceStep } from '../../../services/sourcingProjectApiService';
 import { CreateStepModal } from './CreateStepModal';
@@ -27,6 +28,7 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingStep, setEditingStep] = useState<SourcingSequenceStep | null>(null);
   const [selectedSteps, setSelectedSteps] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'steps' | 'candidates'>('steps');
 
   // Function to handle creating new step
   const handleCreateStep = () => {
@@ -49,6 +51,7 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
 
   // Fetch steps for the specific sequence
   const { data: stepsData, isLoading: stepsLoading, error: stepsError } = useSequenceSteps(sequenceId);
+  const { data: enrollments, isLoading: enrollmentsLoading } = useSequenceEnrollments(sequenceId);
   const createStepMutation = useCreateSequenceStep();
   const updateStepMutation = useUpdateSequenceStep();
   const deleteStepMutation = useDeleteSequenceStep();
@@ -101,6 +104,83 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
     console.log('Reordering step:', draggedStepId, 'to order:', targetOrder);
   };
 
+  // Candidates Component
+  const CandidatesTab = () => {
+    if (enrollmentsLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+      );
+    }
+
+    if (!enrollments || enrollments.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <Users className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No candidates enrolled</h3>
+          <p className="text-gray-600">
+            No candidates have been enrolled in this sequence yet.
+          </p>
+        </div>
+      );
+    }
+
+    const activeEnrollments = enrollments.filter(e => e.status === 'active');
+    const pausedEnrollments = enrollments.filter(e => e.status === 'paused');
+    const completedEnrollments = enrollments.filter(e => e.status === 'completed');
+
+    return (
+      <div className="space-y-6">
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-green-700">{activeEnrollments.length}</div>
+            <div className="text-sm text-green-600">Active</div>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-700">{pausedEnrollments.length}</div>
+            <div className="text-sm text-yellow-600">Paused</div>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-blue-700">{completedEnrollments.length}</div>
+            <div className="text-sm text-blue-600">Completed</div>
+          </div>
+        </div>
+
+        {/* Candidates List */}
+        <div className="space-y-4">
+          {enrollments.map((enrollment, index) => (
+            <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <UserCheck className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <div className="font-medium text-gray-900">Candidate #{index + 1}</div>
+                    <div className="text-sm text-gray-600">
+                      Status: <span className={`font-medium ${
+                        enrollment.status === 'active' ? 'text-green-600' :
+                        enrollment.status === 'paused' ? 'text-yellow-600' :
+                        enrollment.status === 'completed' ? 'text-blue-600' : 'text-gray-600'
+                      }`}>
+                        {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Step {enrollment.currentStep || 1}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Loading state
   if (stepsLoading) {
     return (
@@ -142,23 +222,54 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
             </button>
           )}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Sequence Steps</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Sequence Management</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Create and manage the steps in your outreach sequences. Steps use templates and execute in order.
+              Manage steps, candidates, and outreach for this sequence.
             </p>
           </div>
         </div>
-        <button
-          onClick={handleCreateStep}
-          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Step
-        </button>
+        {activeTab === 'steps' && (
+          <button
+            onClick={handleCreateStep}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Step
+          </button>
+        )}
       </div>
 
-      {/* Steps List */}
-      <div className="space-y-4">
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('steps')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'steps'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Settings className="w-4 h-4 inline mr-2" />
+            Steps ({steps.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('candidates')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'candidates'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Users className="w-4 h-4 inline mr-2" />
+            Candidates ({enrollments?.length || 0})
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'steps' ? (
+        <div className="space-y-4">
         {steps.map((step, index) => (
           <div key={step.id} className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-start justify-between">
@@ -279,7 +390,10 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
             </button>
           </div>
         )}
-      </div>
+        </div>
+      ) : (
+        <CandidatesTab />
+      )}
 
       {/* Create/Edit Step Modal */}
       {isCreateModalOpen && (

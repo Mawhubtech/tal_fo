@@ -500,4 +500,13 @@ export const sourcingProjectApiService = {
     const response = await apiClient.post(`/sourcing/sequences/${sequenceId}/send-emails`);
     return response.data;
   },
+
+  async setupDefaultSequences(projectId: string): Promise<{ 
+    message: string; 
+    sequences: any[]; 
+    totalSteps: number 
+  }> {
+    const response = await apiClient.post(`/sourcing/projects/${projectId}/setup-default-sequences`);
+    return response.data;
+  },
 };
