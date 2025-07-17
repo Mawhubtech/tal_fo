@@ -23,7 +23,7 @@ import {
 
 const ProjectEmailTemplatesPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const [activeTab, setActiveTab] = useState<'templates' | 'sequences' | 'analytics'>('templates');
+  const [activeTab, setActiveTab] = useState<'templates' | 'sequences' | 'analytics'>('sequences');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedType, setSelectedType] = useState('');
@@ -186,8 +186,8 @@ const ProjectEmailTemplatesPage: React.FC = () => {
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex space-x-8">
           {[
+			  { key: 'sequences', label: 'Sequences', icon: Settings, count: emailSequencesData?.length || 0 },
             { key: 'templates', label: 'Templates', icon: MessageSquare, count: filteredTemplates.length },
-            { key: 'sequences', label: 'Sequences', icon: Settings, count: emailSequencesData?.length || 0 },
             { key: 'analytics', label: 'Analytics', icon: BarChart3 },
           ].map((tab) => (
             <button
