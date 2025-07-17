@@ -10,8 +10,8 @@ export interface EmailTemplate {
   content: string;
   body?: string;
   description?: string;
-  type: 'candidate_outreach' | 'client_outreach' | 'interview_invite' | 'interview_reminder' | 'rejection' | 'offer' | 'follow_up' | 'custom' | 'interview_invitation' | 'interview_reschedule' | 'interview_cancellation' | 'feedback_request' | 'offer_letter' | 'rejection_letter' | 'welcome_email' | 'team_invitation';
-  category: 'outreach' | 'interview' | 'hiring' | 'general' | 'recruitment' | 'interviews' | 'client_communication' | 'team_management';
+  type: 'interview_invitation' | 'interview_reminder' | 'interview_reschedule' | 'interview_cancellation' | 'feedback_request' | 'offer_letter' | 'rejection_letter' | 'welcome_email' | 'follow_up' | 'candidate_outreach' | 'client_outreach' | 'team_invitation' | 'networking' | 'referral_request' | 'event_invitation' | 'custom';
+  category: 'sourcing' | 'recruitment' | 'interviews' | 'client_communication' | 'team_management' | 'general';
   scope: 'personal' | 'team' | 'organization' | 'global';
   isDefault: boolean;
   isShared?: boolean;
@@ -757,5 +757,26 @@ export const useGetTemplateSharing = (templateId: string) => {
       return response.data;
     },
     enabled: !!templateId,
+  });
+};
+
+// Sourcing-specific templates hook
+export const useSourcingTemplates = () => {
+  return useQuery({
+    queryKey: ['sourcing-templates'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/email-management/templates/sourcing');
+        // The API returns { message: "...", templates: [...] }
+        return response.data.templates || [];
+      } catch (error: any) {
+        // If it's a 404 (no templates found), return empty array instead of error
+        if (error.response?.status === 404) {
+          return [];
+        }
+        throw error;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

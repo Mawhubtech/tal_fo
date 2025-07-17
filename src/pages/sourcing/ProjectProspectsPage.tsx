@@ -58,7 +58,7 @@ const ProjectProspectsPage: React.FC = () => {
 
       {/* Prospects Content */}
       <div className="bg-white rounded-lg shadow">
-        <CandidateOutreachProspects />
+        <CandidateOutreachProspects projectId={projectId} />
       </div>
     </div>
   );

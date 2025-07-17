@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Plus, X, Users, Calendar, Target } from 'lucide-react';
+import { ArrowLeft, Plus, X, Users, Calendar, Target, GitBranch } from 'lucide-react';
 import { useCreateProject } from '../../hooks/useSourcingProjects';
+import { CreateSourcingProjectDto } from '../../services/sourcingProjectApiService';
+import { usePipelines } from '../../hooks/usePipelines';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const createProjectSchema = z.object({
@@ -19,6 +21,7 @@ const createProjectSchema = z.object({
     hireTarget: z.number().min(0).optional(),
   }).optional(),
   assignedToTeamId: z.string().optional(),
+  pipelineId: z.string().min(1, 'Please select a sourcing pipeline'),
 });
 
 type CreateProjectFormData = z.infer<typeof createProjectSchema>;
@@ -27,6 +30,15 @@ const CreateProjectPage: React.FC = () => {
   const navigate = useNavigate();
   const [tagInput, setTagInput] = useState('');
   const createProject = useCreateProject();
+  const { pipelines, loading: pipelinesLoading } = usePipelines();
+
+  // Filter pipelines to only show sourcing pipelines
+  const sourcingPipelines = pipelines.filter(pipeline => 
+    pipeline.type === 'sourcing' && pipeline.status === 'active'
+  );
+  
+  // Find default sourcing pipeline
+  const defaultSourcingPipeline = sourcingPipelines.find(pipeline => pipeline.isDefault);
 
   const {
     register,
@@ -45,14 +57,34 @@ const CreateProjectPage: React.FC = () => {
         responseRate: 20,
         hireTarget: 1,
       },
+      pipelineId: '',
     },
   });
+
+  // Set default pipeline when pipelines are loaded
+  React.useEffect(() => {
+    if (defaultSourcingPipeline && !watch('pipelineId')) {
+      setValue('pipelineId', defaultSourcingPipeline.id);
+    }
+  }, [defaultSourcingPipeline, setValue, watch]);
 
   const watchedTags = watch('tags') || [];
 
   const onSubmit = async (data: CreateProjectFormData) => {
     try {
-      const result = await createProject.mutateAsync(data);
+      // Transform form data to match DTO requirements
+      const projectData: CreateSourcingProjectDto = {
+        name: data.name,
+        description: data.description,
+        priority: data.priority,
+        targetCompletionDate: data.targetCompletionDate,
+        tags: data.tags || [],
+        targets: data.targets,
+        assignedToTeamId: data.assignedToTeamId || undefined,
+        pipelineId: data.pipelineId,
+      };
+
+      const result = await createProject.mutateAsync(projectData);
       navigate(`/dashboard/sourcing/projects/${result.id}`);
     } catch (error: any) {
       console.error('Failed to create project:', error);
@@ -288,6 +320,39 @@ const CreateProjectPage: React.FC = () => {
                   </span>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Pipeline Selection */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-6">
+            <GitBranch className="w-5 h-5 inline mr-2" />
+            Sourcing Pipeline
+          </h2>
+          
+          <div>
+            <label htmlFor="pipelineId" className="block text-sm font-medium text-gray-700 mb-2">
+              Select Pipeline*
+            </label>
+            <select
+              id="pipelineId"
+              {...register('pipelineId')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              disabled={pipelinesLoading}
+            >
+              <option value="">Select a pipeline...</option>
+              {sourcingPipelines.map((pipeline) => (
+                <option key={pipeline.id} value={pipeline.id}>
+                  {pipeline.name} {pipeline.isDefault ? '(Default)' : ''}
+                </option>
+              ))}
+            </select>
+            {errors.pipelineId && (
+              <p className="mt-1 text-sm text-red-600">{errors.pipelineId.message}</p>
+            )}
+            {pipelinesLoading && (
+              <p className="mt-1 text-sm text-gray-500">Loading pipelines...</p>
             )}
           </div>
         </div>

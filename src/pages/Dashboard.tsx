@@ -9,6 +9,8 @@ import DashboardOverview from './DashboardOverview'; // Import the new Dashboard
 // Sourcing imports
 import { Search, SearchResults } from '../sourcing';
 import UnifiedContactsPage from '../sourcing/contacts/pages/UnifiedContactsPage'; // Import UnifiedContactsPage
+// Outreach imports
+import SequencesPage from './outreach/SequencesPage'; // Import SequencesPage
 import { 
   CandidateOutreachOverview, 
   CandidateOutreachProspects, 
@@ -23,9 +25,12 @@ import CreateProjectPage from './sourcing/CreateProjectPage';
 import EditProjectPage from './sourcing/EditProjectPage';
 import CreateSearchPage from './sourcing/CreateSearchPage';
 // Project section pages
+import CreateSequencePage from './sourcing/CreateSequencePage';
+import SequenceDetailPage from './sourcing/SequenceDetailPage';
 import ProjectSearchesPage from './sourcing/ProjectSearchesPage';
 import ProjectProspectsPage from './sourcing/ProjectProspectsPage';
 import ProjectSequencesPage from './sourcing/ProjectSequencesPage';
+import ProjectEmailTemplatesPage from './sourcing/ProjectEmailTemplatesPage';
 import ProjectAnalyticsPage from './sourcing/ProjectAnalyticsPage';
 import ResumeProcessingPage from './ResumeProcessingPage'; // Import ResumeProcessingPage
 // Job Pages - Only keep CreateJobPage for the new flow
@@ -189,6 +194,12 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } />
             
+            <Route path="sourcing/projects/:projectId/email-templates" element={
+              <RoutePermissionGuard>
+                <ProjectEmailTemplatesPage />
+              </RoutePermissionGuard>
+            } />
+            
             <Route path="sourcing/projects/:projectId/analytics" element={
               <RoutePermissionGuard>
                 <ProjectAnalyticsPage />
@@ -206,19 +217,13 @@ const Dashboard: React.FC = () => {
             
             <Route path="sourcing/projects/:projectId/sequences/create" element={
               <RoutePermissionGuard>
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold">Create Sequence</h1>
-                  <p>Create sequence page coming soon...</p>
-                </div>
+                <CreateSequencePage />
               </RoutePermissionGuard>
             } />
             
             <Route path="sourcing/projects/:projectId/sequences/:sequenceId" element={
               <RoutePermissionGuard>
-                <div className="p-6">
-                  <h1 className="text-2xl font-bold">Sequence Details</h1>
-                  <p>Sequence details page coming soon...</p>
-                </div>
+                <SequenceDetailPage />
               </RoutePermissionGuard>
             } />
             
@@ -242,7 +247,7 @@ const Dashboard: React.FC = () => {
             
             <Route path="sequences" element={
               <RoutePermissionGuard>
-                <CandidateOutreachTemplates />
+                <SequencesPage />
               </RoutePermissionGuard>
             } /> {/* Route for User Sequences Page */}
             

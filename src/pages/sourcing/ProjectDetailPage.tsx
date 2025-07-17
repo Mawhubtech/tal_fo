@@ -86,12 +86,12 @@ const ProjectDetailPage: React.FC = () => {
       color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     },
     {
-      title: 'Sequences',
-      description: 'Create and manage outreach sequences',
+      title: 'Campaigns',
+      description: 'Manage email templates and campaigns',
       icon: Mail,
-      count: sequences.length,
-      link: `/dashboard/sourcing/projects/${project.id}/sequences`,
-      color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
+      count: null,
+      link: `/dashboard/sourcing/projects/${project.id}/email-templates`,
+      color: 'bg-blue-50 border-blue-200 hover:bg-blue-100'
     },
     {
       title: 'Analytics',

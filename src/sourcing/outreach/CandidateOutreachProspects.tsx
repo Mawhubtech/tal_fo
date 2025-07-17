@@ -77,7 +77,11 @@ const DEGREE_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-const CandidateOutreachProspects: React.FC = () => {
+interface CandidateOutreachProspectsProps {
+  projectId?: string;
+}
+
+const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({ projectId }) => {
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
@@ -1165,6 +1169,7 @@ const CandidateOutreachProspects: React.FC = () => {
         onSuccess={() => {
           // The useSourcingProspects query will automatically refetch due to React Query invalidation
         }}
+        projectId={projectId}
       />
     </>
   );

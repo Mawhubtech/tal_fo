@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Filter, X, Plus, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCandidates, useCandidate } from '../../../hooks/useCandidates';
-import { useCreateSourcingProspect, useSourcingDefaultPipeline, useSourcingProspectsByPipeline } from '../../../hooks/useSourcingProspects';
+import { useCreateSourcingProspect, useAddProspectsToProject, useSourcingDefaultPipeline, useSourcingProspectsByPipeline } from '../../../hooks/useSourcingProspects';
 import { CandidateQueryParams } from '../../../services/candidatesService';
 import SourcingProfileSidePanel, { type PanelState, type UserStructuredData } from './SourcingProfileSidePanel';
 
@@ -10,6 +10,7 @@ interface AddCandidateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  projectId?: string; // Optional for backward compatibility
 }
 
 interface FilterState {
@@ -76,7 +77,7 @@ const DEGREE_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, onSuccess, projectId }) => {
   const queryClient = useQueryClient();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -129,6 +130,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
 
   const { data: candidatesData, isLoading, error, refetch } = useCandidates(activeQueryParams);
   const createProspectMutation = useCreateSourcingProspect();
+  const addProspectsToProjectMutation = useAddProspectsToProject();
   const { data: defaultPipeline } = useSourcingDefaultPipeline();
   const { data: currentProspects } = useSourcingProspectsByPipeline(defaultPipeline?.id || '');
   
@@ -408,20 +410,31 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
         throw new Error('No stages found in the default pipeline.');
       }
 
-      // Add each selected candidate as a prospect with proper pipeline info
-      const promises = Array.from(selectedCandidates).map(candidateId =>
-        createProspectMutation.mutateAsync({
-          candidateId,
-          status: 'new',
-          source: 'other', // Indicating manually added from database
-          rating: 0,
-          pipelineId: defaultPipeline.id,
-          currentStageId: firstStage.id,
-          notes: 'Added manually from candidate database',
-        })
-      );
+      if (projectId) {
+        // Use project-specific API when projectId is provided
+        await addProspectsToProjectMutation.mutateAsync({
+          projectId,
+          data: {
+            candidateIds: Array.from(selectedCandidates),
+            stageId: firstStage.id,
+          },
+        });
+      } else {
+        // Use general prospect creation for backward compatibility
+        const promises = Array.from(selectedCandidates).map(candidateId =>
+          createProspectMutation.mutateAsync({
+            candidateId,
+            status: 'new',
+            source: 'other', // Indicating manually added from database
+            rating: 0,
+            pipelineId: defaultPipeline.id,
+            currentStageId: firstStage.id,
+            notes: 'Added manually from candidate database',
+          })
+        );
 
-      await Promise.all(promises);
+        await Promise.all(promises);
+      }
       
       setSelectedCandidates(new Set());
       onSuccess?.();
@@ -445,15 +458,27 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     try {
       setAddingCandidateId(candidateId);
       
-      await createProspectMutation.mutateAsync({
-        candidateId,
-        status: 'new',
-        source: 'other',
-        rating: 0,
-        pipelineId: defaultPipeline.id,
-        currentStageId: stageId,
-        notes: 'Added manually from candidate database',
-      });
+      if (projectId) {
+        // Use project-specific API when projectId is provided
+        await addProspectsToProjectMutation.mutateAsync({
+          projectId,
+          data: {
+            candidateIds: [candidateId],
+            stageId: stageId,
+          },
+        });
+      } else {
+        // Use general prospect creation for backward compatibility
+        await createProspectMutation.mutateAsync({
+          candidateId,
+          status: 'new',
+          source: 'other',
+          rating: 0,
+          pipelineId: defaultPipeline.id,
+          currentStageId: stageId,
+          notes: 'Added manually from candidate database',
+        });
+      }
 
       // Remove from selected if it was selected
       if (selectedCandidates.has(candidateId)) {

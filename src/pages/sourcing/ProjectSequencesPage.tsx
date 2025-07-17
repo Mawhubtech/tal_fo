@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Mail } from 'lucide-react';
 import { useProject } from '../../hooks/useSourcingProjects';
 import { CandidateOutreachTemplates } from '../../sourcing/outreach';
 
@@ -54,13 +54,22 @@ const ProjectSequencesPage: React.FC = () => {
             <p className="text-gray-600 mt-1">Manage outreach sequences for this project</p>
           </div>
           
-          <Link
-            to={`/dashboard/sourcing/projects/${project.id}/sequences/create`}
-            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Sequence
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to={`/dashboard/sourcing/projects/${project.id}/email-templates`}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Email Templates
+            </Link>
+            <Link
+              to={`/dashboard/sourcing/projects/${project.id}/sequences/create`}
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Sequence
+            </Link>
+          </div>
         </div>
       </div>
 

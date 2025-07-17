@@ -447,4 +447,57 @@ export const sourcingProjectApiService = {
     });
     return response.data;
   },
+
+  // Sequence Enrollment Methods
+  async enrollCandidate(data: {
+    candidateId: string;
+    sequenceId: string;
+    enrollmentTrigger?: 'manual' | 'automatic' | 'pipeline_stage';
+    metadata?: Record<string, any>;
+  }): Promise<any> {
+    const response = await apiClient.post(`/sourcing/sequences/${data.sequenceId}/enroll`, {
+      candidateId: data.candidateId,
+      enrollmentTrigger: data.enrollmentTrigger,
+      metadata: data.metadata
+    });
+    return response.data;
+  },
+
+  async bulkEnrollCandidates(data: {
+    candidateIds: string[];
+    sequenceId: string;
+    enrollmentTrigger?: 'manual' | 'automatic' | 'pipeline_stage';
+    metadata?: Record<string, any>;
+  }): Promise<any[]> {
+    const response = await apiClient.post(`/sourcing/sequences/${data.sequenceId}/bulk-enroll`, {
+      candidateIds: data.candidateIds,
+      enrollmentTrigger: data.enrollmentTrigger,
+      metadata: data.metadata
+    });
+    return response.data;
+  },
+
+  async unenrollCandidate(enrollmentId: string): Promise<void> {
+    await apiClient.delete(`/sourcing/sequences/enrollments/${enrollmentId}`);
+  },
+
+  async pauseEnrollment(enrollmentId: string): Promise<any> {
+    const response = await apiClient.patch(`/sourcing/sequences/enrollments/${enrollmentId}/pause`);
+    return response.data;
+  },
+
+  async resumeEnrollment(enrollmentId: string): Promise<any> {
+    const response = await apiClient.patch(`/sourcing/sequences/enrollments/${enrollmentId}/resume`);
+    return response.data;
+  },
+
+  async getSequenceEnrollments(sequenceId: string): Promise<any[]> {
+    const response = await apiClient.get(`/sourcing/sequences/${sequenceId}/enrollments`);
+    return response.data;
+  },
+
+  async sendSequenceEmails(sequenceId: string): Promise<{ message: string; jobId?: string }> {
+    const response = await apiClient.post(`/sourcing/sequences/${sequenceId}/send-emails`);
+    return response.data;
+  },
 };
