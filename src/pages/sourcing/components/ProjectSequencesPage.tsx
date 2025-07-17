@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, ArrowLeft, Settings, Play, Pause, Trash2, Mail, Users, UserCheck, UserPlus, Edit } from 'lucide-react';
+import { Plus, ArrowLeft, Settings, Play, Pause, Trash2, Mail, Users, UserCheck, UserPlus, Edit, Zap, ZapOff } from 'lucide-react';
 import { useProjectSequences, useSendSequenceEmails, useUpdateSequence, useSequenceEnrollments } from '../../../hooks/useSourcingSequences';
 import { CreateSequenceModal } from './CreateSequenceModal';
 import { ProjectSequenceStepsPage } from './ProjectSequenceStepsPage';
@@ -223,6 +223,23 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
     }
   };
 
+  const handleToggleAutoEnrollment = async (sequenceId: string, currentTrigger: string) => {
+    try {
+      setUpdatingStatusFor(sequenceId);
+      const newTrigger = currentTrigger === 'stage_change' ? 'manual' : 'stage_change';
+      
+      await updateSequenceMutation.mutateAsync({
+        id: sequenceId,
+        data: { trigger: newTrigger }
+      });
+    } catch (error) {
+      console.error('Error toggling auto-enrollment:', error);
+      alert('Failed to toggle auto-enrollment. Please try again.');
+    } finally {
+      setUpdatingStatusFor(null);
+    }
+  };
+
   const handleOpenEnrollModal = (sequenceId: string, sequenceName: string) => {
     setEnrollModalState({
       isOpen: true,
@@ -370,6 +387,28 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
                       <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Mail className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+                
+                {/* Auto-enrollment Toggle - only for active sequences */}
+                {sequence.status === 'active' && (
+                  <button
+                    onClick={() => handleToggleAutoEnrollment(sequence.id, sequence.trigger)}
+                    disabled={updatingStatusFor === sequence.id}
+                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      sequence.trigger === 'stage_change'
+                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    title={`Auto-enrollment: ${sequence.trigger === 'stage_change' ? 'ON - Automatically enrolls new prospects and stage changes' : 'OFF - Manual enrollment only'} - Click to toggle`}
+                  >
+                    {updatingStatusFor === sequence.id ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : sequence.trigger === 'stage_change' ? (
+                      <Zap className="w-4 h-4" />
+                    ) : (
+                      <ZapOff className="w-4 h-4" />
                     )}
                   </button>
                 )}
