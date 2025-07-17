@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Mail, Target, Clock, Settings, ChevronRight, Edit, Trash2, Eye, X } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import { Plus, Mail, Target, Clock, Settings, ChevronRight, Edit, Trash2, Eye, X, Type, Code } from 'lucide-react';
 
 interface CreateStepModalProps {
   isOpen: boolean;
@@ -32,6 +34,8 @@ export const CreateStepModal: React.FC<CreateStepModalProps> = ({
     templateId: editingStep?.templateId || '',
     customSubject: editingStep?.subject || '',
     customContent: editingStep?.content || '',
+    htmlContent: editingStep?.htmlContent || '',
+    isHtmlContent: editingStep?.isHtmlContent || false,
     useTemplate: editingStep?.templateId ? true : false,
     delayDays: editingStep?.config?.delayDays || 0,
     delayHours: editingStep?.config?.delayHours || 0,
@@ -43,6 +47,24 @@ export const CreateStepModal: React.FC<CreateStepModalProps> = ({
 
   const [selectedTemplate, setSelectedTemplate] = useState<StepTemplate | null>(null);
   const [previewMode, setPreviewMode] = useState<'subject' | 'content'>('content');
+
+  // React Quill configuration
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'bold', 'italic', 'underline', 'strike',
+    'color', 'background', 'list', 'bullet', 'align', 'link'
+  ];
 
   // Mock templates for demo
   const stepTemplates: StepTemplate[] = [
@@ -112,6 +134,8 @@ Best regards,
       type: formData.type,
       subject: formData.useTemplate ? selectedTemplate?.subject : formData.customSubject,
       content: formData.useTemplate ? selectedTemplate?.content : formData.customContent,
+      htmlContent: formData.isHtmlContent ? formData.htmlContent : undefined,
+      isHtmlContent: formData.isHtmlContent,
       config: {
         delayDays: formData.delayDays,
         delayHours: formData.delayHours,
@@ -334,16 +358,64 @@ Best regards,
                       </div>
                     )}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Content
-                      </label>
-                      <textarea
-                        value={formData.customContent}
-                        onChange={(e) => setFormData({ ...formData, customContent: e.target.value })}
-                        rows={8}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Enter your message content..."
-                      />
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Content
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, isHtmlContent: false })}
+                            className={`flex items-center space-x-1 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                              !formData.isHtmlContent
+                                ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Type className="w-3 h-3" />
+                            <span>Text</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, isHtmlContent: true })}
+                            className={`flex items-center space-x-1 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                              formData.isHtmlContent
+                                ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Code className="w-3 h-3" />
+                            <span>HTML</span>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {formData.isHtmlContent ? (
+                        <div className="border border-gray-300 rounded-lg">
+                          <ReactQuill
+                            value={formData.htmlContent}
+                            onChange={(value) => setFormData({ ...formData, htmlContent: value })}
+                            modules={quillModules}
+                            formats={quillFormats}
+                            placeholder="Enter your message content with rich formatting..."
+                            style={{ minHeight: '200px' }}
+                          />
+                        </div>
+                      ) : (
+                        <textarea
+                          value={formData.customContent}
+                          onChange={(e) => setFormData({ ...formData, customContent: e.target.value })}
+                          rows={8}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="Enter your message content..."
+                        />
+                      )}
+                      
+                      {formData.isHtmlContent && (
+                        <p className="mt-2 text-xs text-gray-500">
+                          HTML emails will be sent with rich formatting. You can use variables like {'{firstName}'} and {'{company}'} in your content.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

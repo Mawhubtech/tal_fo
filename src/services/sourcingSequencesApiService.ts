@@ -10,6 +10,7 @@ export interface SourcingSequenceStep {
   subject?: string;
   content: string;
   htmlContent?: string;
+  isHtmlContent?: boolean;
   variables?: string[];
   triggerType: 'immediate' | 'delay' | 'condition' | 'manual';
   delayHours: number;

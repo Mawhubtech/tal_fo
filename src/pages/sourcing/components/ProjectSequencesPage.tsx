@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Plus, ArrowLeft, Settings, Play, Pause, Trash2, Mail, Users, UserCheck, UserPlus, Edit, Zap, ZapOff } from 'lucide-react';
-import { useProjectSequences, useSendSequenceEmails, useUpdateSequence, useSequenceEnrollments } from '../../../hooks/useSourcingSequences';
+import { useProjectSequences, useSendSequenceEmails, useUpdateSequence, useDeleteSequence, useSequenceEnrollments, sequenceQueryKeys } from '../../../hooks/useSourcingSequences';
 import { useSetupDefaultSequences } from '../../../hooks/useSourcingProjects';
 import { CreateSequenceModal } from './CreateSequenceModal';
 import { ProjectSequenceStepsPage } from './ProjectSequenceStepsPage';
 import { EnrollCandidatesModal } from './EnrollCandidatesModal';
 import { SourcingSequence } from '../../../services/sourcingProjectApiService';
 import { toast } from '../../../components/ToastContainer';
+import ConfirmationModal from '../../../components/ConfirmationModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProjectSequencesPageProps {
   projectId: string;
@@ -120,6 +122,7 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
   const [editingSequence, setEditingSequence] = useState<SourcingSequence | null>(null);
   const [sendingEmailsFor, setSendingEmailsFor] = useState<string | null>(null);
   const [updatingStatusFor, setUpdatingStatusFor] = useState<string | null>(null);
+  const [deletingSequenceId, setDeletingSequenceId] = useState<string | null>(null);
   const [enrollModalState, setEnrollModalState] = useState<{
     isOpen: boolean;
     sequenceId: string | null;
@@ -129,11 +132,23 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
     sequenceId: null,
     sequenceName: null
   });
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    sequenceId: string | null;
+    sequenceName: string | null;
+  }>({
+    isOpen: false,
+    sequenceId: null,
+    sequenceName: null
+  });
+  const [setupDefaultConfirmation, setSetupDefaultConfirmation] = useState(false);
 
   const { data: sequences, isLoading, error } = useProjectSequences(projectId);
   const sendSequenceEmailsMutation = useSendSequenceEmails();
   const updateSequenceMutation = useUpdateSequence();
+  const deleteSequenceMutation = useDeleteSequence();
   const setupDefaultSequencesMutation = useSetupDefaultSequences();
+  const queryClient = useQueryClient();
 
   // Check if default sequences exist
   const defaultSequenceNames = [
@@ -151,8 +166,18 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
   };
 
   const handleSetupDefaultSequences = async () => {
+    setSetupDefaultConfirmation(true);
+  };
+
+  const confirmSetupDefaultSequences = async () => {
     try {
       await setupDefaultSequencesMutation.mutateAsync(projectId);
+      
+      // Invalidate sequences queries to refresh the data
+      queryClient.invalidateQueries({ 
+        queryKey: sequenceQueryKeys.byProject(projectId) 
+      });
+      
       toast.success(
         'Default sequences created!', 
         'Three default email sequences have been set up for your sourcing pipeline.'
@@ -163,7 +188,13 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
         'Failed to setup default sequences', 
         'Please try again or check your pipeline configuration.'
       );
+    } finally {
+      setSetupDefaultConfirmation(false);
     }
+  };
+
+  const cancelSetupDefaultSequences = () => {
+    setSetupDefaultConfirmation(false);
   };
 
   const handleSequenceCreated = (sequenceId: string) => {
@@ -297,6 +328,45 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
 
   const handleCloseEnrollModal = () => {
     setEnrollModalState({
+      isOpen: false,
+      sequenceId: null,
+      sequenceName: null
+    });
+  };
+
+  const handleDeleteSequence = async (sequenceId: string, sequenceName: string) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      sequenceId,
+      sequenceName
+    });
+  };
+
+  const confirmDeleteSequence = async () => {
+    if (!deleteConfirmation.sequenceId || !deleteConfirmation.sequenceName) return;
+
+    try {
+      setDeletingSequenceId(deleteConfirmation.sequenceId);
+      await deleteSequenceMutation.mutateAsync({
+        id: deleteConfirmation.sequenceId,
+        projectId: projectId
+      });
+      toast.success('Sequence deleted', `"${deleteConfirmation.sequenceName}" has been deleted successfully.`);
+    } catch (error) {
+      console.error('Error deleting sequence:', error);
+      toast.error('Failed to delete sequence', 'Please try again.');
+    } finally {
+      setDeletingSequenceId(null);
+      setDeleteConfirmation({
+        isOpen: false,
+        sequenceId: null,
+        sequenceName: null
+      });
+    }
+  };
+
+  const cancelDeleteSequence = () => {
+    setDeleteConfirmation({
       isOpen: false,
       sequenceId: null,
       sequenceName: null
@@ -530,6 +600,20 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
                     )}
                   </button>
                 ) : null}
+
+                {/* Delete Button */}
+                <button
+                  onClick={() => handleDeleteSequence(sequence.id, sequence.name)}
+                  disabled={deletingSequenceId === sequence.id}
+                  className="inline-flex items-center px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete sequence"
+                >
+                  {deletingSequenceId === sequence.id ? (
+                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
               </div>
 
               {/* Warning for empty sequences */}
@@ -562,7 +646,7 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
                 <button
                   onClick={handleSetupDefaultSequences}
                   disabled={setupDefaultSequencesMutation.isPending}
-                  className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                  className="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
                 >
                   {setupDefaultSequencesMutation.isPending ? (
                     <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -627,6 +711,30 @@ export const ProjectSequencesPage: React.FC<ProjectSequencesPageProps> = ({
           projectId={projectId}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={cancelDeleteSequence}
+        onConfirm={confirmDeleteSequence}
+        title="Delete Sequence"
+        message={`Are you sure you want to delete "${deleteConfirmation.sequenceName}"? This action cannot be undone and will remove all enrolled candidates from this sequence.`}
+        confirmText="Delete Sequence"
+        cancelText="Cancel"
+        type="danger"
+      />
+
+      {/* Setup Default Sequences Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={setupDefaultConfirmation}
+        onClose={cancelSetupDefaultSequences}
+        onConfirm={confirmSetupDefaultSequences}
+        title="Setup Default Sequences"
+        message="This will create three default email sequences for your sourcing pipeline: Initial Outreach, Response Follow-up, and Interest Nurturing. Each sequence will include professional email templates and be configured for your pipeline stages."
+        confirmText="Create Default Sequences"
+        cancelText="Cancel"
+        type="primary"
+      />
     </div>
   );
 };

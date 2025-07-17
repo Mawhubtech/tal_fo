@@ -13,6 +13,10 @@ import {
   useProjectSequences
 } from '../../hooks/useSourcingSequences';
 import { useSetupDefaultSequences } from '../../hooks/useSourcingProjects';
+import { toast } from '../../components/ToastContainer';
+import ConfirmationModal from '../../components/ConfirmationModal';
+import { useQueryClient } from '@tanstack/react-query';
+import { sequenceQueryKeys } from '../../hooks/useSourcingSequences';
 import { 
   EmailTemplateCard,
   ProjectEmailSettings,
@@ -34,6 +38,7 @@ const ProjectEmailTemplatesPage: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [isSettingUpSequences, setIsSettingUpSequences] = useState(false);
+  const [setupDefaultConfirmation, setSetupDefaultConfirmation] = useState(false);
 
   // Data fetching
   const { data: project, isLoading: projectLoading, error: projectError } = useProject(projectId!);
@@ -47,41 +52,45 @@ const ProjectEmailTemplatesPage: React.FC = () => {
   const { data: emailSequencesData, isLoading: sequencesLoading } = useProjectSequences(projectId!);
   const sequenceAnalytics = { data: null }; // TODO: Implement analytics for sourcing sequences
   const setupDefaultSequencesMutation = useSetupDefaultSequences();
+  const queryClient = useQueryClient();
 
   // Handlers
   const handleSetupDefaultSequences = async () => {
     if (!project?.pipelineId) {
-      alert('This project needs a pipeline to setup default sequences. Please assign a pipeline first.');
+      toast.error('Pipeline Required', 'This project needs a pipeline to setup default sequences. Please assign a pipeline first.');
       return;
     }
 
     if (emailSequencesData && emailSequencesData.length > 0) {
-      alert('This project already has email sequences. Default sequences can only be created for projects without existing sequences.');
+      toast.error('Sequences Already Exist', 'This project already has email sequences. Default sequences can only be created for projects without existing sequences.');
       return;
     }
 
-    const confirmMessage = `This will create 3 default email sequences with multiple steps and templates based on your pipeline stages:
+    setSetupDefaultConfirmation(true);
+  };
 
-• Initial Outreach Sequence (3 steps)
-• Response Follow-up Sequence (2 steps) 
-• Interest Nurturing Sequence (2 steps)
-
-These sequences will be automatically triggered when prospects move between pipeline stages. Do you want to proceed?`;
-
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
+  const confirmSetupDefaultSequences = async () => {
     try {
       setIsSettingUpSequences(true);
       const result = await setupDefaultSequencesMutation.mutateAsync(projectId!);
-      alert(`Success! ${result.message}`);
+      
+      // Invalidate sequences queries to refresh the data
+      queryClient.invalidateQueries({ 
+        queryKey: sequenceQueryKeys.byProject(projectId!) 
+      });
+      
+      toast.success('Default Sequences Created!', result.message);
     } catch (error: any) {
       console.error('Error setting up default sequences:', error);
-      alert(`Error: ${error.response?.data?.message || error.message || 'Failed to setup default sequences'}`);
+      toast.error('Setup Failed', error.response?.data?.message || error.message || 'Failed to setup default sequences');
     } finally {
       setIsSettingUpSequences(false);
+      setSetupDefaultConfirmation(false);
     }
+  };
+
+  const cancelSetupDefaultSequences = () => {
+    setSetupDefaultConfirmation(false);
   };
 
   // Filter templates - must be before any conditional returns
@@ -207,7 +216,7 @@ These sequences will be automatically triggered when prospects move between pipe
               <button
                 onClick={handleSetupDefaultSequences}
                 disabled={isSettingUpSequences}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="w-4 h-4 mr-2" />
                 {isSettingUpSequences ? 'Setting up...' : 'Setup Default Sequences'}
@@ -494,6 +503,24 @@ These sequences will be automatically triggered when prospects move between pipe
           }}
         />
       )}
+
+      {/* Setup Default Sequences Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={setupDefaultConfirmation}
+        onClose={cancelSetupDefaultSequences}
+        onConfirm={confirmSetupDefaultSequences}
+        title="Setup Default Sequences"
+        message="This will create 3 default email sequences with multiple steps and templates based on your pipeline stages:
+
+• Initial Outreach Sequence (3 steps)
+• Response Follow-up Sequence (2 steps) 
+• Interest Nurturing Sequence (2 steps)
+
+These sequences will be automatically triggered when prospects move between pipeline stages and include professional HTML email templates."
+        confirmText="Create Default Sequences"
+        cancelText="Cancel"
+        type="primary"
+      />
     </div>
   );
 };

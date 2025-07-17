@@ -9,7 +9,7 @@ interface ConfirmationModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  type?: 'danger' | 'warning' | 'info';
+  type?: 'danger' | 'warning' | 'info' | 'primary';
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -45,6 +45,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         return {
           iconColor: 'text-blue-500',
           confirmButton: 'bg-blue-600 hover:bg-blue-700 text-white'
+        };
+      case 'primary':
+        return {
+          iconColor: 'text-purple-500',
+          confirmButton: 'bg-purple-600 hover:bg-purple-700 text-white'
         };
       default:
         return {

@@ -150,22 +150,50 @@ export const useDeleteSequence = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => sourcingProjectApiService.deleteSequence(id),
-    onMutate: async (id) => {
-      // Get the sequence to know which project to update
-      const sequence = queryClient.getQueryData<SourcingSequence>(sequenceQueryKeys.detail(id));
-      return { projectId: sequence?.projectId };
+    mutationFn: ({ id, projectId }: { id: string; projectId: string }) => 
+      sourcingProjectApiService.deleteSequence(id),
+    onMutate: async ({ id, projectId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: sequenceQueryKeys.byProject(projectId) });
+      
+      // Get the previous sequences list
+      const previousSequences = queryClient.getQueryData<SourcingSequence[]>(
+        sequenceQueryKeys.byProject(projectId)
+      );
+      
+      // Optimistically update the cache by removing the sequence
+      if (previousSequences) {
+        queryClient.setQueryData<SourcingSequence[]>(
+          sequenceQueryKeys.byProject(projectId),
+          previousSequences.filter(seq => seq.id !== id)
+        );
+      }
+      
+      return { previousSequences, projectId, id };
     },
-    onSuccess: (_, id, context) => {
-      // Remove the sequence from cache
+    onError: (err, { id, projectId }, context) => {
+      // Revert the optimistic update on error
+      if (context?.previousSequences) {
+        queryClient.setQueryData(
+          sequenceQueryKeys.byProject(projectId),
+          context.previousSequences
+        );
+      }
+    },
+    onSuccess: (_, { id, projectId }) => {
+      // Remove the sequence detail from cache
       queryClient.removeQueries({ queryKey: sequenceQueryKeys.detail(id) });
       queryClient.removeQueries({ queryKey: sequenceQueryKeys.steps(id) });
-      // Invalidate project sequences list
-      if (context?.projectId) {
-        queryClient.invalidateQueries({ 
-          queryKey: sequenceQueryKeys.byProject(context.projectId) 
-        });
-      }
+      
+      // Invalidate and refetch project sequences
+      queryClient.invalidateQueries({ 
+        queryKey: sequenceQueryKeys.byProject(projectId) 
+      });
+      
+      // Also invalidate the project itself in case it has sequence counts
+      queryClient.invalidateQueries({ 
+        queryKey: projectQueryKeys.detail(projectId) 
+      });
     },
   });
 };
@@ -303,26 +331,54 @@ export const useDeleteSequenceStep = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (stepId: string) => sourcingProjectApiService.deleteSequenceStep(stepId),
-    onMutate: async (stepId) => {
-      // Get the step to know which sequence to update
-      const step = queryClient.getQueryData<SourcingSequenceStep>(sequenceQueryKeys.step(stepId));
-      return { sequenceId: step?.sequenceId };
-    },
-    onSuccess: (_, stepId, context) => {
-      // Remove the step from cache
-      queryClient.removeQueries({ queryKey: sequenceQueryKeys.step(stepId) });
-      // Invalidate sequence steps list
-      if (context?.sequenceId) {
-        queryClient.invalidateQueries({ 
-          queryKey: sequenceQueryKeys.steps(context.sequenceId) 
-        });
-        // Also invalidate project-level cache - we need to get the project ID
-        // For now, we'll invalidate all project sequences to be safe
-        queryClient.invalidateQueries({ 
-          queryKey: sequenceQueryKeys.all
-        });
+    mutationFn: ({ stepId, sequenceId }: { stepId: string; sequenceId: string }) => 
+      sourcingProjectApiService.deleteSequenceStep(stepId),
+    onMutate: async ({ stepId, sequenceId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: sequenceQueryKeys.steps(sequenceId) });
+      
+      // Get the previous steps list
+      const previousSteps = queryClient.getQueryData<SourcingSequenceStep[]>(
+        sequenceQueryKeys.steps(sequenceId)
+      );
+      
+      // Optimistically update the cache by removing the step
+      if (previousSteps) {
+        queryClient.setQueryData<SourcingSequenceStep[]>(
+          sequenceQueryKeys.steps(sequenceId),
+          previousSteps.filter(step => step.id !== stepId)
+        );
       }
+      
+      return { previousSteps, sequenceId, stepId };
+    },
+    onError: (err, { stepId, sequenceId }, context) => {
+      // Revert the optimistic update on error
+      if (context?.previousSteps) {
+        queryClient.setQueryData(
+          sequenceQueryKeys.steps(sequenceId),
+          context.previousSteps
+        );
+      }
+    },
+    onSuccess: (_, { stepId, sequenceId }) => {
+      // Remove the step detail from cache
+      queryClient.removeQueries({ queryKey: sequenceQueryKeys.step(stepId) });
+      
+      // Invalidate and refetch sequence steps
+      queryClient.invalidateQueries({ 
+        queryKey: sequenceQueryKeys.steps(sequenceId) 
+      });
+      
+      // Invalidate the sequence detail (might have step count)
+      queryClient.invalidateQueries({ 
+        queryKey: sequenceQueryKeys.detail(sequenceId) 
+      });
+      
+      // Invalidate all sequences to update any step counts at project level
+      queryClient.invalidateQueries({ 
+        queryKey: sequenceQueryKeys.all
+      });
     },
   });
 };

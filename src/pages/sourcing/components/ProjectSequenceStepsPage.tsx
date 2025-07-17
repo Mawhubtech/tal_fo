@@ -9,6 +9,8 @@ import {
 } from '../../../hooks/useSourcingSequences';
 import { SourcingSequenceStep } from '../../../services/sourcingProjectApiService';
 import { CreateStepModal } from './CreateStepModal';
+import ConfirmationModal from '../../../components/ConfirmationModal';
+import { toast } from '../../../components/ToastContainer';
 
 interface ProjectSequenceStepsPageProps {
   projectId: string;
@@ -29,6 +31,16 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
   const [editingStep, setEditingStep] = useState<SourcingSequenceStep | null>(null);
   const [selectedSteps, setSelectedSteps] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'steps' | 'candidates'>('steps');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    stepId: string | null;
+    stepName: string | null;
+  }>({
+    isOpen: false,
+    stepId: null,
+    stepName: null
+  });
+  const [deletingStepId, setDeletingStepId] = useState<string | null>(null);
 
   // Function to handle creating new step
   const handleCreateStep = () => {
@@ -89,14 +101,43 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
     }
   };
 
-  const handleDeleteStep = async (stepId: string) => {
-    if (confirm('Are you sure you want to delete this step?')) {
-      try {
-        await deleteStepMutation.mutateAsync(stepId);
-      } catch (error) {
-        console.error('Error deleting step:', error);
-      }
+  const handleDeleteStep = async (stepId: string, stepName: string) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      stepId,
+      stepName
+    });
+  };
+
+  const confirmDeleteStep = async () => {
+    if (!deleteConfirmation.stepId || !deleteConfirmation.stepName) return;
+
+    try {
+      setDeletingStepId(deleteConfirmation.stepId);
+      await deleteStepMutation.mutateAsync({
+        stepId: deleteConfirmation.stepId,
+        sequenceId: sequenceId
+      });
+      toast.success('Step deleted', `"${deleteConfirmation.stepName}" has been deleted successfully.`);
+    } catch (error) {
+      console.error('Error deleting step:', error);
+      toast.error('Failed to delete step', 'Please try again.');
+    } finally {
+      setDeletingStepId(null);
+      setDeleteConfirmation({
+        isOpen: false,
+        stepId: null,
+        stepName: null
+      });
     }
+  };
+
+  const cancelDeleteStep = () => {
+    setDeleteConfirmation({
+      isOpen: false,
+      stepId: null,
+      stepName: null
+    });
   };
 
   const handleReorderSteps = (draggedStepId: string, targetOrder: number) => {
@@ -356,11 +397,16 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDeleteStep(step.id)}
-                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                  onClick={() => handleDeleteStep(step.id, step.name)}
+                  disabled={deletingStepId === step.id}
+                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Delete Step"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {deletingStepId === step.id ? (
+                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -432,6 +478,18 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
           editingStep={editingStep}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={cancelDeleteStep}
+        onConfirm={confirmDeleteStep}
+        title="Delete Step"
+        message={`Are you sure you want to delete "${deleteConfirmation.stepName}"? This action cannot be undone and will affect the sequence flow.`}
+        confirmText="Delete Step"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

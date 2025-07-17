@@ -91,7 +91,7 @@ const ProjectDetailPage: React.FC = () => {
       icon: Mail,
       count: null,
       link: `/dashboard/sourcing/projects/${project.id}/email-templates`,
-      color: 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+      color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     },
     {
       title: 'Analytics',
