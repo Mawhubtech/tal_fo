@@ -3,6 +3,7 @@ import {
   sourcingProjectApiService,
   SourcingSequence,
   SourcingSequenceStep,
+  SequenceEnrollment,
   CreateSourcingSequenceDto,
   UpdateSourcingSequenceDto,
   CreateSourcingSequenceStepDto,
@@ -99,7 +100,7 @@ export const useProjectSequenceSteps = (projectId: string, enabled: boolean = tr
 
 // Sequence Enrollment Queries
 export const useSequenceEnrollments = (sequenceId: string, enabled: boolean = true) => {
-  return useQuery({
+  return useQuery<SequenceEnrollment[]>({
     queryKey: [...sequenceQueryKeys.detail(sequenceId), 'enrollments'],
     queryFn: () => sourcingProjectApiService.getSequenceEnrollments(sequenceId),
     enabled: enabled && !!sequenceId,

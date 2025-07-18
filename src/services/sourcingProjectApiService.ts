@@ -159,6 +159,45 @@ export interface SourcingSequence {
   steps?: SourcingSequenceStep[];
 }
 
+export interface SequenceExecution {
+  id: string;
+  stepId: string;
+  stepOrder: number;
+  stepName: string;
+  stepType: 'email' | 'linkedin_message' | 'linkedin_connection' | 'phone_call' | 'wait';
+  status: 'pending' | 'executing' | 'success' | 'failed' | 'skipped' | 'delayed';
+  scheduledAt: string;
+  executedAt?: string;
+  completedAt?: string;
+  emailSubject?: string;
+  emailOpened: boolean;
+  emailOpenedAt?: string;
+  emailReplied: boolean;
+  emailRepliedAt?: string;
+  linkedinConnectionAccepted: boolean;
+  linkedinConnectionAcceptedAt?: string;
+  errorMessage?: string;
+}
+
+export interface SequenceEnrollment {
+  id: string;
+  sequenceId: string;
+  candidateId: string;
+  status: 'active' | 'paused' | 'completed' | 'failed' | 'unsubscribed';
+  currentStepOrder: number;
+  enrolledAt: string;
+  nextExecutionAt?: string;
+  pausedAt?: string;
+  completedAt?: string;
+  candidate?: {
+    id: string;
+    fullName: string;
+    email: string;
+    position: string;
+  };
+  executions: SequenceExecution[];
+}
+
 export interface SourcingSequenceStep {
   id: string;
   stepOrder: number;
@@ -491,7 +530,7 @@ export const sourcingProjectApiService = {
     return response.data;
   },
 
-  async getSequenceEnrollments(sequenceId: string): Promise<any[]> {
+  async getSequenceEnrollments(sequenceId: string): Promise<SequenceEnrollment[]> {
     const response = await apiClient.get(`/sourcing/sequences/${sequenceId}/enrollments`);
     return response.data;
   },
