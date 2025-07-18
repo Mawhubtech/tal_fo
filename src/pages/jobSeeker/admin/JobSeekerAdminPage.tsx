@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   User, 
@@ -43,6 +43,33 @@ const JobSeekerAdminPage: React.FC = () => {
   const { user } = useAuthContext();
   const logout = useLogout();
   const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'saved' | 'profile' | 'settings'>('overview');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // Auto-collapse on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setIsCollapsed(true);
+      }
+    };
+
+    handleResize(); // Check on mount
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Keyboard shortcut to toggle sidebar
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        setIsCollapsed(!isCollapsed);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isCollapsed]);
   
   // Fetch job seeker profile
   const { data: profile, isLoading: profileLoading, error: profileError } = useJobSeekerProfile();
@@ -266,18 +293,22 @@ const JobSeekerAdminPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="w-full">
+        <div className={`flex flex-col lg:flex-row ${isCollapsed ? 'gap-4' : 'gap-6'} px-4 sm:px-6 lg:px-8 py-4 transition-all duration-300`}>
           {/* Sidebar */}
-          <Sidebar
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            applicationsCount={stats.total}
-            savedJobsCount={savedJobs.length}
-          />
+          <div className={`${isCollapsed ? 'w-16' : 'lg:w-64'} flex-shrink-0 transition-all duration-300`}>
+            <Sidebar
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              applicationsCount={stats.total}
+              savedJobsCount={savedJobs.length}
+              isCollapsed={isCollapsed}
+              setIsCollapsed={setIsCollapsed}
+            />
+          </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 max-w-none transition-all duration-300">
             {activeTab === 'overview' && (
               <OverviewTab 
                 user={user} 
