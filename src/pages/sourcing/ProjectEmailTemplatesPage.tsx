@@ -10,7 +10,9 @@ import {
 import { useProject } from '../../hooks/useSourcingProjects';
 import { useEmailTemplates, useSourcingTemplates } from '../../hooks/useEmailManagement';
 import { 
-  useProjectSequences
+  useProjectSequences,
+  useSequenceAnalytics,
+  useSequenceEnrollments
 } from '../../hooks/useSourcingSequences';
 import { useSetupDefaultSequences } from '../../hooks/useSourcingProjects';
 import { toast } from '../../components/ToastContainer';
@@ -50,7 +52,7 @@ const ProjectEmailTemplatesPage: React.FC = () => {
   
   // Email sequences (campaigns) and analytics
   const { data: emailSequencesData, isLoading: sequencesLoading } = useProjectSequences(projectId!);
-  const sequenceAnalytics = { data: null }; // TODO: Implement analytics for sourcing sequences
+  const { data: sequenceAnalytics, isLoading: analyticsLoading } = useSequenceAnalytics(projectId!);
   const setupDefaultSequencesMutation = useSetupDefaultSequences();
   const queryClient = useQueryClient();
 
@@ -117,6 +119,114 @@ const ProjectEmailTemplatesPage: React.FC = () => {
     });
   }, [templatesData?.templates, sourcingTemplates, searchTerm, selectedCategory, selectedType]);
 
+  // Calculate comprehensive analytics from sequences and templates
+  const calculateAnalytics = useMemo(() => {
+    const templateData = {
+      totalTemplates: filteredTemplates.length,
+      templatesByCategory: {} as Record<string, number>,
+      templatesByType: {} as Record<string, number>,
+      recentTemplates: filteredTemplates
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+        .slice(0, 5)
+    };
+
+    // Calculate template breakdowns
+    filteredTemplates.forEach(template => {
+      if (template.category) {
+        templateData.templatesByCategory[template.category] = (templateData.templatesByCategory[template.category] || 0) + 1;
+      }
+      if (template.type) {
+        templateData.templatesByType[template.type] = (templateData.templatesByType[template.type] || 0) + 1;
+      }
+    });
+
+    if (!emailSequencesData || emailSequencesData.length === 0) {
+      return {
+        ...templateData,
+        totalSequences: 0,
+        activeSequences: 0,
+        pausedSequences: 0,
+        completedSequences: 0,
+        draftSequences: 0,
+        totalSteps: 0,
+        avgStepsPerSequence: 0,
+        sequenceBreakdown: [],
+        typeBreakdown: [],
+        statusBreakdown: [],
+        triggerBreakdown: [],
+        recentActivity: [],
+        topPerformers: []
+      };
+    }
+
+    // Aggregate data from all sequences
+    let totalSteps = 0;
+    const sequenceBreakdown: any[] = [];
+    const typeBreakdown: Record<string, number> = {};
+    const statusBreakdown: Record<string, number> = {};
+    const triggerBreakdown: Record<string, number> = {};
+
+    emailSequencesData.forEach(sequence => {
+      const steps = sequence.steps || [];
+      totalSteps += steps.length;
+
+      // Sequence breakdown
+      sequenceBreakdown.push({
+        id: sequence.id,
+        name: sequence.name,
+        type: sequence.type,
+        status: sequence.status,
+        trigger: sequence.trigger,
+        steps: steps.length,
+        emailSteps: steps.filter(step => step.type === 'email').length,
+        linkedinSteps: steps.filter(step => step.type === 'linkedin_message' || step.type === 'linkedin_connection').length,
+        callSteps: steps.filter(step => step.type === 'phone_call').length,
+        createdAt: sequence.createdAt,
+        updatedAt: sequence.updatedAt
+      });
+
+      // Type breakdown
+      typeBreakdown[sequence.type] = (typeBreakdown[sequence.type] || 0) + 1;
+      
+      // Status breakdown
+      statusBreakdown[sequence.status] = (statusBreakdown[sequence.status] || 0) + 1;
+      
+      // Trigger breakdown
+      triggerBreakdown[sequence.trigger] = (triggerBreakdown[sequence.trigger] || 0) + 1;
+    });
+
+    // Recent activity (last 7 sequences by updated date)
+    const recentActivity = [...sequenceBreakdown]
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 7);
+
+    // Top performers (sequences with most steps and recent activity)
+    const topPerformers = [...sequenceBreakdown]
+      .sort((a, b) => {
+        const aScore = a.steps * 2 + (a.status === 'active' ? 10 : 0);
+        const bScore = b.steps * 2 + (b.status === 'active' ? 10 : 0);
+        return bScore - aScore;
+      })
+      .slice(0, 5);
+
+    return {
+      ...templateData,
+      totalSequences: emailSequencesData.length,
+      activeSequences: emailSequencesData.filter(seq => seq.status === 'active').length,
+      pausedSequences: emailSequencesData.filter(seq => seq.status === 'paused').length,
+      completedSequences: emailSequencesData.filter(seq => seq.status === 'completed').length,
+      draftSequences: emailSequencesData.filter(seq => seq.status === 'draft').length,
+      totalSteps,
+      avgStepsPerSequence: emailSequencesData.length > 0 ? Math.round((totalSteps / emailSequencesData.length) * 10) / 10 : 0,
+      sequenceBreakdown,
+      typeBreakdown: Object.entries(typeBreakdown).map(([type, count]) => ({ type, count })),
+      statusBreakdown: Object.entries(statusBreakdown).map(([status, count]) => ({ status, count })),
+      triggerBreakdown: Object.entries(triggerBreakdown).map(([trigger, count]) => ({ trigger, count })),
+      recentActivity,
+      topPerformers
+    };
+  }, [emailSequencesData, filteredTemplates]);
+
   // Transform email sequences to campaign format
   const emailCampaigns = emailSequencesData?.map(sequence => ({
     id: sequence.id,
@@ -134,7 +244,7 @@ const ProjectEmailTemplatesPage: React.FC = () => {
   })) || [];
 
   // Loading and error states
-  if (projectLoading || sequencesLoading) {
+  if (projectLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -374,60 +484,109 @@ const ProjectEmailTemplatesPage: React.FC = () => {
       {/* Analytics Tab */}
       {activeTab === 'analytics' && (
         <div>
-          {sequencesLoading ? (
+          {sequencesLoading || analyticsLoading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Overall Analytics */}
+              {/* Key Metrics Overview */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Performance Overview</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {emailSequencesData?.length || 0}
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">Communication Overview</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-purple-600">Email Templates</p>
+                        <p className="text-2xl font-bold text-purple-700">{calculateAnalytics.totalTemplates}</p>
+                      </div>
+                      <div className="p-3 bg-purple-200 rounded-full">
+                        <MessageSquare className="w-6 h-6 text-purple-600" />
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">Total Sequences</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {emailSequencesData?.filter(seq => seq.status === 'active').length || 0}
+                  
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-blue-600">Total Sequences</p>
+                        <p className="text-2xl font-bold text-blue-700">{calculateAnalytics.totalSequences}</p>
+                      </div>
+                      <div className="p-3 bg-blue-200 rounded-full">
+                        <Settings className="w-6 h-6 text-blue-600" />
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">Active Sequences</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {Math.round((emailSequencesData?.reduce((avg, seq) => avg + (seq.metrics?.responseRate || 0), 0) / Math.max(emailSequencesData?.length || 1, 1)) || 0)}%
+                  
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-green-600">Active Sequences</p>
+                        <p className="text-2xl font-bold text-green-700">{calculateAnalytics.activeSequences}</p>
+                      </div>
+                      <div className="p-3 bg-green-200 rounded-full">
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">Avg Response Rate</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {emailSequencesData?.reduce((total, seq) => total + (seq.metrics?.totalUsage || 0), 0) || 0}
+                  
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-orange-600">Total Steps</p>
+                        <p className="text-2xl font-bold text-orange-700">{calculateAnalytics.totalSteps}</p>
+                      </div>
+                      <div className="p-3 bg-orange-200 rounded-full">
+                        <Target className="w-6 h-6 text-orange-600" />
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">Total Usage</div>
                   </div>
                 </div>
               </div>
 
-              {/* Top Performing Sequences */}
-              {emailSequencesData && emailSequencesData.length > 0 && (
+              {/* Template Analytics */}
+              {calculateAnalytics.totalTemplates > 0 && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performing Sequences</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Templates by Type</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {Object.entries(calculateAnalytics.templatesByType).map(([type, count]) => {
+                      const percentage = calculateAnalytics.totalTemplates > 0 
+                        ? (count / calculateAnalytics.totalTemplates) * 100 
+                        : 0;
+                      
+                      return (
+                        <div key={type} className="bg-purple-50 rounded-lg p-4 text-center">
+                          <div className="text-2xl font-bold text-purple-700 mb-1">{count}</div>
+                          <div className="text-sm text-purple-600 capitalize mb-1">
+                            {type.replace('_', ' ')}
+                          </div>
+                          <div className="text-xs text-purple-500">{Math.round(percentage)}% of total</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Templates */}
+              {calculateAnalytics.recentTemplates.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Recently Updated Templates</h3>
                   <div className="space-y-3">
-                    {emailSequencesData.slice(0, 5).map((sequence) => (
-                      <div key={sequence.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    {calculateAnalytics.recentTemplates.map((template) => (
+                      <div key={template.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div>
-                          <h4 className="font-medium text-gray-900">{sequence.name}</h4>
-                          <p className="text-sm text-gray-600">{sequence.type}</p>
+                          <h4 className="font-medium text-gray-900">{template.name}</h4>
+                          <p className="text-sm text-gray-600">
+                            {template.category} • {template.type?.replace('_', ' ')}
+                          </p>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-medium text-green-600">
-                            {Math.round((sequence.metrics?.responseRate || 0) * 100)}% response rate
+                          <div className="text-sm text-purple-600">
+                            {new Date(template.updatedAt || template.createdAt).toLocaleDateString()}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {sequence.metrics?.totalUsage || 0} uses
+                            {template.subject || 'No subject'}
                           </div>
                         </div>
                       </div>
@@ -436,22 +595,251 @@ const ProjectEmailTemplatesPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Category Breakdown */}
-              {emailSequencesData && emailSequencesData.length > 0 && (
+              {/* Status Breakdown */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Sequences by Category</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {Object.entries(
-                      emailSequencesData.reduce((acc, seq) => {
-                        acc[seq.type] = (acc[seq.type] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    ).map(([category, count]) => (
-                      <div key={category} className="text-center p-4 bg-gray-50 rounded-lg">
-                        <div className="text-xl font-bold text-purple-600">{count}</div>
-                        <div className="text-sm text-gray-600 capitalize">{category.replace('_', ' ')}</div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Sequence Status Distribution</h3>
+                  <div className="space-y-4">
+                    {calculateAnalytics.statusBreakdown.map((item) => {
+                      const percentage = calculateAnalytics.totalSequences > 0 
+                        ? (item.count / calculateAnalytics.totalSequences) * 100 
+                        : 0;
+                      const statusColors: Record<string, string> = {
+                        active: 'bg-green-500',
+                        paused: 'bg-yellow-500',
+                        completed: 'bg-blue-500',
+                        draft: 'bg-gray-500'
+                      };
+                      
+                      return (
+                        <div key={item.status} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-3 h-3 rounded-full ${statusColors[item.status] || 'bg-purple-500'}`}></div>
+                            <span className="text-sm font-medium text-gray-700 capitalize">{item.status}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-600">{item.count}</span>
+                            <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${statusColors[item.status] || 'bg-purple-500'}`}
+                                style={{ width: `${percentage}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-gray-500 w-10 text-right">{Math.round(percentage)}%</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Sequence Types</h3>
+                  <div className="space-y-4">
+                    {calculateAnalytics.typeBreakdown.map((item) => {
+                      const percentage = calculateAnalytics.totalSequences > 0 
+                        ? (item.count / calculateAnalytics.totalSequences) * 100 
+                        : 0;
+                      
+                      return (
+                        <div key={item.type} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                            <span className="text-sm font-medium text-gray-700 capitalize">
+                              {item.type.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-600">{item.count}</span>
+                            <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-purple-500"
+                                style={{ width: `${percentage}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-gray-500 w-10 text-right">{Math.round(percentage)}%</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Trigger Analysis */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Sequence Triggers</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {calculateAnalytics.triggerBreakdown.map((item) => {
+                    const percentage = calculateAnalytics.totalSequences > 0 
+                      ? (item.count / calculateAnalytics.totalSequences) * 100 
+                      : 0;
+                    const triggerIcons: Record<string, any> = {
+                      manual: Users,
+                      automatic: Zap,
+                      pipeline_stage: Target
+                    };
+                    const TriggerIcon = triggerIcons[item.trigger] || Settings;
+                    
+                    return (
+                      <div key={item.trigger} className="bg-purple-50 rounded-lg p-4 text-center">
+                        <div className="flex justify-center mb-2">
+                          <TriggerIcon className="w-8 h-8 text-purple-600" />
+                        </div>
+                        <div className="text-2xl font-bold text-purple-700 mb-1">{item.count}</div>
+                        <div className="text-sm text-purple-600 capitalize mb-1">
+                          {item.trigger.replace('_', ' ')}
+                        </div>
+                        <div className="text-xs text-purple-500">{Math.round(percentage)}% of total</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Top Performing Sequences */}
+              {calculateAnalytics.topPerformers.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performing Sequences</h3>
+                  <div className="space-y-3">
+                    {calculateAnalytics.topPerformers.map((sequence, index) => (
+                      <div key={sequence.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-full">
+                            <span className="text-sm font-bold text-purple-600">#{index + 1}</span>
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900">{sequence.name}</h4>
+                            <p className="text-sm text-gray-600">
+                              {sequence.type.replace('_', ' ')} • {sequence.status}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-purple-600">
+                            {sequence.steps} steps
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {sequence.emailSteps} email • {sequence.linkedinSteps} linkedin • {sequence.callSteps} calls
+                          </div>
+                        </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Activity */}
+              {calculateAnalytics.recentActivity.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Sequence Activity</h3>
+                  <div className="space-y-3">
+                    {calculateAnalytics.recentActivity.map((sequence) => (
+                      <div key={sequence.id} className="flex items-center justify-between p-3 border-l-4 border-purple-400 bg-purple-50 rounded-r-lg">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{sequence.name}</h4>
+                          <p className="text-sm text-gray-600">
+                            {sequence.type.replace('_', ' ')} • {sequence.steps} steps
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-600">
+                            {new Date(sequence.updatedAt).toLocaleDateString()}
+                          </div>
+                          <div className={`text-xs px-2 py-1 rounded-full inline-block ${
+                            sequence.status === 'active' ? 'bg-green-100 text-green-600' :
+                            sequence.status === 'paused' ? 'bg-yellow-100 text-yellow-600' :
+                            sequence.status === 'completed' ? 'bg-blue-100 text-blue-600' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {sequence.status}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Detailed Sequence Breakdown */}
+              {calculateAnalytics.sequenceBreakdown.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">All Sequences Breakdown</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Sequence
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Steps
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Step Types
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Created
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {calculateAnalytics.sequenceBreakdown.map((sequence) => (
+                          <tr key={sequence.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{sequence.name}</div>
+                              <div className="text-sm text-gray-500">{sequence.trigger.replace('_', ' ')}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-900 capitalize">
+                                {sequence.type.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                sequence.status === 'active' ? 'bg-green-100 text-green-800' :
+                                sequence.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                                sequence.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {sequence.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {sequence.steps}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div className="flex space-x-2">
+                                {sequence.emailSteps > 0 && (
+                                  <span className="bg-purple-100 text-purple-600 px-2 py-1 rounded text-xs">
+                                    {sequence.emailSteps} email
+                                  </span>
+                                )}
+                                {sequence.linkedinSteps > 0 && (
+                                  <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs">
+                                    {sequence.linkedinSteps} linkedin
+                                  </span>
+                                )}
+                                {sequence.callSteps > 0 && (
+                                  <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
+                                    {sequence.callSteps} call
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(sequence.createdAt).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
@@ -462,7 +850,14 @@ const ProjectEmailTemplatesPage: React.FC = () => {
                   <div className="text-center py-12">
                     <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
-                    <p className="text-gray-600">Create email sequences to view performance analytics</p>
+                    <p className="text-gray-600 mb-4">Create email sequences to view comprehensive analytics</p>
+                    <Link
+                      to={`/dashboard/sourcing/projects/${projectId}/sequences`}
+                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Sequence
+                    </Link>
                   </div>
                 </div>
               )}
