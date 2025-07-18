@@ -303,3 +303,43 @@ export const useUpdateJobSeekerProfile = () => {
     },
   });
 };
+
+// Comprehensive profile update hook for the ProfileTab component
+export const useUpdateComprehensiveProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      personalInfo?: {
+        fullName?: string;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        phone?: string;
+        location?: string;
+        website?: string;
+        linkedIn?: string;
+        github?: string;
+        summary?: string;
+        currentPosition?: string;
+        salaryExpectation?: string;
+      };
+      experience?: Array<any>;
+      education?: Array<any>;
+      skills?: Array<any>;
+      projects?: Array<any>;
+      certifications?: Array<any>;
+      awards?: Array<any>;
+      languages?: Array<any>;
+      interests?: Array<any>;
+      references?: Array<any>;
+      customFields?: Array<any>;
+    }) => {
+      return jobSeekerProfileApiService.updateComprehensiveProfile(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: jobSeekerProfileKeys.profile() });
+      queryClient.invalidateQueries({ queryKey: jobSeekerProfileKeys.onboardingStatus() });
+    },
+  });
+};

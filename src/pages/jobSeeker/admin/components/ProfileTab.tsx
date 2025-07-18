@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { 
   User, 
@@ -35,7 +35,7 @@ import {
   ArrowRight,
   Eye
 } from 'lucide-react';
-import { useJobSeekerProfile } from '../../../../hooks/useJobSeekerProfile';
+import { useJobSeekerProfile, useUpdateComprehensiveProfile } from '../../../../hooks/useJobSeekerProfile';
 import {
   ProjectsSection,
   CertificationsSection,
@@ -170,15 +170,28 @@ export interface CandidateFormData {
 
 const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
   const { data: profile, isLoading, error, refetch } = useJobSeekerProfile();
+  const updateProfile = useUpdateComprehensiveProfile();
   const [activeSection, setActiveSection] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Hooks for scrollable navigation
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
-  // Transform profile data to form data
-  const getDefaultFormData = (): CandidateFormData => {
+  // Transform profile data to form data - memoized to prevent recreation on every render
+  const getDefaultFormData = useMemo((): CandidateFormData => {
     const candidate = profile?.candidate;
+    
+    // Helper function to ensure array fields
+    const ensureArray = (value: any): any[] => {
+      if (Array.isArray(value)) return value;
+      if (typeof value === 'string') return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
+      return [];
+    };
     return {
       personalInfo: {
         fullName: candidate?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
@@ -202,9 +215,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
         endDate: exp.endDate || '',
         location: exp.location || '',
         description: exp.description || '',
-        responsibilities: exp.responsibilities || [],
-        achievements: exp.achievements || [],
-        technologies: exp.technologies || [],
+        responsibilities: ensureArray(exp.responsibilities),
+        achievements: ensureArray(exp.achievements),
+        technologies: ensureArray(exp.technologies),
       })) || [],
       education: candidate?.education?.map((edu: any) => ({
         id: edu.id,
@@ -215,8 +228,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
         graduationDate: edu.graduationDate || edu.graduationYear?.toString() || '',
         location: edu.location || '',
         gpa: edu.gpa || undefined,
-        courses: edu.courses || [],
-        honors: edu.honors || [],
+        courses: ensureArray(edu.courses),
+        honors: ensureArray(edu.honors),
         description: edu.description || '',
       })) || [],
       skills: candidate?.skillMappings?.map((sm: any) => ({
@@ -229,13 +242,13 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
         id: proj.id,
         name: proj.name || '',
         description: proj.description || '',
-        technologies: proj.technologies || [],
+        technologies: ensureArray(proj.technologies),
         url: proj.url || '',
         repositoryUrl: proj.repositoryUrl || '',
         startDate: proj.startDate || '',
         endDate: proj.endDate || '',
         role: proj.role || '',
-        achievements: proj.achievements || [],
+        achievements: ensureArray(proj.achievements),
       })) || [],
       certifications: (candidate as any)?.certifications?.map((cert: any) => ({
         id: cert.id,
@@ -273,8 +286,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
         level: interest.level || 'casual',
         description: interest.description || '',
         yearsOfExperience: interest.yearsOfExperience || undefined,
-        achievements: interest.achievements || [],
-        relatedSkills: interest.relatedSkills || [],
+        achievements: ensureArray(interest.achievements),
+        relatedSkills: ensureArray(interest.relatedSkills),
       })) || [],
       references: (candidate as any)?.references?.map((ref: any) => ({
         id: ref.id,
@@ -295,10 +308,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
         fieldDescription: field.fieldDescription || '',
       })) || [],
     };
-  };
+  }, [profile, user]); // Dependencies for useMemo
 
   const { register, control, handleSubmit, watch, reset, formState: { isDirty } } = useForm<CandidateFormData>({
-    defaultValues: getDefaultFormData()
+    defaultValues: getDefaultFormData
   });
 
   // Field arrays for dynamic sections
@@ -354,39 +367,92 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
 
   const watchedData = watch();
 
-  useEffect(() => {
-    if (profile) {
-      reset(getDefaultFormData());
+  // Functions for scrollable navigation - memoized to prevent re-creation
+  const checkScrollability = useCallback(() => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
-  }, [profile, reset]);
+  }, []);
+
+  const scrollLeft = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  }, []);
+
+  const scrollRight = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  }, []);
 
   useEffect(() => {
+    if (profile) {
+      reset(getDefaultFormData);
+    }
+  }, [profile, reset, getDefaultFormData]);
+
+  // Optimized change detection - only watch for changes when editing
+  useEffect(() => {
+    if (!isEditing) return;
+    
     const subscription = watch(() => {
       setHasChanges(true);
     });
     return () => subscription.unsubscribe();
-  }, [watch]);
+  }, [watch, isEditing]);
 
-  const onSubmit = async (data: CandidateFormData) => {
+  // Effect for scroll detection
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      checkScrollability();
+      container.addEventListener('scroll', checkScrollability);
+      window.addEventListener('resize', checkScrollability);
+      
+      return () => {
+        container.removeEventListener('scroll', checkScrollability);
+        window.removeEventListener('resize', checkScrollability);
+      };
+    }
+  }, []);
+
+  const onSubmit = useCallback(async (data: CandidateFormData) => {
     setIsSaving(true);
     try {
-      // Here you would implement the API call to update candidate data
       console.log('Saving candidate data:', data);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the comprehensive update API
+      await updateProfile.mutateAsync({
+        personalInfo: data.personalInfo,
+        experience: data.experience,
+        education: data.education,
+        skills: data.skills,
+        projects: data.projects,
+        certifications: data.certifications,
+        awards: data.awards,
+        languages: data.languages,
+        interests: data.interests,
+        references: data.references,
+        customFields: data.customFields,
+      });
       
       setHasChanges(false);
       setIsEditing(false);
       refetch();
     } catch (error) {
       console.error('Error saving profile:', error);
+      // You could add a toast notification here
+      alert('Error saving profile. Please try again.');
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [updateProfile, refetch]);
 
-  const sections = [
+  // Memoized sections array to prevent recreation
+  const sections = useMemo(() => [
     { id: 'personal', label: 'Personal Info', icon: User },
     { id: 'experience', label: 'Experience', icon: Briefcase },
     { id: 'education', label: 'Education', icon: GraduationCap },
@@ -398,7 +464,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
     { id: 'interests', label: 'Interests', icon: Star },
     { id: 'references', label: 'References', icon: Users },
     { id: 'custom', label: 'Custom Fields', icon: Edit3 }
-  ];
+  ], []);
 
   if (isLoading) {
     return (
@@ -435,44 +501,6 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
 
   // Render section navigation
   const renderSectionNav = () => {
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const [canScrollLeft, setCanScrollLeft] = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(false);
-
-    const checkScrollability = () => {
-      if (scrollContainerRef.current) {
-        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-        setCanScrollLeft(scrollLeft > 0);
-        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-      }
-    };
-
-    useEffect(() => {
-      const container = scrollContainerRef.current;
-      if (container) {
-        checkScrollability();
-        container.addEventListener('scroll', checkScrollability);
-        window.addEventListener('resize', checkScrollability);
-        
-        return () => {
-          container.removeEventListener('scroll', checkScrollability);
-          window.removeEventListener('resize', checkScrollability);
-        };
-      }
-    }, []);
-
-    const scrollLeft = () => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-      }
-    };
-
-    const scrollRight = () => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-      }
-    };
-
     return (
       <div className="bg-white rounded-lg shadow mb-6 relative">
         {/* Left scroll indicator */}
@@ -915,8 +943,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
     </div>
   );
 
-  // Helper function to render other sections
-  const renderOtherSections = () => {
+  // Helper function to render other sections - memoized to prevent unnecessary re-renders
+  const renderOtherSections = useMemo(() => {
     switch (activeSection) {
       case 'projects':
         return <ProjectsSection control={control} register={register} isEditing={isEditing} />;
@@ -935,11 +963,35 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
       default:
         return null;
     }
-  };
+  }, [activeSection, control, register, isEditing, watchedData]);
 
-  // Render CV preview
-  const renderCVPreview = () => {
+  // Render CV preview - memoized to prevent expensive re-renders
+  const renderCVPreview = useMemo(() => {
+    if (!showPreview) return null;
+    
     const data = watchedData;
+    
+    // Helper function to ensure technologies is always an array
+    const getTechnologiesArray = (technologies: any): string[] => {
+      if (Array.isArray(technologies)) {
+        return technologies;
+      }
+      if (typeof technologies === 'string') {
+        return technologies.split(',').map(t => t.trim()).filter(t => t.length > 0);
+      }
+      return [];
+    };
+
+    // Helper function to ensure any field is always an array
+    const getArrayValue = (value: any): any[] => {
+      if (Array.isArray(value)) {
+        return value;
+      }
+      if (typeof value === 'string') {
+        return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
+      }
+      return [];
+    };
     
     return (
       <div className="bg-white p-4 shadow rounded-lg text-sm">
@@ -1025,9 +1077,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
                     {exp.description && (
                       <p className="text-xs text-gray-700 mb-1">{exp.description}</p>
                     )}
-                    {exp.responsibilities && exp.responsibilities.length > 0 && (
+                    {exp.responsibilities && getArrayValue(exp.responsibilities).length > 0 && (
                       <ul className="list-disc list-inside text-xs text-gray-700 space-y-0.5 ml-2">
-                        {exp.responsibilities.slice(0, 3).map((resp, respIndex) => (
+                        {getArrayValue(exp.responsibilities).slice(0, 3).map((resp, respIndex) => (
                           <li key={respIndex}>{resp}</li>
                         ))}
                       </ul>
@@ -1109,9 +1161,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
                     {project.description && (
                       <p className="text-xs text-gray-700 mb-1">{project.description}</p>
                     )}
-                    {project.technologies && project.technologies.length > 0 && (
+                    {project.technologies && (
                       <div className="flex flex-wrap gap-1 mb-1">
-                        {project.technologies.slice(0, 5).map((tech, techIndex) => (
+                        {getTechnologiesArray(project.technologies).slice(0, 5).map((tech, techIndex) => (
                           <span key={techIndex} className="text-xs bg-gray-100 text-gray-600 px-1 py-0.5 rounded">
                             {tech}
                           </span>
@@ -1205,10 +1257,66 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
               </div>
             </div>
           )}
+
+          {/* References */}
+          {data.references && data.references.length > 0 && (
+            <div className="mb-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                References
+              </h2>
+              <div className="space-y-2">
+                {data.references.slice(0, 3).map((ref, index) => (
+                  <div key={index}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900">{ref.name}</h3>
+                        <p className="text-xs text-purple-600">{ref.position} at {ref.company}</p>
+                        <p className="text-xs text-gray-600">{ref.relationship}</p>
+                      </div>
+                      <div className="text-right text-xs text-gray-600">
+                        <p>{ref.email}</p>
+                        {ref.phone && <p>{ref.phone}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Custom Fields */}
+          {data.customFields && data.customFields.length > 0 && (
+            <div className="mb-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                Additional Information
+              </h2>
+              <div className="space-y-2">
+                {data.customFields.map((field, index) => (
+                  <div key={index}>
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs font-medium text-gray-900">{field.fieldName}:</span>
+                      <span className="text-xs text-gray-700 ml-2 flex-1 text-right">
+                        {field.fieldType === 'url' ? (
+                          <a href={field.fieldValue} className="text-purple-600 hover:text-purple-700">
+                            {field.fieldValue}
+                          </a>
+                        ) : (
+                          field.fieldValue
+                        )}
+                      </span>
+                    </div>
+                    {field.fieldDescription && (
+                      <p className="text-xs text-gray-600 mt-1">{field.fieldDescription}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
-  };
+  }, [showPreview, watchedData]); // Dependencies for renderCVPreview memoization
 
   return (
     <>
@@ -1320,7 +1428,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
               {activeSection === 'experience' && renderExperience()}
               {activeSection === 'education' && renderEducation()}
               {activeSection === 'skills' && renderSkills()}
-              {['projects', 'certifications', 'awards', 'languages', 'interests', 'references', 'custom'].includes(activeSection) && renderOtherSections()}
+              {['projects', 'certifications', 'awards', 'languages', 'interests', 'references', 'custom'].includes(activeSection) && renderOtherSections}
             </form>
           </div>
         </div>
@@ -1334,7 +1442,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
                 Live CV Preview
               </h3>
               <div className="max-h-[calc(100vh-300px)] overflow-y-auto bg-white rounded shadow-sm">
-                {renderCVPreview()}
+                {renderCVPreview}
               </div>
             </div>
           </div>
@@ -1385,4 +1493,4 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
   );
 };
 
-export default ProfileTab;
+export default React.memo(ProfileTab);
