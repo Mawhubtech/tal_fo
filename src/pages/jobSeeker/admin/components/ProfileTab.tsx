@@ -33,9 +33,11 @@ import {
   Users,
   ArrowLeft,
   ArrowRight,
-  Eye
+  Eye,
+  Download
 } from 'lucide-react';
 import { useJobSeekerProfile, useUpdateComprehensiveProfile } from '../../../../hooks/useJobSeekerProfile';
+import jsPDF from 'jspdf';
 import {
   ProjectsSection,
   CertificationsSection,
@@ -176,6 +178,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   // Hooks for scrollable navigation
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -450,6 +453,327 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
       setIsSaving(false);
     }
   }, [updateProfile, refetch]);
+
+  // Download CV as PDF
+  const downloadPDF = useCallback(async () => {
+    setIsDownloading(true);
+    try {
+      const data = watchedData;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Set up fonts and spacing
+      let yPosition = 20;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 20;
+      const contentWidth = pageWidth - (2 * margin);
+      
+      // Helper function to add text with automatic line wrapping
+      const addText = (text: string, fontSize: number = 10, isBold: boolean = false, indent: number = 0) => {
+        if (!text) return yPosition;
+        
+        pdf.setFontSize(fontSize);
+        pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+        
+        const lines = pdf.splitTextToSize(text, contentWidth - indent);
+        lines.forEach((line: string) => {
+          if (yPosition > 270) { // Near bottom of page
+            pdf.addPage();
+            yPosition = 20;
+          }
+          pdf.text(line, margin + indent, yPosition);
+          yPosition += fontSize * 0.5; // Line spacing
+        });
+        return yPosition;
+      };
+      
+      // Helper function to add section header
+      const addSectionHeader = (title: string) => {
+        yPosition += 5; // Extra space before section
+        addText(title, 14, true);
+        yPosition += 3; // Space after header
+        
+        // Add underline
+        pdf.setDrawColor(150, 150, 150);
+        pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 5;
+      };
+      
+      // Header - Name and Contact Info
+      addText(data.personalInfo?.fullName || 'Professional CV', 18, true);
+      yPosition += 5;
+      
+      // Contact information
+      const contactInfo = [];
+      if (data.personalInfo?.email) contactInfo.push(`Email: ${data.personalInfo.email}`);
+      if (data.personalInfo?.phone) contactInfo.push(`Phone: ${data.personalInfo.phone}`);
+      if (data.personalInfo?.location) contactInfo.push(`Location: ${data.personalInfo.location}`);
+      
+      if (contactInfo.length > 0) {
+        addText(contactInfo.join(' | '), 10);
+        yPosition += 3;
+      }
+      
+      // Professional links
+      const professionalLinks = [];
+      if (data.personalInfo?.linkedIn) professionalLinks.push(`LinkedIn: ${data.personalInfo.linkedIn}`);
+      if (data.personalInfo?.github) professionalLinks.push(`GitHub: ${data.personalInfo.github}`);
+      if (data.personalInfo?.website) professionalLinks.push(`Website: ${data.personalInfo.website}`);
+      
+      if (professionalLinks.length > 0) {
+        addText(professionalLinks.join(' | '), 10);
+        yPosition += 3;
+      }
+      
+      // Professional Summary
+      if (data.personalInfo?.summary) {
+        addSectionHeader('PROFESSIONAL SUMMARY');
+        addText(data.personalInfo.summary, 10);
+        yPosition += 5;
+      }
+      
+      // Work Experience
+      if (data.experience && data.experience.length > 0) {
+        addSectionHeader('WORK EXPERIENCE');
+        
+        data.experience.forEach((exp, index) => {
+          // Job title and company
+          const jobHeader = `${exp.position || 'Position'} at ${exp.company || 'Company'}`;
+          addText(jobHeader, 12, true);
+          
+          // Date and location
+          const dateLocation = [];
+          if (exp.startDate) {
+            const endDate = exp.endDate || 'Present';
+            dateLocation.push(`${exp.startDate} - ${endDate}`);
+          }
+          if (exp.location) dateLocation.push(exp.location);
+          
+          if (dateLocation.length > 0) {
+            addText(dateLocation.join(' | '), 10);
+          }
+          
+          // Description
+          if (exp.description) {
+            yPosition += 2;
+            addText(exp.description, 10);
+          }
+          
+          // Responsibilities
+          if (exp.responsibilities && Array.isArray(exp.responsibilities) && exp.responsibilities.length > 0) {
+            yPosition += 2;
+            exp.responsibilities.forEach((resp: string) => {
+              addText(`• ${resp}`, 10, false, 5);
+            });
+          }
+          
+          // Achievements
+          if (exp.achievements && Array.isArray(exp.achievements) && exp.achievements.length > 0) {
+            yPosition += 2;
+            addText('Key Achievements:', 10, true, 5);
+            exp.achievements.forEach((achievement: string) => {
+              addText(`• ${achievement}`, 10, false, 5);
+            });
+          }
+          
+          // Technologies
+          if (exp.technologies && Array.isArray(exp.technologies) && exp.technologies.length > 0) {
+            yPosition += 2;
+            addText(`Technologies: ${exp.technologies.join(', ')}`, 10, false, 5);
+          }
+          
+          yPosition += 5; // Space between jobs
+        });
+      }
+      
+      // Education
+      if (data.education && data.education.length > 0) {
+        addSectionHeader('EDUCATION');
+        
+        data.education.forEach((edu) => {
+          const eduHeader = `${edu.degree || 'Degree'} - ${edu.institution || 'Institution'}`;
+          addText(eduHeader, 12, true);
+          
+          const eduDetails = [];
+          if (edu.major) eduDetails.push(`Major: ${edu.major}`);
+          if (edu.graduationDate) eduDetails.push(`Graduated: ${edu.graduationDate}`);
+          if (edu.gpa) eduDetails.push(`GPA: ${edu.gpa}`);
+          
+          if (eduDetails.length > 0) {
+            addText(eduDetails.join(' | '), 10);
+          }
+          
+          if (edu.description) {
+            yPosition += 2;
+            addText(edu.description, 10);
+          }
+          
+          yPosition += 3;
+        });
+      }
+      
+      // Skills
+      if (data.skills && data.skills.length > 0) {
+        addSectionHeader('SKILLS & EXPERTISE');
+        
+        // Group skills by category
+        const skillsByCategory: { [key: string]: string[] } = {};
+        data.skills.forEach((skill) => {
+          const category = skill.category || 'Other';
+          if (!skillsByCategory[category]) {
+            skillsByCategory[category] = [];
+          }
+          const skillText = skill.level ? `${skill.name} (${skill.level})` : skill.name;
+          skillsByCategory[category].push(skillText);
+        });
+        
+        Object.entries(skillsByCategory).forEach(([category, skills]) => {
+          addText(`${category.charAt(0).toUpperCase() + category.slice(1)}:`, 11, true);
+          addText(skills.join(', '), 10, false, 5);
+          yPosition += 3;
+        });
+      }
+      
+      // Projects
+      if (data.projects && data.projects.length > 0) {
+        addSectionHeader('PROJECTS');
+        
+        data.projects.slice(0, 5).forEach((project) => { // Limit to 5 projects for space
+          addText(project.name || 'Project', 12, true);
+          
+          if (project.role) {
+            addText(`Role: ${project.role}`, 10);
+          }
+          
+          const projectDates = [];
+          if (project.startDate) {
+            const endDate = project.endDate || 'Present';
+            projectDates.push(`${project.startDate} - ${endDate}`);
+          }
+          if (projectDates.length > 0) {
+            addText(projectDates.join(' | '), 10);
+          }
+          
+          if (project.description) {
+            yPosition += 2;
+            addText(project.description, 10);
+          }
+          
+          if (project.technologies && Array.isArray(project.technologies) && project.technologies.length > 0) {
+            yPosition += 2;
+            addText(`Technologies: ${project.technologies.join(', ')}`, 10);
+          }
+          
+          if (project.url) {
+            addText(`URL: ${project.url}`, 10);
+          }
+          
+          yPosition += 4;
+        });
+      }
+      
+      // Certifications
+      if (data.certifications && data.certifications.length > 0) {
+        addSectionHeader('CERTIFICATIONS');
+        
+        data.certifications.forEach((cert) => {
+          const certHeader = `${cert.name || 'Certification'} - ${cert.issuer || 'Issuer'}`;
+          addText(certHeader, 11, true);
+          
+          const certDetails = [];
+          if (cert.dateIssued) certDetails.push(`Issued: ${cert.dateIssued}`);
+          if (cert.expirationDate) certDetails.push(`Expires: ${cert.expirationDate}`);
+          if (cert.credentialId) certDetails.push(`ID: ${cert.credentialId}`);
+          
+          if (certDetails.length > 0) {
+            addText(certDetails.join(' | '), 10);
+          }
+          
+          if (cert.credentialUrl) {
+            addText(`Verification: ${cert.credentialUrl}`, 10);
+          }
+          
+          yPosition += 3;
+        });
+      }
+      
+      // Languages
+      if (data.languages && data.languages.length > 0) {
+        addSectionHeader('LANGUAGES');
+        
+        const languageList = data.languages.map((lang) => 
+          `${lang.language} (${lang.proficiency || 'Basic'})`
+        );
+        addText(languageList.join(', '), 10);
+        yPosition += 3;
+      }
+      
+      // Awards
+      if (data.awards && data.awards.length > 0) {
+        addSectionHeader('AWARDS & RECOGNITION');
+        
+        data.awards.forEach((award) => {
+          const awardHeader = `${award.name || 'Award'} - ${award.issuer || 'Issuer'}`;
+          addText(awardHeader, 11, true);
+          
+          if (award.date) {
+            addText(`Date: ${award.date}`, 10);
+          }
+          
+          if (award.description) {
+            addText(award.description, 10);
+          }
+          
+          yPosition += 3;
+        });
+      }
+      
+      // Interests
+      if (data.interests && data.interests.length > 0) {
+        addSectionHeader('INTERESTS');
+        
+        const interestList = data.interests.map((interest) => interest.name).join(', ');
+        addText(interestList, 10);
+        yPosition += 3;
+      }
+      
+      // References
+      if (data.references && data.references.length > 0) {
+        addSectionHeader('REFERENCES');
+        
+        data.references.forEach((ref) => {
+          const refHeader = `${ref.name || 'Reference'} - ${ref.position || 'Position'}`;
+          addText(refHeader, 11, true);
+          
+          const refDetails = [];
+          if (ref.company) refDetails.push(ref.company);
+          if (ref.email) refDetails.push(ref.email);
+          if (ref.phone) refDetails.push(ref.phone);
+          
+          if (refDetails.length > 0) {
+            addText(refDetails.join(' | '), 10);
+          }
+          
+          if (ref.relationship) {
+            addText(`Relationship: ${ref.relationship}`, 10);
+          }
+          
+          yPosition += 4;
+        });
+      }
+      
+      // Generate filename with candidate name and date
+      const candidateName = data.personalInfo?.fullName || 'CV';
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `${candidateName.replace(/\s+/g, '_')}_CV_${date}.pdf`;
+      
+      pdf.save(filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [watchedData]);
 
   // Memoized sections array to prevent recreation
   const sections = useMemo(() => [
@@ -1373,6 +1697,26 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
               <Eye className="h-4 w-4 mr-2" />
               {showPreview ? 'Hide Preview' : 'Show Preview'}
             </button>
+            {!showPreview && (
+              <button
+                onClick={downloadPDF}
+                disabled={isDownloading}
+                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isDownloading ? 'Generating...' : 'Download PDF'}
+              </button>
+            )}
+            {showPreview && (
+              <button
+                onClick={downloadPDF}
+                disabled={isDownloading}
+                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isDownloading ? 'Generating...' : 'Download PDF'}
+              </button>
+            )}
             {!isEditing ? (
               <button 
                 onClick={() => setIsEditing(true)}
@@ -1437,10 +1781,20 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
         {showPreview && (
           <div className="col-span-5">
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <FileText className="h-5 w-5 mr-2" />
-                Live CV Preview
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Live CV Preview
+                </h3>
+                <button
+                  onClick={downloadPDF}
+                  disabled={isDownloading}
+                  className="flex items-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  {isDownloading ? 'Generating...' : 'Download PDF'}
+                </button>
+              </div>
               <div className="max-h-[calc(100vh-300px)] overflow-y-auto bg-white rounded shadow-sm">
                 {renderCVPreview}
               </div>
