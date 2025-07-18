@@ -78,6 +78,7 @@ export const SIDEBAR_PERMISSIONS = {
   JOBS_DELETE: 'jobs:delete',
   ORGANIZATIONS_ACCESS: 'organizations:access',
   MY_JOBS_ACCESS: 'my-jobs:access',
+  JOB_BOARDS_ACCESS: 'job-boards:access',
   
   // Candidates Module
   CANDIDATES_ACCESS: 'candidates:access',
@@ -144,6 +145,7 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   // Jobs routes
   '/dashboard/organizations': [SIDEBAR_PERMISSIONS.JOBS_ACCESS, SIDEBAR_PERMISSIONS.ORGANIZATIONS_ACCESS],
   '/dashboard/my-jobs': [SIDEBAR_PERMISSIONS.JOBS_ACCESS, SIDEBAR_PERMISSIONS.MY_JOBS_ACCESS],
+  '/dashboard/job-boards': [SIDEBAR_PERMISSIONS.JOB_BOARDS_ACCESS],
   
   // Candidates routes
   '/dashboard/candidates': [SIDEBAR_PERMISSIONS.CANDIDATES_ACCESS, SIDEBAR_PERMISSIONS.CANDIDATES_READ],

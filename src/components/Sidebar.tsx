@@ -146,6 +146,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               {isExpanded && "My Jobs"}
             </Link>
           )}
+
+          {/* Job Boards Section - For Recruiters */}
+          {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_JOB_BOARDS) && (
+            <Link 
+              to="/dashboard/job-boards" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              title={!isExpanded ? "Job Boards" : ""}
+            >
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/job-boards') ? '#7e22ce' : '#9ca3af' }}>
+                <Target className="w-4 h-4" />
+              </div>
+              {isExpanded && "Job Boards"}
+            </Link>
+          )}
           
           {/* Candidates Section */}
           {hasPermission(SIDEBAR_PERMISSIONS.CANDIDATES_ACCESS) && (
@@ -397,13 +411,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       Recruitment Teams
                     </Link>
             )}
-                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_JOB_BOARDS) && (
-                      <Link to="/dashboard/admin/job-boards" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                        <Target className="w-3 h-3 mr-2" />
-                        Job Boards
-                      </Link>
-                    )}
-                    
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ANALYTICS) && (
                       <Link to="/dashboard/admin/analytics" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/analytics') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <BarChart3 className="w-3 h-3 mr-2" />
@@ -496,13 +503,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                           <Link to="/dashboard/admin/recruitment-teams" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/recruitment-teams') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                             <Users className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/recruitment-teams') ? '#7e22ce' : '' }} />
                             Recruitment Teams
-                          </Link>
-                        )}
-                        
-                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_JOB_BOARDS) && (
-                          <Link to="/dashboard/admin/job-boards" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <Target className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/job-boards') ? '#7e22ce' : '' }} />
-                            Job Boards
                           </Link>
                         )}
                         

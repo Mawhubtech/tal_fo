@@ -73,9 +73,13 @@ import RecruitmentTeamsPage from './recruitment-teams/RecruitmentTeamsPage'; // 
 import RecruitmentTeamDetailPage from './recruitment-teams/RecruitmentTeamDetailPage'; // Import RecruitmentTeamDetailPage
 import CandidateProfilesPage from '../recruitment/candidates/pages/CandidateProfilesPage'; // Import CandidateProfilesPage
 import { ClientManagementPage, ClientDetailPage, CreateDepartmentPage } from './clients'; // Import ClientManagementPage, ClientDetailPage, and CreateDepartmentPage
-import JobBoardConfigPage from '../recruitment/jobs/pages/JobBoardConfigPage'; // Import JobBoardConfigPage
+import JobBoardConfigPage from './admin/JobBoardConfigPage'; // Import JobBoardConfigPage
 import AnalyticsPage from './admin/AnalyticsPage'; // Import AnalyticsPage
 import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSettingsPage
+
+// Job Board Pages
+import OrganizationJobBoardsPage from '../recruitment/organizations/pages/OrganizationJobBoardsPage';
+import RecruiterJobBoardDashboard from './recruiter/RecruiterJobBoardDashboard';
 
 // Mock functions and objects - replace with your actual implementations
 // --- End of Mock Data ---
@@ -340,6 +344,20 @@ const Dashboard: React.FC = () => {
             <Route path="organizations/:organizationId/hiring-teams" element={
               <RoutePermissionGuard>
                 <HiringTeamsPage />
+              </RoutePermissionGuard>
+            } />
+
+            {/* Job Board Management Routes */}
+            <Route path="organizations/:organizationId/job-boards" element={
+              <RoutePermissionGuard>
+                <OrganizationJobBoardsPage />
+              </RoutePermissionGuard>
+            } />
+
+            {/* Recruiter Job Board Dashboard */}
+            <Route path="job-boards" element={
+              <RoutePermissionGuard>
+                <RecruiterJobBoardDashboard />
               </RoutePermissionGuard>
             } />
 

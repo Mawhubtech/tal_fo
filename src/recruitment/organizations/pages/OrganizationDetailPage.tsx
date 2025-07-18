@@ -149,13 +149,22 @@ const OrganizationDetailPage: React.FC = () => {
           </div>
         </div>
         
-        <Link
-          to={`/dashboard/organizations/${organizationId}/create-job`}
-          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Job
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            to={`/dashboard/organizations/${organizationId}/job-boards`}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-purple-600 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Grid3X3 className="w-4 h-4 mr-2" />
+            Manage Job Board
+          </Link>
+          <Link
+            to={`/dashboard/organizations/${organizationId}/create-job`}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Job
+          </Link>
+        </div>
       </div>
 
       {/* Organization Info */}

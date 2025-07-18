@@ -5,7 +5,7 @@ export { default as JobDescriptionDialog } from './components/JobDescriptionDial
 export { default as AllJobsPage } from './jobs/pages/AllJobsPage';
 export { default as CreateJobPage } from './jobs/pages/CreateJobPage';
 export { default as ArchivedJobsPage } from './jobs/pages/ArchivedJobsPage';
-export { default as JobBoardConfigPage } from './jobs/pages/JobBoardConfigPage';
+export { default as JobBoardConfigPage } from '../pages/admin/JobBoardConfigPage';
 
 // Organization pages (Hierarchical Flow)
 export { default as OrganizationsPage } from './organizations/pages/OrganizationsPage';
