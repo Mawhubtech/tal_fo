@@ -200,6 +200,9 @@ export const useDeleteSourcingProspect = () => {
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospects] });
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospectStats] });
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.pipelineStats] });
+      queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.conversionRates] });
+      queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospectsByStage] });
+      queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospectsByPipeline] });
       
       // Invalidate project prospects data (used by EnrollCandidatesModal)
       queryClient.invalidateQueries({ queryKey: ['sourcing-projects'] });

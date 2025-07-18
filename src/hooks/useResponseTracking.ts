@@ -14,7 +14,7 @@ interface TrackResponseResponse {
 }
 
 // Track candidate response to a sequence execution
-export const useTrackCandidateResponse = () => {
+export const useTrackCandidateResponse = (sequenceId?: string) => {
   const queryClient = useQueryClient();
 
   return useMutation<TrackResponseResponse, Error, { executionId: string; responseData: TrackResponseData }>({
@@ -28,10 +28,32 @@ export const useTrackCandidateResponse = () => {
     onSuccess: (data) => {
       toast.success('Response Tracked', data.message);
       
-      // Invalidate relevant queries
+      // Invalidate relevant queries for response tracking and candidates tabs
+      // This will refresh both the candidates tab and response tracking tab data
+      queryClient.invalidateQueries({ queryKey: ['sourcing-sequences'] });
       queryClient.invalidateQueries({ queryKey: ['sequence-executions'] });
       queryClient.invalidateQueries({ queryKey: ['sequence-enrollments'] });
       queryClient.invalidateQueries({ queryKey: ['sequence-analytics'] });
+      
+      // If we have a specific sequenceId, invalidate its enrollments and steps more specifically
+      if (sequenceId) {
+        // Invalidate sequence-specific enrollments (candidates tab data)
+        queryClient.invalidateQueries({ 
+          queryKey: ['sourcing-sequences', 'detail', sequenceId, 'enrollments']
+        });
+        // Invalidate sequence detail (might affect sequence metrics)
+        queryClient.invalidateQueries({ 
+          queryKey: ['sourcing-sequences', 'detail', sequenceId]
+        });
+        // Invalidate sequence steps (response tracking might affect step metrics)
+        queryClient.invalidateQueries({ 
+          queryKey: ['sourcing-sequences', 'detail', sequenceId, 'steps']
+        });
+        // Invalidate sequence performance data
+        queryClient.invalidateQueries({ 
+          queryKey: ['sourcing-sequences', 'detail', sequenceId, 'performance']
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Error tracking response:', error);
@@ -51,13 +73,31 @@ export const useProcessResponseActions = () => {
       );
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, sequenceId) => {
       toast.success('Responses Processed', `${data.actionsProcessed} actions processed`);
       
-      // Invalidate relevant queries
+      // Invalidate relevant queries for response tracking and candidates tabs
+      // This will refresh both the candidates tab and response tracking tab data
+      queryClient.invalidateQueries({ queryKey: ['sourcing-sequences'] });
       queryClient.invalidateQueries({ queryKey: ['sequences'] });
       queryClient.invalidateQueries({ queryKey: ['sequence-enrollments'] });
       queryClient.invalidateQueries({ queryKey: ['sequence-analytics'] });
+      
+      // Invalidate specific sequence data
+      if (sequenceId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['sourcing-sequences', 'detail', sequenceId, 'enrollments']
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['sourcing-sequences', 'detail', sequenceId]
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['sourcing-sequences', 'detail', sequenceId, 'steps']
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['sourcing-sequences', 'detail', sequenceId, 'performance']
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Error processing responses:', error);

@@ -8,6 +8,7 @@ interface ManualResponseTrackingModalProps {
   executionId: string;
   candidateName: string;
   sequenceName: string;
+  sequenceId?: string; // Optional sequenceId for more targeted query invalidation
 }
 
 type ResponseType = 'email_reply' | 'phone_answer' | 'linkedin_message' | 'linkedin_accept';
@@ -17,13 +18,14 @@ const ManualResponseTrackingModal: React.FC<ManualResponseTrackingModalProps> = 
   onClose,
   executionId,
   candidateName,
-  sequenceName
+  sequenceName,
+  sequenceId
 }) => {
   const [responseType, setResponseType] = useState<ResponseType>('email_reply');
   const [responseText, setResponseText] = useState('');
   const [notes, setNotes] = useState('');
   
-  const trackResponseMutation = useTrackCandidateResponse();
+  const trackResponseMutation = useTrackCandidateResponse(sequenceId);
 
   if (!isOpen) return null;
 

@@ -847,6 +847,7 @@ export const ProjectSequenceStepsPage: React.FC<ProjectSequenceStepsPageProps> =
           executionId={trackingModal.execution.id}
           candidateName={trackingModal.candidateName}
           sequenceName={trackingModal.sequenceName}
+          sequenceId={sequenceId}
         />
       )}
     </div>
