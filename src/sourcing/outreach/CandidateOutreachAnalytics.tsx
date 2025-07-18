@@ -1,38 +1,37 @@
-import React, { useState } from 'react';
-import { Calendar, TrendingUp, TrendingDown, Users, Mail, MessageSquare, BarChart3, PieChart } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Calendar, TrendingUp, TrendingDown, Users, Mail, MessageSquare, BarChart3, PieChart, Loader2 } from 'lucide-react';
+import { useSourcingProspectStats, useSourcingProspects } from '../../hooks/useSourcingProspects';
+import { useCandidateStats } from '../../hooks/useCandidates';
+import CandidateOutreachAnalyticsService from '../../services/candidateOutreachAnalyticsService';
 
 const CandidateOutreachAnalytics: React.FC = () => {
   const [timeRange, setTimeRange] = useState('30d');
 
-  // Mock analytics data
-  const overallMetrics = [
-    { label: 'Total Candidates Contacted', value: '1,247', change: '+15%', trend: 'up' },
-    { label: 'Overall Response Rate', value: '24.3%', change: '+3.2%', trend: 'up' },
-    { label: 'Interview Conversion', value: '12.8%', change: '+1.5%', trend: 'up' },
-    { label: 'Hire Conversion', value: '3.2%', change: '-0.8%', trend: 'down' },
-  ];
+  // Fetch real data from APIs
+  const { data: prospectStats, isLoading: statsLoading, error: statsError } = useSourcingProspectStats();
+  const { data: candidateStats, isLoading: candidateStatsLoading } = useCandidateStats();
+  const { data: prospectsData, isLoading: prospectsLoading } = useSourcingProspects({ limit: 1000 });
 
-  const campaignPerformance = [
-    { name: 'Senior React Developer', sent: 45, opened: 28, replied: 12, interested: 8, responseRate: 26.7 },
-    { name: 'Full Stack Engineer', sent: 32, opened: 18, replied: 8, interested: 5, responseRate: 25.0 },
-    { name: 'DevOps Engineer', sent: 28, opened: 12, replied: 6, interested: 3, responseRate: 21.4 },
-    { name: 'Product Manager', sent: 55, opened: 35, replied: 15, interested: 9, responseRate: 27.3 },
-    { name: 'Data Scientist', sent: 38, opened: 22, replied: 9, interested: 6, responseRate: 23.7 },
-  ];
+  // Calculate analytics from real data using the service
+  const analyticsData = useMemo(() => {
+    if (!prospectStats || !prospectsData || !candidateStats) {
+      return {
+        overallMetrics: [],
+        campaignPerformance: [],
+        channelPerformance: [],
+        topPerformers: []
+      };
+    }
 
-  const channelPerformance = [
-    { channel: 'Email', sent: 198, responses: 52, rate: 26.3 },
-    { channel: 'LinkedIn', sent: 89, responses: 18, rate: 20.2 },
-    { channel: 'Phone', sent: 34, responses: 12, rate: 35.3 },
-  ];
+    const prospects = prospectsData.prospects || [];
+    return CandidateOutreachAnalyticsService.calculateAnalyticsData(
+      prospects,
+      prospectStats,
+      candidateStats
+    );
+  }, [prospectStats, prospectsData, candidateStats]);
 
-  const topPerformers = [
-    { name: 'Sarah Johnson', position: 'Senior React Developer', score: 9.2, status: 'Hired' },
-    { name: 'Michael Chen', position: 'Full Stack Engineer', score: 8.8, status: 'Final Interview' },
-    { name: 'Emily Davis', position: 'DevOps Engineer', score: 8.5, status: 'Technical Interview' },
-    { name: 'David Wilson', position: 'Product Manager', score: 8.3, status: 'Interview Scheduled' },
-    { name: 'Lisa Anderson', position: 'Data Scientist', score: 8.1, status: 'In Review' },
-  ];
+  const { overallMetrics, campaignPerformance, channelPerformance, topPerformers } = analyticsData;
 
   const timeRangeOptions = [
     { value: '7d', label: 'Last 7 days' },
@@ -41,16 +40,33 @@ const CandidateOutreachAnalytics: React.FC = () => {
     { value: '1y', label: 'Last year' },
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Hired': return 'bg-green-100 text-green-700';
-      case 'Final Interview': return 'bg-purple-100 text-purple-700';
-      case 'Technical Interview': return 'bg-blue-100 text-blue-700';
-      case 'Interview Scheduled': return 'bg-yellow-100 text-yellow-700';
-      case 'In Review': return 'bg-gray-100 text-gray-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  };
+  // Loading state
+  if (statsLoading || candidateStatsLoading || prospectsLoading) {
+    return (
+      <div className="w-full p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex items-center space-x-2 text-gray-500">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Loading analytics...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (statsError) {
+    return (
+      <div className="w-full p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="text-red-500 mb-2">Error loading analytics data</div>
+            <div className="text-sm text-gray-500">Please try refreshing the page</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full p-6">
@@ -74,7 +90,7 @@ const CandidateOutreachAnalytics: React.FC = () => {
       {/* Overall Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {overallMetrics.map((metric, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{metric.label}</p>
@@ -100,85 +116,110 @@ const CandidateOutreachAnalytics: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Campaign Performance */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Campaign Performance</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Campaign Performance</h2>
+              <BarChart3 className="w-5 h-5 text-purple-600" />
+            </div>
+            <p className="text-sm text-gray-600 mt-1">Performance by skill specialization</p>
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {campaignPerformance.map((campaign, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-gray-900">{campaign.name}</h3>
-                    <span className="text-sm font-semibold text-purple-600">
-                      {campaign.responseRate}% response rate
-                    </span>
+              {campaignPerformance.length > 0 ? (
+                campaignPerformance.map((campaign, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium text-gray-900">{campaign.name}</h3>
+                      <span className="text-sm font-semibold text-purple-600">
+                        {campaign.responseRate}% response rate
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4 text-center">
+                      <div>
+                        <div className="text-lg font-semibold text-gray-900">{campaign.sent}</div>
+                        <div className="text-xs text-gray-500">Contacted</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold text-blue-600">{campaign.opened}</div>
+                        <div className="text-xs text-gray-500">Est. Views</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold text-green-600">{campaign.replied}</div>
+                        <div className="text-xs text-gray-500">Responded</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold text-purple-600">{campaign.interested}</div>
+                        <div className="text-xs text-gray-500">Interested</div>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-purple-600 h-2 rounded-full"
+                          style={{ width: `${Math.min(campaign.responseRate, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-4 text-center">
-                    <div>
-                      <div className="text-lg font-semibold text-gray-900">{campaign.sent}</div>
-                      <div className="text-xs text-gray-500">Sent</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-blue-600">{campaign.opened}</div>
-                      <div className="text-xs text-gray-500">Opened</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-green-600">{campaign.replied}</div>
-                      <div className="text-xs text-gray-500">Replied</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-purple-600">{campaign.interested}</div>
-                      <div className="text-xs text-gray-500">Interested</div>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-purple-600 h-2 rounded-full"
-                        style={{ width: `${campaign.responseRate}%` }}
-                      ></div>
-                    </div>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <BarChart3 className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No campaign data available</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
 
         {/* Channel Performance */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Channel Performance</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Channel Performance</h2>
+              <TrendingUp className="w-5 h-5 text-purple-600" />
+            </div>
+            <p className="text-sm text-gray-600 mt-1">Performance by outreach channel</p>
           </div>
           <div className="p-6">
             <div className="space-y-6">
-              {channelPerformance.map((channel, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      {channel.channel === 'Email' && <Mail className="w-5 h-5 text-purple-600" />}
-                      {channel.channel === 'LinkedIn' && <MessageSquare className="w-5 h-5 text-purple-600" />}
-                      {channel.channel === 'Phone' && <Users className="w-5 h-5 text-purple-600" />}
+              {channelPerformance.length > 0 ? (
+                channelPerformance.map((channel, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        {(channel.channel.toLowerCase().includes('linkedin') || channel.channel.toLowerCase().includes('extension')) && <MessageSquare className="w-5 h-5 text-purple-600" />}
+                        {channel.channel.toLowerCase().includes('email') && <Mail className="w-5 h-5 text-purple-600" />}
+                        {(channel.channel.toLowerCase().includes('referral') || channel.channel.toLowerCase().includes('direct')) && <Users className="w-5 h-5 text-purple-600" />}
+                        {(!channel.channel.toLowerCase().includes('linkedin') && !channel.channel.toLowerCase().includes('email') && !channel.channel.toLowerCase().includes('referral') && !channel.channel.toLowerCase().includes('direct') && !channel.channel.toLowerCase().includes('extension')) && <BarChart3 className="w-5 h-5 text-purple-600" />}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">{channel.channel}</h3>
+                        <p className="text-sm text-gray-600">{channel.sent} contacted • {channel.responses} responses</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{channel.channel}</h3>
-                      <p className="text-sm text-gray-600">{channel.sent} sent • {channel.responses} responses</p>
+                    <div className="text-right">
+                      <div className="text-lg font-semibold text-purple-600">{channel.rate}%</div>
+                      <div className="text-sm text-gray-500">Response Rate</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-purple-600">{channel.rate}%</div>
-                    <div className="text-sm text-gray-500">Response Rate</div>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <PieChart className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No channel data available</p>
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Channel Distribution Chart Placeholder */}
-            <div className="mt-6 p-6 bg-gray-50 rounded-lg text-center">
-              <PieChart className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Channel distribution chart would go here</p>
-            </div>
+            {channelPerformance.length > 0 && (
+              <div className="mt-6 p-6 bg-gray-50 rounded-lg text-center">
+                <PieChart className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Channel distribution visualization</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -187,88 +228,85 @@ const CandidateOutreachAnalytics: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Top Performing Candidates</h2>
-          <p className="text-sm text-gray-600 mt-1">Candidates with highest engagement and progression scores</p>
+          <p className="text-sm text-gray-600 mt-1">Candidates with highest ratings and engagement</p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Candidate
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Position
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Score
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Progress
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {topPerformers.map((candidate, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-purple-600">
-                          {candidate.name.split(' ').map(n => n[0]).join('')}
-                        </span>
+        {topPerformers.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Candidate
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Position
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Rating
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Progress
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {topPerformers.map((candidate, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-purple-600">
+                            {candidate.name.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{candidate.name}</div>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{candidate.name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {candidate.position}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium text-gray-900 mr-2">{candidate.score}/10</span>
+                        <div className="w-16 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-purple-600 h-2 rounded-full"
+                            style={{ width: `${(candidate.score / 10) * 100}%` }}
+                          ></div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {candidate.position}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm font-medium text-gray-900 mr-2">{candidate.score}</span>
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${CandidateOutreachAnalyticsService.getStatusColor(candidate.status)}`}>
+                        {candidate.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="w-24 bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-purple-600 h-2 rounded-full"
-                          style={{ width: `${(candidate.score / 10) * 100}%` }}
+                          className={`h-2 rounded-full ${CandidateOutreachAnalyticsService.getProgressColor(candidate.status)}`}
+                          style={{ 
+                            width: CandidateOutreachAnalyticsService.getProgressWidth(candidate.status)
+                          }}
                         ></div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(candidate.status)}`}>
-                      {candidate.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${
-                          candidate.status === 'Hired' ? 'bg-green-500' :
-                          candidate.status === 'Final Interview' ? 'bg-purple-500' :
-                          candidate.status === 'Technical Interview' ? 'bg-blue-500' :
-                          candidate.status === 'Interview Scheduled' ? 'bg-yellow-500' :
-                          'bg-gray-400'
-                        }`}
-                        style={{ 
-                          width: candidate.status === 'Hired' ? '100%' :
-                                candidate.status === 'Final Interview' ? '80%' :
-                                candidate.status === 'Technical Interview' ? '60%' :
-                                candidate.status === 'Interview Scheduled' ? '40%' :
-                                '20%'
-                        }}
-                      ></div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-8 text-center">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500">No candidates data available</p>
+          </div>
+        )}
       </div>
     </div>
   );
