@@ -1179,7 +1179,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
 
           {/* Tabs Navigation */}
           <div className="border-b border-gray-200">
-            <nav className="flex px-6" aria-label="Tabs">
+            <nav className="flex px-6 overflow-x-auto scrollbar-hide" aria-label="Tabs" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {profileTabs.map((tab) => (
                 <button
                   key={tab.name}
@@ -1188,7 +1188,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                     activeTab === tab.index
                       ? 'border-purple-600 text-purple-700 font-semibold'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-3 px-1 border-b-2 text-sm flex items-center gap-1.5 mr-6`}
+                  } whitespace-nowrap py-3 px-3 border-b-2 text-sm flex items-center gap-1.5 mr-4 flex-shrink-0`}
                 >
                   <tab.icon className="w-4 h-4" />
                   {tab.name}
@@ -1353,84 +1353,70 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             )}
 
             {/* Projects Tab */}
-              {activeTab === 3 && (
-                <div>
-                  {projects && projects.length > 0 ? (
-                    <div className="space-y-4">
-                      {projects.slice(0, 2).map((project, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                          <div className="flex justify-between items-start">
-                            <div className="flex">
-                              <div className="mr-3 mt-0.5">
-                                {project.name.toLowerCase().includes('web') ? (
-                                  <Globe className="h-5 w-5 text-blue-600" />
-                                ) : project.name.toLowerCase().includes('mobile') || project.name.toLowerCase().includes('app') ? (
-                                  <Smartphone className="h-5 w-5 text-indigo-600" />
-                                ) : project.name.toLowerCase().includes('data') || project.name.toLowerCase().includes('analytics') ? (
-                                  <BarChart className="h-5 w-5 text-emerald-600" />
-                                ) : project.name.toLowerCase().includes('ai') || project.name.toLowerCase().includes('ml') ? (
-                                  <Cpu className="h-5 w-5 text-red-600" />
-                                ) : (
-                                  <Code2 className="h-5 w-5 text-purple-600" />
-                                )}
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-gray-900 text-sm">{project.name}</h4>
-                                {project.date && <div className="text-xs text-gray-500">{project.date}</div>}
-                              </div>
-                            </div>
-                          </div>
-                          {project.description && (
-                            <p className="mt-2 text-xs text-gray-700 leading-relaxed line-clamp-2 ml-8">{project.description}</p>
-                          )}
-                          {project.technologies && project.technologies.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1 ml-8">
-                              {project.technologies.slice(0, 3).map((tech, i) => (
-                                <span key={i} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs flex items-center">
-                                  <span className="w-1 h-1 bg-green-700 rounded-full mr-1"></span>
-                                  {tech}
-                                </span>
-                              ))}
-                              {project.technologies.length > 3 && (
-                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs flex items-center">
-                                  <span className="w-1 h-1 bg-gray-600 rounded-full mr-1"></span>
-                                  +{project.technologies.length - 3}
-                                </span>
+            {activeTab === 3 && (
+              <div>
+                {projects && projects.length > 0 ? (
+                  <div className="space-y-4">
+                    {projects.map((project, index) => (
+                      <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex">
+                            <div className="mr-3 mt-0.5">
+                              {project.name.toLowerCase().includes('web') ? (
+                                <Globe className="h-5 w-5 text-blue-600" />
+                              ) : project.name.toLowerCase().includes('mobile') || project.name.toLowerCase().includes('app') ? (
+                                <Smartphone className="h-5 w-5 text-indigo-600" />
+                              ) : project.name.toLowerCase().includes('data') || project.name.toLowerCase().includes('analytics') ? (
+                                <BarChart className="h-5 w-5 text-emerald-600" />
+                              ) : project.name.toLowerCase().includes('ai') || project.name.toLowerCase().includes('ml') ? (
+                                <Cpu className="h-5 w-5 text-red-600" />
+                              ) : (
+                                <Code2 className="h-5 w-5 text-purple-600" />
                               )}
                             </div>
-                          )}
-                          {project.url && (
-                            <div className="mt-2 ml-8">
-                              <a 
-                                href={project.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-purple-600 hover:text-purple-800 text-xs flex items-center gap-1"
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                                <span>View Project</span>
-                              </a>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{project.name}</h4>
+                              {project.date && <div className="text-sm text-gray-500">{project.date}</div>}
                             </div>
-                          )}
+                          </div>
                         </div>
-                      ))}
-                      {projects.length > 2 && (
-                        <button
-                          onClick={() => onStateChange('expanded')}
-                          className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2 flex items-center"
-                        >
-                          View all {projects.length} projects
-                          <ArrowRight className="ml-1 h-4 w-4" />
-                        </button>
-                      )}                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <FolderOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">No projects information</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                        {project.description && (
+                          <p className="mt-3 text-sm text-gray-700 leading-relaxed ml-8">{project.description}</p>
+                        )}
+                        {project.technologies && project.technologies.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2 ml-8">
+                            {project.technologies.map((tech, i) => (
+                              <span key={i} className="px-2 py-1 bg-green-100 text-green-700 rounded text-sm flex items-center">
+                                <span className="w-1.5 h-1.5 bg-green-700 rounded-full mr-1.5"></span>
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {project.url && (
+                          <div className="mt-3 ml-8">
+                            <a 
+                              href={project.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-purple-600 hover:text-purple-800 text-sm flex items-center gap-1"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <span>View Project</span>
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No projects information available</p>
+                  </div>
+                )}
+              </div>
+            )}
 
               {/* Certifications Tab */}
               {activeTab === 4 && (
@@ -1706,10 +1692,117 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             </div>
           </div>
         </div>
+
+      {/* Candidate Actions Section - Right Side Panel (1/3) */}
+      <div className={`${isCandidateActionsCollapsed ? 'w-0 overflow-hidden' : 'w-1/3'} bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out`}>
+        {!isCandidateActionsCollapsed && (
+          <>
+            {/* Actions Header */}
+            <div className="p-4 border-b border-gray-200 bg-white">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-800">Candidate Actions</h3>
+                <button
+                  onClick={() => setIsCandidateActionsCollapsed(true)}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  title="Collapse actions panel"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Side Tabs Navigation */}
+            <div className="border-b border-gray-200 bg-white">
+              <nav className="flex" aria-label="Side Tabs">
+                {sideTabs.map((tab) => (
+                  <button
+                    key={tab.name}
+                    onClick={() => setActiveSideTab(tab.index)}
+                    className={`${
+                      activeSideTab === tab.index
+                        ? 'border-purple-500 text-purple-600 font-semibold'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    } whitespace-nowrap py-2 px-3 border-b-2 text-xs flex items-center gap-1`}
+                  >
+                    <tab.icon className="w-3 h-3" />
+                    {tab.name}
+                    {tab.count > 0 && (
+                      <span className={`${
+                        activeSideTab === tab.index ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+                      } py-0.5 px-1 rounded text-xs font-medium`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Side Tab Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* Sequences Tab */}
+              {activeSideTab === 0 && (
+                <div className="space-y-4">
+                  <div className="text-center py-8">
+                    <FolderOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No sequences available</p>
+                    <button className="mt-2 text-purple-600 hover:text-purple-800 text-sm font-medium">
+                      Create Sequence
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes Tab */}
+              {activeSideTab === 1 && (
+                <div className="space-y-4">
+                  <div className="text-center py-8">
+                    <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No notes available</p>
+                    <button className="mt-2 text-purple-600 hover:text-purple-800 text-sm font-medium">
+                      Add Note
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Activity Tab */}
+              {activeSideTab === 2 && (
+                <div className="space-y-4">
+                  <div className="text-center py-8">
+                    <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No activity available</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Pipeline Tab */}
+              {activeSideTab === 3 && (
+                <div className="space-y-4">
+                  <div className="text-center py-8">
+                    <Briefcase className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No pipeline data available</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Collapsed Actions Toggle */}
+        {isCandidateActionsCollapsed && (
+          <div className="p-2 border-b border-gray-200 bg-white">
+            <button
+              onClick={() => setIsCandidateActionsCollapsed(false)}
+              className="w-full p-2 hover:bg-gray-100 rounded transition-colors flex items-center justify-center"
+              title="Expand actions panel"
+            >
+              <ChevronLeft className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+        )}
       </div>
-
-   
-
+    </div>
   );
 };
 
