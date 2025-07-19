@@ -1,0 +1,32 @@
+/* Custom styles for React Quill editor in ProfileSidePanel */
+.profile-side-panel .ql-editor {
+  min-height: 150px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.profile-side-panel .ql-toolbar {
+  border-top: 1px solid #e5e7eb;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+
+.profile-side-panel .ql-container {
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+}
+
+.profile-side-panel .ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+}
+
+/* Hide the quill logo */
+.profile-side-panel .ql-tooltip {
+  display: none;
+}

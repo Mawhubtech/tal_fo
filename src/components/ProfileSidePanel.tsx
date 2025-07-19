@@ -1,6 +1,13 @@
-import React, { useState } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages, Send, MessageCircle, User, Calendar } from 'lucide-react'; // Ensure these icons are installed
+import React, { useState, useEffect } from 'react';
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages, Send, MessageCircle, User, Calendar, Save, Edit3, Trash2, AlertCircle, CheckCircle2, XCircle, Eye } from 'lucide-react'; // Ensure these icons are installed
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import './ProfileSidePanel.css';
 import Button from './Button'; // Adjust path to your Button component if necessary
+import ConfirmationModal from './ConfirmationModal';
+import { candidateNotesApiService, CandidateNote } from '../services/candidateNotesApiService';
+import { emailApiService, SendCandidateEmailDto, EmailLogEntry, EmailHistoryResponse } from '../services/emailApiService';
+import { useToast } from '../contexts/ToastContext';
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
 // Define interfaces for type safety - ADD 'export' HERE
@@ -158,12 +165,220 @@ interface ProfileSidePanelProps {
   panelState: PanelState;
   onStateChange: (state: PanelState) => void;
   isLoading?: boolean;
+  candidateId?: string; // Add candidateId prop for API calls
 }
 
-const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false }) => {
+const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false, candidateId }) => {
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
-  const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs - default to Activity tab
+  const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs - default to Communication tab
   const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(false); // For collapsing candidate actions - default to expanded
+  
+  // Email composition state
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [isComposingEmail, setIsComposingEmail] = useState(false);
+  
+  // Notes state
+  const [notes, setNotes] = useState<CandidateNote[]>([]);
+  const [newNote, setNewNote] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteContent, setEditingNoteContent] = useState('');
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  
+  // Email history state
+  const [emailHistory, setEmailHistory] = useState<EmailLogEntry[]>([]);
+  const [isLoadingEmailHistory, setIsLoadingEmailHistory] = useState(false);
+  const [emailHistoryPage, setEmailHistoryPage] = useState(1);
+  const [emailHistoryTotal, setEmailHistoryTotal] = useState(0);
+  
+  // Email view modal state
+  const [selectedEmailForView, setSelectedEmailForView] = useState<EmailLogEntry | null>(null);
+  const [isEmailViewModalOpen, setIsEmailViewModalOpen] = useState(false);
+  
+  // Confirmation modal state
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+
+  // Load notes when component mounts or candidateId changes
+  useEffect(() => {
+    if (candidateId && panelState !== 'closed') {
+      loadNotes();
+      loadEmailHistory();
+    }
+  }, [candidateId, panelState]);
+
+  const loadNotes = async () => {
+    if (!candidateId) return;
+    
+    try {
+      setIsLoadingNotes(true);
+      const response = await candidateNotesApiService.getNotes(candidateId);
+      setNotes(response.notes);
+    } catch (error) {
+      console.error('Failed to load notes:', error);
+    } finally {
+      setIsLoadingNotes(false);
+    }
+  };
+
+  const saveNote = async (content: string) => {
+    if (!candidateId || !content.trim()) return;
+
+    try {
+      const newNote = await candidateNotesApiService.createNote(candidateId, {
+        candidateId,
+        content: content.trim(),
+        isPrivate: false,
+        isImportant: false
+      });
+      setNotes([newNote, ...notes]);
+      setNewNote('');
+      addToast({
+        type: 'success',
+        title: 'Note Saved',
+        message: 'Your note has been saved successfully.',
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('Failed to save note:', error);
+      addToast({
+        type: 'error',
+        title: 'Failed to Save Note',
+        message: 'Please try again or check your connection.',
+        duration: 4000
+      });
+    }
+  };
+
+  const updateNote = async (noteId: string, content: string) => {
+    if (!candidateId || !content.trim()) return;
+
+    try {
+      const updatedNote = await candidateNotesApiService.updateNote(candidateId, noteId, {
+        content: content.trim()
+      });
+      setNotes(notes.map(n => n.id === noteId ? updatedNote : n));
+      setEditingNoteId(null);
+      setEditingNoteContent('');
+      addToast({
+        type: 'success',
+        title: 'Note Updated',
+        message: 'Your note has been updated successfully.',
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('Failed to update note:', error);
+      addToast({
+        type: 'error',
+        title: 'Failed to Update Note',
+        message: 'Please try again or check your connection.',
+        duration: 4000
+      });
+    }
+  };
+
+  const deleteNote = async (noteId: string) => {
+    if (!candidateId) return;
+
+    try {
+      await candidateNotesApiService.deleteNote(candidateId, noteId);
+      setNotes(notes.filter(n => n.id !== noteId));
+      addToast({
+        type: 'success',
+        title: 'Note Deleted',
+        message: 'The note has been deleted successfully.',
+        duration: 3000
+      });
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      addToast({
+        type: 'error',
+        title: 'Failed to Delete Note',
+        message: 'Please try again or check your connection.',
+        duration: 4000
+      });
+    }
+  };
+
+  // Email history functions
+  const loadEmailHistory = async () => {
+    if (!candidateId) return;
+    
+    try {
+      setIsLoadingEmailHistory(true);
+      const response = await emailApiService.getCandidateEmailHistory(candidateId, {
+        page: emailHistoryPage,
+        limit: 10
+      });
+      setEmailHistory(response.emails);
+      setEmailHistoryTotal(response.total);
+    } catch (error) {
+      console.error('Failed to load email history:', error);
+      // Don't show error toast for missing endpoint, as it's expected during development
+    } finally {
+      setIsLoadingEmailHistory(false);
+    }
+  };
+
+  const formatEmailStatus = (status: string) => {
+    switch (status) {
+      case 'sent':
+        return { color: 'text-green-600', icon: CheckCircle2 };
+      case 'failed':
+        return { color: 'text-red-600', icon: XCircle };
+      case 'pending':
+        return { color: 'text-yellow-600', icon: Clock };
+      case 'delivered':
+        return { color: 'text-blue-600', icon: CheckCircle2 };
+      default:
+        return { color: 'text-gray-600', icon: AlertCircle };
+    }
+  };
+
+  // Confirmation modal handlers
+  const handleDeleteNoteClick = (noteId: string) => {
+    setNoteToDelete(noteId);
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (noteToDelete) {
+      await deleteNote(noteToDelete);
+      setNoteToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmation(false);
+    setNoteToDelete(null);
+  };
+
+  const sendEmail = async (emailData: { to: string; subject: string; body: string; candidateName: string }) => {
+    try {
+      if (!candidateId) {
+        throw new Error('Candidate ID is required to send email');
+      }
+
+      const emailRequest: SendCandidateEmailDto = {
+        candidateId,
+        to: emailData.to,
+        subject: emailData.subject,
+        body: emailData.body,
+        htmlBody: emailData.body, // For now, use the same content for HTML
+      };
+
+      await emailApiService.sendCandidateEmail(emailRequest);
+      return true;
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      // Fallback to opening email client if API fails
+      const subject = encodeURIComponent(emailData.subject);
+      const body = encodeURIComponent(emailData.body.replace(/<[^>]*>/g, '')); // Strip HTML for mailto
+      window.open(`mailto:${emailData.to}?subject=${subject}&body=${body}`, '_self');
+      throw error;
+    }
+  };
   
   if (panelState === 'closed') {
     return null;
@@ -383,9 +598,9 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
 
   // Side panel tabs for the 1/3 section (candidate management)
   const sideTabs = [
-	  { name: 'Activity', icon: Clock, index: 0, count: 0 },
-	  { name: 'Notes', icon: FileText, index: 1, count: 0 },
-	  { name: 'Sequences', icon: FolderOpen, index: 2, count: 0 },
+    { name: 'Activity', icon: Clock, index: 0, count: 0 },
+    { name: 'Communication', icon: Mail, index: 1, count: 0 },
+    { name: 'Notes', icon: FileText, index: 2, count: notes.length },
     { name: 'Pipeline', icon: Briefcase, index: 3, count: 0 },
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
   if (panelState === 'collapsed') {
@@ -1059,7 +1274,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
 
   // Expanded state - full panel covering 2/3 of page width
   return (
-    <div className="fixed inset-y-0 right-0 w-2/3 bg-white shadow-2xl z-50 flex">
+    <div className="profile-side-panel fixed inset-y-0 right-0 w-2/3 bg-white shadow-2xl z-50 flex">
       {/* Profile Info Section - Responsive width based on candidate actions state */}
       <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'flex-1 w-2/3'} flex flex-col border-r border-gray-200 transition-all duration-300 ease-in-out`}>
         {/* Panel Header - Sticky */}
@@ -1747,27 +1962,375 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             {/* Side Tab Content */}
             <div className="flex-1 overflow-y-auto p-4">
               {/* Sequences Tab */}
-              {activeSideTab === 2 && (
+
+
+              {/* Communication Tab */}
+              {activeSideTab === 1 && (
                 <div className="space-y-4">
-                  <div className="text-center py-8">
-                    <FolderOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">No sequences available</p>
-                    <button className="mt-2 text-purple-600 hover:text-purple-800 text-sm font-medium">
-                      Create Sequence
-                    </button>
-                  </div>
+                  {!isComposingEmail ? (
+                    <>
+                      {/* Email Composition Header */}
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+                            <Mail className="w-4 h-4 text-blue-500 mr-2" />
+                            Email Communication
+                          </h4>
+                          <button
+                            onClick={() => {
+                              setIsComposingEmail(true);
+                              setEmailSubject(`Regarding your profile - ${personalInfo.fullName}`);
+                              setEmailBody(`Hi ${personalInfo.fullName.split(' ')[0]},\n\nI hope this email finds you well. I came across your profile and would like to discuss potential opportunities.\n\nBest regards`);
+                            }}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Compose Email
+                          </button>
+                        </div>
+                        
+                        {/* Email History */}
+                        {isLoadingEmailHistory ? (
+                          <div className="text-center py-6">
+                            <div className="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-2"></div>
+                            <p className="text-gray-500 text-sm">Loading email history...</p>
+                          </div>
+                        ) : emailHistory.length > 0 ? (
+                          <div className="space-y-3">
+                            {emailHistory.map((email) => {
+                              const statusInfo = formatEmailStatus(email.status);
+                              const StatusIcon = statusInfo.icon;
+                              
+                              return (
+                                <div key={email.id} className="border border-gray-100 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <h5 className="text-sm font-medium text-gray-900 line-clamp-1">
+                                        {email.subject}
+                                      </h5>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        To: {email.recipients.join(', ')}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-2">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedEmailForView(email);
+                                          setIsEmailViewModalOpen(true);
+                                        }}
+                                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                        title="View email"
+                                      >
+                                        <Eye className="w-3 h-3" />
+                                      </button>
+                                      <div className={`flex items-center ${statusInfo.color}`}>
+                                        <StatusIcon className="w-4 h-4" />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                    {email.body.replace(/<[^>]*>/g, '').substring(0, 100)}
+                                    {email.body.length > 100 && '...'}
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-between text-xs text-gray-400">
+                                    <span>
+                                      {email.sentAt ? 
+                                        new Date(email.sentAt).toLocaleDateString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        }) : 
+                                        new Date(email.createdAt).toLocaleDateString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })
+                                      }
+                                    </span>
+                                    <span className="capitalize">
+                                      {email.status}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            
+                            {emailHistoryTotal > emailHistory.length && (
+                              <button 
+                                className="w-full text-center py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                onClick={() => {
+                                  setEmailHistoryPage(prev => prev + 1);
+                                  loadEmailHistory();
+                                }}
+                              >
+                                Load more emails ({emailHistoryTotal - emailHistory.length} remaining)
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6">
+                            <Mail className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                            <p className="text-gray-500 text-sm">No emails sent to this candidate yet</p>
+                            <p className="text-gray-400 text-xs mt-1">Start a conversation by composing an email</p>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Email Composition Form */}
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+                            <Edit3 className="w-4 h-4 text-blue-500 mr-2" />
+                            Compose Email
+                          </h4>
+                          <button
+                            onClick={() => {
+                              setIsComposingEmail(false);
+                              setEmailSubject('');
+                              setEmailBody('');
+                            }}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Email Form */}
+                        <div className="space-y-3">
+                          {/* To Field */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">To:</label>
+                            <input
+                              type="email"
+                              value={personalInfo.email || ''}
+                              disabled
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50"
+                            />
+                          </div>
+
+                          {/* Subject Field */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Subject:</label>
+                            <input
+                              type="text"
+                              value={emailSubject}
+                              onChange={(e) => setEmailSubject(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Enter email subject"
+                            />
+                          </div>
+
+                          {/* Message Body */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Message:</label>
+                            <div className="border border-gray-300 rounded-md">
+                              <ReactQuill
+                                value={emailBody}
+                                onChange={setEmailBody}
+                                theme="snow"
+                                placeholder="Type your message here..."
+                                style={{ 
+                                  height: '200px',
+                                  marginBottom: '42px'
+                                }}
+                                modules={{
+                                  toolbar: [
+                                    [{ 'header': [1, 2, false] }],
+                                    ['bold', 'italic', 'underline'],
+                                    ['link'],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    ['clean']
+                                  ],
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 pt-3">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await sendEmail({
+                                    to: personalInfo.email!,
+                                    subject: emailSubject,
+                                    body: emailBody,
+                                    candidateName: personalInfo.fullName
+                                  });
+                                  addToast({
+                                    type: 'success',
+                                    title: 'Email Sent Successfully',
+                                    message: `Your email has been sent to ${personalInfo.fullName}`,
+                                    duration: 5000
+                                  });
+                                  setIsComposingEmail(false);
+                                  setEmailSubject('');
+                                  setEmailBody('');
+                                  // Reload email history to show the new email
+                                  loadEmailHistory();
+                                } catch (error) {
+                                  addToast({
+                                    type: 'error',
+                                    title: 'Failed to Send Email',
+                                    message: 'Please try again or check your connection.',
+                                    duration: 5000
+                                  });
+                                }
+                              }}
+                              disabled={!emailSubject.trim() || !emailBody.trim()}
+                              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center gap-1 ${
+                                emailSubject.trim() && emailBody.trim()
+                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
+                            >
+                              <Send className="w-3 h-3" />
+                              Send Email
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsComposingEmail(false);
+                                setEmailSubject('');
+                                setEmailBody('');
+                              }}
+                              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
               {/* Notes Tab */}
-              {activeSideTab === 1 && (
+              {activeSideTab === 2 && (
                 <div className="space-y-4">
-                  <div className="text-center py-8">
-                    <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">No notes available</p>
-                    <button className="mt-2 text-purple-600 hover:text-purple-800 text-sm font-medium">
+                  {/* Add Note Form */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                      <FileText className="w-4 h-4 text-green-500 mr-2" />
                       Add Note
-                    </button>
+                    </h4>
+                    <div className="space-y-3">
+                      <textarea
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        placeholder="Add a note about this candidate..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                        rows={3}
+                      />
+                      <button
+                        onClick={() => {
+                          if (newNote.trim()) {
+                            saveNote(newNote);
+                          }
+                        }}
+                        disabled={!newNote.trim()}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1 ${
+                          newNote.trim()
+                            ? 'bg-green-600 text-white hover:bg-green-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <Save className="w-3 h-3" />
+                        Save Note
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Notes List */}
+                  <div className="space-y-3">
+                    {isLoadingNotes ? (
+                      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-gray-500 text-sm">Loading notes...</p>
+                      </div>
+                    ) : notes.length > 0 ? (
+                      notes.map((note) => (
+                        <div key={note.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                          {editingNoteId === note.id ? (
+                            <div className="space-y-3">
+                              <textarea
+                                value={editingNoteContent}
+                                onChange={(e) => setEditingNoteContent(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                rows={3}
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    if (editingNoteContent.trim()) {
+                                      updateNote(note.id, editingNoteContent);
+                                    }
+                                  }}
+                                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingNoteId(null);
+                                    setEditingNoteContent('');
+                                  }}
+                                  className="px-3 py-1 border border-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-50"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-start justify-between mb-2">
+                                <span className="text-xs text-gray-500">
+                                  {new Date(note.createdAt).toLocaleDateString()} at {new Date(note.createdAt).toLocaleTimeString()}
+                                  {note.updatedAt && note.updatedAt !== note.createdAt && (
+                                    <span className="ml-1">(edited)</span>
+                                  )}
+                                  {note.author && (
+                                    <span className="ml-2">by {note.author.firstName} {note.author.lastName}</span>
+                                  )}
+                                </span>
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => {
+                                      setEditingNoteId(note.id);
+                                      setEditingNoteContent(note.content);
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-blue-600"
+                                    title="Edit note"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteNoteClick(note.id)}
+                                    className="p-1 text-gray-400 hover:text-red-600"
+                                    title="Delete note"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-700 leading-relaxed">{note.content}</p>
+                            </>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
+                        <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">No notes available</p>
+                        <p className="text-gray-400 text-xs mt-1">Add your first note above</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1996,6 +2559,118 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Note"
+        message="Are you sure you want to delete this note? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
+
+      {/* Email View Modal */}
+      {isEmailViewModalOpen && selectedEmailForView && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Email Details</h3>
+              <button
+                onClick={() => {
+                  setIsEmailViewModalOpen(false);
+                  setSelectedEmailForView(null);
+                }}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-4">
+                {/* Email Header */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="grid grid-cols-1 gap-2 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">Subject: </span>
+                      <span className="text-gray-900">{selectedEmailForView.subject}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">To: </span>
+                      <span className="text-gray-900">{selectedEmailForView.recipients.join(', ')}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Sent: </span>
+                      <span className="text-gray-900">
+                        {selectedEmailForView.sentAt ? 
+                          new Date(selectedEmailForView.sentAt).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 
+                          new Date(selectedEmailForView.createdAt).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        }
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Status: </span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedEmailForView.status === 'sent' ? 'bg-green-100 text-green-800' :
+                        selectedEmailForView.status === 'delivered' ? 'bg-blue-100 text-blue-800' :
+                        selectedEmailForView.status === 'failed' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {selectedEmailForView.status.charAt(0).toUpperCase() + selectedEmailForView.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Email Body */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-2">Message:</h4>
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div 
+                      className="text-gray-900 whitespace-pre-wrap"
+                      dangerouslySetInnerHTML={{ 
+                        __html: selectedEmailForView.body.replace(/\n/g, '<br/>') 
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end p-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setIsEmailViewModalOpen(false);
+                  setSelectedEmailForView(null);
+                }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

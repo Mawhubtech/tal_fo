@@ -1192,6 +1192,7 @@ const JobATSPage: React.FC = () => {
 			  userData={selectedUserDataForPanel}
 			  panelState={panelState}
 			  onStateChange={handlePanelStateChange}
+			  candidateId={selectedCandidateId}
 			/>
 		  )}
 		</>

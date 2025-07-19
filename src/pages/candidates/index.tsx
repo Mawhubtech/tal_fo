@@ -630,7 +630,8 @@ const CandidatesPage: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </td>                      <td className="px-6 py-4">
+                      </td>                      
+					  <td className="px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900 truncate" title={candidate.currentPosition || 
                              (candidate.experience && Array.isArray(candidate.experience) && candidate.experience.length > 0 
@@ -647,7 +648,8 @@ const CandidatesPage: React.FC = () => {
                               : 'No experience data'}
                           </div>
                         </div>
-                      </td>                      <td className="px-6 py-4">
+                      </td>                      
+					  <td className="px-6 py-4">
                         <div>
                           <div className="text-sm text-gray-900 flex items-center truncate">
                             <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
@@ -667,7 +669,8 @@ const CandidatesPage: React.FC = () => {
                             <span className="text-xs text-gray-500">({candidate.rating})</span>
                           </div>
                         </div>
-                      </td>                      <td className="px-6 py-4">
+                      </td>                      
+					  <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
                           {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.slice(0, 2).map((skill: string, index: number) => (
                             <span key={index} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded truncate max-w-20" title={skill}>
@@ -784,7 +787,8 @@ const CandidatesPage: React.FC = () => {
                           )}
                         </div>
                       </td>
-                    </tr>                  )) : (
+                    </tr>                  
+					)) : (
                     <tr>
                       <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                         No candidates found.
@@ -792,7 +796,8 @@ const CandidatesPage: React.FC = () => {
                     </tr>
                   )}
                 </tbody>
-              </table>            </div>
+              </table>            
+			  </div>
           </div>
         </div> {/* End of table container that gets affected by panel */}        {/* Pagination - This stays fixed and doesn't move with the panel */}
         <div className="bg-white rounded-lg border p-4">
@@ -858,7 +863,8 @@ const CandidatesPage: React.FC = () => {
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
-                </button>              </div>
+                </button>              
+				</div>
             </div>
           </div>
         </div>
@@ -882,6 +888,7 @@ const CandidatesPage: React.FC = () => {
             panelState={panelState}
             onStateChange={handlePanelStateChange}
             isLoading={selectedCandidateQuery.isLoading}
+            candidateId={selectedCandidateId}
           />        </>
       )}      {/* Add Candidate Modal */}
       <AddCandidateModal

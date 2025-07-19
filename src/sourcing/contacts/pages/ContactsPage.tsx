@@ -24,6 +24,7 @@ const ContactsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [selectedContactData, setSelectedContactData] = useState<UserStructuredData | null>(null); // State for panel data
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null); // State for selected contact ID
   const [panelState, setPanelState] = useState<PanelState>('closed'); // State for panel visibility
 
   useEffect(() => {
@@ -63,6 +64,7 @@ const ContactsPage: React.FC = () => {
   
   const handleContactNameClick = (contact: Contact) => {
     setSelectedContactData(contact.structuredData);
+    setSelectedContactId(contact.id);
     setPanelState('expanded'); // Or 'collapsed' based on preference
   };
 
@@ -70,6 +72,7 @@ const ContactsPage: React.FC = () => {
     setPanelState(newState);
     if (newState === 'closed') {
       setSelectedContactData(null);
+      setSelectedContactId(null);
     }
   };
 
@@ -188,7 +191,8 @@ const ContactsPage: React.FC = () => {
       <ProfileSidePanel 
         userData={selectedContactData} 
         panelState={panelState} 
-        onStateChange={handlePanelStateChange} 
+        onStateChange={handlePanelStateChange}
+        candidateId={selectedContactId}
       />
     </div>
   );
