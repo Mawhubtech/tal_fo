@@ -157,14 +157,117 @@ interface ProfileSidePanelProps {
   userData: UserStructuredData | null;
   panelState: PanelState;
   onStateChange: (state: PanelState) => void;
+  isLoading?: boolean;
 }
 
-const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange }) => {
+const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false }) => {
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs
   const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(true); // For collapsing candidate actions
-  if (!userData || panelState === 'closed') {
+  
+  if (panelState === 'closed') {
     return null;
+  }
+
+  // Show loading state when data is being fetched
+  if (isLoading || !userData) {
+    return (
+      <div className={`fixed top-0 right-0 h-full bg-white shadow-xl z-50 transition-all duration-300 ease-in-out ${
+        panelState === 'expanded' ? 'w-2/3' : panelState === 'collapsed' ? 'w-1/3' : 'w-0'
+      }`}>
+        <div className="flex flex-col h-full">
+          {/* Header with loading state */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+              <div>
+                <div className="w-32 h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                <div className="w-24 h-3 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              {panelState === 'expanded' && (
+                <button
+                  onClick={() => onStateChange('collapsed')}
+                  className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                  title="Collapse panel"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-600" />
+                </button>
+              )}
+              {panelState === 'collapsed' && (
+                <button
+                  onClick={() => onStateChange('expanded')}
+                  className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                  title="Expand panel"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-600" />
+                </button>
+              )}
+              <button
+                onClick={() => onStateChange('closed')}
+                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Close panel"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
+
+          {/* Loading content */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="space-y-6">
+              {/* Personal info loading skeleton */}
+              <div className="space-y-4">
+                <div className="w-24 h-5 bg-gray-200 rounded animate-pulse"></div>
+                <div className="space-y-3">
+                  <div className="w-full h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-1/2 h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Summary loading skeleton */}
+              <div className="space-y-4">
+                <div className="w-20 h-5 bg-gray-200 rounded animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="w-full h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-full h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-2/3 h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Experience loading skeleton */}
+              <div className="space-y-4">
+                <div className="w-28 h-5 bg-gray-200 rounded animate-pulse"></div>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-4 bg-gray-50 rounded-lg space-y-3">
+                      <div className="w-1/2 h-4 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="w-1/3 h-3 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="w-full h-3 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="w-4/5 h-3 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Skills loading skeleton */}
+              <div className="space-y-4">
+                <div className="w-16 h-5 bg-gray-200 rounded animate-pulse"></div>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="w-20 h-6 bg-gray-200 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages, references, customFields } = userData;
