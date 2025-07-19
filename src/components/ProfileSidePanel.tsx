@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages, Send, MessageCircle, User, Calendar, Save, Edit3, Trash2, AlertCircle, CheckCircle2, XCircle, Eye } from 'lucide-react'; // Ensure these icons are installed
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages, Send, MessageCircle, User, Calendar, Save, Edit3, Trash2, AlertCircle, CheckCircle2, XCircle, Eye, MapPin, DollarSign, Building, Star, TrendingUp, Target } from 'lucide-react'; // Ensure these icons are installed
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './ProfileSidePanel.css';
@@ -7,6 +7,11 @@ import Button from './Button'; // Adjust path to your Button component if necess
 import ConfirmationModal from './ConfirmationModal';
 import { candidateNotesApiService, CandidateNote } from '../services/candidateNotesApiService';
 import { emailApiService, SendCandidateEmailDto, EmailLogEntry, EmailHistoryResponse } from '../services/emailApiService';
+import { jobApiService } from '../services/jobApiService';
+import { pipelineService, Pipeline } from '../services/pipelineService';
+import { useJobApplicationsByCandidate } from '../hooks/useJobApplications';
+import { useJobSuggestions } from '../hooks/useJobs';
+import { useSourcingProspects } from '../hooks/useSourcingProspects';
 import { useToast } from '../contexts/ToastContext';
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
@@ -196,6 +201,21 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
   const [selectedEmailForView, setSelectedEmailForView] = useState<EmailLogEntry | null>(null);
   const [isEmailViewModalOpen, setIsEmailViewModalOpen] = useState(false);
   
+  // Pipeline and job matches state - now using real backend data hooks
+  const [isLoadingPipelines, setIsLoadingPipelines] = useState(false);
+  const [isLoadingSuggestedJobs, setIsLoadingSuggestedJobs] = useState(false);
+  
+  // Real backend data hooks
+  const { data: jobApplicationsData, isLoading: applicationsLoading } = useJobApplicationsByCandidate(candidateId || '');
+  const { data: jobSuggestionsData, isLoading: jobsLoading } = useJobSuggestions(
+    candidateId || '',
+    undefined, // Not filtering by organization for now
+    { enabled: !!candidateId }
+  );
+  const { data: prospectsData, isLoading: prospectsLoading } = useSourcingProspects({
+    search: userData?.personalInfo?.email || ''
+  });
+  
   // Confirmation modal state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
@@ -319,6 +339,43 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     } finally {
       setIsLoadingEmailHistory(false);
     }
+  };
+
+  // Pipeline functions
+  const getProspectStatus = () => {
+    const prospects = prospectsData?.prospects || [];
+    return {
+      isInPipeline: prospects.length > 0,
+      currentStage: prospects[0]?.currentStage?.name,
+      pipelineName: prospects[0]?.pipeline?.name,
+      lastActivity: prospects[0]?.lastContact || prospects[0]?.updatedAt,
+      status: prospects[0]?.status
+    };
+  };
+
+  // Format salary display for job suggestions
+  const formatSalary = (suggestion: any) => {
+    const job = suggestion.job;
+    if (!job.salaryMin && !job.salaryMax) return null;
+    const currency = job.currency || 'USD';
+    const symbol = currency === 'USD' ? '$' : currency;
+    
+    if (job.salaryMin && job.salaryMax) {
+      return `${symbol}${(job.salaryMin / 1000).toFixed(0)}k - ${symbol}${(job.salaryMax / 1000).toFixed(0)}k`;
+    } else if (job.salaryMin) {
+      return `From ${symbol}${(job.salaryMin / 1000).toFixed(0)}k`;
+    } else if (job.salaryMax) {
+      return `Up to ${symbol}${(job.salaryMax / 1000).toFixed(0)}k`;
+    }
+    return null;
+  };
+
+  // Get match score color
+  const getMatchScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600 bg-green-100';
+    if (score >= 60) return 'text-yellow-600 bg-yellow-100';
+    if (score >= 40) return 'text-orange-600 bg-orange-100';
+    return 'text-red-600 bg-red-100';
   };
 
   const formatEmailStatus = (status: string) => {
@@ -601,7 +658,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     { name: 'Activity', icon: Clock, index: 0, count: 0 },
     { name: 'Communication', icon: Mail, index: 1, count: 0 },
     { name: 'Notes', icon: FileText, index: 2, count: notes.length },
-    { name: 'Pipeline', icon: Briefcase, index: 3, count: 0 },
+    { name: 'Pipeline', icon: Briefcase, index: 3, count: (jobApplicationsData?.applications?.length || 0) + (jobSuggestionsData?.suggestions?.length || 0) },
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
   if (panelState === 'collapsed') {
     return (
@@ -2536,9 +2593,227 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               {/* Pipeline Tab */}
               {activeSideTab === 3 && (
                 <div className="space-y-4">
-                  <div className="text-center py-8">
-                    <Briefcase className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">No pipeline data available</p>
+                  {/* Prospects Status */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                      <Star className="w-4 h-4 text-purple-500 mr-2" />
+                      Prospects Status
+                    </h4>
+                    
+                    {prospectsLoading ? (
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="w-4 h-4 mr-2 animate-spin" />
+                        Loading prospect status...
+                      </div>
+                    ) : (() => {
+                      const prospectStatus = getProspectStatus();
+                      return prospectStatus.isInPipeline ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center text-sm">
+                            <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                            <span className="font-medium text-gray-900">In {prospectStatus.pipelineName} pipeline</span>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <p>Current Stage: <span className="font-medium">{prospectStatus.currentStage}</span></p>
+                            {prospectStatus.status && (
+                              <p className="mt-1">
+                                Status: 
+                                <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  prospectStatus.status === 'new' ? 'bg-blue-100 text-blue-800' :
+                                  prospectStatus.status === 'contacted' ? 'bg-purple-100 text-purple-800' :
+                                  prospectStatus.status === 'responded' ? 'bg-green-100 text-green-800' :
+                                  prospectStatus.status === 'interested' ? 'bg-emerald-100 text-emerald-800' :
+                                  prospectStatus.status === 'not_interested' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {prospectStatus.status.replace('_', ' ')}
+                                </span>
+                              </p>
+                            )}
+                            {prospectStatus.lastActivity && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Last activity: {new Date(prospectStatus.lastActivity).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">
+                          <div className="flex items-center mb-2">
+                            <AlertCircle className="w-4 h-4 mr-2 text-orange-500" />
+                            <span>Not currently in any sourcing pipeline.</span>
+                          </div>
+                          <p>Add this candidate to a sourcing pipeline to track their progress through outreach and recruitment.</p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Current Pipelines */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+                        <Star className="w-4 h-4 text-blue-500 mr-2" />
+                        Current Pipelines
+                      </h4>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                        {jobApplicationsData?.applications?.length || 0} active
+                      </span>
+                    </div>
+                    
+                    {applicationsLoading ? (
+                      <div className="text-center py-6">
+                        <div className="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-2"></div>
+                        <p className="text-gray-500 text-sm">Loading pipelines...</p>
+                      </div>
+                    ) : jobApplicationsData?.applications?.length > 0 ? (
+                      <div className="space-y-3">
+                        {jobApplicationsData.applications.map((application) => (
+                          <div key={application.id} className="border border-gray-100 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <h5 className="text-sm font-medium text-gray-900 mb-1">
+                                  {application.job?.title || 'Unknown Job'}
+                                </h5>
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <Building className="w-3 h-3 mr-1" />
+                                  {application.job?.department || 'Unknown Department'}
+                                  <span className="mx-2">•</span>
+                                  <MapPin className="w-3 h-3 mr-1" />
+                                  {application.job?.location || 'Unknown Location'}
+                                </div>
+                              </div>
+                              <div className="ml-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  application.status === 'Applied' || application.status === 'Screening'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : application.status === 'Phone Interview' || application.status === 'Technical Interview'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : application.status === 'Final Interview' || application.status === 'Offer Extended'
+                                    ? 'bg-green-100 text-green-800'
+                                    : application.status === 'Hired'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : application.status === 'Rejected' || application.status === 'Withdrawn'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {application.currentPipelineStageName || application.status}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="text-xs text-gray-500">
+                              Applied: {new Date(application.appliedDate).toLocaleDateString()}
+                              {application.updatedAt && (
+                                <>
+                                  <span className="mx-2">•</span>
+                                  Last activity: {new Date(application.updatedAt).toLocaleDateString()}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <Star className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">No active pipelines</p>
+                        <p className="text-gray-400 text-xs mt-1">Add candidate to a pipeline to get started</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Suggested Job Matches */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+                        <Target className="w-4 h-4 text-green-500 mr-2" />
+                        Suggested Job Matches
+                      </h4>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                        {jobSuggestionsData?.suggestions?.length || 0} available
+                      </span>
+                    </div>
+                    
+                    {jobsLoading ? (
+                      <div className="text-center py-6">
+                        <div className="w-6 h-6 border-2 border-green-300 border-t-green-600 rounded-full animate-spin mx-auto mb-2"></div>
+                        <p className="text-gray-500 text-sm">Loading job matches...</p>
+                      </div>
+                    ) : jobSuggestionsData?.suggestions?.length > 0 ? (
+                      <div className="space-y-3">
+                        {jobSuggestionsData.suggestions.map((suggestion) => (
+                          <div key={suggestion.job.id} className="border border-gray-100 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <h5 className="text-sm font-medium text-gray-900">
+                                  {suggestion.job.title}
+                                </h5>
+                                <div className="flex items-center text-xs text-gray-500 mt-1">
+                                  <Building className="w-3 h-3 mr-1" />
+                                  {suggestion.job.department}
+                                  <span className="mx-2">•</span>
+                                  <MapPin className="w-3 h-3 mr-1" />
+                                  {suggestion.job.location}
+                                </div>
+                              </div>
+                              <div className="flex items-center ml-2">
+                                <div className={`flex items-center px-2 py-1 rounded-full ${getMatchScoreColor(suggestion.matchScore)}`}>
+                                  <TrendingUp className="w-3 h-3 mr-1" />
+                                  <span className="text-xs font-medium">{suggestion.matchScore}% match</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-xs text-gray-600 mb-2 line-clamp-2">
+                              {suggestion.job.description || 'No description available'}
+                            </div>
+                            
+                            <div className="flex items-center justify-between text-xs mb-2">
+                              <div className="flex items-center text-gray-500">
+                                <DollarSign className="w-3 h-3 mr-1" />
+                                {formatSalary(suggestion) || 'Salary not specified'}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {suggestion.job.skills?.slice(0, 3).map((skill: string, index: number) => (
+                                  <span key={index} className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                    {skill}
+                                  </span>
+                                ))}
+                                {suggestion.job.skills?.length > 3 && (
+                                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                    +{suggestion.job.skills.length - 3}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Match breakdown */}
+                            <div className="text-xs text-gray-500 mb-2">
+                              Skills: {suggestion.matchReasons?.skillMatch || 0}% • 
+                              Experience: {suggestion.matchReasons?.experienceMatch || 0}% • 
+                              Seniority: {suggestion.matchReasons?.seniorityMatch || 0}%
+                            </div>
+                            
+                            {/* Action buttons */}
+                            <div className="flex gap-2 mt-2">
+                              <button className="flex-1 px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors">
+                                Add to Pipeline
+                              </button>
+                              <button className="px-2 py-1 border border-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-50 transition-colors">
+                                View Job
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">No job matches found</p>
+                        <p className="text-gray-400 text-xs mt-1">Check back later for new opportunities</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
