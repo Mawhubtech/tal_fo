@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages } from 'lucide-react'; // Ensure these icons are installed
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages, Send, MessageCircle, User, Calendar } from 'lucide-react'; // Ensure these icons are installed
 import Button from './Button'; // Adjust path to your Button component if necessary
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
@@ -162,8 +162,8 @@ interface ProfileSidePanelProps {
 
 const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false }) => {
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
-  const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs
-  const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(true); // For collapsing candidate actions
+  const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs - default to Activity tab
+  const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(false); // For collapsing candidate actions - default to expanded
   
   if (panelState === 'closed') {
     return null;
@@ -383,9 +383,9 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
 
   // Side panel tabs for the 1/3 section (candidate management)
   const sideTabs = [
-    { name: 'Sequences', icon: FolderOpen, index: 0, count: 0 },
-    { name: 'Notes', icon: FileText, index: 1, count: 0 },
-    { name: 'Activity', icon: Clock, index: 2, count: 0 },
+	  { name: 'Activity', icon: Clock, index: 0, count: 0 },
+	  { name: 'Notes', icon: FileText, index: 1, count: 0 },
+	  { name: 'Sequences', icon: FolderOpen, index: 2, count: 0 },
     { name: 'Pipeline', icon: Briefcase, index: 3, count: 0 },
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
   if (panelState === 'collapsed') {
@@ -525,7 +525,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
 
             {/* Tabs Navigation */}
             <div className="border-b border-gray-200">
-              <nav className="flex px-6" aria-label="Tabs">
+              <nav className="flex px-6 overflow-x-auto" aria-label="Tabs" style={{ 
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#e5e7eb #f9fafb'
+              }}>
                 {profileTabs.map((tab) => (
                   <button
                     key={tab.name}
@@ -534,7 +537,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                       activeTab === tab.index
                         ? 'border-purple-500 text-purple-600 font-semibold'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-3 px-1 border-b-2 text-xs flex items-center gap-1 mr-4`}
+                    } whitespace-nowrap py-3 px-1 border-b-2 text-xs flex items-center gap-1 mr-4 flex-shrink-0`}
                   >
                     <tab.icon className="w-3.5 h-3.5" />
                     {tab.name}
@@ -1179,7 +1182,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
 
           {/* Tabs Navigation */}
           <div className="border-b border-gray-200">
-            <nav className="flex px-6 overflow-x-auto scrollbar-hide" aria-label="Tabs" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <nav className="flex px-6 overflow-x-auto" aria-label="Tabs" style={{ 
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#e5e7eb #f9fafb'
+            }}>
               {profileTabs.map((tab) => (
                 <button
                   key={tab.name}
@@ -1741,7 +1747,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             {/* Side Tab Content */}
             <div className="flex-1 overflow-y-auto p-4">
               {/* Sequences Tab */}
-              {activeSideTab === 0 && (
+              {activeSideTab === 2 && (
                 <div className="space-y-4">
                   <div className="text-center py-8">
                     <FolderOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
@@ -1767,11 +1773,199 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               )}
 
               {/* Activity Tab */}
-              {activeSideTab === 2 && (
+              {activeSideTab === 0 && (
                 <div className="space-y-4">
-                  <div className="text-center py-8">
-                    <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">No activity available</p>
+                  {/* Contact Actions */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                      <MessageCircle className="w-4 h-4 text-blue-500 mr-2" />
+                      Contact Actions
+                    </h4>
+                    <div className="space-y-3">
+                      {/* Email Action */}
+                      {personalInfo.email && (
+                        <button
+                          onClick={() => {
+                            const subject = encodeURIComponent(`Regarding your profile - ${personalInfo.fullName}`);
+                            const body = encodeURIComponent(`Hi ${personalInfo.fullName.split(' ')[0]},\n\nI hope this email finds you well. I came across your profile and would like to discuss potential opportunities.\n\nBest regards`);
+                            window.open(`mailto:${personalInfo.email}?subject=${subject}&body=${body}`, '_self');
+                          }}
+                          className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+                        >
+                          <div className="flex items-center">
+                            <Mail className="w-4 h-4 text-gray-600 group-hover:text-blue-600 mr-3" />
+                            <div className="text-left">
+                              <div className="text-sm font-medium text-gray-900 group-hover:text-blue-900">Send Email</div>
+                              <div className="text-xs text-gray-500 group-hover:text-blue-600">{personalInfo.email}</div>
+                            </div>
+                          </div>
+                          <Send className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+                        </button>
+                      )}
+
+                      {/* Phone Action */}
+                      {personalInfo.phone && (
+                        <button
+                          onClick={() => window.open(`tel:${personalInfo.phone}`, '_self')}
+                          className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors group"
+                        >
+                          <div className="flex items-center">
+                            <Phone className="w-4 h-4 text-gray-600 group-hover:text-green-600 mr-3" />
+                            <div className="text-left">
+                              <div className="text-sm font-medium text-gray-900 group-hover:text-green-900">Call</div>
+                              <div className="text-xs text-gray-500 group-hover:text-green-600">{personalInfo.phone}</div>
+                            </div>
+                          </div>
+                          <Phone className="w-4 h-4 text-gray-400 group-hover:text-green-500" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Professional Profiles */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                      <User className="w-4 h-4 text-purple-500 mr-2" />
+                      Professional Profiles
+                    </h4>
+                    <div className="space-y-3">
+                      {/* LinkedIn Action */}
+                      {personalInfo.linkedIn && (
+                        <button
+                          onClick={() => window.open(personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`, '_blank')}
+                          className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+                        >
+                          <div className="flex items-center">
+                            <div className="w-4 h-4 bg-blue-600 rounded mr-3 flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">in</span>
+                            </div>
+                            <div className="text-left">
+                              <div className="text-sm font-medium text-gray-900 group-hover:text-blue-900">LinkedIn Profile</div>
+                              <div className="text-xs text-gray-500 group-hover:text-blue-600">View professional profile</div>
+                            </div>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+                        </button>
+                      )}
+
+                      {/* GitHub Action */}
+                      {personalInfo.github && (
+                        <button
+                          onClick={() => window.open(personalInfo.github.startsWith('http') ? personalInfo.github : `https://${personalInfo.github}`, '_blank')}
+                          className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-colors group"
+                        >
+                          <div className="flex items-center">
+                            <Github className="w-4 h-4 text-gray-600 group-hover:text-gray-800 mr-3" />
+                            <div className="text-left">
+                              <div className="text-sm font-medium text-gray-900 group-hover:text-gray-900">GitHub Profile</div>
+                              <div className="text-xs text-gray-500 group-hover:text-gray-600">View code repositories</div>
+                            </div>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                        </button>
+                      )}
+
+                      {/* Website Action */}
+                      {personalInfo.website && personalInfo.website.trim() && (
+                        <button
+                          onClick={() => window.open(personalInfo.website.startsWith('http') ? personalInfo.website : `https://${personalInfo.website}`, '_blank')}
+                          className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors group"
+                        >
+                          <div className="flex items-center">
+                            <Globe className="w-4 h-4 text-gray-600 group-hover:text-purple-600 mr-3" />
+                            <div className="text-left">
+                              <div className="text-sm font-medium text-gray-900 group-hover:text-purple-900">Personal Website</div>
+                              <div className="text-xs text-gray-500 group-hover:text-purple-600 truncate max-w-32">{personalInfo.website}</div>
+                            </div>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-500" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                      <Calendar className="w-4 h-4 text-orange-500 mr-2" />
+                      Quick Actions
+                    </h4>
+                    <div className="space-y-3">
+                      {/* Schedule Meeting */}
+                      <button
+                        onClick={() => {
+                          if (personalInfo.email) {
+                            const subject = encodeURIComponent(`Meeting Request - ${personalInfo.fullName}`);
+                            const body = encodeURIComponent(`Hi ${personalInfo.fullName.split(' ')[0]},\n\nI would like to schedule a meeting to discuss potential opportunities. Please let me know your availability for a 30-minute call.\n\nBest regards`);
+                            window.open(`mailto:${personalInfo.email}?subject=${subject}&body=${body}`, '_self');
+                          }
+                        }}
+                        disabled={!personalInfo.email}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors group ${
+                          personalInfo.email 
+                            ? 'border-gray-200 hover:border-orange-300 hover:bg-orange-50' 
+                            : 'border-gray-100 bg-gray-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <Calendar className={`w-4 h-4 mr-3 ${
+                            personalInfo.email 
+                              ? 'text-gray-600 group-hover:text-orange-600' 
+                              : 'text-gray-400'
+                          }`} />
+                          <div className="text-left">
+                            <div className={`text-sm font-medium ${
+                              personalInfo.email 
+                                ? 'text-gray-900 group-hover:text-orange-900' 
+                                : 'text-gray-500'
+                            }`}>Schedule Meeting</div>
+                            <div className={`text-xs ${
+                              personalInfo.email 
+                                ? 'text-gray-500 group-hover:text-orange-600' 
+                                : 'text-gray-400'
+                            }`}>
+                              {personalInfo.email ? 'Send meeting request' : 'Email required'}
+                            </div>
+                          </div>
+                        </div>
+                        <Send className={`w-4 h-4 ${
+                          personalInfo.email 
+                            ? 'text-gray-400 group-hover:text-orange-500' 
+                            : 'text-gray-300'
+                        }`} />
+                      </button>
+
+                      {/* Add to Pipeline */}
+                      <button
+                        onClick={() => {
+                          // This would integrate with your pipeline/CRM system
+                          alert('Pipeline integration would be implemented here');
+                        }}
+                        className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors group"
+                      >
+                        <div className="flex items-center">
+                          <Plus className="w-4 h-4 text-gray-600 group-hover:text-indigo-600 mr-3" />
+                          <div className="text-left">
+                            <div className="text-sm font-medium text-gray-900 group-hover:text-indigo-900">Add to Pipeline</div>
+                            <div className="text-xs text-gray-500 group-hover:text-indigo-600">Track recruitment progress</div>
+                          </div>
+                        </div>
+                        <Plus className="w-4 h-4 text-gray-400 group-hover:text-indigo-500" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Recent Activity */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                      <Clock className="w-4 h-4 text-gray-500 mr-2" />
+                      Recent Activity
+                    </h4>
+                    <div className="text-center py-6">
+                      <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">No recent activity</p>
+                      <p className="text-gray-400 text-xs mt-1">Contact history will appear here</p>
+                    </div>
                   </div>
                 </div>
               )}
