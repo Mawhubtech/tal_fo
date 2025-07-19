@@ -572,9 +572,9 @@ const CandidatesPage: React.FC = () => {
                     <th className="w-48 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Skills
                     </th>
-                    <th className="w-32 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    {/* <th className="w-32 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Applied Date
-                    </th>
+                    </th> */}
                     <th className="w-28 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Actions
                     </th>
@@ -681,12 +681,14 @@ const CandidatesPage: React.FC = () => {
                             <span className="text-xs text-gray-500">No skills</span>
                           )}
                         </div>
-                      </td>                      <td className="px-6 py-4">
+                      </td>                      
+					  {/* <td className="px-6 py-4">
                         <div>
                           <div className="text-sm text-gray-900 truncate">{candidate.appliedDate ? formatDate(candidate.appliedDate) : 'N/A'}</div>
                           <div className="text-sm text-gray-500 truncate">Last: {candidate.lastActivity ? formatDate(candidate.lastActivity) : 'N/A'}</div>
                         </div>
-                      </td>                      <td className="px-6 py-4 text-sm font-medium">
+                      </td>                       */}
+					  <td className="px-6 py-4 text-sm font-medium">
                         <div className="relative dropdown-container">
                           <button 
                             className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 hover:border-purple-300 transition-colors"
@@ -720,26 +722,8 @@ const CandidatesPage: React.FC = () => {
                                 >
                                   <Edit className="w-4 h-4 mr-3" />
                                   Edit Profile
-                                </button><a 
-                                  href={candidate.documents && candidate.documents.length > 0 ? candidate.documents[0].url : '#'}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                  onClick={() => setOpenDropdownId(null)}
-                                >
-                                  <FileText className="w-4 h-4 mr-3" />
-                                  View Resume
-                                </a>
-                                <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
-                                  onClick={() => {
-                                    // Add messaging functionality here
-                                    setOpenDropdownId(null);
-                                  }}
-                                >
-                                  <MessageSquare className="w-4 h-4 mr-3" />
-                                  Send Message
                                 </button>
+
                                 <div className="border-t border-gray-100 my-1"></div>
                                 <div className="px-4 py-1 text-xs font-semibold text-gray-500">Status</div>
                                 <button 
@@ -783,13 +767,7 @@ const CandidatesPage: React.FC = () => {
                                   Rejected
                                 </button>
                                 <div className="border-t border-gray-100 my-1"></div>
-                                <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                  onClick={() => setOpenDropdownId(null)}
-                                >
-                                  <Download className="w-4 h-4 mr-3" />
-                                  Download Resume
-                                </button>
+
                                 <div className="border-t border-gray-100 my-1"></div>
                                 <button 
                                   className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
