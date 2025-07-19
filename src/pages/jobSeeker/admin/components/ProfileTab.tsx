@@ -1347,24 +1347,24 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
             </div>
             
             {/* Professional Links */}
-            <div className="flex items-center justify-center flex-wrap gap-2 text-xs">
+            <div className="flex items-center justify-center flex-wrap gap-3 text-xs">
               {data.personalInfo?.linkedIn && (
-                <a href={data.personalInfo.linkedIn} className="text-blue-600 hover:text-blue-700 flex items-center">
-                  <Linkedin className="h-3 w-3 mr-1" />
-                  LinkedIn
-                </a>
+                <div className="flex items-center text-blue-600">
+                  <Linkedin className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <span className="break-all">{data.personalInfo.linkedIn}</span>
+                </div>
               )}
               {data.personalInfo?.github && (
-                <a href={data.personalInfo.github} className="text-gray-600 hover:text-gray-700 flex items-center">
-                  <Github className="h-3 w-3 mr-1" />
-                  GitHub
-                </a>
+                <div className="flex items-center text-gray-700">
+                  <Github className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <span className="break-all">{data.personalInfo.github}</span>
+                </div>
               )}
               {data.personalInfo?.website && (
-                <a href={data.personalInfo.website} className="text-purple-600 hover:text-purple-700 flex items-center">
-                  <Globe className="h-3 w-3 mr-1" />
-                  Website
-                </a>
+                <div className="flex items-center text-purple-600">
+                  <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <span className="break-all">{data.personalInfo.website}</span>
+                </div>
               )}
             </div>
           </div>
