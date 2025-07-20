@@ -41,6 +41,12 @@ const Navbar: React.FC = () => {
     setIsUserTypeModalOpen(false);
     navigate('/job-seeker/login');
   };
+
+  // Handle organization selection
+  const handleSelectOrganization = () => {
+    setIsUserTypeModalOpen(false);
+    navigate('/organization/signin');
+  };
   const logoAccentColor = 'text-primary-600'; // Using primary color for accent
 
   const outlineButtonClasses = isScrolled 
@@ -151,6 +157,7 @@ const Navbar: React.FC = () => {
       onClose={() => setIsUserTypeModalOpen(false)}
       onSelectRecruiter={handleSelectRecruiter}
       onSelectJobSeeker={handleSelectJobSeeker}
+      onSelectOrganization={handleSelectOrganization}
     />
     </>
   );

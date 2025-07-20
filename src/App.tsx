@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import ExternalUserGuard from './components/ExternalUserGuard';
 import SignIn from './components/SignIn';
+import OrganizationSignIn from './components/OrganizationSignIn';
 import OAuthCallback from './components/OAuthCallback';
 import LandingPage from './pages/LandingPage';
 import JobBoardPage from './pages/jobSeeker/JobBoardPage';
@@ -36,6 +37,10 @@ function App() {
             <Route
               path="/signin"
               element={<SignIn />}
+            />
+            <Route
+              path="/organization/signin"
+              element={<OrganizationSignIn />}
             />
             {/* Job Seeker Routes */}
             <Route

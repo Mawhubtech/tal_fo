@@ -1,16 +1,17 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Shield, Search } from 'lucide-react';
+import { ArrowLeft, Shield, Building } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { getDefaultRedirectPath } from '../utils/userUtils';
-import RecruiterLoginForm from './RecruiterLoginForm';
+import OrganizationLoginForm from './OrganizationLoginForm';
 
-const SignIn: React.FC = () => {
+const OrganizationSignIn: React.FC = () => {
   const { isAuthenticated, isLoading, user } = useAuthContext();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { addToast } = useToast();
+
   // Check for OAuth error in URL
   useEffect(() => {
     const error = searchParams.get('error');
@@ -57,50 +58,50 @@ const SignIn: React.FC = () => {
           
           <div className="mt-24">
             <div className="flex items-center mb-6">
-              <Search className="w-10 h-10 mr-3" />
-              <h1 className="text-4xl font-bold">Recruiter Portal</h1>
+              <Building className="w-10 h-10 mr-3" />
+              <h1 className="text-4xl font-bold">Organization Portal</h1>
             </div>
             <p className="text-xl text-gray-300 mb-8">
-              Find, engage, and hire the best talent with AI-powered recruiting tools
+              Access your organization's hiring platform, whether you're an HR team or company representative
             </p>
 
             <div className="mt-16">
-              <h3 className="text-lg font-semibold mb-6">Trusted by 25,000+ recruiters and hiring managers</h3>
+              <h3 className="text-lg font-semibold mb-6">Built for Modern Organizations</h3>
               
               <div className="space-y-8">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                    <span className="block text-3xl font-bold mb-1">800M+</span>
-                    <span className="text-sm text-gray-400">Global profiles</span>
+                    <span className="block text-3xl font-bold mb-1">500+</span>
+                    <span className="text-sm text-gray-400">Companies</span>
                   </div>
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                    <span className="block text-3xl font-bold mb-1">30+</span>
-                    <span className="text-sm text-gray-400">Data sources</span>
+                    <span className="block text-3xl font-bold mb-1">10K+</span>
+                    <span className="text-sm text-gray-400">Open roles</span>
                   </div>
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                    <span className="block text-3xl font-bold mb-1">98%</span>
-                    <span className="text-sm text-gray-400">Match rate</span>
+                    <span className="block text-3xl font-bold mb-1">95%</span>
+                    <span className="text-sm text-gray-400">Success rate</span>
                   </div>
                 </div>
                 
                 <div className="border-t border-white/10 pt-8">
-                  <p className="text-sm text-gray-400 mb-4">Recruiting Features</p>
+                  <p className="text-sm text-gray-400 mb-4">Features for Organizations & HR Teams</p>
                   <div className="space-y-3">
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
-                      <span className="text-sm">AI-powered candidate sourcing</span>
+                      <span className="text-sm">Custom job board branding</span>
                     </div>
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
-                      <span className="text-sm">Smart candidate matching</span>
+                      <span className="text-sm">Advanced analytics dashboard</span>
                     </div>
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
-                      <span className="text-sm">Recruitment analytics dashboard</span>
+                      <span className="text-sm">Multi-department management</span>
                     </div>
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
-                      <span className="text-sm">LinkedIn & job board integrations</span>
+                      <span className="text-sm">HR tools & integrations</span>
                     </div>
                   </div>
                 </div>
@@ -116,12 +117,25 @@ const SignIn: React.FC = () => {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
               <img src="/TALL.png" alt="TalGPT" className="h-12 mr-3" />
-              <Search className="w-8 h-8 text-purple-600" />
+              <Building className="w-8 h-8 text-purple-600" />
             </div>
           </div>
 
-          {/* Recruiter Login Form */}
-          <RecruiterLoginForm onClose={() => {}} />
+          {/* Organization Login Form */}
+          <OrganizationLoginForm onClose={() => {}} />
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              Don't have an organization account?{' '}
+              <button className="text-purple-600 hover:text-purple-500 font-medium">
+                Contact Sales
+              </button>{' '}
+              or{' '}
+              <button className="text-purple-600 hover:text-purple-500 font-medium">
+                Contact your IT administrator
+              </button>
+            </p>
+          </div>
 
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-500">
@@ -152,4 +166,4 @@ const SignIn: React.FC = () => {
   );
 };
 
-export default SignIn;
+export default OrganizationSignIn;

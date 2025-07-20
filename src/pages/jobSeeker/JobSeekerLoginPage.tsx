@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Shield, Users, Mail } from 'lucide-react';
 import { useLogin, useGoogleLogin, useLinkedInLogin } from '../../hooks/useAuth';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { getDefaultRedirectPath } from '../../utils/userUtils';
 
 const JobSeekerLoginPage: React.FC = () => {
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, isLoading, user } = useAuthContext();
+  const { addToast } = useToast();
   
   const loginMutation = useLogin();
   const googleLoginMutation = useGoogleLogin();
@@ -17,6 +23,43 @@ const JobSeekerLoginPage: React.FC = () => {
   // Get returnTo from either URL params or from the location state (when redirected from the main sign-in page)
   const locationState = location.state as { returnTo?: string | null } | null;
   const returnTo = searchParams.get('returnTo') || locationState?.returnTo || '/job-seeker/admin';
+
+  // Check for OAuth error in URL
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'oauth_failed') {
+      addToast({
+        type: 'error',
+        title: 'Sign In Failed',
+        message: 'OAuth authentication failed. Please try again or use email sign in.'
+      });
+    }
+  }, [searchParams, addToast]);
+
+  // Redirect authenticated users to dashboard or specified redirect
+  useEffect(() => {
+    if (isAuthenticated && !isLoading && user) {
+      const redirect = searchParams.get('redirect');
+      const defaultPath = getDefaultRedirectPath(user);
+      navigate(redirect || defaultPath, { replace: true });
+    }
+  }, [isAuthenticated, isLoading, user, navigate, searchParams]);
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleEmailSignIn = () => {
+    setIsEmailModalOpen(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +79,15 @@ const JobSeekerLoginPage: React.FC = () => {
     } catch (err) {
       // Error handling is managed by the mutation
       localStorage.removeItem('jobSeekerAuth'); // Clean up on error
+      addToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to initiate Google sign in. Please try again.'
+      });
     }
-  };  const handleLinkedInLogin = async () => {
+  };
+
+  const handleLinkedInLogin = async () => {
     try {
       // Set flag to indicate job seeker login
       localStorage.setItem('jobSeekerAuth', 'true');
@@ -46,183 +96,256 @@ const JobSeekerLoginPage: React.FC = () => {
     } catch (err) {
       // Error handling is managed by the mutation
       localStorage.removeItem('jobSeekerAuth'); // Clean up on error
+      addToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to initiate LinkedIn sign in. Please try again.'
+      });
     }
   };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <Link 
-            to="/" 
-            className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
+    <div className="min-h-screen flex">
+      {/* Left Panel */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-b from-purple-900 to-purple-800 text-white p-12">
+        <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+        <div className="relative z-10 max-w-lg">
+          <a href="/" className="inline-flex items-center text-sm hover:text-gray-200">
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Back to home
-          </Link>
-          <div></div> {/* Empty div to maintain flex justification */}
+          </a>
+          
+          <div className="mt-24">
+            <div className="flex items-center mb-6">
+              <Users className="w-10 h-10 mr-3" />
+              <h1 className="text-4xl font-bold">Job Seeker Portal</h1>
+            </div>
+            <p className="text-xl text-gray-300 mb-8">
+              Find your dream job and build your career with top companies
+            </p>
+
+            <div className="mt-16">
+              <h3 className="text-lg font-semibold mb-6">Designed for Job Seekers</h3>
+              
+              <div className="space-y-8">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                    <span className="block text-3xl font-bold mb-1">50K+</span>
+                    <span className="text-sm text-gray-400">Active Jobs</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                    <span className="block text-3xl font-bold mb-1">1000+</span>
+                    <span className="text-sm text-gray-400">Companies</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                    <span className="block text-3xl font-bold mb-1">95%</span>
+                    <span className="text-sm text-gray-400">Success rate</span>
+                  </div>
+                </div>
+                
+                <div className="border-t border-white/10 pt-8">
+                  <p className="text-sm text-gray-400 mb-4">Job Seeker Features</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
+                      <span className="text-sm">AI-powered job matching</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
+                      <span className="text-sm">Application tracking</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
+                      <span className="text-sm">Career development tools</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
+                      <span className="text-sm">Direct employer connections</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-center">
-          <img
-            className="h-12 w-auto"
-            src="/tallogo.png"
-            alt="TAL"
-          />
-        </div><h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Job Seeker Portal
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Sign in to apply for jobs and manage your applications
-        </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">          <form className="space-y-6" onSubmit={handleSubmit}>
-            {loginMutation.error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                {loginMutation.error instanceof Error ? loginMutation.error.message : 'Login failed'}
-              </div>
-            )}
+      {/* Right Panel */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-6">
+              <img src="/TALL.png" alt="TalGPT" className="h-12 mr-3" />
+              <Users className="w-8 h-8 text-purple-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Job Seeker Sign In</h2>
+            <p className="text-gray-600 mt-2">Access your job search dashboard</p>
+          </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
+          <div className="space-y-4">
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={handleGoogleLogin}
+            >
+              <img
+                src="https://www.google.com/favicon.ico"
+                alt="Google"
+                className="w-5 h-5"
+              />
+              <span className="text-sm font-medium">Continue with Google</span>
+            </button>
+
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={handleLinkedInLogin}
+            >
+              <img
+                src="https://www.linkedin.com/favicon.ico"
+                alt="LinkedIn"
+                className="w-5 h-5"
+              />
+              <span className="text-sm font-medium">Continue with LinkedIn</span>
+            </button>
+
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={handleEmailSignIn}
+            >
+              <Mail className="w-5 h-5" />
+              <span className="text-sm font-medium">Continue with Email</span>
+            </button>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              Don't have an account?{' '}
+              <Link
+                to="/job-seeker/register"
+                className="text-purple-600 hover:text-purple-500 font-medium"
+              >
+                Sign up here
+              </Link>
+            </p>
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">
+              By proceeding, you agree to our{' '}
+              <a href="/terms" className="text-purple-600 hover:text-purple-500">
+                Terms of Service
+              </a>
+            </p>
+          </div>
+
+          <div className="mt-8 flex items-center justify-center gap-2">
+            <img src="/TALL.png" alt="TalGPT" className="h-8 opacity-30" />
+            <div className="h-4 w-px bg-gray-200"></div>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                <Shield className="w-4 h-4" />
+                SOC2 Type II
+              </div>
+              <div className="flex items-center gap-1">
+                <Shield className="w-4 h-4" />
+                ISO 27001
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Email Login Modal */}
+      {isEmailModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Sign in with Email</h3>
+              <button
+                onClick={() => setIsEmailModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {loginMutation.error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                  {loginMutation.error instanceof Error ? loginMutation.error.message : 'Login failed'}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email address
+                </label>
                 <input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
                 <input
                   id="password"
                   name="password"
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                    Remember me
+                  </label>
+                </div>
+
+                <div className="text-sm">
+                  <Link
+                    to="/forgot-password"
+                    className="font-medium text-purple-600 hover:text-purple-500"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
-              <div className="text-sm">
-                <Link
-                  to="/forgot-password"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
-            </div>            <div>
               <button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loginMutation.isPending ? 'Signing in...' : 'Sign in'}
               </button>
-            </div>
-
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
-                </div>
-              </div>              <div className="mt-6 grid grid-cols-2 gap-3">                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24">
-                    <path
-                      fill="currentColor"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  <span className="ml-2">Google</span>
-                </button>                <button
-                  type="button"
-                  onClick={handleLinkedInLogin}
-                  className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                >
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                  </svg>
-                  <span className="ml-2">LinkedIn</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <span className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link
-                  to="/job-seeker/register"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Sign up here
-                </Link>
-              </span>
-            </div>
-
-            <div className="text-center border-t pt-4">
-              <span className="text-sm text-gray-600">
-                Are you a recruiter?{' '}
-                <Link
-                  to="/signin"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Recruiter Login
-                </Link>
-              </span>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -1,18 +1,20 @@
 import React from 'react';
-import { X, Briefcase, User } from 'lucide-react';
+import { X, Briefcase, User, Building } from 'lucide-react';
 
 interface UserTypeSelectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectRecruiter: () => void;
   onSelectJobSeeker: () => void;
+  onSelectOrganization: () => void;
 }
 
 const UserTypeSelectModal: React.FC<UserTypeSelectModalProps> = ({
   isOpen,
   onClose,
   onSelectRecruiter,
-  onSelectJobSeeker
+  onSelectJobSeeker,
+  onSelectOrganization
 }) => {
   if (!isOpen) return null;
 
@@ -66,6 +68,22 @@ const UserTypeSelectModal: React.FC<UserTypeSelectModalProps> = ({
                   <div className="text-left">
                     <h3 className="font-medium text-gray-900">Job Seeker</h3>
                     <p className="text-sm text-gray-500">I want to find job opportunities</p>
+                  </div>
+                </div>
+                <div className="w-6 h-6 border border-gray-300 rounded-full"></div>
+              </button>
+
+              <button
+                onClick={onSelectOrganization}
+                className="w-full flex items-center justify-between p-6 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center">
+                  <div className="bg-green-100 p-3 rounded-lg mr-4">
+                    <Building className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-medium text-gray-900">Organization / Internal HR</h3>
+                    <p className="text-sm text-gray-500">I represent a company or internal HR team</p>
                   </div>
                 </div>
                 <div className="w-6 h-6 border border-gray-300 rounded-full"></div>
