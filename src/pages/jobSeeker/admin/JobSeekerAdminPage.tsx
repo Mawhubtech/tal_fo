@@ -13,6 +13,7 @@ import {
   Sidebar, 
   OverviewTab, 
   ApplicationsTab, 
+  AllJobsTab,
   SavedJobsTab, 
   ProfileTab, 
   SettingsTab 
@@ -42,7 +43,7 @@ interface SavedJob {
 const JobSeekerAdminPage: React.FC = () => {
   const { user } = useAuthContext();
   const logout = useLogout();
-  const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'saved' | 'profile' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'alljobs' | 'saved' | 'profile' | 'settings'>('overview');
   const [isCollapsed, setIsCollapsed] = useState(false);
   
   // Auto-collapse on mobile
@@ -319,6 +320,10 @@ const JobSeekerAdminPage: React.FC = () => {
 
             {activeTab === 'applications' && (
               <ApplicationsTab applications={applications} />
+            )}
+
+            {activeTab === 'alljobs' && (
+              <AllJobsTab />
             )}
 
             {activeTab === 'saved' && (

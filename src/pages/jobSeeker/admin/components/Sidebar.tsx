@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { 
   Briefcase, 
   FileText, 
@@ -12,7 +11,7 @@ import {
 
 interface SidebarProps {
   activeTab: string;
-  setActiveTab: (tab: 'overview' | 'applications' | 'saved' | 'profile' | 'settings') => void;
+  setActiveTab: (tab: 'overview' | 'applications' | 'alljobs' | 'saved' | 'profile' | 'settings') => void;
   applicationsCount: number;
   savedJobsCount: number;
   isCollapsed: boolean;
@@ -100,9 +99,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             )}
           </button>
           
-          <Link
-            to="/jobs"
-            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-300 group relative`}
+          <button
+            onClick={() => setActiveTab('alljobs')}
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-2 text-sm font-medium rounded-lg transition-all duration-300 group relative ${
+              activeTab === 'alljobs'
+                ? 'bg-purple-100 text-purple-700'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
           >
             <Briefcase className="h-4 w-4" />
             {!isCollapsed && <span className="ml-3">All Jobs</span>}
@@ -111,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 All Jobs
               </div>
             )}
-          </Link>
+          </button>
           
           <button
             onClick={() => setActiveTab('saved')}
