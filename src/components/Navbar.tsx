@@ -22,8 +22,6 @@ const Navbar: React.FC = () => {
   // const topNavClasses = 'bg-transparent';
 
   const linkTextColor = isScrolled ? 'text-slate-700 hover:text-primary-600' : 'text-slate-700 hover:text-primary-600';
-
-  const logoTextColor = 'text-slate-800';
   
   // Handle opening the user type modal
   const handleOpenUserTypeModal = () => {
@@ -47,7 +45,6 @@ const Navbar: React.FC = () => {
     setIsUserTypeModalOpen(false);
     navigate('/organization/signin');
   };
-  const logoAccentColor = 'text-primary-600'; // Using primary color for accent
 
   const outlineButtonClasses = isScrolled 
     ? 'px-5 py-2.5 border border-purple-300 text-purple-700 hover:bg-purple-100 hover:border-purple-400 rounded-full transition-colors text-base font-medium'
@@ -63,11 +60,12 @@ const Navbar: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              {/* Text logo using Urbanist font */}
-              <div className={`text-2xl md:text-3xl`}> {/* Adjusted size for text logo */}
-                <span className={`mr-2 font-urbanist font-bold tracking-tight ${logoTextColor}`}>TAL</span> {/* TAL is Urbanist, bold, tight tracking */}
-                <span className={`font-sans font-semibold ${logoAccentColor}`}>تال</span> {/* Arabic part remains sans-serif, semibold */}
-              </div>
+              {/* Image logo */}
+              <img 
+                src="/TALL.png" 
+                alt="TAL" 
+                className="h-8 md:h-10 w-auto"
+              />
             </Link>
           </div>          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">

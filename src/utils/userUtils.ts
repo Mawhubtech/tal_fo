@@ -15,6 +15,11 @@ export const getDefaultRedirectPath = (user: User | undefined): string => {
     return '/external/jobs';
   }
   
+  // Check if user has jobseeker role
+  if (hasRole(user, 'jobseeker')) {
+    return '/job-seeker/admin';
+  }
+  
   return '/dashboard';
 };
 
