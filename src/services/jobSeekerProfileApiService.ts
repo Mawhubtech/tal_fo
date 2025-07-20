@@ -8,8 +8,10 @@ export interface JobSeekerProfile {
   onboardingCompletedAt?: string;
   contractTypes: string[];
   startAvailability: string;
+  targetSalary?: number;
   salaryMin?: number;
   salaryMax?: number;
+  salaryRange?: string;
   salaryFlexible?: boolean;
   workplaceSettings: string[];
   preferredCompanies: string[];
@@ -247,76 +249,48 @@ class JobSeekerProfileApiService {
       
       // Query job applications by candidate ID
       const response = await apiClient.get(`/job-applications?candidateId=${profile.candidate.id}`);
-      return response.data?.data || response.data || [];
+      return response.data?.applications || response.data?.data || response.data || [];
     } catch (error) {
       console.error('Error fetching applications:', error);
       return [];
     }
   }
 
-  // Get saved jobs (using localStorage until backend implementation)
+  // Get saved jobs from backend
   async getSavedJobs(): Promise<any[]> {
     try {
-      // Use localStorage temporarily until backend implementation
-      const savedJobs = localStorage.getItem('savedJobs');
-      return savedJobs ? JSON.parse(savedJobs) : [];
+      const response = await apiClient.get('/job-seekers/saved-jobs');
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching saved jobs:', error);
       return [];
     }
   }
 
-  // Save a job (using localStorage until backend implementation)
+  // Save a job using backend API
   async saveJob(jobId: string): Promise<{ success: boolean; message: string }> {
     try {
-      // Get current saved jobs from localStorage
-      const savedJobs = localStorage.getItem('savedJobs');
-      const currentSavedJobs = savedJobs ? JSON.parse(savedJobs) : [];
-      
-      // Check if job is already saved
-      const isAlreadySaved = currentSavedJobs.some((job: any) => 
-        (job.jobId || job.id) === jobId
-      );
-      
-      if (isAlreadySaved) {
+      const response = await apiClient.post('/job-seekers/saved-jobs', { jobId });
+      return {
+        success: true,
+        message: 'Job saved successfully'
+      };
+    } catch (error: any) {
+      console.error('Error saving job:', error);
+      if (error.response?.status === 409) {
         return {
           success: false,
           message: 'Job is already saved'
         };
       }
-      
-      // Add the job to saved jobs with current timestamp
-      currentSavedJobs.push({
-        jobId: jobId,
-        savedAt: new Date().toISOString()
-      });
-      
-      localStorage.setItem('savedJobs', JSON.stringify(currentSavedJobs));
-      
-      return {
-        success: true,
-        message: 'Job saved successfully'
-      };
-    } catch (error) {
-      console.error('Error saving job:', error);
       throw error;
     }
   }
 
-  // Remove a saved job (using localStorage until backend implementation)
+  // Remove a saved job using backend API
   async removeSavedJob(jobId: string): Promise<{ success: boolean; message: string }> {
     try {
-      // Get current saved jobs from localStorage
-      const savedJobs = localStorage.getItem('savedJobs');
-      const currentSavedJobs = savedJobs ? JSON.parse(savedJobs) : [];
-      
-      // Filter out the job to remove
-      const updatedSavedJobs = currentSavedJobs.filter((job: any) => 
-        (job.jobId || job.id) !== jobId
-      );
-      
-      localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
-      
+      await apiClient.delete(`/job-seekers/saved-jobs/${jobId}`);
       return {
         success: true,
         message: 'Job removed from saved jobs'
@@ -345,7 +319,7 @@ class JobSeekerProfileApiService {
       const requestData: any = {
         candidateId: profile.candidate.id,
         jobId: jobId,
-        status: 'submitted'
+        status: 'Applied'
       };
       
       if (applicationData?.coverLetter) {
@@ -364,6 +338,20 @@ class JobSeekerProfileApiService {
     }
   }
 
+  // Withdraw application from a job
+  async withdrawApplication(applicationId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await apiClient.delete(`/job-applications/${applicationId}`);
+      return {
+        success: true,
+        message: 'Application withdrawn successfully'
+      };
+    } catch (error) {
+      console.error('Error withdrawing application:', error);
+      throw error;
+    }
+  }
+
   // Update personal info step
   async updatePersonalInfo(data: { firstName: string; lastName: string; location: string }): Promise<JobSeekerProfile> {
     try {
@@ -378,11 +366,24 @@ class JobSeekerProfileApiService {
     }
   }
 
+  // Update personal info for completed profiles (doesn't affect onboarding status)
+  async updatePersonalInfoForCompletedProfile(data: { firstName?: string; lastName?: string; avatar?: string }): Promise<JobSeekerProfile> {
+    try {
+      const response = await apiClient.put(`${this.baseURL}/personal-info`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating personal info for completed profile:', error);
+      throw error;
+    }
+  }
+
   // Update preferences step
   async updatePreferences(data: {
     contractTypes: string[];
     startAvailability: string;
     targetSalary?: number;
+    salaryRange?: string;
+    salaryFlexible?: boolean;
     workplaceSettings: string[];
   }): Promise<JobSeekerProfile> {
     try {
@@ -397,10 +398,31 @@ class JobSeekerProfileApiService {
     }
   }
 
+  // Update preferences for completed profiles (doesn't affect onboarding status)
+  async updatePreferencesForCompletedProfile(data: {
+    contractTypes: string[];
+    startAvailability: string;
+    targetSalary?: number;
+    salaryRange?: string;
+    salaryFlexible?: boolean;
+    workplaceSettings: string[];
+  }): Promise<JobSeekerProfile> {
+    try {
+      const response = await apiClient.put(`${this.baseURL}/preferences`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating preferences for completed profile:', error);
+      throw error;
+    }
+  }
+
   // Update companies step
   async updateCompanies(data: {
     preferredCompanies?: string[];
     hiddenCompanies?: string[];
+    companyStages?: string[];
+    industries?: string[];
+    companySizes?: string[];
   }): Promise<JobSeekerProfile> {
     try {
       const response = await apiClient.put(`${this.baseURL}/onboarding/step`, { 
@@ -410,6 +432,39 @@ class JobSeekerProfileApiService {
       return response.data;
     } catch (error) {
       console.error('Error updating companies:', error);
+      throw error;
+    }
+  }
+
+  // Update companies for completed profiles (doesn't affect onboarding status)
+  async updateCompaniesForCompletedProfile(data: {
+    preferredCompanies?: string[];
+    hiddenCompanies?: string[];
+    companyStages?: string[];
+    industries?: string[];
+    companySizes?: string[];
+  }): Promise<JobSeekerProfile> {
+    try {
+      const response = await apiClient.put(`${this.baseURL}/companies`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating companies for completed profile:', error);
+      throw error;
+    }
+  }
+
+  // Update profile links for completed profiles (doesn't affect onboarding status)
+  async updateProfileLinksForCompletedProfile(data: {
+    linkedinUrl?: string;
+    githubUrl?: string;
+    portfolioUrl?: string;
+    personalWebsite?: string;
+  }): Promise<JobSeekerProfile> {
+    try {
+      const response = await apiClient.put(`${this.baseURL}/profile-links`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating profile links for completed profile:', error);
       throw error;
     }
   }
@@ -708,6 +763,31 @@ class JobSeekerProfileApiService {
       return this.getProfile();
     } catch (error) {
       console.error('Error updating comprehensive profile:', error);
+      throw error;
+    }
+  }
+
+  async getProfileStrength(): Promise<{
+    overallCompleteness: number;
+    basicInfoCompleteness: number;
+    experienceCompleteness: number;
+    educationCompleteness: number;
+    skillsCompleteness: number;
+    additionalInfoCompleteness: number;
+    breakdown: {
+      completed: string[];
+      missing: string[];
+      totalFields: number;
+      completedFields: number;
+    };
+    suggestions: string[];
+    strengthLevel: 'Poor' | 'Fair' | 'Good' | 'Excellent';
+  }> {
+    try {
+      const response = await apiClient.get('/job-seekers/profile-strength');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching profile strength:', error);
       throw error;
     }
   }

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useJobs } from '../../../../hooks/useJobs';
 import { useOrganizations } from '../../../../recruitment/organizations/hooks/useOrganizations';
-import { useSavedJobs, useSaveJob, useRemoveSavedJob, useApplyToJob, useJobApplications } from '../../../../hooks/useJobSeekerProfile';
+import { useSavedJobs, useSaveJob, useRemoveSavedJob, useApplyToJob, useJobApplications, useWithdrawApplication } from '../../../../hooks/useJobSeekerProfile';
 import { useToast } from '../../../../hooks/useToast';
 import JobDetailModal from './JobDetailModal';
 import type { Job } from '../../../../recruitment/data/types';
@@ -43,9 +43,11 @@ const AllJobsTab: React.FC = () => {
   const [loadingStates, setLoadingStates] = useState<{
     saving: Set<string>;
     applying: Set<string>;
+    withdrawing: Set<string>;
   }>({
     saving: new Set(),
-    applying: new Set()
+    applying: new Set(),
+    withdrawing: new Set()
   });
 
   const { showToast } = useToast();
@@ -68,6 +70,10 @@ const AllJobsTab: React.FC = () => {
   const saveJobMutation = useSaveJob();
   const removeSavedJobMutation = useRemoveSavedJob();
   const applyToJobMutation = useApplyToJob();
+  const withdrawApplicationMutation = useWithdrawApplication();
+  
+  // Debug: Log applications data
+  console.log('Applications data:', applications);
   
   const jobs = jobsResponse?.data || [];
 
@@ -77,10 +83,11 @@ const AllJobsTab: React.FC = () => {
     if (savedJobs && Array.isArray(savedJobs)) {
       savedJobs.forEach(savedJob => {
         // Handle both direct job objects and job references
-        const jobId = savedJob.jobId || savedJob.id;
+        const jobId = savedJob.jobId || savedJob.job?.id || savedJob.id;
         if (jobId) jobIds.add(jobId);
       });
     }
+    console.log('Saved job IDs:', Array.from(jobIds));
     return jobIds;
   }, [savedJobs]);
 
@@ -89,12 +96,28 @@ const AllJobsTab: React.FC = () => {
     const jobIds = new Set<string>();
     if (applications && Array.isArray(applications)) {
       applications.forEach(application => {
-        // Handle both direct job objects and job references
-        const jobId = application.jobId || application.id;
+        // Check multiple ways to get the job ID from the application
+        const jobId = application.jobId || application.job?.id || application.id;
         if (jobId) jobIds.add(jobId);
       });
     }
+    console.log('Applied job IDs:', Array.from(jobIds));
     return jobIds;
+  }, [applications]);
+
+  // Create a mapping from jobId to applicationId for withdrawing applications
+  const jobIdToApplicationId = useMemo(() => {
+    const map = new Map<string, string>();
+    if (applications && Array.isArray(applications)) {
+      applications.forEach(application => {
+        const jobId = application.jobId || application.job?.id;
+        const applicationId = application.id;
+        if (jobId && applicationId) {
+          map.set(jobId, applicationId);
+        }
+      });
+    }
+    return map;
   }, [applications]);
 
   // Create a map of organization IDs to organization names for quick lookup
@@ -173,6 +196,36 @@ const AllJobsTab: React.FC = () => {
       setLoadingStates(prev => ({
         ...prev,
         applying: new Set([...prev.applying].filter(id => id !== jobId))
+      }));
+    }
+  };
+
+  const handleWithdrawApplication = async (jobId: string) => {
+    const applicationId = jobIdToApplicationId.get(jobId);
+    if (!applicationId) {
+      showToast('Application ID not found. Please refresh and try again.', 'error');
+      return;
+    }
+
+    setLoadingStates(prev => ({
+      ...prev,
+      withdrawing: new Set([...prev.withdrawing, jobId])
+    }));
+
+    try {
+      await withdrawApplicationMutation.mutateAsync(applicationId);
+      showToast('Application withdrawn successfully!', 'success');
+      // Close modal if it's open
+      if (selectedJobId === jobId) {
+        setSelectedJobId(null);
+      }
+    } catch (error) {
+      console.error('Error withdrawing application:', error);
+      showToast('Failed to withdraw application. Please try again.', 'error');
+    } finally {
+      setLoadingStates(prev => ({
+        ...prev,
+        withdrawing: new Set([...prev.withdrawing].filter(id => id !== jobId))
       }));
     }
   };
@@ -342,10 +395,23 @@ const AllJobsTab: React.FC = () => {
               <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                        {job.title}
-                      </h3>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="text-xl font-semibold text-gray-900">
+                          {job.title}
+                        </h3>
+                        {savedJobIds.has(job.id) && (
+                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+                            <BookmarkCheck className="h-3 w-3" />
+                            <span>Saved</span>
+                          </span>
+                        )}
+                        {appliedJobIds.has(job.id) && (
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                            Applied
+                          </span>
+                        )}
+                      </div>
                       <p className="text-lg text-gray-700 font-medium">
                         {getOrganizationName(job.organizationId)}
                       </p>
@@ -430,28 +496,45 @@ const AllJobsTab: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col space-y-2 lg:w-48">
-                  <button
-                    onClick={() => handleApplyToJob(job.id)}
-                    disabled={appliedJobIds.has(job.id) || loadingStates.applying.has(job.id)}
-                    className={`w-full px-4 py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed ${
-                      appliedJobIds.has(job.id)
-                        ? 'bg-green-100 text-green-800'
-                        : loadingStates.applying.has(job.id)
-                        ? 'bg-purple-300 text-white'
-                        : 'bg-purple-600 text-white hover:bg-purple-700'
-                    }`}
-                  >
-                    {loadingStates.applying.has(job.id) ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                        <span>Applying...</span>
-                      </div>
-                    ) : appliedJobIds.has(job.id) ? (
-                      'Applied'
-                    ) : (
-                      'Apply Now'
-                    )}
-                  </button>
+                  {appliedJobIds.has(job.id) ? (
+                    <button
+                      onClick={() => handleWithdrawApplication(job.id)}
+                      disabled={loadingStates.withdrawing.has(job.id)}
+                      className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                        loadingStates.withdrawing.has(job.id)
+                          ? 'bg-red-300 text-white cursor-not-allowed'
+                          : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
+                    >
+                      {loadingStates.withdrawing.has(job.id) ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                          <span>Withdrawing...</span>
+                        </div>
+                      ) : (
+                        'Withdraw Application'
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleApplyToJob(job.id)}
+                      disabled={loadingStates.applying.has(job.id)}
+                      className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                        loadingStates.applying.has(job.id)
+                          ? 'bg-purple-300 text-white cursor-not-allowed'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                      }`}
+                    >
+                      {loadingStates.applying.has(job.id) ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                          <span>Applying...</span>
+                        </div>
+                      ) : (
+                        'Apply Now'
+                      )}
+                    </button>
+                  )}
                   
                   <button
                     onClick={() => handleViewDetails(job.id)}
@@ -483,9 +566,12 @@ const AllJobsTab: React.FC = () => {
           isOpen={!!selectedJobId}
           onClose={() => setSelectedJobId(null)}
           onApply={handleApplyToJob}
+          onWithdraw={handleWithdrawApplication}
           onSave={toggleSaveJob}
           isApplied={appliedJobIds.has(selectedJobId)}
           isSaved={savedJobIds.has(selectedJobId)}
+          isApplying={loadingStates.applying.has(selectedJobId)}
+          isWithdrawing={loadingStates.withdrawing.has(selectedJobId)}
         />
       )}
     </div>

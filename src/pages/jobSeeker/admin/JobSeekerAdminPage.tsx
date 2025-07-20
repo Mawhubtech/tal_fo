@@ -103,8 +103,8 @@ const JobSeekerAdminPage: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-20">
               <div className="flex items-center space-x-6">
-                <Link to="/jobs" className="text-3xl font-bold text-purple-600 hover:text-purple-700 transition-colors">
-                  TAL Jobs
+                <Link to="/jobs" className="hover:opacity-80 transition-opacity">
+                  <img src="/TALL.png" alt="PeopleGPT" className="h-12" />
                 </Link>
               </div>
               <div className="flex items-center space-x-6">
@@ -155,8 +155,8 @@ const JobSeekerAdminPage: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-20">
               <div className="flex items-center space-x-6">
-                <Link to="/jobs" className="text-3xl font-bold text-purple-600 hover:text-purple-700 transition-colors">
-                  TAL Jobs
+                <Link to="/jobs" className="hover:opacity-80 transition-opacity">
+                  <img src="/TALL.png" alt="PeopleGPT" className="h-12" />
                 </Link>
               </div>
               <div className="flex items-center space-x-6">
@@ -183,7 +183,7 @@ const JobSeekerAdminPage: React.FC = () => {
                   <span className="hidden sm:block font-medium">Logout</span>
                 </button>
               </div>
-			  
+
             </div>
           </div>
         </header>
@@ -203,8 +203,8 @@ const JobSeekerAdminPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-6">
-              <Link to="/jobs" className="text-3xl font-bold text-purple-600 hover:text-purple-700 transition-colors">
-                TAL Jobs
+              <Link to="/jobs" className="hover:opacity-80 transition-opacity">
+                <img src="/TALL.png" alt="PeopleGPT" className="h-12" />
               </Link>
             </div>
             <div className="flex items-center space-x-6">
@@ -214,9 +214,17 @@ const JobSeekerAdminPage: React.FC = () => {
               {/* User Profile Avatar */}
               <div className="relative">
                 <div className="flex items-center space-x-3 text-gray-700">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-purple-600" />
-                  </div>
+                  {profile?.user?.avatar ? (
+                    <img 
+                      src={profile.user.avatar} 
+                      alt={`${user?.firstName || 'User'} avatar`}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-purple-200"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-purple-600" />
+                    </div>
+                  )}
                   <span className="hidden sm:block font-medium">{user?.firstName || 'Job Seeker'}</span>
                 </div>
               </div>
@@ -254,7 +262,8 @@ const JobSeekerAdminPage: React.FC = () => {
             {activeTab === 'overview' && (
               <OverviewTab 
                 user={user} 
-                stats={stats} 
+                stats={stats}
+                setActiveTab={setActiveTab}
               />
             )}
 

@@ -13,17 +13,21 @@ import {
   Clock,
   ExternalLink
 } from 'lucide-react';
-import { useJobApplications } from '../../../../hooks/useJobSeekerProfile';
+import { useJobApplications, useWithdrawApplication } from '../../../../hooks/useJobSeekerProfile';
 import { useOrganizations } from '../../../../recruitment/organizations/hooks/useOrganizations';
+import { useToast } from '../../../../hooks/useToast';
 import JobDetailModal from './JobDetailModal';
 
-type ApplicationStatus = 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted';
+type ApplicationStatus = 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted' | 'Applied' | 'Screening' | 'Phone Interview' | 'Technical Interview' | 'Final Interview' | 'Offer Extended' | 'Hired' | 'Rejected' | 'Withdrawn';
 
 const ApplicationsTab: React.FC = () => {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [withdrawingApplications, setWithdrawingApplications] = useState<Set<string>>(new Set());
   
   const { data: applicationsData = [], isLoading, error } = useJobApplications();
   const { data: organizations } = useOrganizations();
+  const withdrawApplicationMutation = useWithdrawApplication();
+  const { showToast } = useToast();
 
   // Create a map of organization IDs to organization names for quick lookup
   const organizationMap = useMemo(() => {
@@ -44,15 +48,26 @@ const ApplicationsTab: React.FC = () => {
   const getStatusColor = (status: ApplicationStatus) => {
     switch (status) {
       case 'pending':
+      case 'Applied':
         return 'bg-yellow-100 text-yellow-800';
       case 'reviewing':
+      case 'Screening':
         return 'bg-blue-100 text-blue-800';
       case 'interview':
+      case 'Phone Interview':
+      case 'Technical Interview':
+      case 'Final Interview':
         return 'bg-purple-100 text-purple-800';
+      case 'Offer Extended':
+        return 'bg-indigo-100 text-indigo-800';
       case 'accepted':
+      case 'Hired':
         return 'bg-green-100 text-green-800';
       case 'rejected':
+      case 'Rejected':
         return 'bg-red-100 text-red-800';
+      case 'Withdrawn':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -61,11 +76,19 @@ const ApplicationsTab: React.FC = () => {
   const getStatusIcon = (status: ApplicationStatus) => {
     switch (status) {
       case 'accepted':
+      case 'Hired':
         return <CheckCircle className="h-4 w-4" />;
       case 'rejected':
+      case 'Rejected':
+      case 'Withdrawn':
         return <XCircle className="h-4 w-4" />;
       case 'interview':
+      case 'Phone Interview':
+      case 'Technical Interview':
+      case 'Final Interview':
         return <Calendar className="h-4 w-4" />;
+      case 'Offer Extended':
+        return <FileText className="h-4 w-4" />;
       default:
         return <AlertCircle className="h-4 w-4" />;
     }
@@ -94,6 +117,24 @@ const ApplicationsTab: React.FC = () => {
     setSelectedJobId(jobId);
   };
 
+  const handleWithdrawApplication = async (applicationId: string) => {
+    setWithdrawingApplications(prev => new Set([...prev, applicationId]));
+
+    try {
+      await withdrawApplicationMutation.mutateAsync(applicationId);
+      showToast('Application withdrawn successfully!', 'success');
+    } catch (error) {
+      console.error('Error withdrawing application:', error);
+      showToast('Failed to withdraw application. Please try again.', 'error');
+    } finally {
+      setWithdrawingApplications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(applicationId);
+        return newSet;
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -120,6 +161,12 @@ const ApplicationsTab: React.FC = () => {
 
   const applications = Array.isArray(applicationsData) ? applicationsData : [];
 
+  // Check if application can be withdrawn (not rejected, hired, or already withdrawn)
+  const canWithdrawApplication = (status: string) => {
+    const nonWithdrawableStatuses = ['Rejected', 'Hired', 'Withdrawn'];
+    return !nonWithdrawableStatuses.includes(status);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -133,7 +180,7 @@ const ApplicationsTab: React.FC = () => {
             {applications.map((application) => {
               // Handle both application objects and applications with nested job data
               const job = application.job || application;
-              const applicationStatus = (application.status || 'pending') as ApplicationStatus;
+              const applicationStatus = application.status || 'pending';
               
               return (
                 <div key={application.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -148,9 +195,9 @@ const ApplicationsTab: React.FC = () => {
                             {getOrganizationName(job.organizationId) || application.company}
                           </p>
                         </div>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(applicationStatus)}`}>
-                          {getStatusIcon(applicationStatus)}
-                          <span className="ml-1 capitalize">{applicationStatus}</span>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(applicationStatus as ApplicationStatus)}`}>
+                          {getStatusIcon(applicationStatus as ApplicationStatus)}
+                          <span className="ml-1">{applicationStatus}</span>
                         </span>
                       </div>
                       
@@ -215,13 +262,39 @@ const ApplicationsTab: React.FC = () => {
                     </div>
                     
                     <div className="mt-4 lg:mt-0 lg:ml-6 flex-shrink-0 lg:w-48">
-                      <button 
-                        onClick={() => handleViewDetails(job.id)}
-                        className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        <span>View Details</span>
-                      </button>
+                      <div className="flex flex-col space-y-2">
+                        <button 
+                          onClick={() => handleViewDetails(job.id)}
+                          className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          <span>View Details</span>
+                        </button>
+                        
+                        {canWithdrawApplication(application.status) && (
+                          <button 
+                            onClick={() => handleWithdrawApplication(application.id)}
+                            disabled={withdrawingApplications.has(application.id)}
+                            className={`w-full px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                              withdrawingApplications.has(application.id)
+                                ? 'bg-red-300 text-white cursor-not-allowed'
+                                : 'bg-red-600 text-white hover:bg-red-700'
+                            }`}
+                          >
+                            {withdrawingApplications.has(application.id) ? (
+                              <>
+                                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                                <span>Withdrawing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4" />
+                                <span>Withdraw</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -252,9 +325,12 @@ const ApplicationsTab: React.FC = () => {
           isOpen={!!selectedJobId}
           onClose={() => setSelectedJobId(null)}
           onApply={() => {}}
+          onWithdraw={() => {}}
           onSave={() => {}}
           isApplied={true}
           isSaved={false}
+          isApplying={false}
+          isWithdrawing={false}
         />
       )}
     </div>

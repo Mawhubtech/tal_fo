@@ -1,19 +1,19 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { 
   FileText, 
   Clock, 
   Calendar, 
   CheckCircle, 
-  Search, 
-  Upload, 
-  Edit3,
   Building,
   MapPin,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  TrendingUp,
+  Target,
+  Award,
+  Bookmark
 } from 'lucide-react';
-import { useJobApplications } from '../../../../hooks/useJobSeekerProfile';
+import { useJobApplications, useProfileStrength } from '../../../../hooks/useJobSeekerProfile';
 
 type ApplicationStatus = 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted';
 
@@ -27,10 +27,12 @@ interface Stats {
 interface OverviewTabProps {
   user: any;
   stats: Stats;
+  setActiveTab: (tab: 'overview' | 'applications' | 'alljobs' | 'saved' | 'profile' | 'settings') => void;
 }
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ user, stats }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ user, stats, setActiveTab }) => {
   const { data: applications } = useJobApplications();
+  const { data: profileStrength, isLoading: profileStrengthLoading } = useProfileStrength();
   
   const getStatusColor = (status: ApplicationStatus) => {
     switch (status) {
@@ -125,25 +127,119 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ user, stats }) => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
-            to="/jobs"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Search className="h-6 w-6 text-purple-600 mr-3" />
-            <span className="font-medium">Browse Jobs</span>
-          </Link>
-          <button className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Upload className="h-6 w-6 text-blue-600 mr-3" />
-            <span className="font-medium">Update Resume</span>
-          </button>
-          <button className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <Edit3 className="h-6 w-6 text-green-600 mr-3" />
-            <span className="font-medium">Edit Profile</span>
-          </button>
+      {/* Job Search Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Application Success Rate */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
+            Application Success Rate
+          </h2>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Applications Sent</span>
+              <span className="font-semibold">{stats.total}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Responses Received</span>
+              <span className="font-semibold">{stats.responses}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Interview Invitations</span>
+              <span className="font-semibold">{stats.interviews}</span>
+            </div>
+            <div className="pt-2 border-t">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-900 font-medium">Success Rate</span>
+                <span className="text-lg font-bold text-green-600">
+                  {stats.total > 0 ? Math.round((stats.responses / stats.total) * 100) : 0}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Completeness */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Target className="h-5 w-5 text-blue-600 mr-2" />
+            Profile Strength
+          </h2>
+          {profileStrengthLoading ? (
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-200 rounded w-full"></div>
+              <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+            </div>
+          ) : profileStrength ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Overall Completeness</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-20 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full ${
+                        profileStrength.strengthLevel === 'Excellent' ? 'bg-green-600' :
+                        profileStrength.strengthLevel === 'Good' ? 'bg-blue-600' :
+                        profileStrength.strengthLevel === 'Fair' ? 'bg-yellow-600' :
+                        'bg-red-600'
+                      }`} 
+                      style={{ width: `${profileStrength.overallCompleteness}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium">{profileStrength.overallCompleteness}%</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-500">Profile Level:</span>
+                <span className={`text-sm font-medium px-2 py-1 rounded-full ${
+                  profileStrength.strengthLevel === 'Excellent' ? 'bg-green-100 text-green-800' :
+                  profileStrength.strengthLevel === 'Good' ? 'bg-blue-100 text-blue-800' :
+                  profileStrength.strengthLevel === 'Fair' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {profileStrength.strengthLevel}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {profileStrength.breakdown.completed.slice(0, 2).map((item: string, index: number) => (
+                  <div key={index} className="flex items-center text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    <span className="text-gray-600">{item}</span>
+                  </div>
+                ))}
+                {profileStrength.breakdown.missing.slice(0, 3).map((item: string, index: number) => (
+                  <div key={index} className="flex items-center text-sm">
+                    <AlertCircle className="h-4 w-4 text-yellow-500 mr-2" />
+                    <span className="text-gray-600">Missing: {item}</span>
+                  </div>
+                ))}
+              </div>
+              {profileStrength.breakdown.missing.length > 0 && (
+                <div className="pt-2 border-t">
+                  <button 
+                    onClick={() => setActiveTab('profile')}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Complete Profile →
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Profile Completeness</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-20 bg-gray-200 rounded-full h-2">
+                    <div className="bg-gray-400 h-2 rounded-full" style={{ width: '0%' }}></div>
+                  </div>
+                  <span className="text-sm font-medium">--</span>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500">Unable to load profile strength data</p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -13,6 +13,7 @@ export const jobSeekerProfileKeys = {
   onboardingStatus: () => [...jobSeekerProfileKeys.all, 'onboardingStatus'] as const,
   applications: () => [...jobSeekerProfileKeys.all, 'applications'] as const,
   savedJobs: () => [...jobSeekerProfileKeys.all, 'savedJobs'] as const,
+  profileStrength: () => [...jobSeekerProfileKeys.all, 'profileStrength'] as const,
 };
 
 // Get job seeker profile
@@ -144,6 +145,23 @@ export const useApplyToJob = () => {
     },
     onError: (error) => {
       console.error('Error applying to job:', error);
+    },
+  });
+};
+
+// Withdraw application mutation
+export const useWithdrawApplication = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (applicationId: string) => 
+      jobSeekerProfileApiService.withdrawApplication(applicationId),
+    onSuccess: () => {
+      // Invalidate applications to refetch the updated list
+      queryClient.invalidateQueries({ queryKey: jobSeekerProfileKeys.applications() });
+    },
+    onError: (error) => {
+      console.error('Error withdrawing application:', error);
     },
   });
 };
@@ -399,5 +417,15 @@ export const useUpdateComprehensiveProfile = () => {
       queryClient.invalidateQueries({ queryKey: jobSeekerProfileKeys.profile() });
       queryClient.invalidateQueries({ queryKey: jobSeekerProfileKeys.onboardingStatus() });
     },
+  });
+};
+
+// Get profile strength
+export const useProfileStrength = () => {
+  return useQuery({
+    queryKey: jobSeekerProfileKeys.profileStrength(),
+    queryFn: () => jobSeekerProfileApiService.getProfileStrength(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 1,
   });
 };

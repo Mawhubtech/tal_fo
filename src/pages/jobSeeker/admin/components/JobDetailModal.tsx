@@ -92,9 +92,12 @@ interface JobDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onApply?: (jobId: string) => void;
+  onWithdraw?: (jobId: string) => void;
   onSave?: (jobId: string) => void;
   isApplied?: boolean;
   isSaved?: boolean;
+  isApplying?: boolean;
+  isWithdrawing?: boolean;
 }
 
 const JobDetailModal: React.FC<JobDetailModalProps> = ({
@@ -102,9 +105,12 @@ const JobDetailModal: React.FC<JobDetailModalProps> = ({
   isOpen,
   onClose,
   onApply,
+  onWithdraw,
   onSave,
   isApplied = false,
-  isSaved = false
+  isSaved = false,
+  isApplying = false,
+  isWithdrawing = false
 }) => {
   const [copied, setCopied] = useState(false);
   
@@ -273,28 +279,49 @@ const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-8">
-            <button
-              onClick={() => onApply?.(job.id)}
-              disabled={isExpired || isApplied}
-              className={`px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors ${
-                isApplied
-                  ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                  : isExpired
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-purple-600 text-white hover:bg-purple-700'
-              }`}
-            >
-              {isApplied ? (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  Applied
-                </>
-              ) : isExpired ? (
-                'Application Closed'
-              ) : (
-                'Apply Now'
-              )}
-            </button>
+            {isApplied ? (
+              <button
+                onClick={() => onWithdraw?.(job.id)}
+                disabled={isWithdrawing}
+                className={`px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+                  isWithdrawing
+                    ? 'bg-red-300 text-white cursor-not-allowed'
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                }`}
+              >
+                {isWithdrawing ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    Withdrawing...
+                  </>
+                ) : (
+                  'Withdraw Application'
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={() => onApply?.(job.id)}
+                disabled={isExpired || isApplying}
+                className={`px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+                  isExpired
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : isApplying
+                    ? 'bg-purple-300 text-white cursor-not-allowed'
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
+              >
+                {isApplying ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    Applying...
+                  </>
+                ) : isExpired ? (
+                  'Application Closed'
+                ) : (
+                  'Apply Now'
+                )}
+              </button>
+            )}
 
             <button
               onClick={() => onSave?.(job.id)}

@@ -9,7 +9,7 @@ import {
   Clock,
   BookmarkCheck
 } from 'lucide-react';
-import { useSavedJobs, useRemoveSavedJob, useApplyToJob } from '../../../../hooks/useJobSeekerProfile';
+import { useSavedJobs, useRemoveSavedJob, useApplyToJob, useJobApplications, useWithdrawApplication } from '../../../../hooks/useJobSeekerProfile';
 import { useOrganizations } from '../../../../recruitment/organizations/hooks/useOrganizations';
 import { useToast } from '../../../../hooks/useToast';
 import JobDetailModal from './JobDetailModal';
@@ -20,15 +20,19 @@ const SavedJobsTab: React.FC = () => {
   const [loadingStates, setLoadingStates] = useState<{
     removing: Set<string>;
     applying: Set<string>;
+    withdrawing: Set<string>;
   }>({
     removing: new Set(),
-    applying: new Set()
+    applying: new Set(),
+    withdrawing: new Set()
   });
   
   const { data: savedJobsData, isLoading, error } = useSavedJobs();
+  const { data: applications = [] } = useJobApplications();
   const { data: organizations } = useOrganizations();
   const removeSavedJobMutation = useRemoveSavedJob();
   const applyToJobMutation = useApplyToJob();
+  const withdrawApplicationMutation = useWithdrawApplication();
   const { showToast } = useToast();
 
   // Create a map of organization IDs to organization names for quick lookup
@@ -41,6 +45,34 @@ const SavedJobsTab: React.FC = () => {
     }
     return map;
   }, [organizations]);
+
+  // Create a set of applied job IDs for quick lookup
+  const appliedJobIds = useMemo(() => {
+    const jobIds = new Set<string>();
+    if (applications && Array.isArray(applications)) {
+      applications.forEach(application => {
+        // Check multiple ways to get the job ID from the application
+        const jobId = application.jobId || application.job?.id || application.id;
+        if (jobId) jobIds.add(jobId);
+      });
+    }
+    return jobIds;
+  }, [applications]);
+
+  // Create a mapping from jobId to applicationId for withdrawing applications
+  const jobIdToApplicationId = useMemo(() => {
+    const map = new Map<string, string>();
+    if (applications && Array.isArray(applications)) {
+      applications.forEach(application => {
+        const jobId = application.jobId || application.job?.id;
+        const applicationId = application.id;
+        if (jobId && applicationId) {
+          map.set(jobId, applicationId);
+        }
+      });
+    }
+    return map;
+  }, [applications]);
 
   const getOrganizationName = (organizationId?: string) => {
     if (!organizationId) return 'Company Name';
@@ -102,6 +134,32 @@ const SavedJobsTab: React.FC = () => {
       setLoadingStates(prev => ({
         ...prev,
         applying: new Set([...prev.applying].filter(id => id !== jobId))
+      }));
+    }
+  };
+
+  const handleWithdrawApplication = async (jobId: string) => {
+    const applicationId = jobIdToApplicationId.get(jobId);
+    if (!applicationId) {
+      showToast('Application ID not found. Please refresh and try again.', 'error');
+      return;
+    }
+
+    setLoadingStates(prev => ({
+      ...prev,
+      withdrawing: new Set([...prev.withdrawing, jobId])
+    }));
+
+    try {
+      await withdrawApplicationMutation.mutateAsync(applicationId);
+      showToast('Application withdrawn successfully!', 'success');
+    } catch (error) {
+      console.error('Error withdrawing application:', error);
+      showToast('Failed to withdraw application. Please try again.', 'error');
+    } finally {
+      setLoadingStates(prev => ({
+        ...prev,
+        withdrawing: new Set([...prev.withdrawing].filter(id => id !== jobId))
       }));
     }
   };
@@ -215,13 +273,47 @@ const SavedJobsTab: React.FC = () => {
                     </div>
                     
                     <div className="mt-4 lg:mt-0 lg:ml-6 flex-shrink-0 flex flex-col space-y-2 lg:w-48">
-                      <button 
-                        key="apply"
-                        onClick={() => handleApplyToJob(job.id)}
-                        className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-                      >
-                        Apply Now
-                      </button>
+                      {appliedJobIds.has(job.id) ? (
+                        <button 
+                          key="withdraw"
+                          onClick={() => handleWithdrawApplication(job.id)}
+                          disabled={loadingStates.withdrawing.has(job.id)}
+                          className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                            loadingStates.withdrawing.has(job.id)
+                              ? 'bg-red-300 text-white cursor-not-allowed'
+                              : 'bg-red-600 text-white hover:bg-red-700'
+                          }`}
+                        >
+                          {loadingStates.withdrawing.has(job.id) ? (
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                              <span>Withdrawing...</span>
+                            </div>
+                          ) : (
+                            'Withdraw Application'
+                          )}
+                        </button>
+                      ) : (
+                        <button 
+                          key="apply"
+                          onClick={() => handleApplyToJob(job.id)}
+                          disabled={loadingStates.applying.has(job.id)}
+                          className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                            loadingStates.applying.has(job.id)
+                              ? 'bg-purple-300 text-white cursor-not-allowed'
+                              : 'bg-purple-600 text-white hover:bg-purple-700'
+                          }`}
+                        >
+                          {loadingStates.applying.has(job.id) ? (
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                              <span>Applying...</span>
+                            </div>
+                          ) : (
+                            'Apply Now'
+                          )}
+                        </button>
+                      )}
                       
                       <button 
                         key="details"
@@ -251,12 +343,6 @@ const SavedJobsTab: React.FC = () => {
                 <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No saved jobs yet</h3>
                 <p className="text-gray-600 mb-4">Save jobs you're interested in to view them here</p>
-                <button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-all-jobs'))}
-                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Browse Jobs
-                </button>
               </div>
             )}
           </div>
@@ -270,9 +356,12 @@ const SavedJobsTab: React.FC = () => {
           isOpen={!!selectedJobId}
           onClose={() => setSelectedJobId(null)}
           onApply={handleApplyToJob}
+          onWithdraw={handleWithdrawApplication}
           onSave={handleRemoveSavedJob}
-          isApplied={false}
+          isApplied={appliedJobIds.has(selectedJobId)}
           isSaved={true}
+          isApplying={loadingStates.applying.has(selectedJobId)}
+          isWithdrawing={loadingStates.withdrawing.has(selectedJobId)}
         />
       )}
     </div>
