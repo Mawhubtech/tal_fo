@@ -362,6 +362,12 @@ const TeamManagementPage: React.FC = () => {
         Admin
       </span>;
     }
+    if (roles.some(role => role.name === 'internal-admin')) {
+      return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        <Settings className="h-3 w-3 mr-1" />
+        Organization Admin
+      </span>;
+    }
     if (roles.some(role => role.name === 'freelance-hr')) {
       return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
         <User className="h-3 w-3 mr-1" />

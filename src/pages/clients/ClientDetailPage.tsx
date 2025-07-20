@@ -6,6 +6,8 @@ import {
   Clock, ExternalLink, Activity, Target, CheckCircle, XCircle
 } from 'lucide-react';
 import { clientApi } from '../../services/api';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { isInternalUser } from '../../utils/userUtils';
 import type { Client } from './data/clientService';
 import ClientForm from './components/ClientForm';
 import DeleteClientDialog from './components/DeleteClientDialog';
@@ -46,10 +48,14 @@ const ClientDetailPage: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user: currentUser } = useAuthContext();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts' | 'departments'>('overview');
+  
+  // Check if current user is internal (should not see edit/delete buttons)
+  const isInternalUserRole = isInternalUser(currentUser);
   
   // Form and dialog states
   const [showEditForm, setShowEditForm] = useState(false);
@@ -277,24 +283,29 @@ const ClientDetailPage: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Breadcrumbs */}
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
-        <span className="mx-2">/</span>
-        <Link to="/dashboard/clients" className="hover:text-gray-700">Clients</Link>
-        <span className="mx-2">/</span>
-        <span className="text-gray-900 font-medium">{client.name}</span>
-      </div>
+      {/* Breadcrumbs - Hidden for internal users */}
+      {!isInternalUserRole && (
+        <div className="flex items-center text-sm text-gray-500 mb-4">
+          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+          <span className="mx-2">/</span>
+          <Link to="/dashboard/clients" className="hover:text-gray-700">Clients</Link>
+          <span className="mx-2">/</span>
+          <span className="text-gray-900 font-medium">{client.name}</span>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <Link 
-            to="/dashboard/clients"
-            className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>          <div className="flex items-center">
+          {!isInternalUserRole && (
+            <Link 
+              to="/dashboard/clients"
+              className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          )}
+          <div className="flex items-center">
             <div 
               className="w-16 h-16 rounded-lg flex items-center justify-center text-white font-bold text-2xl mr-4 shadow-sm"
               style={{ 
@@ -315,20 +326,24 @@ const ClientDetailPage: React.FC = () => {
             {getStatusIcon(client.status)}
             <span className="ml-1 capitalize">{client.status}</span>
           </span>
-          <button 
-            onClick={() => setShowEditForm(true)}
-            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <Edit3 className="w-4 h-4 mr-2" />
-            Edit Client
-          </button>
-          <button 
-            onClick={() => setShowDeleteDialog(true)}
-            className="inline-flex items-center px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
-          >
-            <XCircle className="w-4 h-4 mr-2" />
-            Delete
-          </button>
+          {!isInternalUserRole && (
+            <>
+              <button 
+                onClick={() => setShowEditForm(true)}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                Edit Client
+              </button>
+              <button 
+                onClick={() => setShowDeleteDialog(true)}
+                className="inline-flex items-center px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Delete
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -617,9 +632,7 @@ const ClientDetailPage: React.FC = () => {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                      </div>
-                      
-                      {dept.description && (
+                      </div>                      {dept.description && (
                         <p className="text-sm text-gray-600 mb-3 line-clamp-2">{dept.description}</p>
                       )}
                       

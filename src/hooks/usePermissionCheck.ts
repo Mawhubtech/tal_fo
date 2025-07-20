@@ -145,7 +145,7 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   // Jobs routes
   '/dashboard/organizations': [SIDEBAR_PERMISSIONS.JOBS_ACCESS, SIDEBAR_PERMISSIONS.ORGANIZATIONS_ACCESS],
   '/dashboard/my-jobs': [SIDEBAR_PERMISSIONS.JOBS_ACCESS, SIDEBAR_PERMISSIONS.MY_JOBS_ACCESS],
-  '/dashboard/job-boards': [SIDEBAR_PERMISSIONS.JOB_BOARDS_ACCESS],
+  '/dashboard/job-boards': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS],
   
   // Candidates routes
   '/dashboard/candidates': [SIDEBAR_PERMISSIONS.CANDIDATES_ACCESS, SIDEBAR_PERMISSIONS.CANDIDATES_READ],

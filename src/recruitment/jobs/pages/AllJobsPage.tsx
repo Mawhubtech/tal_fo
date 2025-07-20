@@ -70,7 +70,7 @@ const AllJobsPage: React.FC = () => {
     
     // Check for roles that need organization assignment (including admin, external-hr, freelance-hr)
     const hasAssignmentRole = userRoles.some(role => 
-      role === 'internal-recruiter' || 
+      role === 'internal-admin' || 
       role === 'internal-hr' || 
       role === 'external-hr' ||
       role === 'freelance-hr' ||

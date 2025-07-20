@@ -9,6 +9,7 @@ import {
 import { useAuthContext } from '../contexts/AuthContext';
 import { useMyAssignment } from '../hooks/useUserAssignment';
 import { usePermissionCheck, SIDEBAR_PERMISSIONS } from '../hooks/usePermissionCheck';
+import { isInternalUser } from '../utils/userUtils';
 
 interface SidebarProps {
   isExpanded: boolean;
@@ -50,12 +51,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
     
     // Check if user has internal-hr or internal-recruiter role
     const hasInternalRole = userRoles.some(role => 
-      role === 'internal-hr' || role === 'internal-recruiter' || role === 'user'
+      role === 'internal-hr'  || role === 'user'
     );
     
     // Check if user has admin role (admin takes precedence)
     const hasAdminRole = userRoles.some(role => 
-      role === 'admin' || role === 'super-admin'
+      role === 'admin' || role === 'super-admin' || role === 'internal-admin'
     );
     
     if (hasInternalRole && !hasAdminRole && userAssignment) {
@@ -148,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           )}
 
           {/* Job Boards Section - For Recruiters */}
-          {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_JOB_BOARDS) && (
+          {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ACCESS) && (
             <Link 
               to="/dashboard/job-boards" 
               className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
@@ -180,12 +181,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             <Link 
               to="/dashboard/clients" 
               className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/clients') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
-              title={!isExpanded ? "Clients" : ""}
+              title={!isExpanded ? (isInternalUser(user) ? "Organization" : "Clients") : ""}
             >
               <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/clients') ? '#7e22ce' : '#9ca3af' }}>
                 <Building className="w-4 h-4" />
               </div>            
-        {isExpanded && "Clients"}
+              {isExpanded && (isInternalUser(user) ? "Organization" : "Clients")}
             </Link>
           )}         
        {/* Client Outreach Section */}
@@ -377,7 +378,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                   <div className="border-t border-gray-100 my-1 pt-1">
                     <div className="text-xs text-gray-500 mb-1 font-medium">System</div>
                     
-                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_EMAIL_MANAGEMENT) && (
+                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
                       <Link to="/dashboard/admin/email-management" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/email-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Mail className="w-3 h-3 mr-2" />
                         Email Management
@@ -391,7 +392,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       </Link>
                     )}
                     
-                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_EMAIL_MANAGEMENT) && (
+                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
                       <Link to="/dashboard/admin/email-sequences" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/email-sequences') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <MessageSquare className="w-3 h-3 mr-2" />
                         Email Sequences
@@ -405,7 +406,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       </Link>
                     )}
                     
-            {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_TEAM_MANAGEMENT) && (
+            {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
                     <Link to="/dashboard/admin/recruitment-teams" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/recruitment-teams') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                       <Users className="w-3 h-3 mr-2" />
                       Recruitment Teams
@@ -471,7 +472,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       <div className="border-t border-gray-100 my-2 pt-2">
                         <div className="px-3 py-1 text-xs font-medium text-gray-500">System</div>
                         
-                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_EMAIL_MANAGEMENT) && (
+                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
                           <Link to="/dashboard/admin/email-management" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/email-management') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                             <Mail className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/email-management') ? '#7e22ce' : '' }} />
                             Email Management
@@ -485,7 +486,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                           </Link>
                         )}
                         
-                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_EMAIL_MANAGEMENT) && (
+                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
                           <Link to="/dashboard/admin/email-sequences" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/email-sequences') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                             <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/email-sequences') ? '#7e22ce' : '' }} />
                             Email Sequences
@@ -499,7 +500,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                           </Link>
                         )}
                         
-                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_TEAM_MANAGEMENT) && (
+                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
                           <Link to="/dashboard/admin/recruitment-teams" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/recruitment-teams') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                             <Users className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/recruitment-teams') ? '#7e22ce' : '' }} />
                             Recruitment Teams

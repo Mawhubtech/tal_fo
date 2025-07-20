@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Plus, Edit3, Trash2, Users, MapPin, Globe, Phone, Mail, Calendar, Eye, Home, ChevronRight, Building } from 'lucide-react';
 import { ClientApiService, type Client } from '../../services/clientApiService';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { isInternalUser } from '../../utils/userUtils';
+import { useMyAssignment } from '../../hooks/useUserAssignment';
 import ClientForm from './components/ClientForm';
 import DeleteClientDialog from './components/DeleteClientDialog';
 
@@ -36,9 +38,54 @@ const getInitials = (name: string) => {
 
 const ClientManagementPage: React.FC = () => {
   const { user: currentUser } = useAuthContext();
+  const navigate = useNavigate();
   
   // Check if current user is super-admin
   const isSuperAdmin = currentUser?.roles?.some(role => role.name === 'super-admin') || false;
+  
+  // Check if current user is internal (internal-hr or internal-admin)
+  const isInternalUserRole = isInternalUser(currentUser);
+  
+  // Get user assignment for internal users
+  const { data: userAssignment, isLoading: assignmentLoading } = useMyAssignment();
+  
+  // Redirect internal users to their assigned client page
+  useEffect(() => {
+    if (isInternalUserRole && !assignmentLoading) {
+      if (userAssignment?.clientId) {
+        // Redirect to their assigned client's detail page
+        navigate(`/dashboard/clients/${userAssignment.clientId}`, { replace: true });
+      } else {
+        // No assignment found - show message or redirect somewhere appropriate
+        console.warn('Internal user has no client assignment');
+      }
+    }
+  }, [isInternalUserRole, userAssignment, assignmentLoading, navigate]);
+  
+  // Don't render the component for internal users as they will be redirected
+  if (isInternalUserRole) {
+    if (assignmentLoading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading your assignment...</div>
+        </div>
+      );
+    }
+    
+    if (!userAssignment?.clientId) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="text-gray-500 mb-2">No client assignment found</div>
+            <div className="text-sm text-gray-400">Please contact your administrator to assign you to a client.</div>
+          </div>
+        </div>
+      );
+    }
+    
+    // This should not be reached due to the useEffect redirect
+    return null;
+  }
   
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,17 +246,19 @@ const ClientManagementPage: React.FC = () => {
   }
     return (
     <div className="space-y-6">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center text-sm text-gray-500 mb-4">
-        <Link to="/dashboard" className="flex items-center hover:text-gray-700">
-          <Home className="w-4 h-4 mr-1" />
-          Dashboard
-        </Link>
-        <ChevronRight className="w-4 h-4 mx-2" />
-        <span className="text-gray-900 font-medium">
-          {isSuperAdmin ? 'Client Management' : 'My Clients'}
-        </span>
-      </div>
+      {/* Breadcrumb Navigation - Hidden for internal users */}
+      {!isInternalUser(currentUser) && (
+        <div className="flex items-center text-sm text-gray-500 mb-4">
+          <Link to="/dashboard" className="flex items-center hover:text-gray-700">
+            <Home className="w-4 h-4 mr-1" />
+            Dashboard
+          </Link>
+          <ChevronRight className="w-4 h-4 mx-2" />
+          <span className="text-gray-900 font-medium">
+            {isSuperAdmin ? 'Client Management' : 'My Clients'}
+          </span>
+        </div>
+      )}
       
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -31,3 +31,12 @@ export const hasAnyRole = (user: User | undefined, roleNames: string[]): boolean
   
   return roleNames.some(roleName => hasRole(user, roleName));
 };
+
+export const isInternalUser = (user: User | undefined): boolean => {
+  if (!user || !user.roles) return false;
+  
+  return user.roles.some(role => 
+    role.name === 'internal-hr' || 
+    role.name === 'internal-admin'
+  );
+};
