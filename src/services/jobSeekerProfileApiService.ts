@@ -239,21 +239,127 @@ class JobSeekerProfileApiService {
   // Get job applications
   async getApplications(): Promise<any[]> {
     try {
-      const response = await apiClient.get(`${this.baseURL}/applications`);
-      return response.data;
+      // First, get the job seeker profile to get the candidate ID
+      const profile = await this.getProfile();
+      if (!profile.candidate?.id) {
+        return [];
+      }
+      
+      // Query job applications by candidate ID
+      const response = await apiClient.get(`/job-applications?candidateId=${profile.candidate.id}`);
+      return response.data?.data || response.data || [];
     } catch (error) {
       console.error('Error fetching applications:', error);
+      return [];
+    }
+  }
+
+  // Get saved jobs (using localStorage until backend implementation)
+  async getSavedJobs(): Promise<any[]> {
+    try {
+      // Use localStorage temporarily until backend implementation
+      const savedJobs = localStorage.getItem('savedJobs');
+      return savedJobs ? JSON.parse(savedJobs) : [];
+    } catch (error) {
+      console.error('Error fetching saved jobs:', error);
+      return [];
+    }
+  }
+
+  // Save a job (using localStorage until backend implementation)
+  async saveJob(jobId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Get current saved jobs from localStorage
+      const savedJobs = localStorage.getItem('savedJobs');
+      const currentSavedJobs = savedJobs ? JSON.parse(savedJobs) : [];
+      
+      // Check if job is already saved
+      const isAlreadySaved = currentSavedJobs.some((job: any) => 
+        (job.jobId || job.id) === jobId
+      );
+      
+      if (isAlreadySaved) {
+        return {
+          success: false,
+          message: 'Job is already saved'
+        };
+      }
+      
+      // Add the job to saved jobs with current timestamp
+      currentSavedJobs.push({
+        jobId: jobId,
+        savedAt: new Date().toISOString()
+      });
+      
+      localStorage.setItem('savedJobs', JSON.stringify(currentSavedJobs));
+      
+      return {
+        success: true,
+        message: 'Job saved successfully'
+      };
+    } catch (error) {
+      console.error('Error saving job:', error);
       throw error;
     }
   }
 
-  // Get saved jobs
-  async getSavedJobs(): Promise<any[]> {
+  // Remove a saved job (using localStorage until backend implementation)
+  async removeSavedJob(jobId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await apiClient.get(`${this.baseURL}/saved-jobs`);
-      return response.data;
+      // Get current saved jobs from localStorage
+      const savedJobs = localStorage.getItem('savedJobs');
+      const currentSavedJobs = savedJobs ? JSON.parse(savedJobs) : [];
+      
+      // Filter out the job to remove
+      const updatedSavedJobs = currentSavedJobs.filter((job: any) => 
+        (job.jobId || job.id) !== jobId
+      );
+      
+      localStorage.setItem('savedJobs', JSON.stringify(updatedSavedJobs));
+      
+      return {
+        success: true,
+        message: 'Job removed from saved jobs'
+      };
     } catch (error) {
-      console.error('Error fetching saved jobs:', error);
+      console.error('Error removing saved job:', error);
+      throw error;
+    }
+  }
+
+  // Apply to a job
+  async applyToJob(jobId: string, applicationData?: {
+    coverLetter?: string;
+    resume?: File;
+    additionalDocuments?: File[];
+  }): Promise<{ success: boolean; applicationId: string; message: string }> {
+    try {
+      const formData = new FormData();
+      
+      // For the job-applications endpoint, we need to send candidateId and jobId
+      const profile = await this.getProfile();
+      if (!profile.candidate?.id) {
+        throw new Error('No candidate profile found');
+      }
+      
+      const requestData: any = {
+        candidateId: profile.candidate.id,
+        jobId: jobId,
+        status: 'submitted'
+      };
+      
+      if (applicationData?.coverLetter) {
+        requestData.coverLetter = applicationData.coverLetter;
+      }
+
+      const response = await apiClient.post('/job-applications', requestData);
+      return {
+        success: true,
+        applicationId: response.data.id,
+        message: 'Application submitted successfully'
+      };
+    } catch (error) {
+      console.error('Error applying to job:', error);
       throw error;
     }
   }

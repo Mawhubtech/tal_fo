@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useJobs } from '../../../../hooks/useJobs';
 import { useOrganizations } from '../../../../recruitment/organizations/hooks/useOrganizations';
+import { useSavedJobs, useSaveJob, useRemoveSavedJob, useApplyToJob, useJobApplications } from '../../../../hooks/useJobSeekerProfile';
+import { useToast } from '../../../../hooks/useToast';
 import JobDetailModal from './JobDetailModal';
 import type { Job } from '../../../../recruitment/data/types';
 import type { JobFilters as ApiJobFilters } from '../../../../services/jobApiService';
@@ -37,9 +39,16 @@ const AllJobsTab: React.FC = () => {
     remote: ''
   });
   const [showFilters, setShowFilters] = useState(false);
-  const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
-  const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [loadingStates, setLoadingStates] = useState<{
+    saving: Set<string>;
+    applying: Set<string>;
+  }>({
+    saving: new Set(),
+    applying: new Set()
+  });
+
+  const { showToast } = useToast();
 
   // Build query filters for the API
   const queryFilters: ApiJobFilters = {
@@ -54,7 +63,39 @@ const AllJobsTab: React.FC = () => {
 
   const { data: jobsResponse, isLoading, error } = useJobs(queryFilters);
   const { data: organizations } = useOrganizations();
+  const { data: savedJobs = [] } = useSavedJobs();
+  const { data: applications = [] } = useJobApplications();
+  const saveJobMutation = useSaveJob();
+  const removeSavedJobMutation = useRemoveSavedJob();
+  const applyToJobMutation = useApplyToJob();
+  
   const jobs = jobsResponse?.data || [];
+
+  // Create a set of saved job IDs for quick lookup
+  const savedJobIds = useMemo(() => {
+    const jobIds = new Set<string>();
+    if (savedJobs && Array.isArray(savedJobs)) {
+      savedJobs.forEach(savedJob => {
+        // Handle both direct job objects and job references
+        const jobId = savedJob.jobId || savedJob.id;
+        if (jobId) jobIds.add(jobId);
+      });
+    }
+    return jobIds;
+  }, [savedJobs]);
+
+  // Create a set of applied job IDs for quick lookup
+  const appliedJobIds = useMemo(() => {
+    const jobIds = new Set<string>();
+    if (applications && Array.isArray(applications)) {
+      applications.forEach(application => {
+        // Handle both direct job objects and job references
+        const jobId = application.jobId || application.id;
+        if (jobId) jobIds.add(jobId);
+      });
+    }
+    return jobIds;
+  }, [applications]);
 
   // Create a map of organization IDs to organization names for quick lookup
   const organizationMap = useMemo(() => {
@@ -87,26 +128,53 @@ const AllJobsTab: React.FC = () => {
     });
   };
 
-  const toggleSaveJob = (jobId: string) => {
-    setSavedJobs(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(jobId)) {
-        newSet.delete(jobId);
+  const toggleSaveJob = async (jobId: string) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      saving: new Set([...prev.saving, jobId])
+    }));
+
+    try {
+      if (savedJobIds.has(jobId)) {
+        await removeSavedJobMutation.mutateAsync(jobId);
+        showToast('Job removed from saved jobs', 'success');
       } else {
-        newSet.add(jobId);
+        await saveJobMutation.mutateAsync(jobId);
+        showToast('Job saved successfully', 'success');
       }
-      return newSet;
-    });
+    } catch (error) {
+      console.error('Error toggling save job:', error);
+      showToast('Failed to save job. Please try again.', 'error');
+    } finally {
+      setLoadingStates(prev => ({
+        ...prev,
+        saving: new Set([...prev.saving].filter(id => id !== jobId))
+      }));
+    }
   };
 
-  const handleApplyToJob = (jobId: string) => {
-    setAppliedJobs(prev => new Set(prev).add(jobId));
-    // Close modal if it's open
-    if (selectedJobId === jobId) {
-      setSelectedJobId(null);
+  const handleApplyToJob = async (jobId: string) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      applying: new Set([...prev.applying, jobId])
+    }));
+
+    try {
+      await applyToJobMutation.mutateAsync({ jobId });
+      showToast('Application submitted successfully!', 'success');
+      // Close modal if it's open
+      if (selectedJobId === jobId) {
+        setSelectedJobId(null);
+      }
+    } catch (error) {
+      console.error('Error applying to job:', error);
+      showToast('Failed to submit application. Please try again.', 'error');
+    } finally {
+      setLoadingStates(prev => ({
+        ...prev,
+        applying: new Set([...prev.applying].filter(id => id !== jobId))
+      }));
     }
-    // Here you would typically make an API call to apply to the job
-    // For now, we'll just update the local state
   };
 
   const handleViewDetails = (jobId: string) => {
@@ -286,14 +354,17 @@ const AllJobsTab: React.FC = () => {
                     <div className="flex items-center space-x-2 ml-4">
                       <button
                         onClick={() => toggleSaveJob(job.id)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          savedJobs.has(job.id)
+                        disabled={loadingStates.saving.has(job.id)}
+                        className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                          savedJobIds.has(job.id)
                             ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
-                        title={savedJobs.has(job.id) ? 'Remove from saved jobs' : 'Save job'}
+                        title={savedJobIds.has(job.id) ? 'Remove from saved jobs' : 'Save job'}
                       >
-                        {savedJobs.has(job.id) ? (
+                        {loadingStates.saving.has(job.id) ? (
+                          <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
+                        ) : savedJobIds.has(job.id) ? (
                           <BookmarkCheck className="h-5 w-5" />
                         ) : (
                           <Bookmark className="h-5 w-5" />
@@ -361,14 +432,25 @@ const AllJobsTab: React.FC = () => {
                 <div className="flex flex-col space-y-2 lg:w-48">
                   <button
                     onClick={() => handleApplyToJob(job.id)}
-                    disabled={appliedJobs.has(job.id)}
-                    className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
-                      appliedJobs.has(job.id)
-                        ? 'bg-green-100 text-green-800 cursor-not-allowed'
+                    disabled={appliedJobIds.has(job.id) || loadingStates.applying.has(job.id)}
+                    className={`w-full px-4 py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed ${
+                      appliedJobIds.has(job.id)
+                        ? 'bg-green-100 text-green-800'
+                        : loadingStates.applying.has(job.id)
+                        ? 'bg-purple-300 text-white'
                         : 'bg-purple-600 text-white hover:bg-purple-700'
                     }`}
                   >
-                    {appliedJobs.has(job.id) ? 'Applied' : 'Apply Now'}
+                    {loadingStates.applying.has(job.id) ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                        <span>Applying...</span>
+                      </div>
+                    ) : appliedJobIds.has(job.id) ? (
+                      'Applied'
+                    ) : (
+                      'Apply Now'
+                    )}
                   </button>
                   
                   <button
@@ -402,8 +484,8 @@ const AllJobsTab: React.FC = () => {
           onClose={() => setSelectedJobId(null)}
           onApply={handleApplyToJob}
           onSave={toggleSaveJob}
-          isApplied={appliedJobs.has(selectedJobId)}
-          isSaved={savedJobs.has(selectedJobId)}
+          isApplied={appliedJobIds.has(selectedJobId)}
+          isSaved={savedJobIds.has(selectedJobId)}
         />
       )}
     </div>

@@ -90,6 +90,64 @@ export const useSavedJobs = () => {
   });
 };
 
+// Save a job mutation
+export const useSaveJob = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (jobId: string) => jobSeekerProfileApiService.saveJob(jobId),
+    onSuccess: () => {
+      // Invalidate saved jobs to refetch the updated list
+      queryClient.invalidateQueries({ queryKey: jobSeekerProfileKeys.savedJobs() });
+    },
+    onError: (error) => {
+      console.error('Error saving job:', error);
+    },
+  });
+};
+
+// Remove saved job mutation
+export const useRemoveSavedJob = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (jobId: string) => jobSeekerProfileApiService.removeSavedJob(jobId),
+    onSuccess: () => {
+      // Invalidate saved jobs to refetch the updated list
+      queryClient.invalidateQueries({ queryKey: jobSeekerProfileKeys.savedJobs() });
+    },
+    onError: (error) => {
+      console.error('Error removing saved job:', error);
+    },
+  });
+};
+
+// Apply to job mutation
+export const useApplyToJob = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ 
+      jobId, 
+      applicationData 
+    }: { 
+      jobId: string; 
+      applicationData?: {
+        coverLetter?: string;
+        resume?: File;
+        additionalDocuments?: File[];
+      } 
+    }) => jobSeekerProfileApiService.applyToJob(jobId, applicationData),
+    onSuccess: () => {
+      // Invalidate applications to refetch the updated list
+      queryClient.invalidateQueries({ queryKey: jobSeekerProfileKeys.applications() });
+    },
+    onError: (error) => {
+      console.error('Error applying to job:', error);
+    },
+  });
+};
+
 // Individual step update mutations
 export const useUpdatePersonalInfo = () => {
   const queryClient = useQueryClient();

@@ -13,17 +13,9 @@ import {
   XCircle,
   AlertCircle
 } from 'lucide-react';
+import { useJobApplications } from '../../../../hooks/useJobSeekerProfile';
 
-interface Application {
-  id: string;
-  jobTitle: string;
-  company: string;
-  location: string;
-  appliedDate: Date;
-  status: 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted';
-  salary?: string;
-  type: string;
-}
+type ApplicationStatus = 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted';
 
 interface Stats {
   total: number;
@@ -34,12 +26,13 @@ interface Stats {
 
 interface OverviewTabProps {
   user: any;
-  applications: Application[];
   stats: Stats;
 }
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ user, applications, stats }) => {
-  const getStatusColor = (status: Application['status']) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ user, stats }) => {
+  const { data: applications } = useJobApplications();
+  
+  const getStatusColor = (status: ApplicationStatus) => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
@@ -56,7 +49,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ user, applications, stats }) 
     }
   };
 
-  const getStatusIcon = (status: Application['status']) => {
+  const getStatusIcon = (status: ApplicationStatus) => {
     switch (status) {
       case 'accepted':
         return <CheckCircle className="h-4 w-4" />;
@@ -69,8 +62,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ user, applications, stats }) 
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -158,32 +151,50 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ user, applications, stats }) 
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Applications</h2>
         <div className="space-y-4">
-          {applications.slice(0, 3).map((application) => (
-            <div key={application.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div className="flex-1">
-                <h3 className="font-medium text-gray-900">{application.jobTitle}</h3>
-                <div className="flex items-center gap-4 text-gray-600 mt-1">
-                  <div className="flex items-center gap-1">
-                    <Building className="h-3 w-3" />
-                    <span className="text-sm">{application.company}</span>
+          {applications && applications.length > 0 ? (
+            applications.slice(0, 3).map((application) => {
+              // Handle both application objects and applications with nested job data
+              const job = application.job || application;
+              const applicationStatus = (application.status || 'pending') as ApplicationStatus;
+              
+              return (
+                <div key={application.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">
+                      {job.title || application.jobTitle}
+                    </h3>
+                    <div className="flex items-center gap-4 text-gray-600 mt-1">
+                      <div className="flex items-center gap-1">
+                        <Building className="h-3 w-3" />
+                        <span className="text-sm">{application.company || 'Company'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span className="text-sm">{job.location || application.location || 'Location'}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Applied {formatDate(application.appliedDate || application.createdAt)}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    <span className="text-sm">{application.location}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(applicationStatus)}`}>
+                      {getStatusIcon(applicationStatus)}
+                      <span className="ml-1 capitalize">{applicationStatus}</span>
+                    </span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Applied {formatDate(application.appliedDate)}</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
-                  {getStatusIcon(application.status)}
-                  <span className="ml-1 capitalize">{application.status}</span>
-                </span>
-              </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+              <p>No applications yet</p>
+              <p className="text-sm">Start applying to jobs to see them here</p>
             </div>
-          ))}
+          )}
         </div>
-        {applications.length > 3 && (
+        {applications && applications.length > 3 && (
           <div className="mt-4 text-center">
             <button className="text-purple-600 hover:text-purple-700 font-medium">
               View all applications

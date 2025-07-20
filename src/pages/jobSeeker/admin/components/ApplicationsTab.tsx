@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Building,
   MapPin,
@@ -9,26 +9,39 @@ import {
   XCircle,
   AlertCircle,
   Calendar,
-  FileText
+  FileText,
+  Clock,
+  ExternalLink
 } from 'lucide-react';
+import { useJobApplications } from '../../../../hooks/useJobSeekerProfile';
+import { useOrganizations } from '../../../../recruitment/organizations/hooks/useOrganizations';
+import JobDetailModal from './JobDetailModal';
 
-interface Application {
-  id: string;
-  jobTitle: string;
-  company: string;
-  location: string;
-  appliedDate: Date;
-  status: 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted';
-  salary?: string;
-  type: string;
-}
+type ApplicationStatus = 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted';
 
-interface ApplicationsTabProps {
-  applications: Application[];
-}
+const ApplicationsTab: React.FC = () => {
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  
+  const { data: applicationsData = [], isLoading, error } = useJobApplications();
+  const { data: organizations } = useOrganizations();
 
-const ApplicationsTab: React.FC<ApplicationsTabProps> = ({ applications }) => {
-  const getStatusColor = (status: Application['status']) => {
+  // Create a map of organization IDs to organization names for quick lookup
+  const organizationMap = useMemo(() => {
+    const map = new Map();
+    if (organizations && Array.isArray(organizations)) {
+      organizations.forEach(org => {
+        map.set(org.id, org.name);
+      });
+    }
+    return map;
+  }, [organizations]);
+
+  const getOrganizationName = (organizationId?: string) => {
+    if (!organizationId) return 'Company Name';
+    return organizationMap.get(organizationId) || organizationId;
+  };
+
+  const getStatusColor = (status: ApplicationStatus) => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
@@ -45,7 +58,7 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({ applications }) => {
     }
   };
 
-  const getStatusIcon = (status: Application['status']) => {
+  const getStatusIcon = (status: ApplicationStatus) => {
     switch (status) {
       case 'accepted':
         return <CheckCircle className="h-4 w-4" />;
@@ -58,82 +71,192 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({ applications }) => {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   };
 
+  const formatSalary = (min?: number | string, max?: number | string, currency = 'USD') => {
+    const minNum = typeof min === 'string' ? parseFloat(min) : min;
+    const maxNum = typeof max === 'string' ? parseFloat(max) : max;
+    
+    if (!minNum && !maxNum) return null;
+    if (minNum && maxNum) return `$${minNum.toLocaleString()} - $${maxNum.toLocaleString()}`;
+    if (minNum) return `From $${minNum.toLocaleString()}`;
+    if (maxNum) return `Up to $${maxNum.toLocaleString()}`;
+    return null;
+  };
+
+  const handleViewDetails = (jobId: string) => {
+    setSelectedJobId(jobId);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading applications...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="text-center py-8">
+          <div className="text-red-500 text-lg mb-2">Error loading applications</div>
+          <p className="text-gray-600">Please try again later.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const applications = Array.isArray(applicationsData) ? applicationsData : [];
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">My Applications</h1>
-        <p className="text-gray-600">Track your job applications and their status</p>
+        <p className="text-gray-600">Track your job applications and their status ({applications.length} applications)</p>
       </div>
 
       <div className="bg-white rounded-lg shadow">
         <div className="p-6">
           <div className="space-y-4">
-            {applications.map((application) => (
-              <div key={application.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{application.jobTitle}</h3>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
-                        {getStatusIcon(application.status)}
-                        <span className="ml-1 capitalize">{application.status}</span>
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-3">
-                      <div className="flex items-center gap-1">
-                        <Building className="h-4 w-4" />
-                        <span>{application.company}</span>
+            {applications.map((application) => {
+              // Handle both application objects and applications with nested job data
+              const job = application.job || application;
+              const applicationStatus = (application.status || 'pending') as ApplicationStatus;
+              
+              return (
+                <div key={application.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            {job.title || application.jobTitle}
+                          </h3>
+                          <p className="text-lg text-gray-700 font-medium">
+                            {getOrganizationName(job.organizationId) || application.company}
+                          </p>
+                        </div>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(applicationStatus)}`}>
+                          {getStatusIcon(applicationStatus)}
+                          <span className="ml-1 capitalize">{applicationStatus}</span>
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        <span>{application.location}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Briefcase className="h-4 w-4" />
-                        <span>{application.type}</span>
-                      </div>
-                      {application.salary && (
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-3">
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
-                          <span>{application.salary}</span>
+                          <MapPin className="h-4 w-4" />
+                          <span>{job.location || application.location || 'Location not specified'}</span>
+                          {job.remote && (
+                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium ml-2">
+                              Remote
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          <Briefcase className="h-4 w-4" />
+                          <span>{job.type || application.type || 'Full-time'}</span>
+                        </div>
+                        
+                        {(job.salaryMin || job.salaryMax || application.salary) && (
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-4 w-4" />
+                            <span>
+                              {formatSalary(job.salaryMin, job.salaryMax, job.currency) || application.salary}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span>Applied {formatDate(application.appliedDate || application.createdAt)}</span>
+                        </div>
+                      </div>
+
+                      {job.description && (
+                        <div className="text-gray-700 mb-3">
+                          <p className="line-clamp-2">
+                            {job.description.length > 150 
+                              ? `${job.description.substring(0, 150)}...` 
+                              : job.description}
+                          </p>
+                        </div>
+                      )}
+
+                      {job.skills && Array.isArray(job.skills) && job.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {job.skills.slice(0, 3).map((skill, index) => (
+                            <span
+                              key={index}
+                              className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {job.skills.length > 3 && (
+                            <span className="text-gray-500 text-xs px-2 py-1">
+                              +{job.skills.length - 3} more
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500">Applied on {formatDate(application.appliedDate)}</p>
-                  </div>
-                  <div className="mt-4 lg:mt-0 lg:ml-6 flex-shrink-0">
-                    <button className="w-full lg:w-auto px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      View Details
-                    </button>
+                    
+                    <div className="mt-4 lg:mt-0 lg:ml-6 flex-shrink-0 lg:w-48">
+                      <button 
+                        onClick={() => handleViewDetails(job.id)}
+                        className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        <span>View Details</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            
             {applications.length === 0 && (
               <div className="text-center py-12">
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No applications yet</h3>
                 <p className="text-gray-600 mb-4">Start applying to jobs to see them here</p>
-                <a
-                  href="/jobs"
+                <button 
+                  onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-all-jobs'))}
                   className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   Browse Jobs
-                </a>
+                </button>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Job Detail Modal */}
+      {selectedJobId && (
+        <JobDetailModal
+          jobId={selectedJobId}
+          isOpen={!!selectedJobId}
+          onClose={() => setSelectedJobId(null)}
+          onApply={() => {}}
+          onSave={() => {}}
+          isApplied={true}
+          isSaved={false}
+        />
+      )}
     </div>
   );
 };

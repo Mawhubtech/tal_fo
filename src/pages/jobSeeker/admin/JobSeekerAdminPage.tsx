@@ -7,7 +7,12 @@ import {
 } from 'lucide-react';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useLogout } from '../../../hooks/useAuth';
-import { useJobSeekerProfile, useCompleteOnboarding } from '../../../hooks/useJobSeekerProfile';
+import { 
+  useJobSeekerProfile, 
+  useCompleteOnboarding, 
+  useJobApplications, 
+  useSavedJobs 
+} from '../../../hooks/useJobSeekerProfile';
 import { 
   OnboardingFlow, 
   Sidebar, 
@@ -18,27 +23,6 @@ import {
   ProfileTab, 
   SettingsTab 
 } from './components';
-
-interface Application {
-  id: string;
-  jobTitle: string;
-  company: string;
-  location: string;
-  appliedDate: Date;
-  status: 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted';
-  salary?: string;
-  type: string;
-}
-
-interface SavedJob {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  salary: string;
-  type: string;
-  postedDate: Date;
-}
 
 const JobSeekerAdminPage: React.FC = () => {
   const { user } = useAuthContext();
@@ -72,64 +56,11 @@ const JobSeekerAdminPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isCollapsed]);
   
-  // Fetch job seeker profile
+  // Fetch job seeker profile and data
   const { data: profile, isLoading: profileLoading, error: profileError } = useJobSeekerProfile();
+  const { data: applications = [], isLoading: applicationsLoading } = useJobApplications();
+  const { data: savedJobs } = useSavedJobs();
   const completeOnboardingMutation = useCompleteOnboarding();
-
-  // Mock data - in real app, this would come from API
-  const [applications] = useState<Application[]>([
-    {
-      id: '1',
-      jobTitle: 'Senior Frontend Developer',
-      company: 'TechCorp Inc.',
-      location: 'San Francisco, CA',
-      appliedDate: new Date('2025-06-15'),
-      status: 'reviewing',
-      salary: '$120,000 - $160,000',
-      type: 'Full-time'
-    },
-    {
-      id: '2',
-      jobTitle: 'Product Manager',
-      company: 'StartupXYZ',
-      location: 'Remote',
-      appliedDate: new Date('2025-06-12'),
-      status: 'interview',
-      salary: '$100,000 - $140,000',
-      type: 'Full-time'
-    },
-    {
-      id: '3',
-      jobTitle: 'UX Designer',
-      company: 'Design Studios',
-      location: 'New York, NY',
-      appliedDate: new Date('2025-06-10'),
-      status: 'rejected',
-      salary: '$85,000 - $115,000',
-      type: 'Full-time'
-    }
-  ]);
-
-  const [savedJobs] = useState<SavedJob[]>([
-    {
-      id: '1',
-      title: 'Backend Developer',
-      company: 'CloudTech',
-      location: 'Austin, TX',
-      salary: '$90,000 - $120,000',
-      type: 'Full-time',
-      postedDate: new Date('2025-06-16')
-    },
-    {
-      id: '2',
-      title: 'Data Scientist',
-      company: 'AI Innovations',
-      location: 'Boston, MA',
-      salary: '$110,000 - $150,000',
-      type: 'Full-time',
-      postedDate: new Date('2025-06-14')
-    }
-  ]);
 
   const handleLogout = () => {
     logout.mutate();
@@ -144,10 +75,19 @@ const JobSeekerAdminPage: React.FC = () => {
   };
 
   const getStats = () => {
-    const total = applications.length;
-    const pending = applications.filter(app => app.status === 'pending' || app.status === 'reviewing').length;
-    const interviews = applications.filter(app => app.status === 'interview').length;
-    const responses = applications.filter(app => app.status === 'accepted' || app.status === 'rejected').length;
+    // Ensure applications is always an array
+    const applicationsArray = Array.isArray(applications) ? applications : [];
+    
+    const total = applicationsArray.length;
+    const pending = applicationsArray.filter(app => {
+      const status = app.status || 'pending';
+      return status === 'pending' || status === 'reviewing';
+    }).length;
+    const interviews = applicationsArray.filter(app => (app.status || 'pending') === 'interview').length;
+    const responses = applicationsArray.filter(app => {
+      const status = app.status || 'pending';
+      return status === 'accepted' || status === 'rejected';
+    }).length;
     
     return { total, pending, interviews, responses };
   };
@@ -243,6 +183,7 @@ const JobSeekerAdminPage: React.FC = () => {
                   <span className="hidden sm:block font-medium">Logout</span>
                 </button>
               </div>
+			  
             </div>
           </div>
         </header>
@@ -302,7 +243,7 @@ const JobSeekerAdminPage: React.FC = () => {
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               applicationsCount={stats.total}
-              savedJobsCount={savedJobs.length}
+              savedJobsCount={savedJobs?.length || 0}
               isCollapsed={isCollapsed}
               setIsCollapsed={setIsCollapsed}
             />
@@ -313,13 +254,12 @@ const JobSeekerAdminPage: React.FC = () => {
             {activeTab === 'overview' && (
               <OverviewTab 
                 user={user} 
-                applications={applications} 
                 stats={stats} 
               />
             )}
 
             {activeTab === 'applications' && (
-              <ApplicationsTab applications={applications} />
+              <ApplicationsTab />
             )}
 
             {activeTab === 'alljobs' && (
@@ -327,7 +267,7 @@ const JobSeekerAdminPage: React.FC = () => {
             )}
 
             {activeTab === 'saved' && (
-              <SavedJobsTab savedJobs={savedJobs} />
+              <SavedJobsTab />
             )}
 
             {activeTab === 'profile' && (
