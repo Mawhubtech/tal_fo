@@ -8,6 +8,7 @@ import SignIn from './components/SignIn';
 import OAuthCallback from './components/OAuthCallback';
 import LandingPage from './pages/LandingPage';
 import JobBoardPage from './pages/jobSeeker/JobBoardPage';
+import JobDetailPage from './pages/jobSeeker/JobDetailPage';
 import JobSeekerLoginPage from './pages/jobSeeker/JobSeekerLoginPage';
 import JobSeekerRegisterPage from './pages/jobSeeker/JobSeekerRegisterPage';
 import JobSeekerAdminPage from './pages/jobSeeker/admin/JobSeekerAdminPage';
@@ -31,6 +32,7 @@ function App() {
           <AuthProvider>        <Router>          <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/jobs" element={<JobBoardPage />} />
+            <Route path="/jobs/:jobId" element={<JobDetailPage />} />
             <Route
               path="/signin"
               element={<SignIn />}
