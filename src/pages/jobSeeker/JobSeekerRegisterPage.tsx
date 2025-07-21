@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useRegister, useGoogleLogin, useLinkedInLogin } from '../../hooks/useAuth';
+import { useJobSeekerRegister, useJobSeekerGoogleLogin, useJobSeekerLinkedInLogin } from '../../hooks/useAuth';
 
 const JobSeekerRegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,9 +12,9 @@ const JobSeekerRegisterPage: React.FC = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const navigate = useNavigate();
   
-  const registerMutation = useRegister();
-  const googleLoginMutation = useGoogleLogin();
-  const linkedinLoginMutation = useLinkedInLogin();
+  const registerMutation = useJobSeekerRegister();
+  const googleLoginMutation = useJobSeekerGoogleLogin();
+  const linkedinLoginMutation = useJobSeekerLinkedInLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

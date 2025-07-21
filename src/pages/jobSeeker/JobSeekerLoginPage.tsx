@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Shield, Users, Mail } from 'lucide-react';
-import { useLogin, useGoogleLogin, useLinkedInLogin } from '../../hooks/useAuth';
+import { useLogin, useJobSeekerGoogleLogin, useJobSeekerLinkedInLogin } from '../../hooks/useAuth';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { getDefaultRedirectPath } from '../../utils/userUtils';
@@ -17,8 +17,8 @@ const JobSeekerLoginPage: React.FC = () => {
   const { addToast } = useToast();
   
   const loginMutation = useLogin();
-  const googleLoginMutation = useGoogleLogin();
-  const linkedinLoginMutation = useLinkedInLogin();
+  const googleLoginMutation = useJobSeekerGoogleLogin();
+  const linkedinLoginMutation = useJobSeekerLinkedInLogin();
 
   // Get returnTo from either URL params or from the location state (when redirected from the main sign-in page)
   const locationState = location.state as { returnTo?: string | null } | null;
@@ -74,7 +74,7 @@ const JobSeekerLoginPage: React.FC = () => {
     try {
       // Set flag to indicate job seeker login
       localStorage.setItem('jobSeekerAuth', 'true');
-      await googleLoginMutation.mutateAsync('job-seeker');
+      await googleLoginMutation.mutateAsync();
       navigate(returnTo);
     } catch (err) {
       // Error handling is managed by the mutation
@@ -91,7 +91,7 @@ const JobSeekerLoginPage: React.FC = () => {
     try {
       // Set flag to indicate job seeker login
       localStorage.setItem('jobSeekerAuth', 'true');
-      await linkedinLoginMutation.mutateAsync('job-seeker');
+      await linkedinLoginMutation.mutateAsync();
       navigate(returnTo);
     } catch (err) {
       // Error handling is managed by the mutation

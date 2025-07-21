@@ -50,6 +50,24 @@ export const useRegister = () => {
   });
 };
 
+export const useJobSeekerRegister = () => {
+  const queryClient = useQueryClient();
+  const showWelcomeToast = useShowWelcomeToast();
+
+  return useMutation({
+    mutationFn: (data: Omit<RegisterRequest, 'userRole'>) => 
+      authService.register({ ...data, userRole: 'jobseeker' }),
+    onSuccess: (data) => {
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      queryClient.setQueryData(['user'], data.user);
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      // Show welcome toast for new registrations too
+      showWelcomeToast();
+    },
+  });
+};
+
 export const useProfile = () => {
   const hasToken = !!localStorage.getItem('accessToken');
   
@@ -88,6 +106,20 @@ export const useLinkedInLogin = () => {
   return {
     mutate: (source?: string) => authService.linkedinLogin(source),
     mutateAsync: (source?: string) => authService.linkedinLogin(source),
+  };
+};
+
+export const useJobSeekerGoogleLogin = () => {
+  return {
+    mutate: () => authService.googleLogin('jobseeker'),
+    mutateAsync: () => authService.googleLogin('jobseeker'),
+  };
+};
+
+export const useJobSeekerLinkedInLogin = () => {
+  return {
+    mutate: () => authService.linkedinLogin('jobseeker'),
+    mutateAsync: () => authService.linkedinLogin('jobseeker'),
   };
 };
 
