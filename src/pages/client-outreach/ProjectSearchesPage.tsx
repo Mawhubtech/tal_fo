@@ -23,7 +23,7 @@ const ProjectSearchesPage: React.FC = () => {
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
             to="/dashboard/client-outreach/projects"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Projects
@@ -55,8 +55,8 @@ const ProjectSearchesPage: React.FC = () => {
             </div>
             
             <Link
-              to={`/dashboard/client-outreach/projects/${projectId}/search/create`}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              to={`/dashboard/client-outreach/projects/${projectId}/search`}
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Search
@@ -73,8 +73,8 @@ const ProjectSearchesPage: React.FC = () => {
                 Start by creating your first search to find potential prospects for this project.
               </p>
               <Link
-                to={`/dashboard/client-outreach/projects/${projectId}/search/create`}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                to={`/dashboard/client-outreach/projects/${projectId}/search`}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Search
@@ -82,56 +82,142 @@ const ProjectSearchesPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {searches.map((search) => (
-              <div key={search.id} className="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {search.name}
-                    </h3>
-                    {search.originalQuery && (
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                        {search.originalQuery}
-                      </p>
-                    )}
-                  </div>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    search.status === 'active' ? 'bg-green-100 text-green-800' :
-                    search.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {search.status}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    {new Date(search.createdAt).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center">
-                    <BarChart3 className="w-4 h-4 mr-1" />
-                    {search.searchType}
-                  </div>
-                </div>
-
-                <div className="flex justify-between">
-                  <Link
-                    to={`/dashboard/client-outreach/searches/${search.id}/results`}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    View Results
-                  </Link>
-                  <Link
-                    to={`/dashboard/client-outreach/searches/${search.id}/edit`}
-                    className="text-gray-600 hover:text-gray-700 text-sm font-medium"
-                  >
-                    Edit
-                  </Link>
-                </div>
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            {/* Table Header */}
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+              <div className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div className="col-span-3">Search Name</div>
+                <div className="col-span-2">Filters</div>
+                <div className="col-span-2">Results</div>
+                <div className="col-span-1">Status</div>
+                <div className="col-span-2">Created</div>
+                <div className="col-span-2">Actions</div>
               </div>
-            ))}
+            </div>
+
+            {/* Table Body */}
+            <div className="divide-y divide-gray-200">
+              {searches.map((search) => (
+                <div key={search.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <div className="grid grid-cols-12 gap-4 items-center">
+                    
+                    {/* Search Name & Query */}
+                    <div className="col-span-3">
+                      <h3 className="text-sm font-medium text-gray-900 mb-1">
+                        {search.name}
+                      </h3>
+                      {search.originalQuery && (
+                        <p className="text-xs text-gray-600 line-clamp-2">
+                          {search.originalQuery}
+                        </p>
+                      )}
+                      <div className="flex items-center mt-1">
+                        <BarChart3 className="w-3 h-3 mr-1 text-gray-400" />
+                        <span className="text-xs text-gray-500">{search.searchType}</span>
+                      </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="col-span-2">
+                      {search.filters && (
+                        <div className="flex flex-wrap gap-1">
+                          {search.filters.industries?.slice(0, 1).map((industry: string, index: number) => (
+                            <span key={index} className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
+                              {industry.length > 15 ? `${industry.substring(0, 15)}...` : industry}
+                            </span>
+                          ))}
+                          {search.filters.locations?.slice(0, 1).map((location: string, index: number) => (
+                            <span key={index} className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                              {location}
+                            </span>
+                          ))}
+                          {((search.filters.industries?.length || 0) > 1 || 
+                            (search.filters.locations?.length || 0) > 1 || 
+                            (search.filters.technologies?.length || 0) > 0 ||
+                            (search.filters.keywords?.length || 0) > 0) && (
+                            <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                              +{((search.filters.industries?.length || 0) - 1) + 
+                                 ((search.filters.locations?.length || 0) - 1) +
+                                 (search.filters.technologies?.length || 0) +
+                                 (search.filters.keywords?.length || 0)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Results Summary */}
+                    <div className="col-span-2">
+                      {search.results ? (
+                        <div className="text-sm">
+                          <div className="font-medium text-gray-900">
+                            {search.results.total || search.results.companiesFound || 0} companies
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {search.prospectsCount || 0} prospects saved
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {search.results.executionTime ? `${search.results.executionTime}ms` : 'N/A'} • {search.results.apiCost || 6} credits
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">No results</span>
+                      )}
+                    </div>
+
+                    {/* Status */}
+                    <div className="col-span-1">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        search.status === 'active' ? 'bg-green-100 text-green-800' :
+                        search.status === 'completed' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {search.status}
+                      </span>
+                    </div>
+
+                    {/* Created Date */}
+                    <div className="col-span-2">
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        {new Date(search.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(search.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-2">
+                      <div className="flex items-center gap-3">
+                        <Link
+                          to={`/dashboard/client-outreach/projects/${projectId}/searches/${search.id}/results`}
+                          className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                        >
+                          Results
+                        </Link>
+                        <Link
+                          to={`/dashboard/client-outreach/projects/${projectId}/prospects`}
+                          className="text-green-600 hover:text-green-700 text-sm font-medium"
+                        >
+                          Prospects
+                        </Link>
+                        <button
+                          onClick={() => {
+                            // TODO: Implement search duplication
+                            console.log('Duplicate search:', search.id);
+                          }}
+                          className="text-gray-600 hover:text-gray-700 text-sm font-medium"
+                        >
+                          Duplicate
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

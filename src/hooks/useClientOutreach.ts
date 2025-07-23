@@ -149,6 +149,15 @@ export const useSearchProspects = (searchId: string) => {
   });
 };
 
+export const useSearchDetails = (searchId: string) => {
+  return useQuery({
+    queryKey: ['client-outreach', 'searches', searchId],
+    queryFn: () => clientOutreachApiService.getSearchDetails(searchId),
+    enabled: !!searchId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 export const useUpdateProspect = () => {
   const queryClient = useQueryClient();
   

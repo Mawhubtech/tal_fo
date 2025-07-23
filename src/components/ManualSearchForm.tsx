@@ -38,14 +38,19 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
     excludeCompany: '',
     excludeDomain: '',
     companySize: '',
-    fundingStage: ''
+    fundingStage: '',
+    companyName: '',
+    website: '',
+    ticker: '',
+    specialty: ''
   });
 
   const updateFilters = (field: keyof ClientSearchFilters, value: any) => {
-    onFiltersChange({
+    const newFilters = {
       ...filters,
       [field]: value
-    });
+    };
+    onFiltersChange(newFilters);
   };
 
   const addToArray = (field: keyof ClientSearchFilters, value: string, inputKey: keyof typeof tempInputs) => {
@@ -61,7 +66,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
     updateFilters(field, currentArray.filter(item => item !== valueToRemove));
   };
 
-  const updateRange = (field: 'employees' | 'revenue', subField: 'min' | 'max', value: number | undefined) => {
+  const updateRange = (field: 'employees' | 'revenue' | 'followers' | 'founded', subField: 'min' | 'max', value: number | undefined) => {
     const currentRange = filters[field] || {};
     updateFilters(field, {
       ...currentRange,
@@ -71,13 +76,40 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
 
   const hasValidFilters = () => {
     return (
+      (filters.companyNames && filters.companyNames.length > 0) ||
       (filters.industries && filters.industries.length > 0) ||
       (filters.locations && filters.locations.length > 0) ||
       (filters.technologies && filters.technologies.length > 0) ||
       (filters.keywords && filters.keywords.length > 0) ||
+      (filters.specialties && filters.specialties.length > 0) ||
+      (filters.websites && filters.websites.length > 0) ||
       (filters.companySize && filters.companySize.length > 0) ||
-      (filters.employees?.min || filters.employees?.max) ||
-      (filters.revenue?.min || filters.revenue?.max)
+      (filters.fundingStage && filters.fundingStage.length > 0) ||
+      (filters.companyType && filters.companyType.length > 0) ||
+      (filters.ticker && filters.ticker.length > 0) ||
+      (filters.exchange && filters.exchange.length > 0) ||
+      (filters.employees?.min !== undefined && filters.employees.min > 0) ||
+      (filters.employees?.max !== undefined && filters.employees.max > 0) ||
+      (filters.revenue?.min !== undefined && filters.revenue.min > 0) ||
+      (filters.revenue?.max !== undefined && filters.revenue.max > 0) ||
+      (filters.followers?.min !== undefined && filters.followers.min > 0) ||
+      (filters.followers?.max !== undefined && filters.followers.max > 0) ||
+      (filters.founded?.min !== undefined && filters.founded.min > 0) ||
+      (filters.founded?.max !== undefined && filters.founded.max > 0) ||
+      (filters.excludeCompanies && filters.excludeCompanies.length > 0) ||
+      (filters.excludeDomains && filters.excludeDomains.length > 0) ||
+      filters.hasPricing !== undefined ||
+      filters.hasFreeTrial !== undefined ||
+      filters.hasDemo !== undefined ||
+      filters.isDownloadable !== undefined ||
+      filters.hasMobileApps !== undefined ||
+      filters.hasApiDocs !== undefined ||
+      filters.hasFacebook !== undefined ||
+      filters.hasTwitter !== undefined ||
+      filters.hasLinkedIn !== undefined ||
+      filters.hasInstagram !== undefined ||
+      filters.hasYoutube !== undefined ||
+      filters.hasGithub !== undefined
     );
   };
 
@@ -104,6 +136,30 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
     'Private'
   ];
 
+  const companyTypeOptions = [
+    'Public Company',
+    'Private Company',
+    'Educational Institution',
+    'Government Agency',
+    'Nonprofit',
+    'Partnership',
+    'Sole Proprietorship',
+    'Self-Employed',
+    'Self-Owned'
+  ];
+
+  const exchangeOptions = [
+    'NASDAQ',
+    'NYSE',
+    'AMEX',
+    'LSE',
+    'TSX',
+    'ASX',
+    'EURONEXT',
+    'XETRA',
+    'NIKKEI'
+  ];
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -115,6 +171,48 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
 
       {/* Core Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Company Names */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <Building className="w-4 h-4 inline mr-1" />
+            Company Names
+          </label>
+          <div className="flex mb-2">
+            <input
+              type="text"
+              value={tempInputs.companyName}
+              onChange={(e) => setTempInputs(prev => ({ ...prev, companyName: e.target.value }))}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('companyNames', tempInputs.companyName, 'companyName'))}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., Apple, Microsoft, Google"
+            />
+            <button
+              type="button"
+              onClick={() => addToArray('companyNames', tempInputs.companyName, 'companyName')}
+              className="px-4 py-2 bg-purple-600 text-white rounded-r-lg hover:bg-purple-700"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {filters.companyNames?.map((company, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+              >
+                {company}
+                <button
+                  type="button"
+                  onClick={() => removeFromArray('companyNames', company)}
+                  className="ml-2 text-blue-600 hover:text-blue-800"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* Industries */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -282,6 +380,194 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
             ))}
           </div>
         </div>
+
+        {/* Websites/Domains */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <Globe className="w-4 h-4 inline mr-1" />
+            Websites/Domains
+          </label>
+          <div className="flex mb-2">
+            <input
+              type="text"
+              value={tempInputs.website}
+              onChange={(e) => setTempInputs(prev => ({ ...prev, website: e.target.value }))}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('websites', tempInputs.website, 'website'))}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., apple.com, microsoft.com"
+            />
+            <button
+              type="button"
+              onClick={() => addToArray('websites', tempInputs.website, 'website')}
+              className="px-4 py-2 bg-purple-600 text-white rounded-r-lg hover:bg-purple-700"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {filters.websites?.map((website, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-cyan-100 text-cyan-800"
+              >
+                {website}
+                <button
+                  type="button"
+                  onClick={() => removeFromArray('websites', website)}
+                  className="ml-2 text-cyan-600 hover:text-cyan-800"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Specialties */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <Target className="w-4 h-4 inline mr-1" />
+            Specialties
+          </label>
+          <div className="flex mb-2">
+            <input
+              type="text"
+              value={tempInputs.specialty}
+              onChange={(e) => setTempInputs(prev => ({ ...prev, specialty: e.target.value }))}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('specialties', tempInputs.specialty, 'specialty'))}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., Cloud Computing, Data Analytics"
+            />
+            <button
+              type="button"
+              onClick={() => addToArray('specialties', tempInputs.specialty, 'specialty')}
+              className="px-4 py-2 bg-purple-600 text-white rounded-r-lg hover:bg-purple-700"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {filters.specialties?.map((specialty, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-teal-100 text-teal-800"
+              >
+                {specialty}
+                <button
+                  type="button"
+                  onClick={() => removeFromArray('specialties', specialty)}
+                  className="ml-2 text-teal-600 hover:text-teal-800"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Stock Ticker */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <DollarSign className="w-4 h-4 inline mr-1" />
+            Stock Ticker
+          </label>
+          <div className="flex mb-2">
+            <input
+              type="text"
+              value={tempInputs.ticker}
+              onChange={(e) => setTempInputs(prev => ({ ...prev, ticker: e.target.value }))}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('ticker', tempInputs.ticker, 'ticker'))}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., AAPL, MSFT, GOOGL"
+            />
+            <button
+              type="button"
+              onClick={() => addToArray('ticker', tempInputs.ticker, 'ticker')}
+              className="px-4 py-2 bg-purple-600 text-white rounded-r-lg hover:bg-purple-700"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {filters.ticker?.map((tick, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-emerald-100 text-emerald-800"
+              >
+                {tick}
+                <button
+                  type="button"
+                  onClick={() => removeFromArray('ticker', tick)}
+                  className="ml-2 text-emerald-600 hover:text-emerald-800"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Company Type */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <Briefcase className="w-4 h-4 inline mr-1" />
+          Company Type
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {companyTypeOptions.map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => {
+                const currentTypes = filters.companyType || [];
+                if (currentTypes.includes(type)) {
+                  removeFromArray('companyType', type);
+                } else {
+                  updateFilters('companyType', [...currentTypes, type]);
+                }
+              }}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filters.companyType?.includes(type)
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stock Exchange */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <DollarSign className="w-4 h-4 inline mr-1" />
+          Stock Exchange
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {exchangeOptions.map((exchange) => (
+            <button
+              key={exchange}
+              type="button"
+              onClick={() => {
+                const currentExchanges = filters.exchange || [];
+                if (currentExchanges.includes(exchange)) {
+                  removeFromArray('exchange', exchange);
+                } else {
+                  updateFilters('exchange', [...currentExchanges, exchange]);
+                }
+              }}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filters.exchange?.includes(exchange)
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {exchange}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Company Size */}
@@ -375,6 +661,68 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
         </div>
       </div>
 
+      {/* Followers Range */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <Users className="w-4 h-4 inline mr-1" />
+          LinkedIn Followers Range
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              value={filters.followers?.min || ''}
+              onChange={(e) => updateRange('followers', 'min', e.target.value ? parseInt(e.target.value) : undefined)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Minimum followers"
+              min="0"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              value={filters.followers?.max || ''}
+              onChange={(e) => updateRange('followers', 'max', e.target.value ? parseInt(e.target.value) : undefined)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Maximum followers"
+              min="0"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Founded Year Range */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <Calendar className="w-4 h-4 inline mr-1" />
+          Founded Year Range
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              value={filters.founded?.min || ''}
+              onChange={(e) => updateRange('founded', 'min', e.target.value ? parseInt(e.target.value) : undefined)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Earliest year (e.g., 2000)"
+              min="1800"
+              max={new Date().getFullYear()}
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              value={filters.founded?.max || ''}
+              onChange={(e) => updateRange('founded', 'max', e.target.value ? parseInt(e.target.value) : undefined)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Latest year (e.g., 2024)"
+              min="1800"
+              max={new Date().getFullYear()}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Funding Stage */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -403,6 +751,128 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               {stage}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Business Model Filters */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Business Model</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasPricing === true}
+              onChange={(e) => updateFilters('hasPricing', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">Has Pricing</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasFreeTrial === true}
+              onChange={(e) => updateFilters('hasFreeTrial', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">Free Trial</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasDemo === true}
+              onChange={(e) => updateFilters('hasDemo', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">Demo Available</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.isDownloadable === true}
+              onChange={(e) => updateFilters('isDownloadable', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">Downloadable</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasMobileApps === true}
+              onChange={(e) => updateFilters('hasMobileApps', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">Mobile Apps</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasApiDocs === true}
+              onChange={(e) => updateFilters('hasApiDocs', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">API Documentation</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Social Media Presence */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Social Media Presence</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasLinkedIn === true}
+              onChange={(e) => updateFilters('hasLinkedIn', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">LinkedIn</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasTwitter === true}
+              onChange={(e) => updateFilters('hasTwitter', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">Twitter/X</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasFacebook === true}
+              onChange={(e) => updateFilters('hasFacebook', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">Facebook</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasInstagram === true}
+              onChange={(e) => updateFilters('hasInstagram', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">Instagram</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasYoutube === true}
+              onChange={(e) => updateFilters('hasYoutube', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">YouTube</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.hasGithub === true}
+              onChange={(e) => updateFilters('hasGithub', e.target.checked ? true : undefined)}
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+            />
+            <span className="text-sm text-gray-700">GitHub</span>
+          </label>
         </div>
       </div>
 

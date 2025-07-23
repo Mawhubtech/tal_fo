@@ -7,7 +7,8 @@ import {
   Filter,
   Building,
   Play,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 import { useAIQuery } from '../../hooks/ai';
 import { useToast } from '../../contexts/ToastContext';
@@ -31,12 +32,12 @@ export interface ClientSearchRef {
 
 interface ClientSearchProps {
   onSearchResults?: (results: any, filters: ClientSearchFilters) => void;
+  projectId?: string;
 }
 
-const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchResults }, ref) => {
+const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchResults, projectId }, ref) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { projectId } = useParams<{ projectId: string }>();
   const { addToast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,16 +49,36 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
   const [showFilters, setShowFilters] = useState(false);
   const [searchMode, setSearchMode] = useState<'ai' | 'manual'>('ai');
   const [manualFilters, setManualFilters] = useState<ClientSearchFilters>({
+    companyNames: [],
     industries: [],
     locations: [],
     technologies: [],
     keywords: [],
+    specialties: [],
+    websites: [],
     companySize: [],
     fundingStage: [],
+    companyType: [],
+    ticker: [],
+    exchange: [],
     employees: {},
     revenue: {},
+    followers: {},
+    founded: {},
     excludeCompanies: [],
-    excludeDomains: []
+    excludeDomains: [],
+    hasPricing: undefined,
+    hasFreeTrial: undefined,
+    hasDemo: undefined,
+    isDownloadable: undefined,
+    hasMobileApps: undefined,
+    hasApiDocs: undefined,
+    hasFacebook: undefined,
+    hasTwitter: undefined,
+    hasLinkedIn: undefined,
+    hasInstagram: undefined,
+    hasYoutube: undefined,
+    hasGithub: undefined
   });
 
   // AI hook for search enhancement
@@ -208,7 +229,9 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
       // Execute the backend search
       const result: ClientSearchResult = await executeCompanySearch(
         extractedFilters,
-        searchQuery // Use original search query as search text
+        searchQuery, // Use original search query as search text
+        projectId,   // Pass project ID for proper recording
+        `Search: ${searchQuery?.substring(0, 50) || 'AI search'}${searchQuery && searchQuery.length > 50 ? '...' : ''}` // Generate search name
       );
 
       console.log('Search completed:', result);
@@ -220,15 +243,27 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
         message: `Found ${result.companies.length} companies in ${result.executionTime}ms. API cost: 6 credits.`
       });
 
-      // Navigate to results page with search data
-      navigate('/dashboard/client-outreach/search-results', {
-        state: {
-          searchResults: result,
-          searchQuery,
-          extractedFilters,
-          coreSignalQuery
-        }
-      });
+      // Navigate to project-based results page if we have a saved search
+      if (result.savedSearch && projectId) {
+        navigate(`/dashboard/client-outreach/projects/${projectId}/searches/${result.savedSearch.id}/results`, {
+          state: {
+            searchResults: result,
+            searchQuery,
+            extractedFilters,
+            coreSignalQuery
+          }
+        });
+      } else {
+        // Fallback to the generic search results page
+        navigate('/dashboard/client-outreach/search-results', {
+          state: {
+            searchResults: result,
+            searchQuery,
+            extractedFilters,
+            coreSignalQuery
+          }
+        });
+      }
 
       // If callback is provided, call it with the actual results
       if (onSearchResults) {
@@ -251,18 +286,40 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
   // Execute manual search using manually configured filters
   const executeManualSearch = async () => {
     // Check if any meaningful filters are set
-    const hasFilters = manualFilters.industries?.length > 0 ||
+    const hasFilters = manualFilters.companyNames?.length > 0 ||
+                      manualFilters.industries?.length > 0 ||
                       manualFilters.locations?.length > 0 ||
                       manualFilters.technologies?.length > 0 ||
                       manualFilters.keywords?.length > 0 ||
+                      manualFilters.specialties?.length > 0 ||
+                      manualFilters.websites?.length > 0 ||
                       manualFilters.companySize?.length > 0 ||
                       manualFilters.fundingStage?.length > 0 ||
+                      manualFilters.companyType?.length > 0 ||
+                      manualFilters.ticker?.length > 0 ||
+                      manualFilters.exchange?.length > 0 ||
                       (manualFilters.employees?.min !== undefined && manualFilters.employees?.min > 0) ||
                       (manualFilters.employees?.max !== undefined && manualFilters.employees?.max > 0) ||
                       (manualFilters.revenue?.min !== undefined && manualFilters.revenue?.min > 0) ||
                       (manualFilters.revenue?.max !== undefined && manualFilters.revenue?.max > 0) ||
+                      (manualFilters.followers?.min !== undefined && manualFilters.followers?.min > 0) ||
+                      (manualFilters.followers?.max !== undefined && manualFilters.followers?.max > 0) ||
+                      (manualFilters.founded?.min !== undefined && manualFilters.founded?.min > 0) ||
+                      (manualFilters.founded?.max !== undefined && manualFilters.founded?.max > 0) ||
                       manualFilters.excludeCompanies?.length > 0 ||
-                      manualFilters.excludeDomains?.length > 0;
+                      manualFilters.excludeDomains?.length > 0 ||
+                      manualFilters.hasPricing !== undefined ||
+                      manualFilters.hasFreeTrial !== undefined ||
+                      manualFilters.hasDemo !== undefined ||
+                      manualFilters.isDownloadable !== undefined ||
+                      manualFilters.hasMobileApps !== undefined ||
+                      manualFilters.hasApiDocs !== undefined ||
+                      manualFilters.hasFacebook !== undefined ||
+                      manualFilters.hasTwitter !== undefined ||
+                      manualFilters.hasLinkedIn !== undefined ||
+                      manualFilters.hasInstagram !== undefined ||
+                      manualFilters.hasYoutube !== undefined ||
+                      manualFilters.hasGithub !== undefined;
 
     if (!hasFilters) {
       addToast({
@@ -278,9 +335,12 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
       console.log('Executing manual company search with filters:', manualFilters);
       
       // Execute the backend search with manual filters
+      const searchQuery = generateSearchQueryFromFilters(manualFilters);
       const result: ClientSearchResult = await executeCompanySearch(
         manualFilters,
-        generateSearchQueryFromFilters(manualFilters)
+        searchQuery,
+        projectId,   // Pass project ID for proper recording
+        `Manual Search: ${searchQuery?.substring(0, 40) || 'Manual search'}${searchQuery && searchQuery.length > 40 ? '...' : ''}` // Generate search name
       );
 
       console.log('Manual search completed:', result);
@@ -293,15 +353,27 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
       });
 
       // Navigate to results page with manual search data
-      navigate('/dashboard/client-outreach/search-results', {
-        state: {
-          searchResults: result,
-          searchQuery: generateSearchQueryFromFilters(manualFilters),
-          extractedFilters: manualFilters,
-          coreSignalQuery: null, // Manual search doesn't use AI-generated query
-          searchMode: 'manual'
-        }
-      });
+      if (result.savedSearch?.id) {
+        navigate(`/dashboard/client-outreach/projects/${projectId}/searches/${result.savedSearch.id}/results`, {
+          state: {
+            searchResults: result,
+            searchQuery: generateSearchQueryFromFilters(manualFilters),
+            extractedFilters: manualFilters,
+            coreSignalQuery: null, // Manual search doesn't use AI-generated query
+            searchMode: 'manual'
+          }
+        });
+      } else {
+        navigate('/dashboard/client-outreach/search-results', {
+          state: {
+            searchResults: result,
+            searchQuery: generateSearchQueryFromFilters(manualFilters),
+            extractedFilters: manualFilters,
+            coreSignalQuery: null, // Manual search doesn't use AI-generated query
+            searchMode: 'manual'
+          }
+        });
+      }
 
       // If callback is provided, call it with the actual results
       if (onSearchResults) {
@@ -325,6 +397,10 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
   const generateSearchQueryFromFilters = (filters: ClientSearchFilters): string => {
     const queryParts: string[] = [];
     
+    if (filters.companyNames?.length > 0) {
+      queryParts.push(`Company Names: ${filters.companyNames.join(', ')}`);
+    }
+    
     if (filters.industries?.length > 0) {
       queryParts.push(`Industries: ${filters.industries.join(', ')}`);
     }
@@ -341,8 +417,28 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
       queryParts.push(`Keywords: ${filters.keywords.join(', ')}`);
     }
     
+    if (filters.specialties?.length > 0) {
+      queryParts.push(`Specialties: ${filters.specialties.join(', ')}`);
+    }
+    
+    if (filters.websites?.length > 0) {
+      queryParts.push(`Websites: ${filters.websites.join(', ')}`);
+    }
+    
+    if (filters.ticker?.length > 0) {
+      queryParts.push(`Ticker: ${filters.ticker.join(', ')}`);
+    }
+    
+    if (filters.exchange?.length > 0) {
+      queryParts.push(`Exchange: ${filters.exchange.join(', ')}`);
+    }
+    
     if (filters.companySize?.length > 0) {
       queryParts.push(`Company Size: ${filters.companySize.join(', ')}`);
+    }
+    
+    if (filters.companyType?.length > 0) {
+      queryParts.push(`Company Type: ${filters.companyType.join(', ')}`);
     }
     
     if (filters.fundingStage?.length > 0) {
@@ -363,11 +459,67 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
       queryParts.push(`Revenue: ${revRange.join(', ')}`);
     }
     
+    if (filters.followers?.min !== undefined || filters.followers?.max !== undefined) {
+      const followersRange = [];
+      if (filters.followers.min !== undefined) followersRange.push(`min: ${filters.followers.min}`);
+      if (filters.followers.max !== undefined) followersRange.push(`max: ${filters.followers.max}`);
+      queryParts.push(`Followers: ${followersRange.join(', ')}`);
+    }
+    
+    if (filters.founded?.min !== undefined || filters.founded?.max !== undefined) {
+      const foundedRange = [];
+      if (filters.founded.min !== undefined) foundedRange.push(`from: ${filters.founded.min}`);
+      if (filters.founded.max !== undefined) foundedRange.push(`to: ${filters.founded.max}`);
+      queryParts.push(`Founded: ${foundedRange.join(', ')}`);
+    }
+    
+    // Business model filters
+    const businessModelParts = [];
+    if (filters.hasPricing) businessModelParts.push('Has Pricing');
+    if (filters.hasFreeTrial) businessModelParts.push('Free Trial');
+    if (filters.hasDemo) businessModelParts.push('Demo Available');
+    if (filters.isDownloadable) businessModelParts.push('Downloadable');
+    if (filters.hasMobileApps) businessModelParts.push('Mobile Apps');
+    if (filters.hasApiDocs) businessModelParts.push('API Docs');
+    if (businessModelParts.length > 0) {
+      queryParts.push(`Business Model: ${businessModelParts.join(', ')}`);
+    }
+    
+    // Social media filters
+    const socialParts = [];
+    if (filters.hasLinkedIn) socialParts.push('LinkedIn');
+    if (filters.hasTwitter) socialParts.push('Twitter/X');
+    if (filters.hasFacebook) socialParts.push('Facebook');
+    if (filters.hasInstagram) socialParts.push('Instagram');
+    if (filters.hasYoutube) socialParts.push('YouTube');
+    if (filters.hasGithub) socialParts.push('GitHub');
+    if (socialParts.length > 0) {
+      queryParts.push(`Social Media: ${socialParts.join(', ')}`);
+    }
+    
     return queryParts.length > 0 ? queryParts.join(' | ') : 'Manual Search';
+  };
+
+  // Wrapper for setManualFilters with logging
+  const handleManualFiltersChange = (newFilters: ClientSearchFilters) => {
+    setManualFilters(newFilters);
   };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
+      {/* Back Navigation */}
+      {projectId && (
+        <div className="mb-8 pt-4">
+          <button
+            onClick={() => navigate(`/dashboard/client-outreach/projects/${projectId}/searches`)}
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Search History
+          </button>
+        </div>
+      )}
+
       {/* AI Error Display */}
       {aiQuery.error && (
         <div className="w-full mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -706,7 +858,7 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
       {searchMode === 'manual' && (
         <ManualSearchForm
           filters={manualFilters}
-          onFiltersChange={setManualFilters}
+          onFiltersChange={handleManualFiltersChange}
           onExecuteSearch={executeManualSearch}
           isExecuting={isExecutingSearch}
         />
@@ -809,7 +961,7 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
     )}
 
     {/* CoreSignal Query Display (for debugging) */}
-    {coreSignalQuery && (
+    {/* {coreSignalQuery && (
       <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
         <details>
           <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
@@ -820,9 +972,25 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
           </pre>
         </details>
       </div>
-    )}
+    )} */}
   </div>
   );
 });
 
-export default ClientSearch;
+ClientSearch.displayName = 'ClientSearch';
+
+// Page wrapper component
+const ClientSearchPage: React.FC = () => {
+  const { id: projectId } = useParams<{ id: string }>();
+
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <ClientSearch projectId={projectId} />
+      </div>
+    </div>
+  );
+};
+
+export default ClientSearchPage;

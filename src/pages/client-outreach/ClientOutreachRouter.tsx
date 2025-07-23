@@ -10,6 +10,8 @@ import SearchResultsListPage from './SearchResultsListPage';
 import CompanyDetailPage from './CompanyDetailPage';
 import ProjectProspectsPage from './ProjectProspectsPage';
 import ProjectAnalyticsPage from './ProjectAnalyticsPage';
+import ProjectEmailSequencesPage from './ProjectEmailSequencesPage';
+import CreateEmailSequencePage from './CreateEmailSequencePage';
 
 const ClientOutreachRouter: React.FC = () => {
   return (
@@ -25,11 +27,16 @@ const ClientOutreachRouter: React.FC = () => {
       <Route path="projects/:id" element={<ProjectDetailPage />} />
       <Route path="projects/:id/searches" element={<ProjectSearchesPage />} />
       <Route path="projects/:id/search" element={<ClientSearchPage />} />
+      <Route path="projects/:id/searches/:searchId/results" element={<SearchResultsListPage />} />
+      <Route path="projects/:id/prospects" element={<ProjectProspectsPage />} />
+      <Route path="projects/:id/analytics" element={<ProjectAnalyticsPage />} />
+      <Route path="projects/:id/sequences" element={<ProjectEmailSequencesPage />} />
+      <Route path="projects/:id/sequences/create" element={<CreateEmailSequencePage />} />
+      
+      {/* Legacy routes for backward compatibility */}
       <Route path="searches/:searchId/results" element={<SearchResultsPage />} />
       <Route path="search-results" element={<SearchResultsListPage />} />
       <Route path="company-detail" element={<CompanyDetailPage />} />
-      <Route path="projects/:id/prospects" element={<ProjectProspectsPage />} />
-      <Route path="projects/:id/analytics" element={<ProjectAnalyticsPage />} />
       
       {/* Fallback redirect */}
       <Route path="*" element={<Navigate to="/dashboard/client-outreach" replace />} />

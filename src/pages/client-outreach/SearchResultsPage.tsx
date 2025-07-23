@@ -1,14 +1,15 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Building, MapPin, Users, ExternalLink } from 'lucide-react';
-import { useSearchProspects } from '../../hooks/useClientOutreach';
+import { ArrowLeft, Building, MapPin, Users, ExternalLink, Search, Calendar, BarChart3 } from 'lucide-react';
+import { useSearchProspects, useSearchDetails } from '../../hooks/useClientOutreach';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const SearchResultsPage: React.FC = () => {
   const { searchId } = useParams<{ searchId: string }>();
-  const { data: prospects = [], isLoading } = useSearchProspects(searchId!);
+  const { data: prospects = [], isLoading: prospectsLoading } = useSearchProspects(searchId!);
+  const { data: searchDetails, isLoading: searchLoading } = useSearchDetails(searchId!);
 
-  if (isLoading) {
+  if (prospectsLoading || searchLoading) {
     return <LoadingSpinner />;
   }
 
@@ -17,23 +18,126 @@ const SearchResultsPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link
-            to="/dashboard/client-outreach/searches"
-            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back to Searches
-          </Link>
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+            {searchDetails?.project ? (
+              <>
+                <Link
+                  to={`/dashboard/client-outreach/projects/${searchDetails.project.id}`}
+                  className="hover:text-gray-700"
+                >
+                  {searchDetails.project.name}
+                </Link>
+                <span>/</span>
+                <Link
+                  to={`/dashboard/client-outreach/projects/${searchDetails.project.id}/searches`}
+                  className="hover:text-gray-700"
+                >
+                  Searches
+                </Link>
+                <span>/</span>
+                <span className="text-gray-900">Results</span>
+              </>
+            ) : (
+              <Link
+                to="/dashboard/client-outreach/searches"
+                className="inline-flex items-center hover:text-gray-700"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Back to Searches
+              </Link>
+            )}
+          </div>
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Search Results</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {searchDetails?.name || 'Search Results'}
+              </h1>
               <p className="text-gray-600 mt-2">
                 Found {prospects.length} potential prospects
               </p>
             </div>
+            
+            {searchDetails?.project && (
+              <Link
+                to={`/dashboard/client-outreach/projects/${searchDetails.project.id}/prospects`}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                View All Prospects
+              </Link>
+            )}
           </div>
         </div>
+
+        {/* Search Info Card */}
+        {searchDetails && (
+          <div className="bg-white rounded-lg shadow mb-6 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Search Details</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm">
+                    <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+                    <span>{new Date(searchDetails.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <Search className="w-4 h-4 mr-2 text-gray-400" />
+                    <span className="capitalize">{searchDetails.searchType} search</span>
+                  </div>
+                  {searchDetails.originalQuery && (
+                    <div className="text-sm text-gray-600 mt-2">
+                      <span className="font-medium">Query:</span> {searchDetails.originalQuery}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Results Summary</h3>
+                <div className="space-y-2 text-sm">
+                  {searchDetails.results ? (
+                    <>
+                      <div>Total Found: <span className="font-medium">{searchDetails.results.total || searchDetails.results.companiesFound || 0}</span></div>
+                      <div>Execution Time: <span className="font-medium">{searchDetails.results.executionTime || 'N/A'}ms</span></div>
+                      <div>API Cost: <span className="font-medium">{searchDetails.results.apiCost || 6} credits</span></div>
+                      <div>Prospects Saved: <span className="font-medium">{searchDetails.prospectsCount || 0}</span></div>
+                    </>
+                  ) : (
+                    <div className="text-gray-500">No results data available</div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Search Filters</h3>
+                <div className="space-y-1">
+                  {searchDetails.filters ? (
+                    <div className="flex flex-wrap gap-1">
+                      {searchDetails.filters.industries?.slice(0, 3).map((industry: string, index: number) => (
+                        <span key={index} className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                          {industry}
+                        </span>
+                      ))}
+                      {searchDetails.filters.locations?.slice(0, 2).map((location: string, index: number) => (
+                        <span key={index} className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                          {location}
+                        </span>
+                      ))}
+                      {searchDetails.filters.companySize?.slice(0, 1).map((size: string, index: number) => (
+                        <span key={index} className="inline-block px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                          {size}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-sm">No filter data available</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {prospects.length === 0 ? (
           <div className="bg-white shadow rounded-lg p-8">

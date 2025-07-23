@@ -18,6 +18,8 @@ import {
   Mail
 } from 'lucide-react';
 import { type ClientSearchResult } from '../../services/clientOutreachSearchService';
+import { useSearchDetails, useSearchProspects } from '../../hooks/useClientOutreach';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 interface CompanyResult {
   id: number;
@@ -51,15 +53,62 @@ interface CompanyResult {
 const SearchResultsListPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { projectId } = useParams<{ projectId: string }>();
+  const { id: projectId, searchId } = useParams<{ id: string; searchId: string }>();
   
-  // Get search data from navigation state
-  const { searchResults, searchQuery, extractedFilters, coreSignalQuery } = location.state || {};
+  // Get search data from navigation state (for immediate display)
+  const { searchResults: stateSearchResults, searchQuery: stateSearchQuery, extractedFilters: stateExtractedFilters, coreSignalQuery: stateCoreSignalQuery } = location.state || {};
+  
+  // Fetch search data from backend (when no state or for fresh data)
+  const { data: searchDetails, isLoading: searchLoading } = useSearchDetails(searchId!);
+  const { data: prospects = [], isLoading: prospectsLoading } = useSearchProspects(searchId!);
+  
+  // Debug logging
+  console.log('SearchResultsListPage Debug:', {
+    searchId,
+    projectId,
+    stateSearchResults: !!stateSearchResults,
+    searchDetails,
+    prospects: prospects.slice(0, 2), // Log first 2 prospects for debugging
+    searchLoading,
+    prospectsLoading
+  });
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
 
-  // If no search results, redirect back
+  // Determine data source (prefer state for immediate display, fall back to fetched data)
+  const searchResults = stateSearchResults || (searchDetails && prospects.length > 0 ? {
+    companies: prospects.map(prospect => ({
+      id: prospect.coreSignalId || prospect.id,
+      name: prospect.companyName,
+      domain: prospect.website,
+      industry: prospect.industry,
+      sizeRange: prospect.sizeRange,
+      employeeCount: prospect.employeeCount,
+      location: prospect.location,
+      description: prospect.description,
+      logo: prospect.logo,
+      specialties: Array.isArray(prospect.specialties) ? prospect.specialties : 
+                   typeof prospect.specialties === 'string' ? [prospect.specialties] : [],
+      technologies: Array.isArray(prospect.technologies) ? prospect.technologies : 
+                    typeof prospect.technologies === 'string' ? [prospect.technologies] : [],
+      linkedinUrl: prospect.linkedinUrl,
+      score: prospect.matchScore,
+    })),
+    total: prospects.length,
+    executionTime: searchDetails.results?.executionTime || 0,
+  } : null);
+  
+  const searchQuery = stateSearchQuery || searchDetails?.originalQuery || searchDetails?.name || '';
+  const extractedFilters = stateExtractedFilters || searchDetails?.filters || {};
+  const coreSignalQuery = stateCoreSignalQuery || searchDetails?.coreSignalQuery || null;
+
+  // Show loading if fetching data and no state available
+  if ((searchLoading || prospectsLoading) && !stateSearchResults) {
+    return <LoadingSpinner />;
+  }
+
+  // If no search results after loading, redirect back
   if (!searchResults) {
     const fallbackRoute = projectId 
       ? `/dashboard/client-outreach/projects/${projectId}/search`
@@ -69,13 +118,16 @@ const SearchResultsListPage: React.FC = () => {
   }
 
   const results: CompanyResult[] = searchResults.companies || [];
+  
+  // Debug the final results
+  console.log('Final results:', results.slice(0, 2));
 
   // Filter results based on search term and industries
   const filteredResults = results.filter(result => {
     const matchesSearch = !searchTerm || 
-      result.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.location?.toLowerCase().includes(searchTerm.toLowerCase());
+      (result.name && result.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (result.industry && result.industry.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (result.location && result.location.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesIndustry = selectedIndustries.length === 0 || 
       (result.industry && selectedIndustries.includes(result.industry));
@@ -242,7 +294,7 @@ const SearchResultsListPage: React.FC = () => {
                 ) : null}
                 <div className={`w-16 h-16 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center ${company.logo ? 'hidden' : ''}`}>
                   <span className="text-white font-semibold text-lg">
-                    {company.name.charAt(0).toUpperCase()}
+                    {company.name && company.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -252,15 +304,15 @@ const SearchResultsListPage: React.FC = () => {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900 text-xl mb-1">
-                      {company.name}
+                      {company.name || 'Unknown Company'}
                     </h3>
-                    <p className="text-sm text-purple-600 font-medium">{company.industry}</p>
+                    <p className="text-sm text-purple-600 font-medium">{company.industry || 'Unknown Industry'}</p>
                   </div>
                 </div>
 
                 {/* Description */}
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {company.description}
+                  {company.description || 'No description available'}
                 </p>
 
                 {/* Company Details Row */}

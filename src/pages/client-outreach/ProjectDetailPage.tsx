@@ -10,7 +10,8 @@ import {
   BarChart3,
   Settings,
   Users,
-  DollarSign
+  DollarSign,
+  Mail
 } from 'lucide-react';
 import { useProjects } from '../../hooks/useClientOutreach';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -117,13 +118,13 @@ const ProjectDetailPage: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
-                  to={`/dashboard/client-outreach/projects/${id}/search`}
+                  to={`/dashboard/client-outreach/projects/${id}/searches`}
                   className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Search className="w-6 h-6 text-blue-600 mr-3" />
                   <div>
-                    <h3 className="font-medium text-gray-900">New Search</h3>
-                    <p className="text-sm text-gray-500">Find new prospects</p>
+                    <h3 className="font-medium text-gray-900">Search</h3>
+                    <p className="text-sm text-gray-500">View search history & create new searches</p>
                   </div>
                 </Link>
                 
@@ -133,8 +134,19 @@ const ProjectDetailPage: React.FC = () => {
                 >
                   <Users className="w-6 h-6 text-green-600 mr-3" />
                   <div>
-                    <h3 className="font-medium text-gray-900">View Prospects</h3>
+                    <h3 className="font-medium text-gray-900">Prospects</h3>
                     <p className="text-sm text-gray-500">Manage all prospects</p>
+                  </div>
+                </Link>
+                
+                <Link
+                  to={`/dashboard/client-outreach/projects/${id}/sequences`}
+                  className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Mail className="w-6 h-6 text-purple-600 mr-3" />
+                  <div>
+                    <h3 className="font-medium text-gray-900">Sequences</h3>
+                    <p className="text-sm text-gray-500">Email sequences & analytics</p>
                   </div>
                 </Link>
                 
@@ -142,21 +154,10 @@ const ProjectDetailPage: React.FC = () => {
                   to={`/dashboard/client-outreach/projects/${id}/analytics`}
                   className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <BarChart3 className="w-6 h-6 text-purple-600 mr-3" />
+                  <BarChart3 className="w-6 h-6 text-orange-600 mr-3" />
                   <div>
                     <h3 className="font-medium text-gray-900">Analytics</h3>
-                    <p className="text-sm text-gray-500">View performance</p>
-                  </div>
-                </Link>
-                
-                <Link
-                  to={`/dashboard/client-outreach/projects/${id}/searches`}
-                  className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Building className="w-6 h-6 text-orange-600 mr-3" />
-                  <div>
-                    <h3 className="font-medium text-gray-900">Search History</h3>
-                    <p className="text-sm text-gray-500">View past searches</p>
+                    <p className="text-sm text-gray-500">View performance metrics</p>
                   </div>
                 </Link>
               </div>

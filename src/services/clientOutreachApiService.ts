@@ -39,9 +39,12 @@ export interface ClientOutreachSearch {
   results?: any;
   status: 'active' | 'completed' | 'archived';
   projectId?: string;
+  project?: ClientOutreachProject; // Added project details
   createdById: string;
+  createdBy?: any; // Added user details
   createdAt: string;
   updatedAt: string;
+  prospectsCount?: number; // Added for displaying prospect count
 }
 
 export interface ClientProspect {
@@ -50,6 +53,7 @@ export interface ClientProspect {
   description?: string;
   industry?: string;
   website?: string;
+  logo?: string;
   linkedinUrl?: string;
   location?: string;
   sizeRange?: string;
@@ -285,6 +289,16 @@ class ClientOutreachApiService {
       return response.data;
     } catch (error) {
       console.error('Error fetching search prospects:', error);
+      throw error;
+    }
+  }
+
+  async getSearchDetails(searchId: string): Promise<ClientOutreachSearch> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/searches/${searchId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching search details:', error);
       throw error;
     }
   }

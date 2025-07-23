@@ -33,6 +33,8 @@ export interface ClientSearchResult {
   totalPages: number;
   executionTime?: number;
   query?: any;
+  savedSearch?: any; // Include saved search details
+  savedProspects?: any[]; // Include saved prospects
 }
 
 // CoreSignal API Types
@@ -49,11 +51,21 @@ export interface CoreSignalQuery {
 }
 
 export interface ClientSearchFilters {
+  // Core search filters
+  companyNames?: string[];
   industries?: string[];
   companySize?: string[];
   locations?: string[];
   technologies?: string[];
   keywords?: string[];
+  specialties?: string[];
+  
+  // Website and domain filters
+  websites?: string[];
+  excludeCompanies?: string[];
+  excludeDomains?: string[];
+  
+  // Financial and company data
   revenue?: {
     min?: number;
     max?: number;
@@ -62,9 +74,36 @@ export interface ClientSearchFilters {
     min?: number;
     max?: number;
   };
+  followers?: {
+    min?: number;
+    max?: number;
+  };
+  founded?: {
+    min?: number;
+    max?: number;
+  };
+  
+  // Company characteristics
   fundingStage?: string[];
-  excludeCompanies?: string[];
-  excludeDomains?: string[];
+  companyType?: string[];
+  ticker?: string[];
+  exchange?: string[];
+  
+  // Business model filters
+  hasPricing?: boolean;
+  hasFreeTrial?: boolean;
+  hasDemo?: boolean;
+  isDownloadable?: boolean;
+  hasMobileApps?: boolean;
+  hasApiDocs?: boolean;
+  
+  // Social media presence
+  hasFacebook?: boolean;
+  hasTwitter?: boolean;
+  hasLinkedIn?: boolean;
+  hasInstagram?: boolean;
+  hasYoutube?: boolean;
+  hasGithub?: boolean;
 }
 
 export interface ExtractedKeywords {
@@ -294,6 +333,22 @@ export const convertToCoreSignalQuery = (filters: ClientSearchFilters): CoreSign
   const must_not: Array<any> = [];
   const should: Array<any> = [];
 
+  // Company Names - exact match or partial match
+  if (filters.companyNames && filters.companyNames.length > 0) {
+    const validNames = filters.companyNames.filter(name => name && name.trim().length > 0);
+    if (validNames.length > 0) {
+      validNames.forEach(name => {
+        should.push({
+          multi_match: {
+            query: name,
+            fields: ["name^3", "name.exact^2"],
+            type: "best_fields"
+          }
+        });
+      });
+    }
+  }
+
   // Industries
   if (filters.industries && filters.industries.length > 0) {
     if (filters.industries.length === 1) {
@@ -347,6 +402,65 @@ export const convertToCoreSignalQuery = (filters: ClientSearchFilters): CoreSign
     }
   }
 
+  // Specialties - search in specialities field
+  if (filters.specialties && filters.specialties.length > 0) {
+    const validSpecialties = filters.specialties.filter(specialty => specialty && specialty.trim().length > 0);
+    if (validSpecialties.length > 0) {
+      validSpecialties.forEach(specialty => {
+        should.push({
+          multi_match: {
+            query: specialty,
+            fields: ["specialities^2", "specialities.exact"],
+            type: "best_fields"
+          }
+        });
+      });
+    }
+  }
+
+  // Websites/Domains
+  if (filters.websites && filters.websites.length > 0) {
+    const validWebsites = filters.websites.filter(website => website && website.trim().length > 0);
+    if (validWebsites.length > 0) {
+      validWebsites.forEach(website => {
+        should.push({
+          multi_match: {
+            query: website,
+            fields: ["websites_main_original.domain_only^2", "websites_main.domain_only", "websites_resolved.domain_only"],
+            type: "best_fields"
+          }
+        });
+      });
+    }
+  }
+
+  // Stock Ticker
+  if (filters.ticker && filters.ticker.length > 0) {
+    must.push({
+      terms: {
+        "ticker": filters.ticker
+      }
+    });
+  }
+
+  // Stock Exchange
+  if (filters.exchange && filters.exchange.length > 0) {
+    must.push({
+      terms: {
+        "exchange": filters.exchange
+      }
+    });
+  }
+
+  // Company Type
+  if (filters.companyType && filters.companyType.length > 0) {
+    must.push({
+      terms: {
+        "type": filters.companyType
+      }
+    });
+  }
+
   // Employee count range
   if (filters.employees) {
     const employeeFilter: any = {};
@@ -363,6 +477,56 @@ export const convertToCoreSignalQuery = (filters: ClientSearchFilters): CoreSign
         }
       });
     }
+  }
+
+  // Followers range
+  if (filters.followers) {
+    const followersFilter: any = {};
+    if (filters.followers.min !== undefined) {
+      followersFilter.gte = filters.followers.min;
+    }
+    if (filters.followers.max !== undefined) {
+      followersFilter.lte = filters.followers.max;
+    }
+    if (Object.keys(followersFilter).length > 0) {
+      must.push({
+        range: {
+          "followers": followersFilter
+        }
+      });
+    }
+  }
+
+  // Founded year range
+  if (filters.founded) {
+    const foundedFilter: any = {};
+    if (filters.founded.min !== undefined) {
+      foundedFilter.gte = filters.founded.min.toString();
+    }
+    if (filters.founded.max !== undefined) {
+      foundedFilter.lte = filters.founded.max.toString();
+    }
+    if (Object.keys(foundedFilter).length > 0) {
+      must.push({
+        range: {
+          "founded": foundedFilter
+        }
+      });
+    }
+  }
+
+  // Funding Stage
+  if (filters.fundingStage && filters.fundingStage.length > 0) {
+    must.push({
+      nested: {
+        path: "funding_rounds",
+        query: {
+          terms: {
+            "funding_rounds.last_round_type": filters.fundingStage
+          }
+        }
+      }
+    });
   }
 
   // Technologies
@@ -412,6 +576,53 @@ export const convertToCoreSignalQuery = (filters: ClientSearchFilters): CoreSign
         });
       });
     }
+  }
+
+  // Business Model Filters
+  if (filters.hasPricing === true) {
+    must.push({ term: { "pricing_available": true } });
+  }
+  if (filters.hasFreeTrial === true) {
+    must.push({ term: { "free_trial_available": true } });
+  }
+  if (filters.hasDemo === true) {
+    must.push({ term: { "demo_available": true } });
+  }
+  if (filters.isDownloadable === true) {
+    must.push({ term: { "is_downloadable": true } });
+  }
+  if (filters.hasMobileApps === true) {
+    must.push({ term: { "mobile_apps_exist": true } });
+  }
+  if (filters.hasApiDocs === true) {
+    must.push({ term: { "api_docs_exist": true } });
+  }
+
+  // Social Media Presence Filters
+  if (filters.hasLinkedIn === true) {
+    must.push({ exists: { field: "social_professional_network_urls" } });
+  }
+  if (filters.hasTwitter === true) {
+    must.push({
+      bool: {
+        should: [
+          { exists: { field: "social_twitter_urls" } },
+          { exists: { field: "social_x_urls" } }
+        ]
+      }
+    });
+  }
+  if (filters.hasFacebook === true) {
+    must.push({ exists: { field: "social_facebook_urls" } });
+  }
+  if (filters.hasInstagram === true) {
+    must.push({ exists: { field: "social_instagram_urls" } });
+  }
+  if (filters.hasYoutube === true) {
+    must.push({ exists: { field: "social_youtube_urls" } });
+  }
+  if (filters.hasGithub === true) {
+    must.push({ exists: { field: "social_github_urls" } });
   }
 
   // Exclude companies
@@ -466,12 +677,17 @@ export const convertToCoreSignalQuery = (filters: ClientSearchFilters): CoreSign
  */
 export const executeCompanySearch = async (
   filters: ClientSearchFilters,
-  searchText?: string
+  searchText?: string,
+  projectId?: string,
+  searchName?: string
 ): Promise<ClientSearchResult> => {
   try {
     // Clean filters by removing empty strings and empty arrays
     const cleanFilters: ClientSearchFilters = {};
     
+    if (filters.companyNames?.length) {
+      cleanFilters.companyNames = filters.companyNames.filter(item => item.trim() !== '');
+    }
     if (filters.industries?.length) {
       cleanFilters.industries = filters.industries.filter(item => item.trim() !== '');
     }
@@ -487,6 +703,21 @@ export const executeCompanySearch = async (
     if (filters.keywords?.length) {
       cleanFilters.keywords = filters.keywords.filter(item => item.trim() !== '');
     }
+    if (filters.specialties?.length) {
+      cleanFilters.specialties = filters.specialties.filter(item => item.trim() !== '');
+    }
+    if (filters.websites?.length) {
+      cleanFilters.websites = filters.websites.filter(item => item.trim() !== '');
+    }
+    if (filters.ticker?.length) {
+      cleanFilters.ticker = filters.ticker.filter(item => item.trim() !== '');
+    }
+    if (filters.exchange?.length) {
+      cleanFilters.exchange = filters.exchange.filter(item => item.trim() !== '');
+    }
+    if (filters.companyType?.length) {
+      cleanFilters.companyType = filters.companyType.filter(item => item.trim() !== '');
+    }
     if (filters.fundingStage?.length) {
       cleanFilters.fundingStage = filters.fundingStage.filter(item => item.trim() !== '');
     }
@@ -496,19 +727,65 @@ export const executeCompanySearch = async (
     if (filters.excludeDomains?.length) {
       cleanFilters.excludeDomains = filters.excludeDomains.filter(item => item.trim() !== '');
     }
-    if (filters.revenue) {
+    
+    // Handle range filters
+    if (filters.revenue && (filters.revenue.min !== undefined || filters.revenue.max !== undefined)) {
       cleanFilters.revenue = filters.revenue;
     }
-    if (filters.employees) {
+    if (filters.employees && (filters.employees.min !== undefined || filters.employees.max !== undefined)) {
       cleanFilters.employees = filters.employees;
     }
+    if (filters.followers && (filters.followers.min !== undefined || filters.followers.max !== undefined)) {
+      cleanFilters.followers = filters.followers;
+    }
+    if (filters.founded && (filters.founded.min !== undefined || filters.founded.max !== undefined)) {
+      cleanFilters.founded = filters.founded;
+    }
+    
+    // Handle boolean filters (only include if explicitly set to true)
+    if (filters.hasPricing === true) cleanFilters.hasPricing = true;
+    if (filters.hasFreeTrial === true) cleanFilters.hasFreeTrial = true;
+    if (filters.hasDemo === true) cleanFilters.hasDemo = true;
+    if (filters.isDownloadable === true) cleanFilters.isDownloadable = true;
+    if (filters.hasMobileApps === true) cleanFilters.hasMobileApps = true;
+    if (filters.hasApiDocs === true) cleanFilters.hasApiDocs = true;
+    
+    // Handle social media filters
+    if (filters.hasFacebook === true) cleanFilters.hasFacebook = true;
+    if (filters.hasTwitter === true) cleanFilters.hasTwitter = true;
+    if (filters.hasLinkedIn === true) cleanFilters.hasLinkedIn = true;
+    if (filters.hasInstagram === true) cleanFilters.hasInstagram = true;
+    if (filters.hasYoutube === true) cleanFilters.hasYoutube = true;
+    if (filters.hasGithub === true) cleanFilters.hasGithub = true;
 
-    const response = await apiClient.post('/client-outreach/search/companies', {
+    // Generate search name if not provided
+    const finalSearchName = searchName || 
+      `Search: ${searchText?.substring(0, 50) || 'Company search'}${searchText && searchText.length > 50 ? '...' : ''}`;
+
+    // Debug log to see what's being sent to backend
+    console.log('🔍 Sending to backend:', {
       filters: cleanFilters,
-      searchText: searchText?.trim() || undefined
+      searchText: searchText?.trim() || undefined,
+      searchName: finalSearchName,
+      projectId: projectId || undefined,
+      searchType: 'ai' as const
     });
 
-    return response.data;
+    const response = await apiClient.post('/client-outreach/search/companies-and-save', {
+      filters: cleanFilters,
+      searchText: searchText?.trim() || undefined,
+      searchName: finalSearchName,
+      projectId: projectId || undefined,
+      searchType: 'ai' as const
+    });
+
+    // The response should contain searchResult, savedSearch, and savedProspects
+    // Return the full response so we can access the savedSearch.id
+    return {
+      ...response.data.searchResult,
+      savedSearch: response.data.savedSearch,
+      savedProspects: response.data.savedProspects
+    };
   } catch (error) {
     console.error('Error executing company search:', error);
     throw new Error('Failed to execute company search');
