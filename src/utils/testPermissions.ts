@@ -51,12 +51,6 @@ const testRoles = {
   'client-manager': [
     'dashboard:access',
     'client-outreach:access',
-    'client-outreach:overview',
-    'client-outreach:prospects',
-    'client-outreach:search',
-    'client-outreach:campaigns',
-    'client-outreach:templates',
-    'client-outreach:analytics',
     'clients:access',
     'contacts:access',
     'organizations:access',

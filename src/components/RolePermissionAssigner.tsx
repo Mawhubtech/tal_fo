@@ -130,45 +130,7 @@ const PERMISSION_HIERARCHY: PermissionGroup[] = [
     id: 'client-outreach',
     name: 'Client Outreach',
     icon: <Mail className="w-4 h-4" />,
-    permissions: ['client-outreach:access'],
-    children: [
-      {
-        id: 'client-outreach-overview',
-        name: 'Overview',
-        icon: <LayoutGrid className="w-3 h-3" />,
-        permissions: ['client-outreach:overview']
-      },
-      {
-        id: 'client-prospects',
-        name: 'Prospects',
-        icon: <Building className="w-3 h-3" />,
-        permissions: ['client-outreach:prospects']
-      },
-      {
-        id: 'client-search',
-        name: 'Search',
-        icon: <Search className="w-3 h-3" />,
-        permissions: ['client-outreach:search']
-      },
-      {
-        id: 'client-campaigns',
-        name: 'Campaigns',
-        icon: <Mail className="w-3 h-3" />,
-        permissions: ['client-outreach:campaigns']
-      },
-      {
-        id: 'client-templates',
-        name: 'Templates',
-        icon: <MessageSquare className="w-3 h-3" />,
-        permissions: ['client-outreach:templates']
-      },
-      {
-        id: 'client-analytics',
-        name: 'Analytics',
-        icon: <BarChart3 className="w-3 h-3" />,
-        permissions: ['client-outreach:analytics']
-      }
-    ]
+    permissions: ['client-outreach:access']
   },
   {
     id: 'contacts',

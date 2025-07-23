@@ -149,13 +149,7 @@ const MENU_STRUCTURE: MenuSection[] = [
     label: 'Client Outreach',
     icon: Mail,
     permissions: {
-      access: 'client-outreach:access',
-      overview: 'client-outreach:overview',
-      prospects: 'client-outreach:prospects',
-      search: 'client-outreach:search',
-      campaigns: 'client-outreach:campaigns',
-      templates: 'client-outreach:templates',
-      analytics: 'client-outreach:analytics'
+      access: 'client-outreach:access'
     }
   },
   {

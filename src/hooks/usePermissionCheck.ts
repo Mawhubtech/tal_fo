@@ -96,12 +96,6 @@ export const SIDEBAR_PERMISSIONS = {
   
   // Client Outreach Module
   CLIENT_OUTREACH_ACCESS: 'client-outreach:access',
-  CLIENT_OUTREACH_OVERVIEW: 'client-outreach:overview',
-  CLIENT_OUTREACH_PROSPECTS: 'client-outreach:prospects',
-  CLIENT_OUTREACH_SEARCH: 'client-outreach:search',
-  CLIENT_OUTREACH_CAMPAIGNS: 'client-outreach:campaigns',
-  CLIENT_OUTREACH_TEMPLATES: 'client-outreach:templates',
-  CLIENT_OUTREACH_ANALYTICS: 'client-outreach:analytics',
   
   // Contacts Module
   CONTACTS_ACCESS: 'contacts:access',
@@ -154,12 +148,7 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   '/dashboard/clients': [SIDEBAR_PERMISSIONS.CLIENTS_ACCESS, SIDEBAR_PERMISSIONS.CLIENTS_READ],
   
   // Client Outreach routes
-  '/dashboard/client-outreach': [SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS, SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_OVERVIEW],
-  '/dashboard/client-outreach/prospects': [SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS, SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_PROSPECTS],
-  '/dashboard/client-outreach/search': [SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS, SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_SEARCH],
-  '/dashboard/client-outreach/campaigns': [SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS, SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_CAMPAIGNS],
-  '/dashboard/client-outreach/templates': [SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS, SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_TEMPLATES],
-  '/dashboard/client-outreach/analytics': [SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS, SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ANALYTICS],
+  '/dashboard/client-outreach': [SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS],
   
   // Contacts routes
   '/dashboard/contacts': [SIDEBAR_PERMISSIONS.CONTACTS_ACCESS, SIDEBAR_PERMISSIONS.CONTACTS_READ],

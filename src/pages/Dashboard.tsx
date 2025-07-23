@@ -48,14 +48,7 @@ import JobATSPage from '../recruitment/organizations/pages/JobATSPage';
 import CandidatesPage from './candidates'; // Import the new CandidatesPage
 
 // Client Outreach Pages
-import { 
-  ClientOutreachOverview, 
-  ClientOutreachProspects, 
-  ClientOutreachCampaigns, 
-  ClientOutreachTemplates, 
-  ClientOutreachAnalytics,
-  ClientOutreachSearch 
-} from './client-outreach'; // Import Client Outreach components
+import ClientOutreachRouter from './client-outreach/ClientOutreachRouter';
 
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
@@ -392,40 +385,10 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } />            
 
-            {/* Client Outreach Routes (separate section) */}
-            <Route path="client-outreach" element={
+            {/* Client Outreach Routes - Project-based structure */}
+            <Route path="client-outreach/*" element={
               <RoutePermissionGuard>
-                <ClientOutreachOverview />
-              </RoutePermissionGuard>
-            } />
-            
-            <Route path="client-outreach/prospects" element={
-              <RoutePermissionGuard>
-                <ClientOutreachProspects />
-              </RoutePermissionGuard>
-            } />
-            
-            <Route path="client-outreach/campaigns" element={
-              <RoutePermissionGuard>
-                <ClientOutreachCampaigns />
-              </RoutePermissionGuard>
-            } />
-            
-            <Route path="client-outreach/templates" element={
-              <RoutePermissionGuard>
-                <ClientOutreachTemplates />
-              </RoutePermissionGuard>
-            } />
-            
-            <Route path="client-outreach/analytics" element={
-              <RoutePermissionGuard>
-                <ClientOutreachAnalytics />
-              </RoutePermissionGuard>
-            } />
-            
-            <Route path="client-outreach/search" element={
-              <RoutePermissionGuard>
-                <ClientOutreachSearch />
+                <ClientOutreachRouter />
               </RoutePermissionGuard>
             } />
 
