@@ -4,6 +4,7 @@ export { default as ClientOutreachProjectsPage } from './ClientOutreachProjectsP
 export { default as CreateProjectPage } from './CreateProjectPage';
 export { default as ProjectDetailPage } from './ProjectDetailPage';
 export { default as ProjectSearchesPage } from './ProjectSearchesPage';
-export { default as CreateSearchPage } from './CreateSearchPage';
+export { default as ClientSearchPage } from './ClientSearchPage';
+export { default as SearchResultsPage } from './SearchResultsPage';
 export { default as ProjectProspectsPage } from './ProjectProspectsPage';
 export { default as ProjectAnalyticsPage } from './ProjectAnalyticsPage';

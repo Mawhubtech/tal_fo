@@ -16,8 +16,8 @@ import {
   Mail,
   Users
 } from 'lucide-react';
-import { useClientOutreachProjects } from '../../hooks/useClientOutreachProjects';
-import { ClientOutreachProject } from '../../services/clientOutreachProjectApiService';
+import { useProjects } from '../../hooks/useClientOutreach';
+import { ClientOutreachProject } from '../../services/clientOutreachApiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const ProjectCard: React.FC<{ project: ClientOutreachProject }> = ({ project }) => {
@@ -31,16 +31,6 @@ const ProjectCard: React.FC<{ project: ClientOutreachProject }> = ({ project }) 
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-blue-100 text-blue-800';
-      case 'low': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <TrendingUp className="w-4 h-4" />;
@@ -48,16 +38,6 @@ const ProjectCard: React.FC<{ project: ClientOutreachProject }> = ({ project }) 
       case 'completed': return <CheckCircle className="w-4 h-4" />;
       case 'archived': return <Archive className="w-4 h-4" />;
       default: return <AlertCircle className="w-4 h-4" />;
-    }
-  };
-
-  const getClientTypeColor = (clientType: string) => {
-    switch (clientType) {
-      case 'enterprise': return 'bg-purple-100 text-purple-800';
-      case 'mid-market': return 'bg-blue-100 text-blue-800';
-      case 'smb': return 'bg-green-100 text-green-800';
-      case 'startup': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -87,62 +67,54 @@ const ProjectCard: React.FC<{ project: ClientOutreachProject }> = ({ project }) 
         </div>
 
         {/* Tags */}
-        {project.tags && project.tags.length > 0 && (
+        {project.tags && (
           <div className="flex flex-wrap gap-1 mb-4">
-            {project.tags.slice(0, 3).map((tag, index) => (
-              <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                {tag}
-              </span>
-            ))}
-            {project.tags.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded">
-                +{project.tags.length - 3} more
-              </span>
-            )}
+            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+              {project.tags}
+            </span>
           </div>
         )}
 
-        {/* Badges */}
-        <div className="flex items-center space-x-2 mb-4">
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
-            <Target className="w-3 h-3 mr-1" />
-            {project.priority}
-          </span>
-          {project.clientType && (
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getClientTypeColor(project.clientType)}`}>
-              <Building className="w-3 h-3 mr-1" />
-              {project.clientType.replace('-', ' ')}
-            </span>
-          )}
-          {project.visibility && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-              <Users className="w-3 h-3 mr-1" />
-              {project.visibility}
-            </span>
-          )}
-        </div>
+        {/* Target Criteria */}
+        {project.targetCriteria && (
+          <div className="mb-4">
+            <div className="text-xs text-gray-500 mb-2">Target Criteria:</div>
+            <div className="flex flex-wrap gap-1">
+              {project.targetCriteria.industries?.slice(0, 2).map((industry, index) => (
+                <span key={index} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">
+                  {industry}
+                </span>
+              ))}
+              {project.targetCriteria.companySize?.slice(0, 1).map((size, index) => (
+                <span key={index} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">
+                  {size} employees
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900">
-              {project.progress?.totalProspects || 0}
-            </div>
-            <div className="text-xs text-gray-500">Prospects</div>
+        {/* Goals */}
+        {project.goals && (
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {project.goals.targetProspects && (
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-900">
+                  {project.goals.targetProspects}
+                </div>
+                <div className="text-xs text-gray-500">Target Prospects</div>
+              </div>
+            )}
+            {project.goals.targetRevenue && (
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-900">
+                  ${project.goals.targetRevenue.toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500">Target Revenue</div>
+              </div>
+            )}
           </div>
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900">
-              {project.progress?.responseRate ? `${(project.progress.responseRate * 100).toFixed(1)}%` : '0%'}
-            </div>
-            <div className="text-xs text-gray-500">Response Rate</div>
-          </div>
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900">
-              {project.progress?.meetingsScheduled || 0}
-            </div>
-            <div className="text-xs text-gray-500">Meetings</div>
-          </div>
-        </div>
+        )}
 
         {/* Timeline */}
         <div className="flex items-center justify-between text-xs text-gray-500">
@@ -150,10 +122,10 @@ const ProjectCard: React.FC<{ project: ClientOutreachProject }> = ({ project }) 
             <Calendar className="w-3 h-3 mr-1" />
             Created {new Date(project.createdAt).toLocaleDateString()}
           </div>
-          {project.targetCompletionDate && (
+          {project.goals?.timeline && (
             <div className="flex items-center">
               <Target className="w-3 h-3 mr-1" />
-              Due {new Date(project.targetCompletionDate).toLocaleDateString()}
+              Due {project.goals.timeline}
             </div>
           )}
         </div>
@@ -172,28 +144,30 @@ const ClientOutreachProjectsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Build filters object
-  const filters = {
-    ...(statusFilter !== 'all' && { status: [statusFilter] }),
-    ...(priorityFilter !== 'all' && { priority: [priorityFilter] }),
-    ...(clientTypeFilter !== 'all' && { clientType: [clientTypeFilter] }),
-    ...(searchTerm && { search: searchTerm }),
-  };
+  const { data: projects, isLoading, error } = useProjects();
 
-  const sort = {
-    field: sortBy,
-    direction: sortDirection,
-  };
+  // Filter and sort projects on the frontend for now
+  const filteredProjects = React.useMemo(() => {
+    if (!projects) return [];
+    
+    return projects.filter(project => {
+      if (statusFilter !== 'all' && project.status !== statusFilter) return false;
+      if (searchTerm && !project.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      return true;
+    }).sort((a, b) => {
+      const direction = sortDirection === 'asc' ? 1 : -1;
+      if (sortBy === 'name') {
+        return direction * a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+        return direction * (new Date(a[sortBy]).getTime() - new Date(b[sortBy]).getTime());
+      }
+      return 0;
+    });
+  }, [projects, statusFilter, searchTerm, sortBy, sortDirection]);
 
-  const { data: projectsData, isLoading, error } = useClientOutreachProjects(
-    currentPage,
-    12,
-    filters,
-    sort
-  );
-
-  const projects = projectsData?.projects || [];
-  const totalPages = Math.ceil((projectsData?.total || 0) / 12);
+  const totalPages = Math.ceil(filteredProjects.length / 12);
+  const paginatedProjects = filteredProjects.slice((currentPage - 1) * 12, currentPage * 12);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -317,7 +291,7 @@ const ClientOutreachProjectsPage: React.FC = () => {
               : 'Get started by creating your first client outreach project.'}
           </p>
           <Link
-            to="/dashboard/client-outreach/projects/create"
+            to="/dashboard/client-outreach/create"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -327,7 +301,7 @@ const ClientOutreachProjectsPage: React.FC = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {projects.map((project) => (
+            {paginatedProjects.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}
           </div>

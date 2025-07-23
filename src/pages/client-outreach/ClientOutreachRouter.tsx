@@ -4,7 +4,10 @@ import ClientOutreachProjectsPage from './ClientOutreachProjectsPage';
 import CreateProjectPage from './CreateProjectPage';
 import ProjectDetailPage from './ProjectDetailPage';
 import ProjectSearchesPage from './ProjectSearchesPage';
-import CreateSearchPage from './CreateSearchPage';
+import ClientSearchPage from './ClientSearchPage';
+import SearchResultsPage from './SearchResultsPage';
+import SearchResultsListPage from './SearchResultsListPage';
+import CompanyDetailPage from './CompanyDetailPage';
 import ProjectProspectsPage from './ProjectProspectsPage';
 import ProjectAnalyticsPage from './ProjectAnalyticsPage';
 
@@ -21,7 +24,10 @@ const ClientOutreachRouter: React.FC = () => {
       {/* Project detail routes */}
       <Route path="projects/:id" element={<ProjectDetailPage />} />
       <Route path="projects/:id/searches" element={<ProjectSearchesPage />} />
-      <Route path="projects/:id/searches/create" element={<CreateSearchPage />} />
+      <Route path="projects/:id/search" element={<ClientSearchPage />} />
+      <Route path="searches/:searchId/results" element={<SearchResultsPage />} />
+      <Route path="search-results" element={<SearchResultsListPage />} />
+      <Route path="company-detail" element={<CompanyDetailPage />} />
       <Route path="projects/:id/prospects" element={<ProjectProspectsPage />} />
       <Route path="projects/:id/analytics" element={<ProjectAnalyticsPage />} />
       
