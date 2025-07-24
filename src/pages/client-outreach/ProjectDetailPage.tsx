@@ -140,13 +140,13 @@ const ProjectDetailPage: React.FC = () => {
                 </Link>
                 
                 <Link
-                  to={`/dashboard/client-outreach/projects/${id}/sequences`}
+                  to={`/dashboard/client-outreach/projects/${id}/campaigns`}
                   className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Mail className="w-6 h-6 text-purple-600 mr-3" />
                   <div>
-                    <h3 className="font-medium text-gray-900">Sequences</h3>
-                    <p className="text-sm text-gray-500">Email sequences & analytics</p>
+                    <h3 className="font-medium text-gray-900">Campaigns</h3>
+                    <p className="text-sm text-gray-500">Email campaigns & analytics</p>
                   </div>
                 </Link>
                 

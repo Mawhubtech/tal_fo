@@ -11,8 +11,9 @@ import SearchResultsListPage from './SearchResultsListPage';
 import CompanyDetailPage from './CompanyDetailPage';
 import ProjectProspectsPage from './ProjectProspectsPage';
 import ProjectAnalyticsPage from './ProjectAnalyticsPage';
-import ProjectEmailSequencesPage from './ProjectEmailSequencesPage';
-import CreateEmailSequencePage from './CreateEmailSequencePage';
+import ProjectEmailCampaignsPage from './ProjectEmailCampaignsPage';
+import ProjectEmailTemplatesPage from './ProjectEmailTemplatesPage';
+import CreateEmailCampaignPage from './CreateEmailCampaignPage';
 
 const ClientOutreachRouter: React.FC = () => {
   return (
@@ -32,8 +33,13 @@ const ClientOutreachRouter: React.FC = () => {
       <Route path="projects/:id/searches/:searchId/results" element={<SearchResultsListPage />} />
       <Route path="projects/:id/prospects" element={<ProjectProspectsPage />} />
       <Route path="projects/:id/analytics" element={<ProjectAnalyticsPage />} />
-      <Route path="projects/:id/sequences" element={<ProjectEmailSequencesPage />} />
-      <Route path="projects/:id/sequences/create" element={<CreateEmailSequencePage />} />
+      <Route path="projects/:id/campaigns" element={<ProjectEmailCampaignsPage />} />
+      <Route path="projects/:id/campaigns/create" element={<CreateEmailCampaignPage />} />
+      <Route path="projects/:id/email-templates" element={<ProjectEmailTemplatesPage />} />
+      
+      {/* Legacy sequences routes for backward compatibility */}
+      <Route path="projects/:id/sequences" element={<ProjectEmailCampaignsPage />} />
+      <Route path="projects/:id/sequences/create" element={<CreateEmailCampaignPage />} />
       
       {/* Legacy routes for backward compatibility */}
       <Route path="searches/:searchId/results" element={<SearchResultsPage />} />

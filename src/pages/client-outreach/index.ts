@@ -8,5 +8,6 @@ export { default as ClientSearchPage } from './ClientSearchPage';
 export { default as SearchResultsPage } from './SearchResultsPage';
 export { default as ProjectProspectsPage } from './ProjectProspectsPage';
 export { default as ProjectAnalyticsPage } from './ProjectAnalyticsPage';
-export { default as ProjectEmailSequencesPage } from './ProjectEmailSequencesPage';
-export { default as CreateEmailSequencePage } from './CreateEmailSequencePage';
+export { default as ProjectEmailCampaignsPage } from './ProjectEmailCampaignsPage';
+export { default as ProjectEmailTemplatesPage } from './ProjectEmailTemplatesPage';
+export { default as CreateEmailCampaignPage } from './CreateEmailCampaignPage';
