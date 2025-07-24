@@ -27,6 +27,7 @@ import CreateCampaignModal from './CreateCampaignModal';
 import CreateClientSequenceStepModal from './CreateClientSequenceStepModal';
 import { useProjects } from '../../../hooks/useClientOutreach';
 import { useCreateClientSequenceStep } from '../../../hooks/useClientOutreachSequences';
+import { usePipeline } from '../../../hooks/usePipelines';
 
 interface ClientEmailCampaignsSequencesProps {
   projectId: string;
@@ -51,6 +52,19 @@ interface Campaign {
   createdAt: Date;
   updatedAt: Date;
   steps?: CampaignStep[];
+  targetCriteria?: {
+    stages?: (string | {
+      id: string;
+      name: string;
+      description?: string;
+      type: string;
+      order: number;
+      color: string;
+      icon?: string;
+      isActive: boolean;
+      isTerminal: boolean;
+    })[];
+  };
 }
 
 interface CampaignStep {
@@ -127,6 +141,34 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
   const { data: projects = [] } = useProjects();
   const project = projects.find(p => p.id.toString() === projectId);
 
+  // Get pipeline data for stage lookup (use first sequence's pipeline if available)
+  const firstSequence = sequences[0];
+  const pipelineId = project?.pipelineId || firstSequence?.pipelineId;
+  const { data: pipeline } = usePipeline(pipelineId || '');
+
+  // Helper function to get stage name from stage ID or stage object
+  const getStageNameById = (stageId: string): string => {
+    // First try to find the stage in the sequences' targetCriteria (which now includes full stage objects)
+    for (const sequence of sequences) {
+      if (sequence.targetCriteria?.stages) {
+        const stage = sequence.targetCriteria.stages.find((s: any) => 
+          typeof s === 'object' ? s.id === stageId : s === stageId
+        );
+        if (stage && typeof stage === 'object' && stage.name) {
+          return stage.name;
+        }
+      }
+    }
+    
+    // Fallback to pipeline lookup if available
+    if (pipeline?.stages) {
+      const stage = pipeline.stages.find(s => s.id === stageId);
+      if (stage) return stage.name;
+    }
+    
+    return 'Unknown Stage';
+  };
+
   // Hook for creating sequence steps
   const createStepMutation = useCreateClientSequenceStep();
 
@@ -153,6 +195,7 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
     lastSent: sequence.updatedAt ? new Date(sequence.updatedAt) : undefined,
     createdAt: new Date(sequence.createdAt),
     updatedAt: new Date(sequence.updatedAt),
+    targetCriteria: sequence.targetCriteria,
     steps: sequence.steps?.map((step: any) => ({
       id: step.id,
       stepOrder: step.stepOrder,
@@ -852,47 +895,123 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
         </div>
       </div>
 
-      {/* Campaign Steps Info */}
-      <div className="mt-4">
-        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-          <span className="flex items-center">
+      {/* Target Criteria */}
+      {campaign.targetCriteria?.stages && campaign.targetCriteria.stages.length > 0 && (
+        <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-3">
+          <div className="flex items-center justify-between mb-3">
+            <span className="flex items-center text-sm font-medium text-blue-900">
+              <Tag className="w-4 h-4 mr-1" />
+              Target Stages ({campaign.targetCriteria.stages.length})
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {campaign.targetCriteria.stages.map((stage: any, index: number) => {
+              // Handle both old format (string IDs) and new format (stage objects)
+              const stageId = typeof stage === 'object' ? stage.id : stage;
+              const stageName = typeof stage === 'object' ? stage.name : getStageNameById(stage);
+              const stageColor = typeof stage === 'object' ? stage.color : '#3B82F6';
+              const stageOrder = typeof stage === 'object' ? stage.order : index + 1;
+              
+              return (
+                <div key={stageId} className="inline-flex items-center px-3 py-1 bg-white rounded-full border border-blue-200 shadow-sm">
+                  <div 
+                    className="w-5 h-5 text-white rounded-full flex items-center justify-center text-xs font-medium mr-2"
+                    style={{ backgroundColor: stageColor }}
+                  >
+                    {stageOrder}
+                  </div>
+                  <span className="text-sm font-medium text-blue-900">
+                    {stageName}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Target Prospect Steps */}
+      <div className="mt-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-3">
+        <div className="flex items-center justify-between mb-3">
+          <span className="flex items-center text-sm font-medium text-purple-900">
             <Settings className="w-4 h-4 mr-1" />
-            Campaign Steps ({campaign.steps?.length || 0})
+            Target Prospect Journey ({campaign.steps?.length || 0} steps)
           </span>
           <button
             onClick={() => handleManageSteps(campaign.id)}
-            className="text-purple-600 hover:text-purple-800 font-medium"
+            className="text-purple-600 hover:text-purple-800 font-medium text-xs bg-white rounded px-2 py-1 border border-purple-200 hover:border-purple-300"
           >
             Manage Steps →
           </button>
         </div>
         
         {campaign.steps && campaign.steps.length > 0 ? (
-          <div className="space-y-1">
-            {campaign.steps.slice(0, 3).map((step, index) => (
-              <div key={step.id} className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1">
-                <span className="flex items-center">
-                  <div className="w-4 h-4 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs mr-2">
-                    {step.sequenceOrder}
+          <div className="space-y-2">
+            {campaign.steps.slice(0, 4).map((step, index) => (
+              <div key={step.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-purple-100 shadow-sm">
+                <div className="flex items-center space-x-3 flex-1">
+                  <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                    {step.stepOrder}
                   </div>
-                  <span className="text-gray-700">{step.name}</span>
-                </span>
-                <span className={`px-1 py-0.5 rounded text-xs ${
-                  step.type === 'email' ? 'bg-purple-100 text-purple-600' : 'bg-orange-100 text-orange-600'
-                }`}>
-                  {step.type}
-                </span>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-900">{step.name}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        step.type === 'email' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
+                      }`}>
+                        {step.type === 'email' ? 'Email' : 'Delay'}
+                      </span>
+                    </div>
+                    {step.type === 'email' && step.subject && (
+                      <p className="text-xs text-gray-600 mt-1 truncate">
+                        Subject: {step.subject}
+                      </p>
+                    )}
+                    {step.type === 'delay' && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Wait: {step.delayDays} days {step.delayHours ? `${step.delayHours}h` : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-1">
+                  {step.isActive ? (
+                    <div title="Active">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    </div>
+                  ) : (
+                    <div title="Inactive">
+                      <AlertCircle className="w-4 h-4 text-gray-400" />
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
-            {campaign.steps.length > 3 && (
-              <div className="text-xs text-gray-500 text-center">
-                +{campaign.steps.length - 3} more steps...
+            {campaign.steps.length > 4 && (
+              <div className="text-center">
+                <button
+                  onClick={() => handleManageSteps(campaign.id)}
+                  className="text-xs text-purple-600 hover:text-purple-800 font-medium bg-white rounded px-3 py-1 border border-purple-200"
+                >
+                  View all {campaign.steps.length} steps →
+                </button>
               </div>
             )}
           </div>
         ) : (
-          <div className="text-xs text-orange-600 bg-orange-50 rounded px-2 py-1">
-            No steps configured - add steps to activate this campaign
+          <div className="text-center py-4">
+            <div className="bg-white rounded-lg border-2 border-dashed border-purple-200 p-4">
+              <Settings className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+              <p className="text-sm text-purple-600 font-medium mb-1">No prospect journey configured</p>
+              <p className="text-xs text-gray-600 mb-3">Set up email steps and delays to guide prospects through your outreach sequence</p>
+              <button
+                onClick={() => handleManageSteps(campaign.id)}
+                className="inline-flex items-center px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add First Step
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -988,8 +1107,8 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
         </div>
       </div>
 
-      {/* Campaigns Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Campaigns Grid - Full Width */}
+      <div className="space-y-6">
         {filteredCampaigns.map(campaign => (
           <CampaignCard key={campaign.id} campaign={campaign} />
         ))}
