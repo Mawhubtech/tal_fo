@@ -266,6 +266,30 @@ export const emailTemplateApi = {
       instructions
     });
     return response.data;
+  },
+
+  // Get client outreach templates (real database templates)
+  getClientOutreach: async (params?: {
+    category?: string;
+    type?: string;
+  }) => {
+    const response = await apiClient.get('/email-management/templates/client-outreach', { params });
+    return response.data;
+  }
+};
+
+// Preset Templates API
+export const presetTemplateApi = {
+  // Get preset templates by category
+  getByCategory: async (category: string) => {
+    const response = await apiClient.get(`/email/preset-templates/category/${category}`);
+    return response.data;
+  },
+
+  // Get preset templates by type
+  getByType: async (type: string) => {
+    const response = await apiClient.get(`/email/preset-templates/type/${type}`);
+    return response.data;
   }
 };
 
@@ -606,6 +630,37 @@ export const useGenerateAiTemplateContent = () => {
   return useMutation({
     mutationFn: ({ type, category, instructions }: { type: string; category: string; instructions?: string }) =>
       emailTemplateApi.generateAiContent(type, category, instructions),
+  });
+};
+
+// Preset Templates Hooks
+export const usePresetTemplatesByCategory = (category: string) => {
+  return useQuery({
+    queryKey: ['preset-templates', 'category', category],
+    queryFn: () => presetTemplateApi.getByCategory(category),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!category,
+  });
+};
+
+export const usePresetTemplatesByType = (type: string) => {
+  return useQuery({
+    queryKey: ['preset-templates', 'type', type],
+    queryFn: () => presetTemplateApi.getByType(type),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!type,
+  });
+};
+
+// Real Database Templates Hook
+export const useClientOutreachTemplates = (params?: {
+  category?: string;
+  type?: string;
+}) => {
+  return useQuery({
+    queryKey: ['email-templates', 'client-outreach', params],
+    queryFn: () => emailTemplateApi.getClientOutreach(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

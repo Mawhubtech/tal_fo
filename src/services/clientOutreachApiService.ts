@@ -328,6 +328,257 @@ class ClientOutreachApiService {
   }
 
   // ===============================================
+  // SEQUENCE ENDPOINTS (Email Campaigns)
+  // ===============================================
+
+  async getProjectSequences(projectId: string): Promise<any[]> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/projects/${projectId}/sequences`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching project sequences:', error);
+      // Return empty array for now until backend implements this
+      return [];
+    }
+  }
+
+  async getSequence(id: string): Promise<any> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/sequences/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sequence:', error);
+      throw error;
+    }
+  }
+
+  async getSequenceSteps(sequenceId: string): Promise<any[]> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/sequences/${sequenceId}/steps`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sequence steps:', error);
+      return [];
+    }
+  }
+
+  async getSequenceStep(stepId: string): Promise<any> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/sequence-steps/${stepId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sequence step:', error);
+      throw error;
+    }
+  }
+
+  async getSequenceAnalytics(projectId: string): Promise<any> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/projects/${projectId}/sequences/analytics`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sequence analytics:', error);
+      // Return default analytics until backend implements this
+      return {
+        totalSequences: 0,
+        activeSequences: 0,
+        pausedSequences: 0,
+        completedSequences: 0,
+        draftSequences: 0,
+        totalSteps: 0,
+        avgStepsPerSequence: 0,
+        totalEnrollments: 0,
+        activeEnrollments: 0,
+        completedEnrollments: 0,
+        totalEmailsSent: 0,
+        totalEmailsOpened: 0,
+        totalEmailsClicked: 0,
+        totalReplies: 0,
+        totalBounces: 0,
+        totalUnsubscribes: 0,
+        avgOpenRate: 0,
+        avgClickRate: 0,
+        avgReplyRate: 0,
+        performanceBySequence: [],
+        recentActivity: []
+      };
+    }
+  }
+
+  async getSequenceEnrollments(sequenceId: string): Promise<any[]> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/sequences/${sequenceId}/enrollments`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sequence enrollments:', error);
+      return [];
+    }
+  }
+
+  async getSequenceResponses(sequenceId: string): Promise<any[]> {
+    try {
+      const response = await apiClient.get(`${this.baseUrl}/sequences/${sequenceId}/responses`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sequence responses:', error);
+      return [];
+    }
+  }
+
+  async createSequence(projectId: string, data: any): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/projects/${projectId}/sequences`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating sequence:', error);
+      throw error;
+    }
+  }
+
+  async updateSequence(id: string, data: any): Promise<any> {
+    try {
+      const response = await apiClient.put(`${this.baseUrl}/sequences/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating sequence:', error);
+      throw error;
+    }
+  }
+
+  async deleteSequence(id: string): Promise<void> {
+    try {
+      await apiClient.delete(`${this.baseUrl}/sequences/${id}`);
+    } catch (error) {
+      console.error('Error deleting sequence:', error);
+      throw error;
+    }
+  }
+
+  async createSequenceStep(sequenceId: string, data: any): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/sequences/${sequenceId}/steps`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating sequence step:', error);
+      throw error;
+    }
+  }
+
+  async updateSequenceStep(id: string, data: any): Promise<any> {
+    try {
+      const response = await apiClient.put(`${this.baseUrl}/sequence-steps/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating sequence step:', error);
+      throw error;
+    }
+  }
+
+  async deleteSequenceStep(id: string): Promise<void> {
+    try {
+      await apiClient.delete(`${this.baseUrl}/sequence-steps/${id}`);
+    } catch (error) {
+      console.error('Error deleting sequence step:', error);
+      throw error;
+    }
+  }
+
+  async enrollInSequence(sequenceId: string, enrollments: any[]): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/sequences/${sequenceId}/enrollments`, {
+        enrollments
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error enrolling in sequence:', error);
+      throw error;
+    }
+  }
+
+  async pauseEnrollment(enrollmentId: string): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/enrollments/${enrollmentId}/pause`);
+      return response.data;
+    } catch (error) {
+      console.error('Error pausing enrollment:', error);
+      throw error;
+    }
+  }
+
+  async resumeEnrollment(enrollmentId: string): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/enrollments/${enrollmentId}/resume`);
+      return response.data;
+    } catch (error) {
+      console.error('Error resuming enrollment:', error);
+      throw error;
+    }
+  }
+
+  async removeEnrollment(enrollmentId: string): Promise<void> {
+    try {
+      await apiClient.delete(`${this.baseUrl}/enrollments/${enrollmentId}`);
+    } catch (error) {
+      console.error('Error removing enrollment:', error);
+      throw error;
+    }
+  }
+
+  async sendSequenceEmails(sequenceId: string): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/sequences/${sequenceId}/send`);
+      return response.data;
+    } catch (error) {
+      console.error('Error sending sequence emails:', error);
+      throw error;
+    }
+  }
+
+  async setupDefaultSequences(projectId: string): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/projects/${projectId}/sequences/setup-defaults`);
+      return response.data;
+    } catch (error) {
+      console.error('Error setting up default sequences:', error);
+      throw error;
+    }
+  }
+
+  // ===============================================
+  // EMAIL TEMPLATE ENDPOINTS
+  // ===============================================
+
+  async getClientEmailTemplates(params?: { 
+    category?: string; 
+    type?: string; 
+    projectId?: string; 
+  }): Promise<any> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.category) queryParams.append('category', params.category);
+      if (params?.type) queryParams.append('type', params.type);
+      if (params?.projectId) queryParams.append('projectId', params.projectId);
+      
+      const response = await apiClient.get(`/email-management/templates/client-outreach?${queryParams}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching client email templates:', error);
+      // Return empty templates structure until backend implements this
+      return { templates: [] };
+    }
+  }
+
+  async getClientSourcingTemplates(): Promise<any[]> {
+    try {
+      const response = await apiClient.get('/email-management/templates/client-outreach');
+      return response.data.templates || [];
+    } catch (error) {
+      console.error('Error fetching client sourcing templates:', error);
+      return [];
+    }
+  }
+
+  // ===============================================
   // ANALYTICS ENDPOINTS (placeholder for future implementation)
   // ===============================================
 

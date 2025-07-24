@@ -23,6 +23,16 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import CreateCampaignModal from './CreateCampaignModal';
+import CreateClientSequenceStepModal from './CreateClientSequenceStepModal';
+import { useProjects } from '../../../hooks/useClientOutreach';
+import { useCreateClientSequenceStep } from '../../../hooks/useClientOutreachSequences';
+
+interface ClientEmailCampaignsSequencesProps {
+  projectId: string;
+  sequences?: any[];
+  isLoading?: boolean;
+}
 
 interface Campaign {
   id: string;
@@ -45,7 +55,7 @@ interface Campaign {
 
 interface CampaignStep {
   id: string;
-  sequenceOrder: number;
+  stepOrder: number;
   type: 'email' | 'delay';
   name: string;
   subject?: string;
@@ -96,7 +106,11 @@ interface ClientEmailCampaignsSequencesProps {
   projectId: string;
 }
 
-const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps> = ({ projectId }) => {
+const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps> = ({ 
+  projectId, 
+  sequences = [], 
+  isLoading = false 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -104,308 +118,59 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [activeStepsTab, setActiveStepsTab] = useState<'steps' | 'contacts' | 'responses'>('steps');
+  const [showCreateCampaignModal, setShowCreateCampaignModal] = useState(false);
+  const [editingSequence, setEditingSequence] = useState<any>(null);
+  const [showCreateStepModal, setShowCreateStepModal] = useState(false);
+  const [editingStep, setEditingStep] = useState<any>(null);
 
-  // Mock data for campaigns - replace with actual API calls
-  const campaigns: Campaign[] = [
-    {
-      id: '1',
-      name: 'Initial Client Outreach Campaign',
-      type: 'email',
-      category: 'initial_outreach',
-      status: 'active',
-      emails: 3,
-      totalRecipients: 156,
-      sentEmails: 234,
-      openRate: 45.2,
-      replyRate: 8.7,
-      clickRate: 12.3,
-      description: 'First touch campaign to introduce our services to potential clients.',
-      lastSent: new Date('2025-01-20'),
-      createdAt: new Date('2025-01-15'),
-      updatedAt: new Date('2025-01-20'),
-      steps: [
-        {
-          id: 'step1',
-          sequenceOrder: 1,
-          type: 'email',
-          name: 'Introduction Email',
-          subject: 'Partnership Opportunity with {{company_name}}',
-          content: 'Hello {{client_name}}, I hope this email finds you well...',
-          isActive: true,
-          createdAt: new Date('2025-01-15'),
-          updatedAt: new Date('2025-01-15')
-        },
-        {
-          id: 'step2',
-          sequenceOrder: 2,
-          type: 'delay',
-          name: 'Wait 3 days',
-          delayDays: 3,
-          delayHours: 0,
-          isActive: true,
-          createdAt: new Date('2025-01-15'),
-          updatedAt: new Date('2025-01-15')
-        },
-        {
-          id: 'step3',
-          sequenceOrder: 3,
-          type: 'email',
-          name: 'Follow-up Email',
-          subject: 'Following up on our partnership opportunity',
-          content: 'Hi {{client_name}}, I wanted to follow up on my previous email...',
-          isActive: true,
-          createdAt: new Date('2025-01-15'),
-          updatedAt: new Date('2025-01-15')
-        }
-      ]
-    },
-    {
-      id: '2',
-      name: 'Follow-up Campaign',
-      type: 'email',
-      category: 'follow_up',
-      status: 'paused',
-      emails: 2,
-      totalRecipients: 89,
-      sentEmails: 178,
-      openRate: 38.9,
-      replyRate: 12.4,
-      clickRate: 15.2,
-      description: 'Follow-up sequence for prospects who showed initial interest.',
-      lastSent: new Date('2025-01-18'),
-      createdAt: new Date('2025-01-10'),
-      updatedAt: new Date('2025-01-18'),
-      steps: [
-        {
-          id: 'step1',
-          sequenceOrder: 1,
-          type: 'email',
-          name: 'Thank You Email',
-          subject: 'Thank you for your interest in {{service_name}}',
-          content: 'Thank you {{client_name}} for showing interest in our services...',
-          isActive: true,
-          createdAt: new Date('2025-01-10'),
-          updatedAt: new Date('2025-01-10')
-        },
-        {
-          id: 'step2',
-          sequenceOrder: 2,
-          type: 'delay',
-          name: 'Wait 5 days',
-          delayDays: 5,
-          delayHours: 0,
-          isActive: true,
-          createdAt: new Date('2025-01-10'),
-          updatedAt: new Date('2025-01-10')
-        },
-        {
-          id: 'step3',
-          sequenceOrder: 3,
-          type: 'email',
-          name: 'Case Study Email',
-          subject: 'How we helped {{similar_company}} achieve {{result}}',
-          content: 'Hi {{client_name}}, I thought you might be interested in this case study...',
-          isActive: true,
-          createdAt: new Date('2025-01-10'),
-          updatedAt: new Date('2025-01-10')
-        }
-      ]
-    },
-    {
-      id: '3',
-      name: 'Nurture Campaign - Q1',
-      type: 'email',
-      category: 'nurture',
-      status: 'draft',
-      emails: 4,
-      totalRecipients: 0,
-      sentEmails: 0,
-      openRate: 0,
-      replyRate: 0,
-      clickRate: 0,
-      description: 'Long-term nurture sequence for maintaining client relationships.',
-      createdAt: new Date('2025-01-22'),
-      updatedAt: new Date('2025-01-22'),
-      steps: [
-        {
-          id: 'step1',
-          sequenceOrder: 1,
-          type: 'email',
-          name: 'Weekly Newsletter',
-          subject: 'Weekly Industry Insights - {{week_date}}',
-          content: 'Hi {{client_name}}, here are this week\'s top industry insights...',
-          isActive: true,
-          createdAt: new Date('2025-01-22'),
-          updatedAt: new Date('2025-01-22')
-        },
-        {
-          id: 'step2',
-          sequenceOrder: 2,
-          type: 'delay',
-          name: 'Wait 7 days',
-          delayDays: 7,
-          delayHours: 0,
-          isActive: true,
-          createdAt: new Date('2025-01-22'),
-          updatedAt: new Date('2025-01-22')
-        }
-      ]
-    },
-    {
-      id: '4',
-      name: 'Product Launch Announcement',
-      type: 'email',
-      category: 'promotional',
-      status: 'completed',
-      emails: 1,
-      totalRecipients: 245,
-      sentEmails: 245,
-      openRate: 52.8,
-      replyRate: 15.2,
-      clickRate: 28.5,
-      description: 'Announce new product features to existing clients.',
-      lastSent: new Date('2025-01-12'),
-      createdAt: new Date('2025-01-08'),
-      updatedAt: new Date('2025-01-12'),
-      steps: [
-        {
-          id: 'step1',
-          sequenceOrder: 1,
-          type: 'email',
-          name: 'Product Launch Email',
-          subject: 'Exciting New Features Just Launched!',
-          content: 'Hi {{client_name}}, We\'re thrilled to announce the launch of our new features...',
-          isActive: true,
-          createdAt: new Date('2025-01-08'),
-          updatedAt: new Date('2025-01-08')
-        }
-      ]
-    }
-  ];
+  // Get project data for modal
+  const { data: projects = [] } = useProjects();
+  const project = projects.find(p => p.id.toString() === projectId);
 
-  // Mock enrollments data
-  const campaignEnrollments: CampaignEnrollment[] = [
-    {
-      id: 'enroll1',
-      campaignId: '1',
-      contactEmail: 'john@techcorp.com',
-      contactName: 'John Smith',
-      contactCompany: 'TechCorp Inc',
-      contactTitle: 'CTO',
-      status: 'active',
-      currentStep: 2,
-      enrolledAt: new Date('2025-01-18'),
-      lastEmailSent: new Date('2025-01-19'),
-      nextEmailDue: new Date('2025-01-22'),
-      totalEmailsSent: 2,
-      totalEmailsOpened: 1,
-      totalEmailsClicked: 0,
-      hasReplied: false
-    },
-    {
-      id: 'enroll2',
-      campaignId: '1',
-      contactEmail: 'sarah@innovate.io',
-      contactName: 'Sarah Johnson',
-      contactCompany: 'Innovate.io',
-      contactTitle: 'CEO',
-      status: 'active',
-      currentStep: 1,
-      enrolledAt: new Date('2025-01-20'),
-      lastEmailSent: new Date('2025-01-20'),
-      nextEmailDue: new Date('2025-01-23'),
-      totalEmailsSent: 1,
-      totalEmailsOpened: 1,
-      totalEmailsClicked: 1,
-      hasReplied: true
-    },
-    {
-      id: 'enroll3',
-      campaignId: '1',
-      contactEmail: 'mike@startupx.com',
-      contactName: 'Mike Chen',
-      contactCompany: 'StartupX',
-      contactTitle: 'Founder',
-      status: 'completed',
-      currentStep: 3,
-      enrolledAt: new Date('2025-01-15'),
-      lastEmailSent: new Date('2025-01-20'),
-      totalEmailsSent: 3,
-      totalEmailsOpened: 2,
-      totalEmailsClicked: 1,
-      hasReplied: false
-    },
-    {
-      id: 'enroll4',
-      campaignId: '2',
-      contactEmail: 'alex@growth.co',
-      contactName: 'Alex Rodriguez',
-      contactCompany: 'Growth Co',
-      contactTitle: 'VP Marketing',
-      status: 'paused',
-      currentStep: 1,
-      enrolledAt: new Date('2025-01-19'),
-      lastEmailSent: new Date('2025-01-19'),
-      totalEmailsSent: 1,
-      totalEmailsOpened: 0,
-      totalEmailsClicked: 0,
-      hasReplied: false
-    }
-  ];
+  // Hook for creating sequence steps
+  const createStepMutation = useCreateClientSequenceStep();
 
-  // Mock responses data
-  const campaignResponses: CampaignResponse[] = [
-    {
-      id: 'resp1',
-      campaignId: '1',
-      enrollmentId: 'enroll2',
-      contactEmail: 'sarah@innovate.io',
-      contactName: 'Sarah Johnson',
-      stepId: 'step1',
-      stepName: 'Introduction Email',
-      emailSubject: 'Partnership Opportunity with Innovate.io',
-      responseType: 'reply',
-      responseContent: 'Hi! Thanks for reaching out. I\'m very interested in learning more about your services. Could we schedule a call this week?',
-      responseDate: new Date('2025-01-21'),
-      sentiment: 'positive'
-    },
-    {
-      id: 'resp2',
-      campaignId: '1',
-      enrollmentId: 'enroll1',
-      contactEmail: 'john@techcorp.com',
-      contactName: 'John Smith',
-      stepId: 'step1',
-      stepName: 'Introduction Email',
-      emailSubject: 'Partnership Opportunity with TechCorp Inc',
-      responseType: 'open',
-      responseDate: new Date('2025-01-19')
-    },
-    {
-      id: 'resp3',
-      campaignId: '1',
-      enrollmentId: 'enroll2',
-      contactEmail: 'sarah@innovate.io',
-      contactName: 'Sarah Johnson',
-      stepId: 'step1',
-      stepName: 'Introduction Email',
-      emailSubject: 'Partnership Opportunity with Innovate.io',
-      responseType: 'click',
-      responseDate: new Date('2025-01-20')
-    },
-    {
-      id: 'resp4',
-      campaignId: '2',
-      enrollmentId: 'enroll4',
-      contactEmail: 'alex@growth.co',
-      contactName: 'Alex Rodriguez',
-      stepId: 'step1',
-      stepName: 'Thank You Email',
-      emailSubject: 'Thank you for your interest in our marketing services',
-      responseType: 'bounce',
-      responseDate: new Date('2025-01-19')
-    }
-  ];
+  // Transform sequences from API to campaign format
+  const campaigns: Campaign[] = sequences.map(sequence => ({
+    id: sequence.id,
+    name: sequence.name,
+    type: 'email',
+    category: sequence.category || 'initial_outreach',
+    status: sequence.status,
+    emails: sequence.steps?.length || 0,
+    totalRecipients: sequence.metrics?.totalRecipients || 0,
+    sentEmails: sequence.metrics?.totalSent || 0,
+    openRate: sequence.metrics?.totalOpens && sequence.metrics?.totalSent 
+      ? Math.round((sequence.metrics.totalOpens / sequence.metrics.totalSent) * 100 * 10) / 10 
+      : 0,
+    replyRate: sequence.metrics?.totalResponses && sequence.metrics?.totalSent 
+      ? Math.round((sequence.metrics.totalResponses / sequence.metrics.totalSent) * 100 * 10) / 10 
+      : 0,
+    clickRate: sequence.metrics?.totalClicks && sequence.metrics?.totalSent 
+      ? Math.round((sequence.metrics.totalClicks / sequence.metrics.totalSent) * 100 * 10) / 10 
+      : 0,
+    description: sequence.description || 'No description available',
+    lastSent: sequence.updatedAt ? new Date(sequence.updatedAt) : undefined,
+    createdAt: new Date(sequence.createdAt),
+    updatedAt: new Date(sequence.updatedAt),
+    steps: sequence.steps?.map((step: any) => ({
+      id: step.id,
+      stepOrder: step.stepOrder,
+      type: step.type,
+      name: step.name,
+      subject: step.subject,
+      content: step.content,
+      delayDays: step.config?.delayDays,
+      delayHours: step.config?.delayHours,
+      isActive: step.status === 'active',
+      createdAt: new Date(step.createdAt),
+      updatedAt: new Date(step.updatedAt)
+    })) || []
+  }));
+  // For now, use empty enrollments - will be replaced with real API data
+  const campaignEnrollments: CampaignEnrollment[] = [];
+  // For now, use empty responses - will be replaced with real API data
+  const campaignResponses: CampaignResponse[] = [];
 
   const categories = [
     { key: '', label: 'All Categories' },
@@ -423,6 +188,28 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
     { key: 'draft', label: 'Draft' },
     { key: 'completed', label: 'Completed' }
   ];
+
+  // Modal handlers
+  const handleCreateCampaign = () => {
+    setEditingSequence(null);
+    setShowCreateCampaignModal(true);
+  };
+
+  const handleEditCampaign = (sequence: any) => {
+    setEditingSequence(sequence);
+    setShowCreateCampaignModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateCampaignModal(false);
+    setEditingSequence(null);
+  };
+
+  const handleCampaignSuccess = (sequenceId: string) => {
+    setShowCreateCampaignModal(false);
+    setEditingSequence(null);
+    // The parent component should handle data refresh through query invalidation
+  };
 
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -442,6 +229,39 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
   const handleBackToList = () => {
     setViewMode('list');
     setSelectedCampaignId(null);
+  };
+
+  // Step creation handlers
+  const handleAddStep = () => {
+    setEditingStep(null);
+    setShowCreateStepModal(true);
+  };
+
+  const handleEditStep = (step: any) => {
+    setEditingStep(step);
+    setShowCreateStepModal(true);
+  };
+
+  const handleStepModalClose = () => {
+    setShowCreateStepModal(false);
+    setEditingStep(null);
+  };
+
+  const handleStepSave = async (stepData: any) => {
+    if (!selectedCampaignId) return;
+
+    try {
+      await createStepMutation.mutateAsync({
+        sequenceId: selectedCampaignId,
+        data: stepData
+      });
+      setShowCreateStepModal(false);
+      setEditingStep(null);
+      // The data will be refetched automatically due to query invalidation
+    } catch (error) {
+      console.error('Failed to create step:', error);
+      // Handle error (show toast, etc.)
+    }
   };
 
   // Component to display enrolled contacts for a campaign
@@ -543,7 +363,10 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            <button 
+              onClick={handleAddStep}
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Add Step
             </button>
@@ -610,7 +433,7 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
                       <div className="flex items-start space-x-4">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium">
-                            {step.sequenceOrder}
+                            {step.stepOrder}
                           </div>
                         </div>
                         <div className="flex-1">
@@ -653,7 +476,11 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
                       </div>
                       
                       <div className="flex space-x-2">
-                        <button className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg" title="Edit">
+                        <button 
+                          onClick={() => handleEditStep(step)}
+                          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg" 
+                          title="Edit"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Preview">
@@ -684,7 +511,10 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No steps configured</h3>
                   <p className="text-gray-600 mb-4">Add email templates and delays to create your campaign sequence.</p>
-                  <button className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                  <button 
+                    onClick={handleAddStep}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Add First Step
                   </button>
@@ -963,13 +793,13 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
           <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Clone">
             <Copy className="w-4 h-4" />
           </button>
-          <Link
-            to={`/dashboard/client-outreach/projects/${projectId}/campaigns/${campaign.id}/edit`}
+          <button
+            onClick={() => handleEditCampaign(campaign)}
             className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg"
             title="Edit"
           >
             <Edit className="w-4 h-4" />
-          </Link>
+          </button>
           <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Delete">
             <Trash2 className="w-4 h-4" />
           </button>
@@ -1072,9 +902,39 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
     </div>
   );
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="w-full p-6">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading email campaigns...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show steps view if selected
   if (viewMode === 'steps' && selectedCampaignId) {
-    return <CampaignStepsView campaignId={selectedCampaignId} />;
+    return (
+      <>
+        <CampaignStepsView campaignId={selectedCampaignId} />
+        
+        {/* Create/Edit Step Modal */}
+        {showCreateStepModal && (
+          <CreateClientSequenceStepModal
+            isOpen={showCreateStepModal}
+            onClose={handleStepModalClose}
+            onSave={handleStepSave}
+            editingStep={editingStep}
+            sequenceId={selectedCampaignId || ''}
+            nextStepOrder={(campaigns.find(c => c.id === selectedCampaignId)?.steps?.length || 0) + 1}
+          />
+        )}
+      </>
+    );
   }
 
   return (
@@ -1085,13 +945,13 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
           <h1 className="text-3xl font-bold text-gray-900">Email Campaigns</h1>
           <p className="text-gray-600 mt-1">Create and manage automated email campaigns for client outreach</p>
         </div>
-        <Link
-          to={`/dashboard/client-outreach/projects/${projectId}/campaigns/create`}
+        <button
+          onClick={handleCreateCampaign}
           className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
         >
           <Plus className="w-4 h-4" />
           <span>Create Campaign</span>
-        </Link>
+        </button>
       </div>
 
       {/* Filters and Controls */}
@@ -1146,13 +1006,13 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
               : 'Create your first email campaign to get started'
             }
           </p>
-          <Link
-            to={`/dashboard/client-outreach/projects/${projectId}/campaigns/create`}
+          <button
+            onClick={handleCreateCampaign}
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Campaign
-          </Link>
+          </button>
         </div>
       )}
 
@@ -1261,12 +1121,12 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Quick Actions</label>
                   <div className="space-y-2">
-                    <Link
-                      to={`/dashboard/client-outreach/projects/${projectId}/campaigns/${selectedCampaign.id}/edit`}
+                    <button
+                      onClick={() => handleEditCampaign(selectedCampaign)}
                       className="block w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-center"
                     >
                       Edit Campaign
-                    </Link>
+                    </button>
                     <button className="block w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                       Clone Campaign
                     </button>
@@ -1287,6 +1147,16 @@ const ClientEmailCampaignsSequences: React.FC<ClientEmailCampaignsSequencesProps
             </div>
           </div>
         </div>
+      )}
+
+      {/* Create/Edit Campaign Modal */}
+      {showCreateCampaignModal && (
+        <CreateCampaignModal
+          projectId={projectId}
+          sequence={editingSequence}
+          onClose={handleCloseModal}
+          onSuccess={handleCampaignSuccess}
+        />
       )}
     </div>
   );
