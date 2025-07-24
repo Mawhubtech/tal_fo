@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ClientOutreachProjectsPage from './ClientOutreachProjectsPage';
 import CreateProjectPage from './CreateProjectPage';
+import EditProjectPage from './EditProjectPage';
 import ProjectDetailPage from './ProjectDetailPage';
 import ProjectSearchesPage from './ProjectSearchesPage';
 import ClientSearchPage from './ClientSearchPage';
@@ -25,6 +26,7 @@ const ClientOutreachRouter: React.FC = () => {
       
       {/* Project detail routes */}
       <Route path="projects/:id" element={<ProjectDetailPage />} />
+      <Route path="projects/:id/edit" element={<EditProjectPage />} />
       <Route path="projects/:id/searches" element={<ProjectSearchesPage />} />
       <Route path="projects/:id/search" element={<ClientSearchPage />} />
       <Route path="projects/:id/searches/:searchId/results" element={<SearchResultsListPage />} />

@@ -8,7 +8,6 @@ import {
   ExternalLink, 
   X, 
   Loader2,
-  Star,
   Globe
 } from 'lucide-react';
 import type { ClientOutreachProspect } from './ClientOutreachKanbanView';
@@ -21,33 +20,20 @@ interface DraggableClientOutreachProspectCardProps {
   isDragging?: boolean;
 }
 
-const getPriorityColor = (priority: number) => {
-  switch (priority) {
-    case 1:
-      return 'bg-red-100 text-red-800 border-red-200';
-    case 2:
-      return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 3:
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
-
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case 'new':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-purple-100 text-purple-800';
     case 'contacted':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-purple-100 text-purple-800';
     case 'responded':
-      return 'bg-green-100 text-green-800';
+      return 'bg-purple-100 text-purple-800';
     case 'meeting_scheduled':
       return 'bg-purple-100 text-purple-800';
     case 'qualified':
-      return 'bg-emerald-100 text-emerald-800';
+      return 'bg-purple-100 text-purple-800';
     case 'unqualified':
-      return 'bg-red-100 text-red-800';
+      return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -82,7 +68,7 @@ export const DraggableClientOutreachProspectCard: React.FC<DraggableClientOutrea
       className={`
         relative bg-white rounded-lg border shadow-sm p-4 cursor-grab active:cursor-grabbing
         hover:shadow-md transition-all duration-200
-        ${isDragging ? 'shadow-lg ring-2 ring-blue-500 ring-opacity-50' : ''}
+        ${isDragging ? 'shadow-lg ring-2 ring-purple-500 ring-opacity-50' : ''}
         ${isPending ? 'opacity-50' : ''}
       `}
       onClick={onClick}
@@ -90,7 +76,7 @@ export const DraggableClientOutreachProspectCard: React.FC<DraggableClientOutrea
       {/* Loading indicator for pending operations */}
       {isPending && (
         <div className="absolute inset-0 bg-white bg-opacity-80 rounded-lg flex items-center justify-center z-10">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+          <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
         </div>
       )}
 
@@ -114,15 +100,7 @@ export const DraggableClientOutreachProspectCard: React.FC<DraggableClientOutrea
         </h4>
       </div>
 
-      {/* Priority and Status Badges */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(prospect.priority)}`}>
-          Priority {prospect.priority}
-        </span>
-        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(prospect.status)}`}>
-          {prospect.status.replace('_', ' ')}
-        </span>
-      </div>
+   
 
       {/* Company Details */}
       <div className="space-y-2 mb-3">
@@ -140,35 +118,10 @@ export const DraggableClientOutreachProspectCard: React.FC<DraggableClientOutrea
           </div>
         )}
 
-        {(prospect.employeeCount || prospect.sizeRange) && (
-          <div className="flex items-center text-xs text-gray-600">
-            <Users className="w-3 h-3 mr-1 flex-shrink-0" />
-            <span className="truncate">
-              {prospect.employeeCount ? `${prospect.employeeCount} employees` : prospect.sizeRange}
-            </span>
-          </div>
-        )}
+
       </div>
 
-      {/* Description */}
-      {prospect.description && (
-        <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-          {prospect.description}
-        </p>
-      )}
 
-      {/* Match Score */}
-      {prospect.matchScore && (
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs text-gray-500">Match Score</span>
-          <div className="flex items-center">
-            <Star className="w-3 h-3 text-yellow-500 mr-1" />
-            <span className="text-xs font-semibold text-green-600">
-              {(prospect.matchScore * 100).toFixed(0)}%
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Links */}
       <div className="flex gap-3">
@@ -198,19 +151,7 @@ export const DraggableClientOutreachProspectCard: React.FC<DraggableClientOutrea
         )}
       </div>
 
-      {/* Footer with date */}
-      <div className="mt-3 pt-2 border-t border-gray-100">
-        <div className="text-xs text-gray-500">
-          Added {new Date(prospect.createdAt).toLocaleDateString()}
-        </div>
-      </div>
-
-      {/* Notes indicator */}
-      {prospect.notes && (
-        <div className="absolute bottom-2 right-2">
-          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-        </div>
-      )}
+    
     </div>
   );
 };

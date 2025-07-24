@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Plus, LayoutGrid, List, Filter, ChevronDown, Building } from 'lucide-react';
-import { useProjectProspects } from '../../../hooks/useClientOutreach';
+import { useProjectProspects, useUpdateProspect, useProject } from '../../../hooks/useClientOutreach';
+import { useClientDefaultPipeline } from '../../../hooks/useClientPipeline';
 import { ClientOutreachKanbanView } from './pipeline/ClientOutreachKanbanView';
+import ClientOutreachListView from './ClientOutreachListView';
 import type { ClientOutreachProspect } from './pipeline/ClientOutreachKanbanView';
 
 interface FilterState {
   search: string;
-  status: string;
-  priority: string;
+  stage: string; // Changed from 'status' to 'stage'
   industry: string;
   location: string;
   minEmployees: number | undefined;
@@ -15,25 +16,7 @@ interface FilterState {
   hasNotes: boolean | undefined;
 }
 
-const PROSPECT_STATUSES = [
-  { value: '', label: 'All Statuses' },
-  { value: 'new', label: 'New' },
-  { value: 'contacted', label: 'Contacted' },
-  { value: 'responded', label: 'Responded' },
-  { value: 'meeting_scheduled', label: 'Meeting Scheduled' },
-  { value: 'qualified', label: 'Qualified' },
-  { value: 'unqualified', label: 'Unqualified' },
-];
 
-const PRIORITY_OPTIONS = [
-  { value: '', label: 'All Priorities' },
-  { value: '1', label: 'High Priority' },
-  { value: '2', label: 'Medium Priority' },
-  { value: '3', label: 'Low Priority' },
-];
-
-// Default stages for client outreach pipeline
-const DEFAULT_STAGES = ['new', 'contacted', 'responded', 'meeting_scheduled', 'qualified', 'unqualified'];
 
 interface ClientOutreachProspectsProps {
   projectId?: string;
@@ -43,11 +26,69 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
+  // Get project data (which includes pipeline info)
+  const { data: project, isLoading: projectLoading } = useProject(projectId!);
+  
+  // Get default client pipeline (fallback)
+  const { data: defaultPipeline, isLoading: pipelineLoading, error: pipelineError } = useClientDefaultPipeline();
+  
+  // Use project's pipeline if available, otherwise fall back to default
+  const pipeline = project?.pipeline || defaultPipeline;
+  
+  // Validate pipeline has stages before using
+  const isValidPipeline = pipeline && pipeline.stages && pipeline.stages.length > 0;
+  
+  if (!isValidPipeline && (project?.pipelineId || defaultPipeline)) {
+    console.warn('WARNING: Pipeline missing stages, this may cause stage update errors');
+  }
+  
+  // Debug: Log pipeline information
+  useEffect(() => {
+    console.log('DEBUG: ===== PIPELINE DEBUG INFO =====');
+    console.log('DEBUG: Project object:', project);
+    console.log('DEBUG: Project pipelineId:', project?.pipelineId);
+    console.log('DEBUG: Project pipeline object:', project?.pipeline);
+    console.log('DEBUG: Default pipeline:', defaultPipeline);
+    
+    if (pipeline) {
+      console.log('DEBUG: FINAL pipeline being used:', {
+        id: pipeline.id,
+        name: pipeline.name,
+        stageCount: pipeline.stages?.length || 0,
+        stages: pipeline.stages?.map(s => ({ id: s.id, name: s.name })) || []
+      });
+    } else {
+      console.log('DEBUG: NO PIPELINE AVAILABLE');
+    }
+    console.log('DEBUG: ================================');
+  }, [pipeline, project, defaultPipeline]);
+  
+  // Mutation for updating prospect stage
+  const updateProspectMutation = useUpdateProspect();
+  
+  // Helper function to get current stage ID for a prospect
+  const getProspectStageId = (prospect: ClientOutreachProspect): string => {
+    if (prospect.currentStageId) {
+      return prospect.currentStageId;
+    }
+    if (prospect.currentStage?.id) {
+      return prospect.currentStage.id;
+    }
+    // Fallback to status for backward compatibility
+    return prospect.status;
+  };
+
+  // Helper function to get current stage name for a prospect
+  const getProspectStageName = (prospect: ClientOutreachProspect): string => {
+    const stageId = getProspectStageId(prospect);
+    const stage = pipeline?.stages?.find(s => s.id === stageId);
+    return stage?.name || stageId;
+  };
+  
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
     search: '',
-    status: '',
-    priority: '',
+    stage: '', // Changed from 'status' to 'stage'
     industry: '',
     location: '',
     minEmployees: undefined,
@@ -70,8 +111,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
       sizeRange: prospect.sizeRange,
       description: prospect.description,
       status: prospect.status,
-      priority: prospect.priority,
-      matchScore: prospect.matchScore,
+      currentStageId: prospect.currentStageId,
       notes: prospect.notes,
       linkedinUrl: prospect.linkedinUrl,
       createdAt: prospect.createdAt,
@@ -94,14 +134,12 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
         if (!matchesSearch) return false;
       }
 
-      // Status filter
-      if (filters.status && prospect.status !== filters.status) {
-        return false;
-      }
-
-      // Priority filter
-      if (filters.priority && prospect.priority.toString() !== filters.priority) {
-        return false;
+      // Stage filter
+      if (filters.stage) {
+        const prospectStageId = getProspectStageId(prospect);
+        if (prospectStageId !== filters.stage) {
+          return false;
+        }
       }
 
       // Industry filter
@@ -151,8 +189,36 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
   };
 
   const handleProspectStageChange = async (prospectId: string, newStage: string) => {
-    // TODO: Implement stage change API call
-    console.log('Moving prospect', prospectId, 'to stage', newStage);
+    console.log('DEBUG: handleProspectStageChange called with:', { prospectId, newStage });
+    
+    // Validate the new stage exists in current pipeline
+    if (!pipeline || !pipeline.stages) {
+      console.error('ERROR: No pipeline or stages available');
+      throw new Error('Pipeline not loaded');
+    }
+    
+    const stageExists = pipeline.stages.find(s => s.id === newStage);
+    if (!stageExists) {
+      console.error('ERROR: Stage ID does not exist in pipeline:', {
+        requestedStage: newStage,
+        availableStages: pipeline.stages.map(s => ({ id: s.id, name: s.name }))
+      });
+      throw new Error(`Stage ${newStage} not found in pipeline`);
+    }
+    
+    try {
+      await updateProspectMutation.mutateAsync({
+        id: prospectId,
+        data: { 
+          currentStageId: newStage
+        }
+      });
+      console.log('DEBUG: Update successful');
+    } catch (error) {
+      console.error('Failed to update prospect stage:', error);
+      // Error handling could be enhanced with toast notifications or user feedback
+      throw error; // Re-throw to let the kanban view handle the error state
+    }
   };
 
   const handleProspectRemove = (prospect: ClientOutreachProspect) => {
@@ -160,10 +226,13 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
     console.log('Removing prospect:', prospect);
   };
 
-  if (isLoading) {
+  if (isLoading || pipelineLoading || projectLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <span className="ml-2 text-gray-600">
+          {projectLoading ? 'Loading project...' : pipelineLoading ? 'Loading pipeline...' : 'Loading prospects...'}
+        </span>
       </div>
     );
   }
@@ -177,13 +246,26 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
     );
   }
 
+  if (!pipeline) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-red-600 mb-2">Error loading pipeline</div>
+        <p className="text-gray-600">
+          {pipelineError ? 'Unable to load pipeline.' : 'No pipeline available for this project.'}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold text-gray-900">Prospects Pipeline</h2>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {defaultPipeline?.name || 'Prospects Pipeline'}
+            </h2>
             <span className="text-sm text-gray-500">
               {filteredProspects.length} of {prospects.length} prospects
             </span>
@@ -196,7 +278,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                 onClick={() => setView('kanban')}
                 className={`flex items-center gap-2 px-3 py-1 rounded text-sm font-medium transition-colors ${
                   view === 'kanban'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-purple-600 text-white'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -207,7 +289,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                 onClick={() => setView('list')}
                 className={`flex items-center gap-2 px-3 py-1 rounded text-sm font-medium transition-colors ${
                   view === 'list'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-purple-600 text-white'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -231,33 +313,21 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                   placeholder="Search prospects..."
                   value={filters.search}
                   onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
 
-            {/* Status Filter */}
+            {/* Stage Filter */}
             <select
-              value={filters.status}
-              onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={filters.stage}
+              onChange={(e) => setFilters(prev => ({ ...prev, stage: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
-              {PROSPECT_STATUSES.map(status => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-
-            {/* Priority Filter */}
-            <select
-              value={filters.priority}
-              onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {PRIORITY_OPTIONS.map(priority => (
-                <option key={priority.value} value={priority.value}>
-                  {priority.label}
+              <option value="">All Stages</option>
+              {pipeline?.stages?.map(stage => (
+                <option key={stage.id} value={stage.id}>
+                  {stage.name}
                 </option>
               ))}
             </select>
@@ -282,7 +352,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                 <select
                   value={filters.industry}
                   onChange={(e) => setFilters(prev => ({ ...prev, industry: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">All Industries</option>
                   {uniqueIndustries.map(industry => (
@@ -299,7 +369,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                 <select
                   value={filters.location}
                   onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">All Locations</option>
                   {uniqueLocations.map(location => (
@@ -320,7 +390,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                     ...prev, 
                     minEmployees: e.target.value ? parseInt(e.target.value) : undefined 
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Min employees"
                 />
               </div>
@@ -334,7 +404,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                     ...prev, 
                     maxEmployees: e.target.value ? parseInt(e.target.value) : undefined 
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Max employees"
                 />
               </div>
@@ -363,15 +433,19 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
             {view === 'kanban' ? (
               <ClientOutreachKanbanView
                 prospects={filteredProspects}
-                stages={DEFAULT_STAGES}
+                pipeline={pipeline}
                 onProspectClick={handleProspectClick}
                 onProspectStageChange={handleProspectStageChange}
                 onProspectRemove={handleProspectRemove}
               />
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">List view coming soon...</p>
-              </div>
+              <ClientOutreachListView
+                prospects={filteredProspects}
+                pipeline={pipeline}
+                onProspectClick={handleProspectClick}
+                onProspectStageChange={handleProspectStageChange}
+                onProspectRemove={handleProspectRemove}
+              />
             )}
           </div>
         )}

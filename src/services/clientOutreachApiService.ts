@@ -24,6 +24,8 @@ export interface ClientOutreachProject {
   };
   color?: string;
   tags?: string;
+  pipeline?: any; // Pipeline object
+  pipelineId?: string; // Pipeline ID
   createdById: string;
   createdAt: string;
   updatedAt: string;
@@ -67,6 +69,7 @@ export interface ClientProspect {
   coreSignalId?: string;
   rawData?: any;
   status: 'new' | 'contacted' | 'responded' | 'meeting_scheduled' | 'qualified' | 'unqualified' | 'lost';
+  currentStageId?: string;
   priority: number;
   notes?: string;
   tags?: any;
@@ -88,6 +91,7 @@ export interface CreateProjectData {
   goals?: ClientOutreachProject['goals'];
   color?: string;
   tags?: string;
+  pipelineId?: string;
 }
 
 export interface UpdateProjectData extends Partial<CreateProjectData> {
@@ -110,6 +114,7 @@ export interface UpdateSearchData extends Partial<CreateSearchData> {
 
 export interface UpdateProspectData {
   status?: ClientProspect['status'];
+  currentStageId?: string;
   priority?: number;
   notes?: string;
   tags?: any;

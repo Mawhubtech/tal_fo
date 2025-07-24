@@ -164,18 +164,84 @@ export const useUpdateProspect = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateProspectData }) =>
       clientOutreachApiService.updateProspect(id, data),
-    onSuccess: (prospect) => {
-      // Invalidate related queries
-      if (prospect.projectId) {
+    onMutate: async ({ id, data }) => {
+      // Find the prospect in cache to get projectId
+      const projectsData = queryClient.getQueriesData({ queryKey: ['client-outreach', 'projects'] });
+      let targetProjectId: string | null = null;
+      let targetProspectsQueryKey: string[] | null = null;
+
+      // Search through all project prospect queries to find the one containing this prospect
+      for (const [queryKey, queryData] of projectsData) {
+        if (Array.isArray(queryKey) && queryKey.includes('prospects') && Array.isArray(queryData)) {
+          const prospect = queryData.find((p: any) => p.id === id);
+          if (prospect) {
+            targetProjectId = queryKey[2] as string; // projectId is at index 2
+            targetProspectsQueryKey = queryKey as string[];
+            break;
+          }
+        }
+      }
+
+      if (!targetProjectId || !targetProspectsQueryKey) {
+        console.warn('Could not find prospect in cache for optimistic update');
+        return { previousProspects: null, prospectId: id, projectId: null };
+      }
+
+      // Cancel any outgoing refetches for this prospects query
+      await queryClient.cancelQueries({ queryKey: targetProspectsQueryKey });
+
+      // Snapshot the previous value
+      const previousProspects = queryClient.getQueryData(targetProspectsQueryKey);
+
+      // Optimistically update the cache
+      if (previousProspects && Array.isArray(previousProspects)) {
+        queryClient.setQueryData(
+          targetProspectsQueryKey, 
+          (old: any[]) => 
+            old.map(prospect => 
+              prospect.id === id 
+                ? { ...prospect, ...data, updatedAt: new Date().toISOString() }
+                : prospect
+            )
+        );
+      }
+
+      // Return context for potential rollback
+      return { 
+        previousProspects, 
+        prospectId: id, 
+        projectId: targetProjectId,
+        queryKey: targetProspectsQueryKey
+      };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousProspects && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousProspects);
+      }
+      console.error('Failed to update prospect, rolled back changes:', err);
+    },
+    onSuccess: (updatedProspect, variables, context) => {
+      // Update the cache with server response to ensure consistency
+      if (context?.queryKey && context?.projectId) {
+        queryClient.setQueryData(
+          context.queryKey,
+          (old: any[]) => {
+            if (!Array.isArray(old)) return old;
+            return old.map(prospect => 
+              prospect.id === updatedProspect.id ? updatedProspect : prospect
+            );
+          }
+        );
+        
+        // Only invalidate project stats (not the full prospects list)
         queryClient.invalidateQueries({ 
-          queryKey: ['client-outreach', 'projects', prospect.projectId, 'prospects'] 
+          queryKey: ['client-outreach', 'projects', context.projectId],
+          exact: true // Only invalidate the exact project query, not prospects
         });
       }
-      if (prospect.searchId) {
-        queryClient.invalidateQueries({ 
-          queryKey: ['client-outreach', 'searches', prospect.searchId, 'prospects'] 
-        });
-      }
+      
+      console.log('Prospect updated successfully with optimistic UI:', updatedProspect.id);
     },
   });
 };

@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Building, Target, Calendar, Plus, X } from 'lucide-react';
+import { ArrowLeft, Building, Target, Calendar, Plus, X, Workflow } from 'lucide-react';
 import { useCreateProject } from '../../hooks/useClientOutreach';
+import { useClientPipelines } from '../../hooks/useClientPipeline';
 import { CreateProjectData } from '../../services/clientOutreachApiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 const CreateProjectPage: React.FC = () => {
   const navigate = useNavigate();
   const createProjectMutation = useCreateProject();
+  const { data: clientPipelines = [], isLoading: pipelinesLoading } = useClientPipelines();
 
   const [formData, setFormData] = useState<CreateProjectData>({
     name: '',
     description: '',
     status: 'active',
+    pipelineId: '',
     targetCriteria: {
       industries: [],
       locations: [],
@@ -180,8 +183,73 @@ const CreateProjectPage: React.FC = () => {
                   placeholder="e.g., Q4, Enterprise, SaaS"
                 />
               </div>
+
+              <div>
+                <label htmlFor="pipelineId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Pipeline <span className="text-gray-500">(Optional)</span>
+                </label>
+                <select
+                  id="pipelineId"
+                  value={formData.pipelineId}
+                  onChange={(e) => handleInputChange('pipelineId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={pipelinesLoading}
+                >
+                  <option value="">Use Default Client Pipeline</option>
+                  {clientPipelines.map((pipeline) => (
+                    <option key={pipeline.id} value={pipeline.id}>
+                      {pipeline.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Select a custom pipeline or leave empty to use the default client pipeline
+                </p>
+              </div>
             </div>
           </div>
+
+          {/* Pipeline Section */}
+          {formData.pipelineId && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <Workflow className="w-6 h-6 text-purple-600 mr-3" />
+                <h2 className="text-xl font-semibold text-gray-900">Selected Pipeline</h2>
+              </div>
+              {(() => {
+                const selectedPipeline = clientPipelines.find(p => p.id === formData.pipelineId);
+                return selectedPipeline ? (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 mb-2">{selectedPipeline.name}</h3>
+                    {selectedPipeline.description && (
+                      <p className="text-sm text-gray-600 mb-3">{selectedPipeline.description}</p>
+                    )}
+                    {selectedPipeline.stages && selectedPipeline.stages.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Pipeline Stages:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedPipeline.stages
+                            .sort((a, b) => a.order - b.order)
+                            .map((stage) => (
+                              <span
+                                key={stage.id}
+                                className="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
+                                style={{
+                                  backgroundColor: stage.color ? `${stage.color}20` : '#f3f4f6',
+                                  color: stage.color || '#6b7280'
+                                }}
+                              >
+                                {stage.name}
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          )}
 
           {/* Target Criteria */}
           <div className="bg-white shadow rounded-lg p-6">
