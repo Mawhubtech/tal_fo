@@ -14,7 +14,8 @@ import {
   Loader,
   Edit3,
   Trash2,
-  Eye
+  Eye,
+  Globe
 } from 'lucide-react';
 import { useJobs, useDeleteJob, useJobsByOrganization } from '../../../hooks/useJobs';
 import { useAuthContext } from '../../../contexts/AuthContext';
@@ -286,6 +287,31 @@ const AllJobsPage: React.FC = () => {
     return date.toLocaleDateString();
   };
 
+  const getPublishingInfo = (job: Job) => {
+    const publishingOptions = job.publishingOptions;
+    if (!publishingOptions) {
+      return { text: 'Private Only', badges: [{ text: 'Private Only', color: 'bg-gray-100 text-gray-700', icon: null }] };
+    }
+
+    const badges = [];
+    
+    // Always show private status first
+    badges.push({ text: 'Private', color: 'bg-gray-100 text-gray-700', icon: null });
+    
+    if (publishingOptions.talJobBoard) {
+      badges.push({ text: 'TAL Board', color: 'bg-purple-100 text-purple-800', icon: Building });
+    }
+    if (publishingOptions.externalJobBoards && publishingOptions.externalJobBoards.length > 0) {
+      badges.push({ 
+        text: `${publishingOptions.externalJobBoards.length} External`, 
+        color: 'bg-blue-100 text-blue-800',
+        icon: Globe 
+      });
+    }
+
+    return { text: '', badges };
+  };
+
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   if (loading) {
@@ -501,6 +527,28 @@ const AllJobsPage: React.FC = () => {
                       <div className="flex items-center space-x-1">
                         <Users className="h-4 w-4" />
                         <span>{job.applicantsCount || job.applicants || 0} applicants</span>
+                      </div>
+                    </div>
+
+                    {/* Publishing Options */}
+                    <div className="mb-3">
+                      <div className="text-xs text-gray-500 mb-1">Publishing Status:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          const publishingInfo = getPublishingInfo(job);
+                          return publishingInfo.badges.map((badge, index) => {
+                            const IconComponent = badge.icon;
+                            return (
+                              <span
+                                key={index}
+                                className={`px-2 py-1 text-xs rounded-full flex items-center ${badge.color}`}
+                              >
+                                {IconComponent && <IconComponent className="w-3 h-3 mr-1" />}
+                                {badge.text}
+                              </span>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
 

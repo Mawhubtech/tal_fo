@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Briefcase, MapPin, DollarSign, 
   Search, Grid3X3, List, ChevronRight, Plus,
-  Edit3, Trash2, Eye, Loader
+  Edit3, Trash2, Eye, Loader, Globe, Building
 } from 'lucide-react';
 import { useOrganization } from '../../../hooks/useOrganizations';
 import { useDepartment, useJobsByDepartment } from '../../../hooks/useDepartments';
@@ -90,6 +90,31 @@ const DepartmentJobsPage: React.FC = () => {
 
   const formatStatus = (status: string) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const getPublishingInfo = (job: Job) => {
+    const publishingOptions = job.publishingOptions;
+    if (!publishingOptions) {
+      return { text: 'Private Only', badges: [{ text: 'Private Only', color: 'bg-gray-100 text-gray-700', icon: null }] };
+    }
+
+    const badges = [];
+    
+    // Always show private status first
+    badges.push({ text: 'Private', color: 'bg-gray-100 text-gray-700', icon: null });
+    
+    if (publishingOptions.talJobBoard) {
+      badges.push({ text: 'TAL Board', color: 'bg-purple-100 text-purple-800', icon: Building });
+    }
+    if (publishingOptions.externalJobBoards && publishingOptions.externalJobBoards.length > 0) {
+      badges.push({ 
+        text: `${publishingOptions.externalJobBoards.length} External`, 
+        color: 'bg-blue-100 text-blue-800',
+        icon: Globe 
+      });
+    }
+
+    return { text: '', badges };
   };
 
   // Handler functions for CRUD operations
@@ -367,10 +392,32 @@ const DepartmentJobsPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Publishing Options */}
+                <div className="mb-4">
+                  <div className="text-xs text-gray-500 mb-2">Publishing Status:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {(() => {
+                      const publishingInfo = getPublishingInfo(job);
+                      return publishingInfo.badges.map((badge, index) => {
+                        const IconComponent = badge.icon;
+                        return (
+                          <span
+                            key={index}
+                            className={`px-2 py-1 text-xs rounded-full flex items-center ${badge.color}`}
+                          >
+                            {IconComponent && <IconComponent className="w-3 h-3 mr-1" />}
+                            {badge.text}
+                          </span>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
                 {/* Actions */}
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                   <div className="text-sm text-gray-500">
-                    Posted {new Date(job.postedDate).toLocaleDateString()}
+                    Posted {new Date(job.createdAt).toLocaleDateString()}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -422,6 +469,9 @@ const DepartmentJobsPage: React.FC = () => {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Publishing
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Applicants
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -452,11 +502,30 @@ const DepartmentJobsPage: React.FC = () => {
                         {formatStatus(job.status)}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          const publishingInfo = getPublishingInfo(job);
+                          return publishingInfo.badges.map((badge, index) => {
+                            const IconComponent = badge.icon;
+                            return (
+                              <span
+                                key={index}
+                                className={`px-2 py-1 text-xs rounded-full flex items-center ${badge.color}`}
+                              >
+                                {IconComponent && <IconComponent className="w-3 h-3 mr-1" />}
+                                {badge.text}
+                              </span>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {job.applicantsCount || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(job.postedDate).toLocaleDateString()}
+                      {new Date(job.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">

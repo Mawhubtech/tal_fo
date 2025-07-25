@@ -1,6 +1,12 @@
 import apiClient from './api';
 import type { Job, ApiResponse, PaginatedResponse } from '../recruitment/data/types';
 
+export interface JobPublishingOptions {
+  visibility: 'private'; // Always private, posting options determine where it's published
+  talJobBoard?: boolean; // TAL platform job board
+  externalJobBoards?: string[]; // Selected external job board IDs
+}
+
 export interface CreateJobData {
   title: string;
   description?: string;
@@ -29,6 +35,7 @@ export interface CreateJobData {
     options?: string[];
   }>;
   pipelineId?: string;
+  publishingOptions?: JobPublishingOptions;
 }
 
 export interface JobFilters {
@@ -255,6 +262,74 @@ class JobApiService {
       return response.data;
     } catch (error) {
       console.error('Error fetching job suggestions:', error);
+      throw error;
+    }
+  }
+
+  // Publishing related methods
+  async publishJob(id: string, publishingOptions: JobPublishingOptions): Promise<Job> {
+    try {
+      const response = await apiClient.post(`/jobs/${id}/publish`, { publishingOptions });
+      return response.data;
+    } catch (error) {
+      console.error('Error publishing job:', error);
+      throw error;
+    }
+  }
+
+  async unpublishJob(id: string): Promise<Job> {
+    try {
+      const response = await apiClient.post(`/jobs/${id}/unpublish`);
+      return response.data;
+    } catch (error) {
+      console.error('Error unpublishing job:', error);
+      throw error;
+    }
+  }
+
+  async updatePublishingOptions(id: string, publishingOptions: JobPublishingOptions): Promise<Job> {
+    try {
+      const response = await apiClient.patch(`/jobs/${id}/publishing-options`, { publishingOptions });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating publishing options:', error);
+      throw error;
+    }
+  }
+
+  async getJobPublishingStatus(id: string): Promise<{
+    isPublished: boolean;
+    publishingOptions: JobPublishingOptions;
+    publishedAt?: string;
+    externalPostingStatus?: Array<{
+      platform: string;
+      status: 'pending' | 'published' | 'failed';
+      publishedAt?: string;
+      error?: string;
+    }>;
+  }> {
+    try {
+      const response = await apiClient.get(`/jobs/${id}/publishing-status`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching publishing status:', error);
+      throw error;
+    }
+  }
+
+  async getAvailableJobBoards(): Promise<Array<{
+    id: string;
+    name: string;
+    description: string;
+    isEnabled: boolean;
+    requiresCredentials: boolean;
+    popular: boolean;
+  }>> {
+    try {
+      const response = await apiClient.get('/jobs/external-boards');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching available job boards:', error);
       throw error;
     }
   }

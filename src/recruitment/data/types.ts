@@ -22,6 +22,12 @@ export interface Department {
   icon: string;
 }
 
+export interface JobPublishingOptions {
+  visibility: 'private'; // Always private, posting options determine where it's published
+  talJobBoard?: boolean; // TAL platform job board
+  externalJobBoards?: string[]; // Selected external job board IDs
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -61,6 +67,7 @@ export interface Job {
       order: number;
     }>;
   };
+  publishingOptions?: JobPublishingOptions;
   createdAt: Date | string;
   updatedAt: Date | string;
   createdBy?: {

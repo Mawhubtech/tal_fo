@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles } from 'lucide-react';
+import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles, Globe, Lock, ExternalLink } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
 import { useOrganization, useOrganizationDepartments } from '../../../hooks/useOrganizations';
@@ -7,10 +7,13 @@ import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useHiringTeams } from '../../../hooks/useHiringTeam';
 import { usePipelines } from '../../../hooks/usePipelines';
 import { usePipelineModal } from '../../../hooks/usePipelineModal';
-import type { CreateJobData } from '../../../services/jobApiService';
+import { jobApiService } from '../../../services/jobApiService';
+import type { CreateJobData, JobPublishingOptions } from '../../../services/jobApiService';
 import type { Department } from '../../organizations/services/organizationApiService';
 import type { Pipeline, CreatePipelineDto } from '../../../services/pipelineService';
 import AIJobGeneratorDialog from '../components/AIJobGeneratorDialog';
+import JobPublishingModal from '../components/JobPublishingModal';
+import PublishingSettingsCard from '../components/PublishingSettingsCard';
 import PipelineModal from '../../../components/PipelineModal';
 
 const CreateJobPage: React.FC = () => {
@@ -84,6 +87,19 @@ const CreateJobPage: React.FC = () => {
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
   const [showAIDialog, setShowAIDialog] = useState(false);
+  const [showPublishingModal, setShowPublishingModal] = useState(false);
+  const [publishingOptions, setPublishingOptions] = useState<JobPublishingOptions>({
+    visibility: 'private',
+  });
+  const [availableJobBoards, setAvailableJobBoards] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    isEnabled: boolean;
+    requiresCredentials: boolean;
+    popular: boolean;
+    icon?: string;
+  }>>([]);
 
   // Pipeline creation functionality
   const { createPipeline } = usePipelines();
@@ -157,8 +173,29 @@ const CreateJobPage: React.FC = () => {
       setDepartmentIdForm(editingJob.departmentId || departmentId || '');
       setSelectedPipelineId(editingJob.pipelineId || '');
       setSelectedHiringTeamId(editingJob.hiringTeamId || '');
+      
+      // Set publishing options if they exist
+      if (editingJob.publishingOptions) {
+        setPublishingOptions(editingJob.publishingOptions);
+      }
     }
   }, [editingJob, isEditMode, departmentId]);
+  
+  // Fetch available job boards on component mount
+  useEffect(() => {
+    const fetchJobBoards = async () => {
+      try {
+        const boards = await jobApiService.getAvailableJobBoards();
+        setAvailableJobBoards(boards);
+      } catch (error) {
+        console.warn('Failed to fetch available job boards:', error);
+        // Continue without external job boards - user will see only TAL board and private options
+      }
+    };
+
+    fetchJobBoards();
+  }, []);
+  
   // Load context data when organizationId is present
   useEffect(() => {
     if (organizationError) {
@@ -225,6 +262,23 @@ const CreateJobPage: React.FC = () => {
   const removeResponsibility = (index: number) => {
     setResponsibilities(responsibilities.filter((_, i) => i !== index));
   };  const handleSubmit = async (publish: boolean) => {
+    if (publish) {
+      // Show publishing modal for publish action
+      setShowPublishingModal(true);
+      return;
+    }
+
+    // For draft, submit directly
+    await submitJob(false, publishingOptions);
+  };
+
+  const handlePublishWithOptions = async (options: JobPublishingOptions) => {
+    setPublishingOptions(options);
+    setShowPublishingModal(false);
+    await submitJob(true, options);
+  };
+
+  const submitJob = async (publish: boolean, options: JobPublishingOptions) => {
     try {
       setError(null);
 
@@ -297,12 +351,14 @@ const CreateJobPage: React.FC = () => {
         organizationId: organizationId || undefined,
         customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
         pipelineId: selectedPipelineId,
+        publishingOptions: publish ? options : undefined,
       };
 
       // Debug logging to ensure hiring team and pipeline are being saved
       console.log('Creating job with:', {
         hiringTeamId: jobData.hiringTeamId,
         pipelineId: jobData.pipelineId,
+        publishingOptions: jobData.publishingOptions,
         selectedHiringTeam: hiringTeams.find(t => t.id === selectedHiringTeamId),
         selectedPipeline: activePipelines.find(p => p.id === selectedPipelineId)
       });
@@ -532,13 +588,29 @@ const CreateJobPage: React.FC = () => {
                     {isEditMode ? 'Updating...' : 'Publishing...'}
                   </>
                 ) : (
-                  isEditMode ? 'Update & Publish' : 'Publish Job'
+                  <>
+                    <Globe className="h-4 w-4 mr-2" />
+                    {isEditMode ? 'Update & Publish' : 'Publish Job'}
+                  </>
                 )}
               </button>
             </div>
           </div>
         </div>
-      </div><div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow flex flex-col">        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-148px)] overflow-hidden">
+      </div>
+
+<div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow flex flex-col">
+        {/* Publishing Settings - Prominent placement before job form */}
+        <div className="mb-6">
+          <PublishingSettingsCard
+            publishingOptions={publishingOptions}
+            onUpdate={setPublishingOptions}
+            className="shadow-lg border-2 border-purple-600"
+            availableJobBoards={availableJobBoards}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)] overflow-hidden">
             {/* Main Content - Takes up 1/2 space on large screens, full width on smaller */}
           <div className="overflow-y-auto lg:pr-4 h-full pb-20">
             <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
@@ -1087,7 +1159,9 @@ const CreateJobPage: React.FC = () => {
                 })()}
               </div>
             </div>
-          </div>          </form>
+          </div>
+
+          </form>
 
             {/* Hiring Team Management - Only show in edit mode */}
             {/* Teams are now managed in admin section */}
@@ -1126,6 +1200,26 @@ const CreateJobPage: React.FC = () => {
                   {experienceLevel && (
                     <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
                       {experienceLevel}
+                    </span>
+                  )}
+                  
+                  {/* Publishing Status Badge */}
+                  {publishingOptions.talJobBoard && (
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full flex items-center">
+                      <Building className="w-3 h-3 mr-1" />
+                      TAL Job Board
+                    </span>
+                  )}
+                  {publishingOptions.externalJobBoards && publishingOptions.externalJobBoards.length > 0 && (
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full flex items-center">
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      {publishingOptions.externalJobBoards.length} External Board{publishingOptions.externalJobBoards.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {!publishingOptions.talJobBoard && (!publishingOptions.externalJobBoards || publishingOptions.externalJobBoards.length === 0) && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full flex items-center">
+                      <Lock className="w-3 h-3 mr-1" />
+                      Private Only
                     </span>
                   )}
                 </div>
@@ -1244,6 +1338,41 @@ const CreateJobPage: React.FC = () => {
                 ) : null;
               })()}
 
+              {/* Publishing Options Preview */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-800 mb-2">📢 Publishing Settings</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Status:</span>
+                    <span className="font-medium text-gray-800">
+                      🔒 Private (Internal Only)
+                    </span>
+                  </div>
+                  
+                  {publishingOptions.talJobBoard && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">TAL Job Board:</span>
+                      <span className="font-medium text-purple-800">✓ Enabled</span>
+                    </div>
+                  )}
+                  
+                  {publishingOptions.externalJobBoards && publishingOptions.externalJobBoards.length > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">External Boards:</span>
+                      <span className="font-medium text-gray-800">
+                        {publishingOptions.externalJobBoards.length} selected
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {publishingOptions.talJobBoard && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">TAL Platform</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Application Deadline */}
               {applicationDeadline && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
@@ -1325,6 +1454,16 @@ const CreateJobPage: React.FC = () => {
 		    </div>        
         </div>
       </div>
+
+      {/* Publishing Options Modal */}
+      <JobPublishingModal
+        isOpen={showPublishingModal}
+        onClose={() => setShowPublishingModal(false)}
+        onPublish={handlePublishWithOptions}
+        isLoading={submitLoading}
+        currentOptions={publishingOptions}
+        availableJobBoards={availableJobBoards}
+      />
 
       {/* AI Job Generator Dialog */}
       <AIJobGeneratorDialog
