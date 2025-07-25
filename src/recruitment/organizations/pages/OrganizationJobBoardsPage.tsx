@@ -21,6 +21,34 @@ import {
   Search
 } from 'lucide-react';
 import { useAuthContext } from '../../../contexts/AuthContext';
+import { useJobBoardConnections, useAvailableJobBoards, useCreateJobBoardConnection, useDeleteJobBoardConnection, useUpdateJobBoardConnection } from '../../../hooks/useJobBoards';
+import { JobBoard } from '../../../services/jobBoardApiService';
+
+// Helper function to get display data for job boards
+const getJobBoardDisplayData = (board: JobBoard) => {
+  const iconMap: Record<string, React.ComponentType<any>> = {
+    linkedin: Linkedin,
+    indeed: Briefcase,
+    glassdoor: Building,
+    monster: Building,
+    ziprecruiter: Briefcase,
+    careerbuilder: Building,
+    dice: Building,
+    stackoverflow: Building,
+    angellist: Building,
+    behance: Building,
+  };
+
+  return {
+    icon: iconMap[board.type] || Globe,
+    name: board.metadata.name,
+    url: board.metadata.website,
+    description: board.metadata.description,
+    popular: ['linkedin', 'indeed', 'glassdoor'].includes(board.type), // Define popular boards
+    requiredFields: board.metadata.requiredFields,
+    optionalFields: board.metadata.optionalFields,
+  };
+};
 
 interface OrganizationJobBoard {
   id: string;
@@ -76,39 +104,7 @@ interface RecruiterJobBoardAccess {
   };
 }
 
-// Available job board platforms for integration
-const availableJobBoards = [
-  {
-    id: 'linkedin',
-    name: 'LinkedIn Jobs',
-    icon: Linkedin,
-    url: 'https://linkedin.com/jobs',
-    description: 'Post jobs to LinkedIn and reach over 800 million professionals',
-    requiredFields: ['clientId', 'clientSecret', 'companyId'],
-    optionalFields: ['redirectUri'],
-    popular: true,
-  },
-  {
-    id: 'indeed',
-    name: 'Indeed',
-    icon: Briefcase,
-    url: 'https://indeed.com',
-    description: 'Connect with Indeed to post jobs and receive applications',
-    requiredFields: ['apiKey', 'employerId'],
-    optionalFields: ['publisherId'],
-    popular: true,
-  },
-  {
-    id: 'glassdoor',
-    name: 'Glassdoor',
-    icon: Globe,
-    url: 'https://glassdoor.com',
-    description: 'Post jobs on Glassdoor and reach quality candidates',
-    requiredFields: ['partnerKey', 'employerId'],
-    optionalFields: [],
-    popular: false,
-  },
-];
+// Note: Job boards are now fetched from the API using useAvailableJobBoards hook
 
 // Type definition for the form data when adding a job board
 interface JobBoardFormData {
@@ -143,104 +139,46 @@ const OrganizationJobBoardsPage: React.FC = () => {
   });
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Mock data - in real implementation, these would come from APIs
-  const mockJobBoards: OrganizationJobBoard[] = [
-    {
-      id: '1',
-      jobBoardId: 'indeed',
-      jobBoardName: 'Indeed',
-      jobBoardUrl: 'https://indeed.com',
-      isActive: true,
-      organizationId: organizationId || '',
-      assignedRecruiters: ['recruiter-1', 'recruiter-2'],
-      credentials: {
-        isConfigured: true,
-        configuredBy: 'admin-user',
-        configuredAt: '2024-01-15T10:30:00Z'
-      },
-      posting: {
-        autoPost: false,
-        requireApproval: true,
-        defaultTemplate: 'template-1'
-      },
-      analytics: {
-        totalJobs: 25,
-        activeJobs: 15,
-        totalApplications: 340,
-        lastSync: '2024-01-22T10:30:00Z',
-        syncFrequency: 'Daily'
-      },
-      responses: {
-        totalResponses: 89,
-        responseRate: 26.2,
-        avgTimeToResponse: 18,
-        qualityScore: 4.2
-      }
+  // Use actual API data instead of mock data
+  const { data: jobBoardConnections, isLoading: connectionsLoading, error: connectionsError } = useJobBoardConnections(organizationId || '');
+  const { data: availableJobBoards, isLoading: availableLoading, error: availableError } = useAvailableJobBoards();
+  const createConnectionMutation = useCreateJobBoardConnection();
+  const updateConnectionMutation = useUpdateJobBoardConnection();
+  const deleteConnectionMutation = useDeleteJobBoardConnection();
+
+  // Transform API data to match component interface
+  const mockJobBoards: OrganizationJobBoard[] = (jobBoardConnections?.data || []).map(connection => ({
+    id: connection.id,
+    jobBoardId: connection.jobBoardId,
+    jobBoardName: connection.jobBoardType, // Use type as name fallback
+    jobBoardUrl: '#', // TODO: Get from job board metadata when available
+    isActive: connection.status === 'active',
+    organizationId: connection.clientId,
+    assignedRecruiters: [], // TODO: Add recruiter assignments from backend
+    credentials: {
+      isConfigured: connection.status !== 'pending_verification',
+      configuredBy: 'system', // TODO: Get actual configured by user
+      configuredAt: connection.createdAt
     },
-    {
-      id: '2',
-      jobBoardId: 'linkedin',
-      jobBoardName: 'LinkedIn Jobs',
-      jobBoardUrl: 'https://linkedin.com/jobs',
-      isActive: true,
-      organizationId: organizationId || '',
-      assignedRecruiters: ['recruiter-1', 'recruiter-3'],
-      credentials: {
-        isConfigured: true,
-        configuredBy: 'admin-user',
-        configuredAt: '2024-01-10T14:20:00Z'
-      },
-      posting: {
-        autoPost: true,
-        requireApproval: false,
-        defaultTemplate: 'template-2'
-      },
-      analytics: {
-        totalJobs: 18,
-        activeJobs: 12,
-        totalApplications: 456,
-        lastSync: '2024-01-22T09:15:00Z',
-        syncFrequency: 'Real-time'
-      },
-      responses: {
-        totalResponses: 134,
-        responseRate: 29.4,
-        avgTimeToResponse: 12,
-        qualityScore: 4.5
-      }
+    posting: {
+      autoPost: connection.postingSettings?.autoPost || false,
+      requireApproval: connection.postingSettings?.requireApproval || true,
+      defaultTemplate: connection.postingSettings?.defaultTemplate || ''
     },
-    {
-      id: '3',
-      jobBoardId: 'glassdoor',
-      jobBoardName: 'Glassdoor',
-      jobBoardUrl: 'https://glassdoor.com',
-      isActive: false,
-      organizationId: organizationId || '',
-      assignedRecruiters: [],
-      credentials: {
-        isConfigured: false,
-        configuredBy: '',
-        configuredAt: ''
-      },
-      posting: {
-        autoPost: false,
-        requireApproval: true
-      },
-      analytics: {
-        totalJobs: 0,
-        activeJobs: 0,
-        totalApplications: 0,
-        lastSync: '',
-        syncFrequency: 'Weekly'
-      },
-      responses: {
-        totalResponses: 0,
-        responseRate: 0,
-        avgTimeToResponse: 0,
-        qualityScore: 0
-      }
+    analytics: {
+      totalJobs: connection.analyticsData?.totalJobs || 0,
+      activeJobs: connection.analyticsData?.activeJobs || 0,
+      totalApplications: connection.analyticsData?.totalApplications || 0,
+      lastSync: connection.lastSyncAt || connection.updatedAt,
+      syncFrequency: 'Manual' // TODO: Add sync frequency to backend
+    },
+    responses: {
+      totalResponses: connection.analyticsData?.totalApplications || 0,
+      responseRate: 0, // TODO: Calculate from analytics data
+      avgTimeToResponse: 0, // TODO: Calculate from analytics data
+      qualityScore: 0 // TODO: Calculate from analytics data
     }
-  ];
+  }));
 
   const mockRecruiters: RecruiterJobBoardAccess[] = [
     {
@@ -325,20 +263,21 @@ const OrganizationJobBoardsPage: React.FC = () => {
     : 0;
     
   // Filter available job boards based on search term
-  const filteredJobBoards = availableJobBoards.filter(board => 
-    board.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    board.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredJobBoards = (availableJobBoards?.data || []).filter(board => {
+    const displayData = getJobBoardDisplayData(board);
+    return displayData.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           displayData.description.toLowerCase().includes(searchTerm.toLowerCase());
+  });
   
   // Handle job board selection
   const handleJobBoardSelect = (boardId: string) => {
     setSelectedJobBoard(boardId);
-    const selectedBoard = availableJobBoards.find(board => board.id === boardId);
+    const selectedBoard = (availableJobBoards?.data || []).find(board => board.id === boardId);
     
     // Initialize credentials object with empty values for all required fields
     if (selectedBoard) {
       const credentials: Record<string, string> = {};
-      [...selectedBoard.requiredFields, ...selectedBoard.optionalFields].forEach(field => {
+      [...(selectedBoard.metadata.requiredFields || []), ...(selectedBoard.metadata.optionalFields || [])].forEach(field => {
         credentials[field] = '';
       });
       
@@ -373,47 +312,29 @@ const OrganizationJobBoardsPage: React.FC = () => {
   };
   
   // Handle job board connection submission
-  const handleConnectJobBoard = () => {
-    // In a real implementation, this would make an API call to save the connection
-    console.log("Connecting job board with data:", jobBoardFormData);
-    
-    // Simulate successful connection
-    const selectedBoard = availableJobBoards.find(board => board.id === selectedJobBoard);
-    if (selectedBoard) {
-      const newJobBoard: OrganizationJobBoard = {
-        id: `new-${Date.now()}`,
-        jobBoardId: selectedBoard.id,
-        jobBoardName: selectedBoard.name,
-        jobBoardUrl: selectedBoard.url,
-        isActive: jobBoardFormData.isActive,
-        organizationId: organizationId || '',
-        assignedRecruiters: [],
-        credentials: {
-          isConfigured: true,
-          configuredBy: user?.id || '',
-          configuredAt: new Date().toISOString()
-        },
-        posting: jobBoardFormData.posting,
-        analytics: {
-          totalJobs: 0,
-          activeJobs: 0,
-          totalApplications: 0,
-          lastSync: '',
-          syncFrequency: 'Daily'
-        },
-        responses: {
-          totalResponses: 0,
-          responseRate: 0,
-          avgTimeToResponse: 0,
-          qualityScore: 0
+  const handleConnectJobBoard = async () => {
+    if (!selectedJobBoard || !organizationId) return;
+
+    const selectedBoard = (availableJobBoards?.data || []).find(board => board.id === selectedJobBoard);
+    if (!selectedBoard) return;
+
+    try {
+      const connectionData = {
+        jobBoardType: selectedBoard.type,
+        clientId: organizationId,
+        credentials: jobBoardFormData.credentials,
+        postingSettings: {
+          autoPost: jobBoardFormData.posting.autoPost,
+          requireApproval: jobBoardFormData.posting.requireApproval,
+          defaultTemplate: jobBoardFormData.posting.defaultTemplate,
         }
       };
+
+      await createConnectionMutation.mutateAsync(connectionData);
       
-      // Here you would update the job boards list with the new board
-      // For now, we'll just close the modal
+      // Reset form and close modal
       setIsAddModalOpen(false);
       setSelectedJobBoard(null);
-      // Reset form data
       setJobBoardFormData({
         jobBoardId: '',
         organizationId: organizationId || '',
@@ -425,6 +346,36 @@ const OrganizationJobBoardsPage: React.FC = () => {
           defaultTemplate: '',
         },
       });
+    } catch (error) {
+      console.error('Failed to connect job board:', error);
+      // TODO: Show error message to user
+    }
+  };
+
+  // Handle toggling job board active status
+  const handleToggleJobBoard = async (connectionId: string, currentStatus: boolean) => {
+    try {
+      await updateConnectionMutation.mutateAsync({
+        id: connectionId,
+        data: {
+          isActive: !currentStatus
+        }
+      });
+    } catch (error) {
+      console.error('Failed to toggle job board status:', error);
+    }
+  };
+
+  // Handle deleting job board connection
+  const handleDeleteJobBoard = async (connectionId: string) => {
+    if (!window.confirm('Are you sure you want to disconnect this job board? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteConnectionMutation.mutateAsync(connectionId);
+    } catch (error) {
+      console.error('Failed to delete job board connection:', error);
     }
   };
 
@@ -464,13 +415,60 @@ const OrganizationJobBoardsPage: React.FC = () => {
           </button>
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm"
+            disabled={createConnectionMutation.isPending}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Job Board
+            {createConnectionMutation.isPending ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            {mockJobBoards.length === 0 ? 'Connect Job Board' : 'Add Job Board'}
           </button>
         </div>
       </div>
+
+      {/* Loading and Error States */}
+      {(connectionsLoading || availableLoading) && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-gray-500">Loading job board data...</div>
+        </div>
+      )}
+
+      {(connectionsError || availableError) && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+            <span className="text-red-700">
+              Error loading job board data. Please try again.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Show mutation loading states */}
+      {(createConnectionMutation.isPending || updateConnectionMutation.isPending || deleteConnectionMutation.isPending) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+            <span className="text-blue-700">
+              Updating job board connection...
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Show mutation error states */}
+      {(createConnectionMutation.error || updateConnectionMutation.error || deleteConnectionMutation.error) && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+            <span className="text-red-700">
+              Failed to update job board connection. Please try again.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -540,6 +538,22 @@ const OrganizationJobBoardsPage: React.FC = () => {
               <p className="text-sm text-gray-600 mt-1">Configure and manage job board integrations for this organization</p>
             </div>
             <div className="overflow-x-auto">
+              {mockJobBoards.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                    <Globe className="w-8 h-8 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Job Boards Connected</h3>
+                  <p className="text-gray-500 mb-6">Connect to job boards to start posting jobs and receiving applications.</p>
+                  <button 
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Connect Your First Job Board
+                  </button>
+                </div>
+              ) : (
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
@@ -609,14 +623,54 @@ const OrganizationJobBoardsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <button className="text-purple-600 hover:text-purple-900">
+                          {/* Toggle Active/Inactive */}
+                          <button 
+                            onClick={() => handleToggleJobBoard(board.id, board.isActive)}
+                            className={`p-1 rounded ${
+                              board.isActive 
+                                ? 'text-green-600 hover:text-green-900 hover:bg-green-50' 
+                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                            }`}
+                            title={board.isActive ? 'Disable job board' : 'Enable job board'}
+                          >
+                            {board.isActive ? (
+                              <ToggleRight className="h-4 w-4" />
+                            ) : (
+                              <ToggleLeft className="h-4 w-4" />
+                            )}
+                          </button>
+                          
+                          {/* Settings/Edit */}
+                          <button 
+                            className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
+                            title="Edit job board settings"
+                            onClick={() => {
+                              // TODO: Open edit modal
+                              console.log('Edit job board:', board.id);
+                            }}
+                          >
                             <Settings className="h-4 w-4" />
                           </button>
-                          <button className="text-blue-600 hover:text-blue-900">
+                          
+                          {/* View Details */}
+                          <button 
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                            title="View job board details"
+                            onClick={() => {
+                              // TODO: Open details modal
+                              console.log('View job board details:', board.id);
+                            }}
+                          >
                             <Eye className="h-4 w-4" />
                           </button>
-                          <button className="text-green-600 hover:text-green-900">
-                            <Edit3 className="h-4 w-4" />
+                          
+                          {/* Delete */}
+                          <button 
+                            onClick={() => handleDeleteJobBoard(board.id)}
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                            title="Disconnect job board"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </td>
@@ -624,6 +678,7 @@ const OrganizationJobBoardsPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
           </div>
         </div>
@@ -809,7 +864,14 @@ const OrganizationJobBoardsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-semibold text-gray-900">Connect Job Board</h2>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Connect Job Board</h2>
+                {!availableLoading && !availableError && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    {(availableJobBoards?.data || []).length} job boards available
+                  </p>
+                )}
+              </div>
               <button
                 onClick={() => {
                   setIsAddModalOpen(false);
@@ -824,6 +886,36 @@ const OrganizationJobBoardsPage: React.FC = () => {
             {/* Job Board Selection */}
             {!selectedJobBoard ? (
               <div className="p-6">
+                {/* Loading state for job boards */}
+                {availableLoading && (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <span className="ml-2 text-gray-600">Loading job boards...</span>
+                  </div>
+                )}
+
+                {/* Error state for job boards */}
+                {availableError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                        <span className="text-red-700">
+                          Failed to load job boards. Please try again.
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="text-red-600 hover:text-red-700 text-sm underline"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Job boards content */}
+                {!availableLoading && !availableError && (
                 <div className="mb-6">
                   <p className="text-gray-600 mb-4">
                     Connect your organization to job board platforms to post jobs and receive applications.
@@ -842,13 +934,35 @@ const OrganizationJobBoardsPage: React.FC = () => {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  
+
+                  {/* Show message if no job boards available */}
+                  {filteredJobBoards.length === 0 && (
+                    <div className="text-center py-8">
+                      <div className="text-gray-500 mb-2">
+                        {searchTerm ? 'No job boards match your search.' : 'No job boards available.'}
+                      </div>
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="text-purple-600 hover:text-purple-700 text-sm"
+                        >
+                          Clear search
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Popular Job Boards */}
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">Popular Job Boards</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {filteredJobBoards.filter(board => getJobBoardDisplayData(board).popular).length > 0 && (
+                    <>
+                      <h3 className="text-sm font-medium text-gray-700 mb-3">Popular Job Boards</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     {filteredJobBoards
-                      .filter(board => board.popular)
-                      .map(board => (
+                      .filter(board => getJobBoardDisplayData(board).popular)
+                      .map(board => {
+                        const displayData = getJobBoardDisplayData(board);
+                        const IconComponent = displayData.icon;
+                        return (
                         <div
                           key={board.id}
                           onClick={() => handleJobBoardSelect(board.id)}
@@ -856,24 +970,28 @@ const OrganizationJobBoardsPage: React.FC = () => {
                         >
                           <div className="flex items-center mb-2">
                             <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                              <board.icon className="h-6 w-6 text-purple-600" />
+                              <IconComponent className="h-6 w-6 text-purple-600" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-900">{board.name}</h4>
-                              <span className="text-sm text-gray-500">{board.url}</span>
+                              <h4 className="font-medium text-gray-900">{displayData.name}</h4>
+                              <span className="text-sm text-gray-500">{displayData.url}</span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600">{board.description}</p>
+                          <p className="text-sm text-gray-600">{displayData.description}</p>
                         </div>
-                      ))}
+                        );
+                      })}
                   </div>
                   
                   {/* Other Job Boards */}
                   <h3 className="text-sm font-medium text-gray-700 mb-3">Other Job Boards</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredJobBoards
-                      .filter(board => !board.popular)
-                      .map(board => (
+                      .filter(board => !getJobBoardDisplayData(board).popular)
+                      .map(board => {
+                        const displayData = getJobBoardDisplayData(board);
+                        const IconComponent = displayData.icon;
+                        return (
                         <div
                           key={board.id}
                           onClick={() => handleJobBoardSelect(board.id)}
@@ -881,25 +999,32 @@ const OrganizationJobBoardsPage: React.FC = () => {
                         >
                           <div className="flex items-center mb-2">
                             <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                              <board.icon className="h-6 w-6 text-purple-600" />
+                              <IconComponent className="h-6 w-6 text-purple-600" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-900">{board.name}</h4>
-                              <span className="text-sm text-gray-500">{board.url}</span>
+                              <h4 className="font-medium text-gray-900">{displayData.name}</h4>
+                              <span className="text-sm text-gray-500">{displayData.url}</span>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600">{board.description}</p>
+                          <p className="text-sm text-gray-600">{displayData.description}</p>
                         </div>
-                      ))}
+                        );
+                      })}
                   </div>
+                  </>
+                  )}
                 </div>
+                )}
               </div>
             ) : (
               <div className="p-6">
                 {/* Job Board Configuration */}
                 {(() => {
-                  const selectedBoard = availableJobBoards.find(board => board.id === selectedJobBoard);
+                  const selectedBoard = (availableJobBoards?.data || []).find(board => board.id === selectedJobBoard);
                   if (!selectedBoard) return null;
+                  
+                  const selectedDisplayData = getJobBoardDisplayData(selectedBoard);
+                  const SelectedIconComponent = selectedDisplayData.icon;
                   
                   return (
                     <div>
@@ -912,11 +1037,11 @@ const OrganizationJobBoardsPage: React.FC = () => {
                         </button>
                         <div className="flex items-center">
                           <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                            <selectedBoard.icon className="h-6 w-6 text-purple-600" />
+                            <SelectedIconComponent className="h-6 w-6 text-purple-600" />
                           </div>
                           <div>
-                            <h3 className="font-medium text-gray-900">{selectedBoard.name}</h3>
-                            <span className="text-sm text-gray-500">{selectedBoard.url}</span>
+                            <h3 className="font-medium text-gray-900">{selectedDisplayData.name}</h3>
+                            <span className="text-sm text-gray-500">{selectedDisplayData.url}</span>
                           </div>
                         </div>
                       </div>
@@ -927,12 +1052,12 @@ const OrganizationJobBoardsPage: React.FC = () => {
                         <p className="text-sm text-gray-600 mb-4">
                           {selectedBoard.id === 'linkedin' 
                             ? 'Enter your LinkedIn Developer credentials to connect. You can find these in your LinkedIn Developer Console.'
-                            : `Enter your ${selectedBoard.name} API credentials to connect.`
+                            : `Enter your ${selectedDisplayData.name} API credentials to connect.`
                           }
                         </p>
                         
                         <div className="space-y-4">
-                          {selectedBoard.requiredFields.map(field => (
+                          {selectedDisplayData.requiredFields.map(field => (
                             <div key={field}>
                               <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
                                 {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
@@ -948,7 +1073,7 @@ const OrganizationJobBoardsPage: React.FC = () => {
                             </div>
                           ))}
                           
-                          {selectedBoard.optionalFields.map(field => (
+                          {selectedDisplayData.optionalFields.map(field => (
                             <div key={field}>
                               <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
                                 {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} (Optional)
@@ -1054,9 +1179,9 @@ const OrganizationJobBoardsPage: React.FC = () => {
                         <button
                           onClick={handleConnectJobBoard}
                           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                          disabled={selectedBoard.requiredFields.some(field => !jobBoardFormData.credentials[field])}
+                          disabled={selectedDisplayData.requiredFields.some(field => !jobBoardFormData.credentials[field])}
                         >
-                          Connect {selectedBoard.name}
+                          Connect {selectedDisplayData.name}
                         </button>
                       </div>
                     </div>

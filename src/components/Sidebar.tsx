@@ -313,6 +313,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
+                      <Link to="/dashboard/admin/job-boards" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                        <Briefcase className="w-3 h-3 mr-2" />
+                        Job Boards
+                      </Link>
+                    )}
+                    
+                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
                       <Link to="/dashboard/admin/settings" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/settings') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Settings className="w-3 h-3 mr-2" />
                         Settings
@@ -404,6 +411,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                           <Link to="/dashboard/admin/analytics" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/analytics') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                             <BarChart3 className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/analytics') ? '#7e22ce' : '' }} />
                             Analytics
+                          </Link>
+                        )}
+                        
+                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
+                          <Link to="/dashboard/admin/job-boards" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <Briefcase className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/job-boards') ? '#7e22ce' : '' }} />
+                            Job Boards
                           </Link>
                         )}
                         

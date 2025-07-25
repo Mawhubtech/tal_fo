@@ -1,517 +1,859 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Save, Globe, Eye, Settings, Plus, Edit3, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Save, Globe, Eye, Settings, Plus, Edit3, Trash2, AlertCircle, CheckCircle, XCircle, RefreshCw, ExternalLink, Monitor, ToggleLeft, ToggleRight } from 'lucide-react';
+import { jobBoardApiService, type JobBoard } from '../../services/jobBoardApiService';
+import { useAvailableJobBoards } from '../../hooks/useJobBoards';
 
-interface JobBoardConfig {
-  id: string;
-  name: string;
-  url: string;
-  isActive: boolean;
-  jobsCount: number;
-  lastSync: string;
-  syncFrequency: string;
-  credentials: {
-    apiKey?: string;
-    username?: string;
-    isConfigured: boolean;
-  };
+interface JobBoardStats {
+  totalBoards: number;
+  activeBoards: number;
+  availableBoards: number;
+  setupRequired: number;
 }
-
-interface JobPostingTemplate {
-  id: string;
-  name: string;
-  title: string;
-  description: string;
-  requirements: string[];
-  benefits: string[];
-  isDefault: boolean;
-  usage: number;
-}
-
-const mockJobBoards: JobBoardConfig[] = [
-  {
-    id: '1',
-    name: 'Indeed',
-    url: 'https://indeed.com',
-    isActive: true,
-    jobsCount: 45,
-    lastSync: '2024-01-22T10:30:00Z',
-    syncFrequency: 'Daily',
-    credentials: {
-      isConfigured: true
-    }
-  },
-  {
-    id: '2',
-    name: 'LinkedIn Jobs',
-    url: 'https://linkedin.com/jobs',
-    isActive: true,
-    jobsCount: 32,
-    lastSync: '2024-01-22T09:15:00Z',
-    syncFrequency: 'Real-time',
-    credentials: {
-      isConfigured: true
-    }
-  },
-  {
-    id: '3',
-    name: 'Glassdoor',
-    url: 'https://glassdoor.com',
-    isActive: false,
-    jobsCount: 0,
-    lastSync: '2024-01-20T14:20:00Z',
-    syncFrequency: 'Weekly',
-    credentials: {
-      isConfigured: false
-    }
-  },
-  {
-    id: '4',
-    name: 'Monster',
-    url: 'https://monster.com',
-    isActive: true,
-    jobsCount: 18,
-    lastSync: '2024-01-22T08:45:00Z',
-    syncFrequency: 'Daily',
-    credentials: {
-      isConfigured: true
-    }
-  }
-];
-
-const mockTemplates: JobPostingTemplate[] = [
-  {
-    id: '1',
-    name: 'Software Engineer Template',
-    title: 'Senior Software Engineer',
-    description: 'We are looking for a talented Senior Software Engineer to join our growing team...',
-    requirements: ['5+ years experience', 'React/Node.js', 'Bachelor\'s degree'],
-    benefits: ['Health insurance', 'Remote work', '401k matching'],
-    isDefault: true,
-    usage: 25
-  },
-  {
-    id: '2',
-    name: 'Product Manager Template',
-    title: 'Product Manager',
-    description: 'Join our product team to drive innovation and user experience...',
-    requirements: ['3+ years PM experience', 'Agile methodology', 'Analytics skills'],
-    benefits: ['Equity package', 'Flexible PTO', 'Learning budget'],
-    isDefault: false,
-    usage: 12
-  },
-  {
-    id: '3',
-    name: 'UX Designer Template',
-    title: 'UX/UI Designer',
-    description: 'Create exceptional user experiences and beautiful interfaces...',
-    requirements: ['Portfolio required', 'Figma/Sketch', 'User research experience'],
-    benefits: ['Creative freedom', 'Remote work', 'Conference budget'],
-    isDefault: false,
-    usage: 8
-  }
-];
 
 const JobBoardConfigPage: React.FC = () => {
-  const [jobBoards, setJobBoards] = useState<JobBoardConfig[]>(mockJobBoards);
-  const [templates] = useState<JobPostingTemplate[]>(mockTemplates);
-  const [activeTab, setActiveTab] = useState<'boards' | 'templates' | 'settings'>('boards');
+  const { data: jobBoardsResponse, isLoading, error, refetch } = useAvailableJobBoards();
+  const [activeTab, setActiveTab] = useState<'boards' | 'analytics' | 'settings'>('boards');
+  const [selectedBoard, setSelectedBoard] = useState<JobBoard | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'all' | 'active' | 'inactive'>('all');
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
-  const toggleJobBoard = (id: string) => {
-    setJobBoards(boards => 
-      boards.map(board => 
-        board.id === id ? { ...board, isActive: !board.isActive } : board
-      )
+  const jobBoards = jobBoardsResponse?.data || [];
+
+  // Filter job boards based on view mode
+  const filteredJobBoards = jobBoards.filter(board => {
+    switch (viewMode) {
+      case 'active':
+        return board.isAvailable;
+      case 'inactive':
+        return !board.isAvailable;
+      default:
+        return true;
+    }
+  });
+
+  const getJobBoardStats = (): JobBoardStats => {
+    if (!jobBoards.length) {
+      return { totalBoards: 0, activeBoards: 0, availableBoards: 0, setupRequired: 0 };
+    }
+
+    return {
+      totalBoards: jobBoards.length,
+      activeBoards: jobBoards.filter(board => board.status === 'active').length,
+      availableBoards: jobBoards.filter(board => board.isAvailable).length,
+      setupRequired: jobBoards.filter(board => board.status === 'setup_required').length
+    };
+  };
+
+  const stats = getJobBoardStats();
+
+  const getStatusIcon = (status: JobBoard['status']) => {
+    switch (status) {
+      case 'active':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'inactive':
+        return <XCircle className="h-5 w-5 text-gray-400" />;
+      case 'setup_required':
+        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
+      case 'error':
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      default:
+        return <AlertCircle className="h-5 w-5 text-gray-400" />;
+    }
+  };
+
+  const getStatusBadge = (status: JobBoard['status']) => {
+    const baseClass = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+    switch (status) {
+      case 'active':
+        return `${baseClass} bg-green-100 text-green-800`;
+      case 'inactive':
+        return `${baseClass} bg-gray-100 text-gray-800`;
+      case 'setup_required':
+        return `${baseClass} bg-yellow-100 text-yellow-800`;
+      case 'error':
+        return `${baseClass} bg-red-100 text-red-800`;
+      default:
+        return `${baseClass} bg-gray-100 text-gray-800`;
+    }
+  };
+
+  const handleEditBoard = (board: JobBoard) => {
+    setSelectedBoard(board);
+    setIsEditModalOpen(true);
+  };
+
+  const handleViewBoard = (board: JobBoard) => {
+    setSelectedBoard(board);
+    setIsViewModalOpen(true);
+  };
+
+  const handleAddBoard = () => {
+    setSelectedBoard(null);
+    setIsAddModalOpen(true);
+  };
+
+  const handleToggleActive = async (board: JobBoard) => {
+    try {
+      // TODO: Add API method to update job board availability
+      console.log('Toggle board availability:', board.id, !board.isAvailable);
+      // For now, just refresh to see if there are changes
+      refetch();
+    } catch (error) {
+      console.error('Failed to toggle job board status:', error);
+    }
+  };
+
+  const handleRefresh = () => {
+    refetch();
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="h-8 w-8 animate-spin text-primary-600" />
+          <span className="ml-2 text-gray-600">Loading job boards...</span>
+        </div>
+      </div>
     );
-  };
+  }
 
-  const formatLastSync = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    
-    if (hours < 1) return 'Just now';
-    if (hours < 24) return `${hours}h ago`;
-    return date.toLocaleDateString();
-  };
+  if (error) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load job boards</h3>
+            <p className="text-gray-600 mb-4">There was an error loading the job board configuration.</p>
+            <button
+              onClick={handleRefresh}
+              className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const stats = {
-    totalBoards: jobBoards.length,
-    activeBoards: jobBoards.filter(b => b.isActive).length,
-    totalJobs: jobBoards.reduce((sum, b) => sum + b.jobsCount, 0),
-    templates: templates.length
-  };  return (
+  return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Breadcrumbs */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center text-sm text-gray-500">
           <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
           <span className="mx-2">/</span>
-          <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
+          <Link to="/dashboard/admin" className="hover:text-gray-700">Admin</Link>
           <span className="mx-2">/</span>
-          <span className="text-gray-900 font-medium">Job Board Config</span>
-          <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">Legacy View</span>
+          <span className="text-gray-900 font-medium">Job Board Management</span>
         </div>
-        <Link 
-          to="/dashboard/organizations" 
-          className="text-sm bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700 transition-colors"
+        <button
+          onClick={handleRefresh}
+          className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-200 transition-colors"
         >
-          Switch to Hierarchical Flow
-        </Link>
+          <RefreshCw className="h-4 w-4 inline mr-1" />
+          Refresh
+        </button>
       </div>
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Job Board Configuration</h1>
-        <p className="text-gray-600 mt-1">Manage job board integrations and posting templates</p>
+        <h1 className="text-2xl font-bold text-gray-900">Job Board Management</h1>
+        <p className="text-gray-600 mt-1">Manage and configure job board integrations across the platform</p>
       </div>
 
       <div className="space-y-6">
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-            <Settings className="h-4 w-4 mr-2" />
-            Global Settings
-          </button>
-        </div>
-        <div className="flex gap-3">
-          <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
-          </button>
-          <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
-            <Save className="h-4 w-4 mr-2" />
-            Save Changes
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="text-2xl font-bold text-gray-900">{stats.totalBoards}</div>
-          <div className="text-sm text-gray-600">Job Boards</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="text-2xl font-bold text-green-600">{stats.activeBoards}</div>
-          <div className="text-sm text-gray-600">Active Boards</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="text-2xl font-bold text-primary-600">{stats.totalJobs}</div>
-          <div className="text-sm text-gray-600">Posted Jobs</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="text-2xl font-bold text-purple-600">{stats.templates}</div>
-          <div className="text-sm text-gray-600">Templates</div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'boards'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('boards')}
-          >
-            Job Boards
-          </button>
-          <button            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'templates'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('templates')}
-          >
-            Templates
-          </button>
-          <button            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'settings'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('settings')}
-          >
-            Global Settings
-          </button>
-        </nav>
-      </div>
-
-      {/* Job Boards Tab */}
-      {activeTab === 'boards' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Job Board Integrations</h2>            <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Job Board
-            </button>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-lg border">
+            <div className="text-2xl font-bold text-gray-900">{stats.totalBoards}</div>
+            <div className="text-sm text-gray-600">Total Job Boards</div>
           </div>
+          <div className="bg-white p-4 rounded-lg border">
+            <div className="text-2xl font-bold text-green-600">{stats.activeBoards}</div>
+            <div className="text-sm text-gray-600">Active Boards</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border">
+            <div className="text-2xl font-bold text-primary-600">{stats.availableBoards}</div>
+            <div className="text-sm text-gray-600">Available</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border">
+            <div className="text-2xl font-bold text-yellow-600">{stats.setupRequired}</div>
+            <div className="text-sm text-gray-600">Setup Required</div>
+          </div>
+        </div>
 
-          <div className="bg-white rounded-lg border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Job Board
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Jobs Posted
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Sync Frequency
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Sync
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {jobBoards.map((board) => (
-                    <tr key={board.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">                          <div className="h-8 w-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                            <Globe className="h-5 w-5 text-primary-600" />
-                          </div>
-                          <div className="ml-3">
-                            <div className="text-sm font-medium text-gray-900">{board.name}</div>
-                            <div className="text-sm text-gray-500">{board.url}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-3">
-                          <button 
-                            onClick={() => toggleJobBoard(board.id)}
-                            className="flex items-center"
-                          >
-                            {board.isActive ? (
-                              <ToggleRight className="h-6 w-6 text-green-500" />
-                            ) : (
-                              <ToggleLeft className="h-6 w-6 text-gray-400" />
-                            )}
-                          </button>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            board.isActive 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {board.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                          {!board.credentials.isConfigured && (
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                              Needs Setup
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{board.jobsCount}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{board.syncFrequency}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{formatLastSync(board.lastSync)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button className="text-primary-600 hover:text-primary-900">
-                            <Settings className="h-4 w-4" />
-                          </button>
-                          <button className="text-green-600 hover:text-green-900">
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button className="text-red-600 hover:text-red-900">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
+        {/* Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'boards'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => setActiveTab('boards')}
+            >
+              Job Boards
+            </button>
+            <button
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'analytics'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => setActiveTab('analytics')}
+            >
+              Analytics
+            </button>
+            <button
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'settings'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => setActiveTab('settings')}
+            >
+              Global Settings
+            </button>
+          </nav>
+        </div>
+
+        {/* Job Boards Tab */}
+        {activeTab === 'boards' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">System Job Board Integrations</h2>
+                <div className="text-sm text-gray-500">
+                  Configure which job boards are available for client connections
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                {/* View Mode Filter */}
+                <div className="flex rounded-lg border border-gray-300">
+                  <button
+                    onClick={() => setViewMode('all')}
+                    className={`px-3 py-1 text-sm font-medium rounded-l-lg ${
+                      viewMode === 'all'
+                        ? 'bg-primary-100 text-primary-700 border-primary-300'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    All ({jobBoards.length})
+                  </button>
+                  <button
+                    onClick={() => setViewMode('active')}
+                    className={`px-3 py-1 text-sm font-medium border-l ${
+                      viewMode === 'active'
+                        ? 'bg-green-100 text-green-700 border-green-300'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Active ({jobBoards.filter(b => b.isAvailable).length})
+                  </button>
+                  <button
+                    onClick={() => setViewMode('inactive')}
+                    className={`px-3 py-1 text-sm font-medium rounded-r-lg border-l ${
+                      viewMode === 'inactive'
+                        ? 'bg-gray-100 text-gray-700 border-gray-300'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Inactive ({jobBoards.filter(b => !b.isAvailable).length})
+                  </button>
+                </div>
+                
+                <button
+                  onClick={handleAddBoard}
+                  className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Job Board
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Job Board
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Features
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Updated
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Templates Tab */}
-      {activeTab === 'templates' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Job Posting Templates</h2>            <button className="flex items-center px-4 py-2 bg-primary-700 text-white rounded-lg hover:bg-primary-800">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Template
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.map((template) => (
-              <div key={template.id} className="bg-white rounded-lg border p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">{template.name}</h3>
-                    {template.isDefault && (
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-primary-100 text-primary-800 mt-1">
-                        Default
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex space-x-2">
-                    <button className="text-green-600 hover:text-green-900">
-                      <Edit3 className="h-4 w-4" />
-                    </button>
-                    <button className="text-red-600 hover:text-red-900">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700">Job Title</h4>
-                    <p className="text-sm text-gray-600">{template.title}</p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700">Description</h4>
-                    <p className="text-sm text-gray-600 line-clamp-2">{template.description}</p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700">Requirements</h4>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {template.requirements.slice(0, 2).map((req, index) => (
-                        <span key={index} className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                          {req}
-                        </span>
-                      ))}
-                      {template.requirements.length > 2 && (
-                        <span className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                          +{template.requirements.length - 2} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-gray-200">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Used {template.usage} times</span>
-                      <button className="text-primary-600 hover:text-primary-800 font-medium">
-                        Use Template
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Settings Tab */}
-      {activeTab === 'settings' && (
-        <div className="space-y-6">
-          <h2 className="text-lg font-semibold text-gray-900">Global Job Board Settings</h2>
-
-          <div className="bg-white rounded-lg border p-6 space-y-6">
-            <div>
-              <h3 className="text-base font-medium text-gray-900 mb-4">Auto-Posting Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700">Enable Auto-posting</h4>
-                    <p className="text-sm text-gray-500">Automatically post approved jobs to active job boards</p>
-                  </div>
-                  <ToggleRight className="h-6 w-6 text-green-500" />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700">Require Manual Approval</h4>
-                    <p className="text-sm text-gray-500">Jobs must be manually approved before posting</p>
-                  </div>
-                  <ToggleRight className="h-6 w-6 text-green-500" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Default Posting Duration (days)
-                  </label>
-                  <input
-                    type="number"
-                    defaultValue={30}
-                    className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredJobBoards.map((board) => (
+                      <tr key={board.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                              <Globe className="h-6 w-6 text-primary-600" />
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">{board.metadata.name}</div>
+                              <div className="text-sm text-gray-500">{board.metadata.website}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            {getStatusIcon(board.status)}
+                            <span className={getStatusBadge(board.status)}>
+                              {board.status.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <div className="flex items-center mt-1">
+                            <button
+                              onClick={() => handleToggleActive(board)}
+                              className="flex items-center text-xs"
+                              title={board.isAvailable ? 'Click to make inactive' : 'Click to make active'}
+                            >
+                              {board.isAvailable ? (
+                                <>
+                                  <ToggleRight className="h-4 w-4 text-green-500 mr-1" />
+                                  <span className="text-green-600">Available for clients</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ToggleLeft className="h-4 w-4 text-gray-400 mr-1" />
+                                  <span className="text-gray-500">Not available</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900 capitalize">{board.type}</div>
+                          <div className="text-sm text-gray-500">Order: {board.sortOrder}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-wrap gap-1">
+                            {board.metadata.supportedFeatures.autoPost && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Auto Post
+                              </span>
+                            )}
+                            {board.metadata.supportedFeatures.applicationTracking && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Tracking
+                              </span>
+                            )}
+                            {board.metadata.supportedFeatures.analytics && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                Analytics
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{formatDate(board.updatedAt)}</div>
+                          <div className="text-sm text-gray-500">Created: {formatDate(board.createdAt)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleViewBoard(board)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditBoard(board)}
+                              className="text-primary-600 hover:text-primary-900"
+                              title="Edit board"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                            <a
+                              href={board.metadata.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-400 hover:text-gray-600"
+                              title="Visit website"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
+          </div>
+        )}
 
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-base font-medium text-gray-900 mb-4">Sync Settings</h3>
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Platform Analytics</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <Monitor className="h-12 w-12 text-primary-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-gray-900">0</div>
+                  <div className="text-sm text-gray-600">Total Connections</div>
+                </div>
+                <div className="text-center">
+                  <Globe className="h-12 w-12 text-green-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-gray-900">0</div>
+                  <div className="text-sm text-gray-600">Jobs Posted</div>
+                </div>
+                <div className="text-center">
+                  <CheckCircle className="h-12 w-12 text-blue-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-gray-900">0</div>
+                  <div className="text-sm text-gray-600">Active Integrations</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Global Job Board Settings</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Default Sync Frequency
                   </label>
-                  <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <select className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500">
                     <option>Real-time</option>
                     <option>Every 15 minutes</option>
                     <option>Hourly</option>
                     <option>Daily</option>
-                    <option>Weekly</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Max Connections Per Client
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={10}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="auto-enable"
+                    defaultChecked
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="auto-enable" className="ml-2 block text-sm text-gray-900">
+                    Auto-enable new job boards for all clients
+                  </label>
+                </div>
+              </div>
+              <div className="mt-6">
+                <button className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700">Enable Error Notifications</h4>
-                    <p className="text-sm text-gray-500">Send notifications when job board sync fails</p>
-                  </div>
-                  <ToggleRight className="h-6 w-6 text-green-500" />
+      {/* View Job Board Modal */}
+      {isViewModalOpen && selectedBoard && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Job Board Details</h3>
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedBoard.metadata.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Type</label>
+                  <p className="mt-1 text-sm text-gray-900 capitalize">{selectedBoard.type}</p>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedBoard.metadata.description}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Website</label>
+                <a href={selectedBoard.metadata.website} target="_blank" rel="noopener noreferrer" 
+                   className="mt-1 text-sm text-primary-600 hover:text-primary-800">
+                  {selectedBoard.metadata.website}
+                </a>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Status</label>
+                <div className="mt-1 flex items-center space-x-2">
+                  {getStatusIcon(selectedBoard.status)}
+                  <span className={getStatusBadge(selectedBoard.status)}>
+                    {selectedBoard.status.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Supported Features</label>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {selectedBoard.metadata.supportedFeatures.autoPost && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Auto Post
+                    </span>
+                  )}
+                  {selectedBoard.metadata.supportedFeatures.applicationTracking && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Application Tracking
+                    </span>
+                  )}
+                  {selectedBoard.metadata.supportedFeatures.analytics && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      Analytics
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Created</label>
+                  <p className="mt-1 text-sm text-gray-900">{formatDate(selectedBoard.createdAt)}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Last Updated</label>
+                  <p className="mt-1 text-sm text-gray-900">{formatDate(selectedBoard.updatedAt)}</p>
                 </div>
               </div>
             </div>
-
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-base font-medium text-gray-900 mb-4">Template Settings</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Default Template
-                  </label>
-                  <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    {templates.map(template => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700">Auto-fill from Job Description</h4>
-                    <p className="text-sm text-gray-500">Automatically populate templates with job details</p>
-                  </div>
-                  <ToggleLeft className="h-6 w-6 text-gray-400" />
-                </div>
-              </div>
-            </div>          </div>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  setIsEditModalOpen(true);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+
+      {/* Edit Job Board Modal */}
+      {isEditModalOpen && selectedBoard && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Edit Job Board</h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <input
+                    type="text"
+                    defaultValue={selectedBoard.metadata.name}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Type</label>
+                  <select
+                    defaultValue={selectedBoard.type}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="indeed">Indeed</option>
+                    <option value="glassdoor">Glassdoor</option>
+                    <option value="monster">Monster</option>
+                    <option value="ziprecruiter">ZipRecruiter</option>
+                    <option value="dice">Dice</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <textarea
+                  rows={3}
+                  defaultValue={selectedBoard.metadata.description}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Website URL</label>
+                <input
+                  type="url"
+                  defaultValue={selectedBoard.metadata.website}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Sort Order</label>
+                <input
+                  type="number"
+                  defaultValue={selectedBoard.sortOrder}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Supported Features</label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      defaultChecked={selectedBoard.metadata.supportedFeatures.autoPost}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Auto Post</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      defaultChecked={selectedBoard.metadata.supportedFeatures.applicationTracking}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Application Tracking</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      defaultChecked={selectedBoard.metadata.supportedFeatures.analytics}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Analytics</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isAvailable"
+                  defaultChecked={selectedBoard.isAvailable}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isAvailable" className="ml-2 text-sm text-gray-700">
+                  Available for client connections
+                </label>
+              </div>
+            </form>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // TODO: Implement save functionality
+                  console.log('Save job board changes');
+                  setIsEditModalOpen(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Job Board Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Add New Job Board</h3>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., LinkedIn Jobs"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Type *</label>
+                  <select className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">Select a type</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="indeed">Indeed</option>
+                    <option value="glassdoor">Glassdoor</option>
+                    <option value="monster">Monster</option>
+                    <option value="ziprecruiter">ZipRecruiter</option>
+                    <option value="dice">Dice</option>
+                    <option value="careerbuilder">CareerBuilder</option>
+                    <option value="stackoverflow">Stack Overflow</option>
+                    <option value="angellist">AngelList</option>
+                    <option value="behance">Behance</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <textarea
+                  rows={3}
+                  placeholder="Describe this job board and its target audience..."
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Website URL *</label>
+                <input
+                  type="url"
+                  placeholder="https://example.com"
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Sort Order</label>
+                <input
+                  type="number"
+                  defaultValue={jobBoards.length + 1}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Supported Features</label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Auto Post</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Application Tracking</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Analytics</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="newIsAvailable"
+                  defaultChecked={true}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="newIsAvailable" className="ml-2 text-sm text-gray-700">
+                  Available for client connections
+                </label>
+              </div>
+            </form>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // TODO: Implement add functionality
+                  console.log('Add new job board');
+                  setIsAddModalOpen(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+              >
+                Add Job Board
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
