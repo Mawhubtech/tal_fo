@@ -60,7 +60,9 @@ const AllJobsTab: React.FC = () => {
     remote: filters.remote === 'true' ? true : filters.remote === 'false' ? false : undefined,
     status: 'Published' as const,
     page: 1,
-    limit: 20
+    limit: 20,
+    // Filter for TAL platform jobs only
+    talJobBoard: true,
   };
 
   const { data: jobsResponse, isLoading, error } = useJobs(queryFilters);
@@ -283,9 +285,9 @@ const AllJobsTab: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">All Jobs</h1>
+            <h1 className="text-2xl font-bold text-gray-900">TAL Platform Jobs</h1>
             <p className="text-gray-600 mt-1">
-              {jobsResponse?.total || 0} jobs available
+              {jobsResponse?.total || 0} jobs available on the TAL platform
             </p>
           </div>
           
@@ -400,6 +402,9 @@ const AllJobsTab: React.FC = () => {
                         <h3 className="text-xl font-semibold text-gray-900">
                           {job.title}
                         </h3>
+                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                          TAL Platform
+                        </span>
                         {savedJobIds.has(job.id) && (
                           <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
                             <BookmarkCheck className="h-3 w-3" />

@@ -51,6 +51,8 @@ const JobBoardPage: React.FC = () => {
     ...(remoteFilter !== undefined && { remote: remoteFilter }),
     sortBy: 'createdAt',
     sortOrder: 'DESC',
+    // Filter for TAL platform jobs only
+    talJobBoard: true,
   };
 
   const {
@@ -112,10 +114,10 @@ const JobBoardPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Find Your Dream Job
+              Find Your Dream Job on TAL
             </h1>
             <p className="text-xl mb-8 text-purple-600">
-              Discover amazing opportunities with top companies using TAL
+              Discover amazing opportunities from companies using the TAL platform
             </p>
             <div className="max-w-2xl mx-auto">
               <div className="relative">
@@ -279,6 +281,9 @@ const JobBoardPage: React.FC = () => {
                           {job.title}
                         </Link>
                         <div className="flex gap-2 ml-4">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            TAL Platform
+                          </span>
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getExperienceBadgeColor(job.experienceLevel)}`}>
                             {formatExperienceLevel(job.experienceLevel)}
                           </span>
@@ -294,10 +299,17 @@ const JobBoardPage: React.FC = () => {
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-3">
-                        <div className="flex items-center gap-1">
-                          <Building className="h-4 w-4" />
-                          <span>{job.department}</span>
-                        </div>
+                        {job.clientName && (
+                          <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                            <Building className="h-4 w-4 text-blue-600" />
+                            <span className="font-semibold text-blue-700">{job.clientName}</span>
+                          </div>
+                        )}
+                        {job.departmentDetails && (
+                          <div className="flex items-center gap-1 bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                            <span className="text-green-600 font-medium">{job.departmentDetails.name}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
                           <span>{job.location}</span>

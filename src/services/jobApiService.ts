@@ -52,6 +52,7 @@ export interface JobFilters {
   remote?: boolean;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
+  talJobBoard?: boolean; // Filter for TAL platform jobs only
 }
 
 export interface JobStats {

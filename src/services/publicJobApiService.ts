@@ -20,6 +20,12 @@ export interface PublicJob {
   applicationDeadline?: Date | string;
   applicantsCount: number;
   organizationId: string;
+  clientName?: string;
+  departmentDetails?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
   customQuestions?: Array<{
     question: string;
     type: 'text' | 'multiple-choice';
@@ -43,6 +49,7 @@ export interface PublicJobFilters {
   remote?: boolean;
   sortBy?: 'createdAt' | 'title' | 'location' | 'applicantsCount';
   sortOrder?: 'ASC' | 'DESC';
+  talJobBoard?: boolean; // Filter for TAL platform jobs only
 }
 
 export interface PublicJobsResponse {
