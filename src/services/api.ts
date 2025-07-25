@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { config } from '../lib/config';
+import { dispatchGmailAuthError } from '../contexts/GmailStatusContext';
 
 // Create axios instance with base configuration
 const apiClient = axios.create({
@@ -28,6 +29,17 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // Check for Gmail-specific auth errors first
+    if (error.response?.status === 401) {
+      const message = error.response?.data?.message || error.response?.data?.error || '';
+      
+      if (message.includes('Gmail') || message.includes('expired') || message.includes('reconnect')) {
+        // Dispatch Gmail auth error for global handling
+        dispatchGmailAuthError(error);
+        return Promise.reject(error);
+      }
+    }
 
     // If 401 and not already retrying, attempt token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {

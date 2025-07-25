@@ -12,11 +12,23 @@ export const useAIStructuredQuery = (): UseAIStructuredQueryResult => {
 
   const structuredQuery = useCallback(async (request: AIStructuredQueryRequest) => {
     try {
+      console.log('Hook - Starting request, current data:', data);
       setLoading(true);
       setError(null);
       
+      console.log('Hook - Making AI request:', request);
       const response = await aiService.structuredQuery(request);
-      setData(response);
+      console.log('Hook - Received response:', response);
+      
+      if (response && response.data) {
+        console.log('Hook - Response has data property:', response.data);
+        setData(response);
+        console.log('Hook - Data set in state, new data should be:', response);
+      } else {
+        console.error('Hook - Invalid response structure:', response);
+        setError('Invalid response from AI service');
+      }
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred while querying AI';
       setError(errorMessage);
@@ -24,7 +36,7 @@ export const useAIStructuredQuery = (): UseAIStructuredQueryResult => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [data]);
 
   const reset = useCallback(() => {
     setData(null);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Plus, Settings, Send, Trash2, Edit, Copy, AlertCircle, CheckCircle, Eye, MoreVertical, ExternalLink, RefreshCw, Download, X, TestTube, Power, Star, Users, Building2, Share2 } from 'lucide-react';
 import { 
   useEmailTemplates, 
@@ -15,11 +15,13 @@ import {
 } from '../../hooks/useEmailManagement';
 import { useEmailService } from '../../hooks/useEmailService';
 import { useToast } from '../../contexts/ToastContext';
+import { useApiError } from '../../hooks/useApiError';
 import EmailTemplateForm from '../../components/EmailTemplateForm';
 import EmailProviderForm from '../../components/EmailProviderForm';
 import PresetTemplatesDialog from '../../components/PresetTemplatesDialog';
 import TemplateShareDialog from '../../components/TemplateShareDialog';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import GmailReconnectionBanner from '../../components/GmailReconnectionBanner';
 
 const EmailManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'templates' | 'providers'>('templates');
@@ -45,8 +47,12 @@ const EmailManagementPage: React.FC = () => {
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [isDeleteProviderModalOpen, setIsDeleteProviderModalOpen] = useState(false);
   const [providerToDelete, setProviderToDelete] = useState<string | null>(null);
+  
+  // Gmail reconnection banner state
+  const [showGmailReconnectionBanner, setShowGmailReconnectionBanner] = useState(false);
 
   const { addToast } = useToast();
+  const { handleApiError } = useApiError();
 
   // API hooks
   const { data: templatesData, isLoading: isLoadingTemplates, error: templatesError } = useEmailTemplates();
@@ -74,6 +80,16 @@ const EmailManagementPage: React.FC = () => {
   const toggleActiveProviderMutation = useToggleActiveEmailProvider();
   const templatePreviewMutation = useTemplatePreview();
   const sendEmailMutation = useSendEmail();
+
+  // Check for Gmail connection issues
+  useEffect(() => {
+    const hasGmailProvider = providers.some(p => p.type === 'gmail');
+    const isGmailDisconnected = hasGmailProvider && !emailSettings?.isGmailConnected;
+    
+    if (isGmailDisconnected) {
+      setShowGmailReconnectionBanner(true);
+    }
+  }, [providers, emailSettings]);
 
   const handleCreateTemplate = () => {
     setSelectedTemplate(null);
@@ -297,11 +313,7 @@ If you received this email, your email provider is working correctly.
       setIsTestEmailModalOpen(false);
       setTestEmailAddress('');
     } catch (error) {
-      addToast({ 
-        type: 'error', 
-        title: 'Failed to send test email',
-        message: 'Please check your provider configuration'
-      });
+      handleApiError(error, 'Failed to send test email');
     }
   };
 
@@ -358,7 +370,7 @@ If you received this email, your email provider is working correctly.
       }
     } catch (error) {
       console.error('Failed to connect Gmail:', error);
-      addToast({ type: 'error', title: 'Connection Failed', message: 'Failed to connect Gmail. Please try again.' });
+      handleApiError(error, 'Connection Failed');
     }
   };
 
@@ -370,7 +382,7 @@ If you received this email, your email provider is working correctly.
       addToast({ type: 'success', title: 'Gmail Disconnected', message: 'Your Gmail account has been disconnected.' });
     } catch (error) {
       console.error('Failed to disconnect Gmail:', error);
-      addToast({ type: 'error', title: 'Disconnection Failed', message: 'Failed to disconnect Gmail. Please try again.' });
+      handleApiError(error, 'Disconnection Failed');
     }
   };
 
@@ -457,6 +469,12 @@ If you received this email, your email provider is working correctly.
 
   return (
     <div className="space-y-6">
+      {/* Gmail Reconnection Banner */}
+      <GmailReconnectionBanner 
+        show={showGmailReconnectionBanner}
+        onDismiss={() => setShowGmailReconnectionBanner(false)}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

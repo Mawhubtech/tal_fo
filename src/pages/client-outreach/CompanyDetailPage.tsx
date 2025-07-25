@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -18,12 +18,15 @@ import {
   Copy,
   Download,
   Plus,
+  MessageSquare,
   Facebook,
   Instagram,
   Youtube,
   Github,
   Twitter
 } from 'lucide-react';
+import AddToProspectsModal from '../../components/AddToProspectsModal';
+import CommunicationsModal from '../../components/CommunicationsModal';
 
 interface CompanyResult {
   id: number;
@@ -57,14 +60,18 @@ interface CompanyResult {
 const CompanyDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { projectId } = useParams<{ projectId: string }>();
+  const { id: projectId, searchId } = useParams<{ id: string; searchId: string }>();
+  const [showAddToProspectsModal, setShowAddToProspectsModal] = useState(false);
+  const [showCommunicationsModal, setShowCommunicationsModal] = useState(false);
   
   // Get company data from navigation state
   const { company, searchContext } = location.state || {};
   
   // If no company data, redirect back
   if (!company) {
-    const fallbackRoute = projectId 
+    const fallbackRoute = projectId && searchId
+      ? `/dashboard/client-outreach/projects/${projectId}/searches/${searchId}/results`
+      : projectId 
       ? `/dashboard/client-outreach/projects/${projectId}/search`
       : '/dashboard/client-outreach';
     navigate(fallbackRoute);
@@ -166,7 +173,7 @@ const CompanyDetailPage: React.FC = () => {
                 {/* Company Type and Followers */}
                 <div className="flex items-center gap-4 mb-4">
                   {companyData.type && (
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                    <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
                       {companyData.type}
                     </span>
                   )}
@@ -185,11 +192,10 @@ const CompanyDetailPage: React.FC = () => {
                       href={`https://${companyData.domain}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      className="inline-flex items-center justify-center w-10 h-10 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      title="Visit Website"
                     >
-                      <Globe className="w-4 h-4 mr-2" />
-                      Visit Website
-                      <ExternalLink className="w-4 h-4 ml-2" />
+                      <Globe className="w-5 h-5" />
                     </a>
                   )}
                   {companyData.linkedinUrl && (
@@ -197,16 +203,25 @@ const CompanyDetailPage: React.FC = () => {
                       href={companyData.linkedinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      className="inline-flex items-center justify-center w-10 h-10 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      title="LinkedIn Page"
                     >
-                      <Linkedin className="w-4 h-4 mr-2" />
-                      LinkedIn Page
-                      <ExternalLink className="w-4 h-4 ml-2" />
+                      <Linkedin className="w-5 h-5" />
                     </a>
                   )}
-                  <button className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                  <button 
+                    onClick={() => setShowAddToProspectsModal(true)}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Add to Prospects
+                  </button>
+                  <button 
+                    onClick={() => setShowCommunicationsModal(true)}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Communications
                   </button>
                 </div>
               </div>
@@ -232,7 +247,7 @@ const CompanyDetailPage: React.FC = () => {
                 {companyData.specialties.map((specialty, index) => (
                   <span
                     key={index}
-                    className="px-3 py-2 bg-blue-100 text-blue-800 text-sm rounded-lg"
+                    className="px-3 py-2 bg-purple-100 text-purple-800 text-sm rounded-lg"
                   >
                     {specialty}
                   </span>
@@ -245,14 +260,14 @@ const CompanyDetailPage: React.FC = () => {
           {companyData.technologies && companyData.technologies.length > 0 && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <Code className="w-5 h-5 mr-2 text-orange-600" />
+                <Code className="w-5 h-5 mr-2 text-purple-600" />
                 Technologies
               </h3>
               <div className="flex flex-wrap gap-2">
                 {companyData.technologies.map((tech, index) => (
                   <span
                     key={index}
-                    className="px-3 py-2 bg-orange-100 text-orange-800 text-sm rounded-lg"
+                    className="px-3 py-2 bg-purple-100 text-purple-800 text-sm rounded-lg"
                   >
                     {tech}
                   </span>
@@ -338,7 +353,7 @@ const CompanyDetailPage: React.FC = () => {
           {(companyData.phoneNumbers?.length > 0 || companyData.emails?.length > 0 || companyData.fullAddress) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Phone className="w-5 h-5 mr-2 text-green-600" />
+                <Phone className="w-5 h-5 mr-2 text-purple-600" />
                 Contact Information
               </h3>
               <div className="space-y-4">
@@ -350,7 +365,7 @@ const CompanyDetailPage: React.FC = () => {
                         <a
                           key={index}
                           href={`tel:${phone}`}
-                          className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                          className="flex items-center text-sm text-purple-600 hover:text-purple-800 hover:underline"
                         >
                           <Phone className="w-4 h-4 mr-2" />
                           {phone}
@@ -368,7 +383,7 @@ const CompanyDetailPage: React.FC = () => {
                         <a
                           key={index}
                           href={`mailto:${email}`}
-                          className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                          className="flex items-center text-sm text-purple-600 hover:text-purple-800 hover:underline"
                         >
                           <Mail className="w-4 h-4 mr-2" />
                           {email}
@@ -403,7 +418,7 @@ const CompanyDetailPage: React.FC = () => {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      className="flex items-center text-sm text-purple-600 hover:text-purple-800 hover:underline"
                     >
                       <Facebook className="w-4 h-4" />
                       <span className="ml-2">Facebook</span>
@@ -419,7 +434,7 @@ const CompanyDetailPage: React.FC = () => {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      className="flex items-center text-sm text-purple-600 hover:text-purple-800 hover:underline"
                     >
                       <Twitter className="w-4 h-4" />
                       <span className="ml-2">Twitter</span>
@@ -435,7 +450,7 @@ const CompanyDetailPage: React.FC = () => {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      className="flex items-center text-sm text-purple-600 hover:text-purple-800 hover:underline"
                     >
                       <Instagram className="w-4 h-4" />
                       <span className="ml-2">Instagram</span>
@@ -451,7 +466,7 @@ const CompanyDetailPage: React.FC = () => {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      className="flex items-center text-sm text-purple-600 hover:text-purple-800 hover:underline"
                     >
                       <Youtube className="w-4 h-4" />
                       <span className="ml-2">YouTube</span>
@@ -467,7 +482,7 @@ const CompanyDetailPage: React.FC = () => {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      className="flex items-center text-sm text-purple-600 hover:text-purple-800 hover:underline"
                     >
                       <Github className="w-4 h-4" />
                       <span className="ml-2">GitHub</span>
@@ -499,12 +514,12 @@ const CompanyDetailPage: React.FC = () => {
                         </span>
                       ))}
                       {searchContext.extractedFilters.locations?.map((location: string, index: number) => (
-                        <span key={index} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                        <span key={index} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
                           {location}
                         </span>
                       ))}
                       {searchContext.extractedFilters.technologies?.map((tech: string, index: number) => (
-                        <span key={index} className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
+                        <span key={index} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
                           {tech}
                         </span>
                       ))}
@@ -514,27 +529,26 @@ const CompanyDetailPage: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Actions */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-            <div className="space-y-3">
-              <button className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                <Plus className="w-4 h-4 mr-2" />
-                Add to Prospects
-              </button>
-              <button className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                <Mail className="w-4 h-4 mr-2" />
-                Find Contacts
-              </button>
-              <button className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                <Download className="w-4 h-4 mr-2" />
-                Export Data
-              </button>
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* Add to Prospects Modal */}
+      <AddToProspectsModal
+        isOpen={showAddToProspectsModal}
+        onClose={() => setShowAddToProspectsModal(false)}
+        company={companyData}
+        projectId={projectId}
+        searchContext={searchContext}
+      />
+
+      {/* Communications Modal */}
+      <CommunicationsModal
+        key={`communications-${companyData.id}-${showCommunicationsModal}`}
+        isOpen={showCommunicationsModal}
+        onClose={() => setShowCommunicationsModal(false)}
+        company={companyData}
+        projectId={projectId}
+      />
     </div>
   );
 };

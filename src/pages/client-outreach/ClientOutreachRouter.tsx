@@ -31,6 +31,7 @@ const ClientOutreachRouter: React.FC = () => {
       <Route path="projects/:id/searches" element={<ProjectSearchesPage />} />
       <Route path="projects/:id/search" element={<ClientSearchPage />} />
       <Route path="projects/:id/searches/:searchId/results" element={<SearchResultsListPage />} />
+      <Route path="projects/:id/searches/:searchId/company-detail" element={<CompanyDetailPage />} />
       <Route path="projects/:id/prospects" element={<ProjectProspectsPage />} />
       <Route path="projects/:id/analytics" element={<ProjectAnalyticsPage />} />
       <Route path="projects/:id/campaigns" element={<ProjectEmailCampaignsPage />} />

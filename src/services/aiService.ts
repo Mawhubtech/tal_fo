@@ -57,7 +57,10 @@ export const aiService = {
    * Send a single query with structured JSON output
    */
   async structuredQuery(data: AIStructuredQueryRequest): Promise<AIStructuredResponse> {
+    console.log('AI Service - Sending request:', data);
     const response = await api.post<AIStructuredResponse>('/ai/structured-query', data);
+    console.log('AI Service - Raw response:', response);
+    console.log('AI Service - Response data:', response.data);
     return response.data;
   },
 

@@ -112,6 +112,26 @@ export interface UpdateSearchData extends Partial<CreateSearchData> {
   id: string;
 }
 
+export interface CreateProspectData {
+  companyName: string;
+  description?: string;
+  industry?: string;
+  website?: string;
+  linkedinUrl?: string;
+  location?: string;
+  sizeRange?: string;
+  employeeCount?: number;
+  revenue?: number;
+  fundingStage?: string;
+  technologies?: string[];
+  specialties?: string[];
+  matchScore?: number;
+  coreSignalId?: string;
+  projectId?: string;
+  searchId?: string;
+  currentStageId?: string;
+}
+
 export interface UpdateProspectData {
   status?: ClientProspect['status'];
   currentStageId?: string;
@@ -148,6 +168,68 @@ export interface ExtractKeywordsResult {
   extractedFilters: any;
   searchText: string;
   confidence: number;
+}
+
+// Communications interfaces
+export interface CompanyNote {
+  id: string;
+  companyId: string;
+  companyName: string;
+  projectId: string;
+  content: string;
+  isPrivate: boolean;
+  author: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCompanyNoteData {
+  companyName: string;
+  content: string;
+  isPrivate?: boolean;
+}
+
+export interface UpdateCompanyNoteData {
+  content?: string;
+  isPrivate?: boolean;
+}
+
+export interface CompanyEmailHistory {
+  id: string;
+  subject: string;
+  body: string;
+  recipients: string[];
+  cc?: string[];
+  bcc?: string[];
+  fromEmail: string;
+  fromName: string;
+  status: 'pending' | 'sent' | 'delivered' | 'failed' | 'bounced' | 'rejected';
+  companyId: string;
+  companyName: string;
+  projectId: string;
+  sender: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  sentAt: string;
+  createdAt: string;
+}
+
+export interface SendCompanyEmailData {
+  companyName: string;
+  recipients: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body: string;
+  fromName?: string;
 }
 
 class ClientOutreachApiService {
@@ -304,6 +386,16 @@ class ClientOutreachApiService {
       return response.data;
     } catch (error) {
       console.error('Error fetching search details:', error);
+      throw error;
+    }
+  }
+
+  async createProspect(data: CreateProspectData): Promise<ClientProspect> {
+    try {
+      const response = await apiClient.post(`${this.baseUrl}/prospects`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating prospect:', error);
       throw error;
     }
   }
@@ -594,6 +686,52 @@ class ClientOutreachApiService {
       dealsClosed: 0,
       revenue: 0
     };
+  }
+
+  // ===============================================
+  // COMMUNICATIONS METHODS
+  // ===============================================
+
+  // Company Notes
+  async getCompanyNotes(companyId: string, projectId: string, includePrivate = false): Promise<CompanyNote[]> {
+    const response = await apiClient.get(
+      `${this.baseUrl}/companies/${companyId}/projects/${projectId}/notes`,
+      { params: { includePrivate } }
+    );
+    return response.data;
+  }
+
+  async createCompanyNote(companyId: string, projectId: string, data: CreateCompanyNoteData): Promise<CompanyNote> {
+    const response = await apiClient.post(
+      `${this.baseUrl}/companies/${companyId}/projects/${projectId}/notes`,
+      data
+    );
+    return response.data;
+  }
+
+  async updateCompanyNote(noteId: string, data: UpdateCompanyNoteData): Promise<CompanyNote> {
+    const response = await apiClient.put(`${this.baseUrl}/companies/notes/${noteId}`, data);
+    return response.data;
+  }
+
+  async deleteCompanyNote(noteId: string): Promise<void> {
+    await apiClient.delete(`${this.baseUrl}/companies/notes/${noteId}`);
+  }
+
+  // Company Emails
+  async sendCompanyEmail(companyId: string, projectId: string, data: SendCompanyEmailData): Promise<CompanyEmailHistory> {
+    const response = await apiClient.post(
+      `${this.baseUrl}/companies/${companyId}/projects/${projectId}/emails`,
+      data
+    );
+    return response.data;
+  }
+
+  async getCompanyEmailHistory(companyId: string, projectId: string): Promise<CompanyEmailHistory[]> {
+    const response = await apiClient.get(
+      `${this.baseUrl}/companies/${companyId}/projects/${projectId}/emails`
+    );
+    return response.data;
   }
 }
 

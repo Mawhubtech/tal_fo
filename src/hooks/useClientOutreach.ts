@@ -7,6 +7,7 @@ import clientOutreachApiService, {
   CreateProjectData,
   UpdateProjectData,
   CreateSearchData,
+  CreateProspectData,
   SearchCompaniesData,
   UpdateProspectData,
   PaginationParams,
@@ -130,6 +131,31 @@ export const useGenerateCoreSignalQuery = () => {
 // ===============================================
 // PROSPECT HOOKS
 // ===============================================
+
+export const useCreateProspect = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: CreateProspectData) => clientOutreachApiService.createProspect(data),
+    onSuccess: (newProspect) => {
+      // Invalidate and refetch prospects queries
+      if (newProspect.projectId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['client-outreach', 'projects', newProspect.projectId, 'prospects'] 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['client-outreach', 'projects', newProspect.projectId] 
+        });
+      }
+      if (newProspect.searchId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['client-outreach', 'searches', newProspect.searchId, 'prospects'] 
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['client-outreach', 'projects'] });
+    },
+  });
+};
 
 export const useProjectProspects = (projectId: string) => {
   return useQuery({

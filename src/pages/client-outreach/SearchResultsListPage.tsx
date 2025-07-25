@@ -139,7 +139,12 @@ const SearchResultsListPage: React.FC = () => {
   const industries = Array.from(new Set(results.map(r => r.industry).filter(Boolean))) as string[];
 
   const handleCompanyClick = (company: CompanyResult) => {
-    navigate('/dashboard/client-outreach/company-detail', {
+    // Maintain project and search context in the URL
+    const companyDetailRoute = projectId && searchId 
+      ? `/dashboard/client-outreach/projects/${projectId}/searches/${searchId}/company-detail`
+      : '/dashboard/client-outreach/company-detail';
+      
+    navigate(companyDetailRoute, {
       state: { company, searchContext: { searchQuery, extractedFilters } }
     });
   };
