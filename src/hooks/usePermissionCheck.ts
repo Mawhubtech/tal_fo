@@ -104,6 +104,10 @@ export const SIDEBAR_PERMISSIONS = {
   CONTACTS_UPDATE: 'contacts:update',
   CONTACTS_DELETE: 'contacts:delete',
   
+  // Support Module
+  RESOURCES_ACCESS: 'resources:access',
+  CONTACT_SUPPORT_ACCESS: 'support:access',
+  
   // Admin Module
   ADMIN_ACCESS: 'admin:access',
   ADMIN_OVERVIEW: 'admin:overview',
@@ -152,6 +156,10 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   
   // Contacts routes
   '/dashboard/contacts': [SIDEBAR_PERMISSIONS.CONTACTS_ACCESS, SIDEBAR_PERMISSIONS.CONTACTS_READ],
+  
+  // Support routes
+  '/dashboard/resources': [SIDEBAR_PERMISSIONS.RESOURCES_ACCESS],
+  '/dashboard/contact-support': [SIDEBAR_PERMISSIONS.CONTACT_SUPPORT_ACCESS],
   
   // Admin routes
   '/dashboard/admin': [SIDEBAR_PERMISSIONS.ADMIN_ACCESS, SIDEBAR_PERMISSIONS.ADMIN_OVERVIEW],

@@ -50,6 +50,10 @@ import CandidatesPage from './candidates'; // Import the new CandidatesPage
 // Client Outreach Pages
 import ClientOutreachRouter from './client-outreach/ClientOutreachRouter';
 
+// Support Pages
+import ResourcesPage from './ResourcesPage';
+import ContactSupportPage from './ContactSupportPage';
+
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
@@ -391,6 +395,11 @@ const Dashboard: React.FC = () => {
                 <ClientOutreachRouter />
               </RoutePermissionGuard>
             } />
+
+            {/* Support Routes */}
+            <Route path="resources" element={<ResourcesPage />} />
+            
+            <Route path="contact-support" element={<ContactSupportPage />} />
 
             {/* Admin Pages with Layout */}
             <Route path="admin" element={

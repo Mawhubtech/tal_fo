@@ -216,7 +216,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
           prospectLastContact: rawProspect?.lastContactedAt,
           prospectNextFollowUp: rawProspect?.nextFollowUpAt,
         }
-      }
+      } 
     });
   };
 

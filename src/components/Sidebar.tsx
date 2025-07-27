@@ -434,80 +434,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               )}
             </div>
           )}
-          
-          {/* <a 
-            href="#" 
-            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700`}
-            title={!isExpanded ? "Usage" : ""}
-          >
-            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
-              <BarChart2 className="w-4 h-4" />
-            </div>
-            {isExpanded && "Usage"}
-          </a>
-          
-          <a 
-            href="#" 
-            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700`}
-            title={!isExpanded ? "Integrations" : ""}
-          >
-            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
-              <Settings className="w-4 h-4" />
-            </div>
-            {isExpanded && "Integrations"}
-          </a> */}
-        </nav>
-      </div>
-      
-      {/* Resources and settings section */}
-      <div className="mt-auto border-t border-gray-200">
-        <nav className="space-y-1 p-2">
-          <a 
-            href="#" 
-            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700`}
+
+          {/* Resources Section */}
+          <Link 
+            to="/dashboard/resources" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/resources') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
             title={!isExpanded ? "Resources" : ""}
           >
-            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/resources') ? '#7e22ce' : '#9ca3af' }}>
               <HelpCircle className="w-4 h-4" />
             </div>
             {isExpanded && "Resources"}
-          </a>
+          </Link>
           
-          <a 
-            href="#" 
-            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700`}
+          {/* Contact Support Section */}
+          <Link 
+            to="/dashboard/contact-support" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/contact-support') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
             title={!isExpanded ? "Contact Support" : ""}
           >
-            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/contact-support') ? '#7e22ce' : '#9ca3af' }}>
               <MessageSquare className="w-4 h-4" />
             </div>
             {isExpanded && "Contact Support"}
-          </a>
+          </Link>
           
-          <a 
-            href="#" 
-            className={`flex items-center ${isExpanded ? 'px-4' : 'px-0 justify-center'} py-2 text-sm font-medium text-gray-700`}
-            title={!isExpanded ? "Settings" : ""}
-          >
-            <div className={isExpanded ? "mr-3 text-gray-400" : "text-gray-400"}>
-              <Settings className="w-4 h-4" />
-            </div>
-            {isExpanded && "Settings"}
-          </a>
         </nav>
-        
-        {/* Progress Bar - only show when expanded */}
-        {isExpanded && (
-          <div className="border-t border-gray-200 p-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-gray-600">Getting Started</span>
-              <span className="text-xs font-medium text-gray-600">40%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '40%' }}></div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
