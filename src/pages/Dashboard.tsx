@@ -43,6 +43,11 @@ import OrganizationDetailPage from '../recruitment/organizations/pages/Organizat
 import DepartmentsPage from '../recruitment/organizations/pages/DepartmentsPage';
 import DepartmentJobsPage from '../recruitment/organizations/pages/DepartmentJobsPage';
 import JobATSPage from '../recruitment/organizations/pages/JobATSPage';
+import JobEmailSequencesPage from '../recruitment/organizations/pages/JobEmailSequencesPage';
+import JobSequenceDetailPage from '../recruitment/organizations/pages/JobSequenceDetailPage';
+import JobSequenceStepsPage from '../recruitment/organizations/pages/JobSequenceStepsPage';
+import JobEmailTemplatesPage from '../recruitment/organizations/pages/JobEmailTemplatesPage';
+import CreateJobEmailSequencePage from '../recruitment/organizations/pages/CreateJobEmailSequencePage';
 
 // Candidates Page
 import CandidatesPage from './candidates'; // Import the new CandidatesPage
@@ -321,6 +326,36 @@ const Dashboard: React.FC = () => {
             <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/ats" element={
               <RoutePermissionGuard>
                 <JobATSPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences" element={
+              <RoutePermissionGuard>
+                <JobEmailSequencesPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/:sequenceId" element={
+              <RoutePermissionGuard>
+                <JobSequenceDetailPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/:sequenceId/steps" element={
+              <RoutePermissionGuard>
+                <JobSequenceStepsPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-templates" element={
+              <RoutePermissionGuard>
+                <JobEmailTemplatesPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/create" element={
+              <RoutePermissionGuard>
+                <CreateJobEmailSequencePage />
               </RoutePermissionGuard>
             } />
             

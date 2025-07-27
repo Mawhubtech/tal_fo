@@ -21,6 +21,7 @@ interface PipelineKanbanViewProps {
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
+  movingCandidates?: Set<string>;
 }
 
 export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
@@ -28,13 +29,17 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
   pipeline,
   onCandidateClick,
   onCandidateStageChange,
-  onCandidateRemove
+  onCandidateRemove,
+  movingCandidates: externalMovingCandidates = new Set()
 }) => {
   const [activeCandidate, setActiveCandidate] = useState<Candidate | null>(null);
   // Track pending moves for visual feedback and prevent flickering
   const [pendingMoves, setPendingMoves] = useState<Set<string>>(new Set());
   // Track candidates that are currently being moved (with loading state)
   const [movingCandidates, setMovingCandidates] = useState<Map<string, { originalStage: string; targetStage: string }>>(new Map());
+
+  // Combine external moving candidates with internal tracking
+  const allMovingCandidates = new Set([...externalMovingCandidates, ...pendingMoves]);
 
   // Update optimistic candidates when prop candidates change, but preserve pending moves
   useEffect(() => {
@@ -158,7 +163,7 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
                 pipeline={pipeline}
                 onCandidateClick={onCandidateClick}
                 onCandidateRemove={onCandidateRemove}
-                pendingMoves={pendingMoves}
+                pendingMoves={allMovingCandidates}
                 movingCandidates={movingCandidates}
               />
             );
@@ -177,7 +182,7 @@ export const PipelineKanbanView: React.FC<PipelineKanbanViewProps> = ({
                 pipeline={pipeline}
                 onCandidateClick={onCandidateClick}
                 onCandidateRemove={onCandidateRemove}
-                pendingMoves={pendingMoves}
+                pendingMoves={allMovingCandidates}
                 movingCandidates={movingCandidates}
               />
             );

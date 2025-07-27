@@ -1,28 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Building, Users, ChevronRight, Search, ArrowLeft } from 'lucide-react';
-import { useOrganization } from '../../../hooks/useOrganizations';
-import { useDepartmentsByOrganization } from '../../../hooks/useDepartments';
+import { useDepartmentsPageData } from '../../../hooks/useOrganizations';
 
 const DepartmentsPage: React.FC = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Use React Query hooks
+  // Single optimized React Query hook that fetches all data at once
   const { 
-    data: organization, 
-    isLoading: organizationLoading, 
-    error: organizationError 
-  } = useOrganization(organizationId || '');
-  
-  const { 
-    data: departments = [], 
-    isLoading: departmentsLoading, 
-    error: departmentsError 
-  } = useDepartmentsByOrganization(organizationId || '');
+    data: pageData, 
+    isLoading: loading, 
+    error 
+  } = useDepartmentsPageData(organizationId || '');
 
-  const loading = organizationLoading || departmentsLoading;
-  const error = organizationError || departmentsError;
+  const organization = pageData?.organization;
+  const departments = pageData?.departments || [];
 
   const filteredDepartments = departments.filter(dept =>
     dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

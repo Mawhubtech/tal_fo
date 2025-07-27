@@ -58,13 +58,18 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
           : 'hover:shadow-md cursor-pointer'
       } ${
         isPending 
-          ? 'opacity-75 pointer-events-none relative overflow-hidden' 
+          ? 'opacity-75 pointer-events-none relative overflow-hidden border-blue-300 bg-blue-50' 
           : ''
       }`}
     >
-      {/* Pending indicator */}
+      {/* Pending indicator with loading animation */}
       {isPending && (
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-50 animate-pulse" />
+        <>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100 to-transparent opacity-60 animate-pulse" />
+          <div className="absolute top-2 right-2 w-3 h-3">
+            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </>
       )}
       
       <div className="flex items-start gap-2">

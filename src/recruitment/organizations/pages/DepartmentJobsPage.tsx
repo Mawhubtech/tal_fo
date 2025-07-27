@@ -5,8 +5,7 @@ import {
   Search, Grid3X3, List, ChevronRight, Plus,
   Edit3, Trash2, Eye, Loader, Globe, Building
 } from 'lucide-react';
-import { useOrganization } from '../../../hooks/useOrganizations';
-import { useDepartment, useJobsByDepartment } from '../../../hooks/useDepartments';
+import { useDepartmentJobsPageData } from '../../../hooks/useOrganizations';
 import { useDeleteJob } from '../../../hooks/useJobs';
 import type { Job } from '../../data/types';
 import JobPreviewModal from '../../../components/modals/JobPreviewModal';
@@ -20,25 +19,16 @@ const DepartmentJobsPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   
-  // Use React Query hooks
+  // Single optimized React Query hook that fetches all data at once
   const { 
-    data: organization, 
-    isLoading: organizationLoading, 
-    error: organizationError 
-  } = useOrganization(organizationId || '');
-  
-  const { 
-    data: department, 
-    isLoading: departmentLoading, 
-    error: departmentError 
-  } = useDepartment(organizationId || '', departmentId || '');
-  
-  const { 
-    data: jobsData, 
-    isLoading: jobsLoading, 
-    error: jobsError 
-  } = useJobsByDepartment(organizationId || '', departmentId || '');
-  
+    data: pageData, 
+    isLoading: loading, 
+    error 
+  } = useDepartmentJobsPageData(organizationId || '', departmentId || '');
+
+  const organization = pageData?.organization;
+  const department = pageData?.department;
+  const jobs = pageData?.jobs || [];
   const deleteJobMutation = useDeleteJob();
 
   // Edit and delete states
@@ -50,9 +40,7 @@ const DepartmentJobsPage: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [jobToPreview, setJobToPreview] = useState<Job | null>(null);
 
-  const loading = organizationLoading || departmentLoading || jobsLoading;
-  const error = organizationError || departmentError || jobsError;
-  const jobs = jobsData?.data || [];  // Filter jobs
+  // Filter jobs
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (job.skills && job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));

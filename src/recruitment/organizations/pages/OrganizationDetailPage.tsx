@@ -4,8 +4,8 @@ import {
   ArrowLeft, Plus, Users, Briefcase, Building, 
   MapPin, Search, Grid3X3, List, ChevronDown, ChevronUp, Clock
 } from 'lucide-react';
-import { useOrganization, useOrganizationDepartments, useOrganizationJobs } from '../../../hooks/useOrganizations';
-import type { Organization, Department } from '../services/organizationApiService';
+import { useOrganizationDetailPageData } from '../../../hooks/useOrganizations';
+import type { Department } from '../services/organizationApiService';
 import type { Job } from '../../data/types';
 
 const OrganizationDetailPage: React.FC = () => {
@@ -15,29 +15,18 @@ const OrganizationDetailPage: React.FC = () => {
   const [showAllJobs, setShowAllJobs] = useState(false);
   const [jobsSearchTerm, setJobsSearchTerm] = useState('');
   
-  // React Query hooks
+  // Single optimized React Query hook that fetches all data at once
   const { 
-    data: organization, 
-    isLoading: organizationLoading, 
-    error: organizationError 
-  } = useOrganization(organizationId || '');
-  
-  const { 
-    data: departments = [], 
-    isLoading: departmentsLoading, 
-    error: departmentsError 
-  } = useOrganizationDepartments(organizationId || '');
-  
-  const { 
-    data: allJobsResponse, 
-    isLoading: jobsLoading, 
-    error: jobsError 
-  } = useOrganizationJobs(organizationId || '');
+    data: pageData, 
+    isLoading: loading, 
+    error 
+  } = useOrganizationDetailPageData(organizationId || '');
 
-  const allJobs = allJobsResponse?.data || [];
-  const loading = organizationLoading || departmentsLoading;
-  const loadingJobs = jobsLoading;
-  const errorMessage = organizationError?.message || departmentsError?.message;
+  const organization = pageData?.organization;
+  const departments = pageData?.departments || [];
+  const allJobs = pageData?.jobs || [];
+  const loadingJobs = loading; // Same loading state for all data
+  const errorMessage = error?.message;
 
   // Filter departments
   const filteredDepartments = departments.filter(dept =>

@@ -23,6 +23,11 @@ import ExternalJobsPage from './pages/external/ExternalJobsPage';
 import ExternalJobDetailPage from './pages/external/ExternalJobDetailPage';
 import ExternalSettingsPage from './pages/external/ExternalSettingsPage';
 import ExternalUserRegisterPage from './pages/external/ExternalUserRegisterPage';
+import JobEmailSequencesPage from './recruitment/organizations/pages/JobEmailSequencesPage';
+import JobSequenceDetailPage from './recruitment/organizations/pages/JobSequenceDetailPage';
+import JobSequenceStepsPage from './recruitment/organizations/pages/JobSequenceStepsPage';
+import JobEmailTemplatesPage from './recruitment/organizations/pages/JobEmailTemplatesPage';
+import CreateJobEmailSequencePage from './recruitment/organizations/pages/CreateJobEmailSequencePage';
 import { QueryProvider } from './providers/QueryProvider';
 
 function App() {
@@ -105,6 +110,11 @@ function App() {
                       <Route path="jobs" element={<ExternalJobsPage />} />
                       <Route path="jobs/:jobId" element={<ExternalJobDetailPage />} />
                       <Route path="jobs/:jobId/applications" element={<ExternalJobDetailPage />} />
+                      <Route path="jobs/:jobId/email-sequences" element={<JobEmailSequencesPage />} />
+                      <Route path="jobs/:jobId/email-sequences/:sequenceId" element={<JobSequenceDetailPage />} />
+                      <Route path="jobs/:jobId/email-sequences/:sequenceId/steps" element={<JobSequenceStepsPage />} />
+                      <Route path="jobs/:jobId/email-templates" element={<JobEmailTemplatesPage />} />
+                      <Route path="jobs/:jobId/email-sequences/create" element={<CreateJobEmailSequencePage />} />
                       <Route path="settings" element={<ExternalSettingsPage />} />
                     </Route>
                   </Routes>

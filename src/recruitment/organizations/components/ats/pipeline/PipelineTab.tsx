@@ -21,6 +21,7 @@ interface PipelineTabProps {
   onCandidateRemove?: (candidate: Candidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
   onDataChange?: () => Promise<void>;
+  movingCandidates?: Set<string>;
 }
 
 export const PipelineTab: React.FC<PipelineTabProps> = ({
@@ -35,7 +36,8 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
   onCandidateClick,
   onCandidateUpdate,
   onCandidateRemove,
-  onCandidateStageChange
+  onCandidateStageChange,
+  movingCandidates = new Set()
 }) => {
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
 
@@ -130,6 +132,7 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
           onCandidateClick={onCandidateClick}
           onCandidateStageChange={handleCandidateStageChange}
           onCandidateRemove={onCandidateRemove}
+          movingCandidates={movingCandidates}
         />      ) : (
         <PipelineListView
           candidates={sortedCandidates}

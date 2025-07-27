@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { OrganizationApiService, type Organization } from '../recruitment/organizations/services/organizationApiService';
+import { OrganizationApiService, type Organization, type OrganizationDetailPageData, type DepartmentJobsPageData, type DepartmentsPageData, type JobATSPageData } from '../recruitment/organizations/services/organizationApiService';
 import { useAuth } from './useAuth';
 
 const organizationApiService = new OrganizationApiService();
@@ -12,6 +12,9 @@ export const organizationKeys = {
   list: (filters: string) => [...organizationKeys.lists(), { filters }] as const,
   details: () => [...organizationKeys.all, 'detail'] as const,
   detail: (id: string) => [...organizationKeys.details(), id] as const,
+  detailPageData: (id: string) => [...organizationKeys.detail(id), 'page-data'] as const,
+  departmentJobsPageData: (organizationId: string, departmentId: string) => [...organizationKeys.detail(organizationId), 'department', departmentId, 'jobs-page-data'] as const,
+  departmentsPageData: (id: string) => [...organizationKeys.detail(id), 'departments-page-data'] as const,
   stats: () => [...organizationKeys.all, 'stats'] as const,
   departments: (organizationId: string) => [...organizationKeys.detail(organizationId), 'departments'] as const,
   jobs: (organizationId: string) => [...organizationKeys.detail(organizationId), 'jobs'] as const,
@@ -55,6 +58,39 @@ export function useOrganization(organizationId: string) {
   return useQuery({
     queryKey: organizationKeys.detail(organizationId),
     queryFn: () => organizationApiService.getOrganizationById(organizationId),
+    enabled: !!organizationId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    gcTime: 1000 * 60 * 15,
+  });
+}
+
+// Get organization detail page data in a single optimized request
+export function useOrganizationDetailPageData(organizationId: string) {
+  return useQuery({
+    queryKey: organizationKeys.detailPageData(organizationId),
+    queryFn: () => organizationApiService.getOrganizationDetailPageData(organizationId),
+    enabled: !!organizationId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    gcTime: 1000 * 60 * 15,
+  });
+}
+
+// Get department jobs page data in a single optimized request
+export function useDepartmentJobsPageData(organizationId: string, departmentId: string) {
+  return useQuery({
+    queryKey: organizationKeys.departmentJobsPageData(organizationId, departmentId),
+    queryFn: () => organizationApiService.getDepartmentJobsPageData(organizationId, departmentId),
+    enabled: !!organizationId && !!departmentId,
+    staleTime: 1000 * 60 * 8, // 8 minutes - jobs change more frequently
+    gcTime: 1000 * 60 * 12,
+  });
+}
+
+// Get departments page data in a single optimized request
+export function useDepartmentsPageData(organizationId: string) {
+  return useQuery({
+    queryKey: organizationKeys.departmentsPageData(organizationId),
+    queryFn: () => organizationApiService.getDepartmentsPageData(organizationId),
     enabled: !!organizationId,
     staleTime: 1000 * 60 * 10, // 10 minutes
     gcTime: 1000 * 60 * 15,
@@ -203,3 +239,15 @@ export function usePrefetchOrganization() {
 
 // Alias for organizations (since clients are organizations in this system)
 export const useClients = useOrganizations;
+
+export const useJobATSPageData = (organizationId: string, jobId: string) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['jobATSPageData', organizationId, jobId],
+    queryFn: () => organizationApiService.getJobATSPageData(organizationId, jobId),
+    enabled: !!organizationId && !!jobId && !!user,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    refetchOnWindowFocus: false
+  });
+};

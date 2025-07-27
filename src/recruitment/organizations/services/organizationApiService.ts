@@ -31,6 +31,69 @@ export interface OrganizationPageData {
   industries: string[];
 }
 
+// New interface for organization detail page data
+export interface OrganizationDetailPageData {
+  organization: Organization;
+  departments: Department[];
+  jobs: any[]; // Use Job type from your types
+  stats: {
+    totalJobs: number;
+    activeDepartments: number;
+    totalEmployees: number;
+  };
+}
+
+// New interface for department jobs page data
+export interface DepartmentJobsPageData {
+  organization: Organization;
+  department: Department;
+  jobs: any[]; // Use Job type from your types
+  stats: {
+    totalJobs: number;
+    activeJobs: number;
+    totalApplicants: number;
+  };
+}
+
+// New interface for job ATS page data (COMPREHENSIVE)
+export interface JobATSPageData {
+  job: any; // Use Job type from your types
+  department: {
+    id: string;
+    name: string;
+    description: string;
+    manager: string;
+    managerEmail: string;
+    totalEmployees: number;
+    color: string;
+    icon: string;
+    isActive: boolean;
+    clientId: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  pipeline: any; // Use Pipeline type
+  applications: any[]; // Use JobApplication type
+  tasks: any[]; // Use Task type
+  interviews: any[]; // Use Interview type
+  taskStats: {
+    total: number;
+    completed: number;
+    pending: number;
+    overdue: number;
+  };
+  applicationStats: Array<{
+    stage: any;
+    count: number;
+  }>;
+}
+
+// New interface for departments page data (lighter than full detail page)
+export interface DepartmentsPageData {
+  organization: Organization;
+  departments: Department[];
+}
+
 // Department interface - now uses backend data
 export interface Department {
   id: string;
@@ -358,6 +421,134 @@ export class OrganizationApiService {
         departments: 0,
         activeJobs: 0,
         employees: 0,
+      };
+    }
+  }
+
+  /**
+   * Get organization detail page data in a single request (OPTIMIZED)
+   * This combines organization, departments, and jobs data to reduce API calls
+   */
+  async getOrganizationDetailPageData(organizationId: string): Promise<OrganizationDetailPageData> {
+    try {
+      // Use the new optimized organizations endpoint
+      const response = await apiClient.get(`/organizations/${organizationId}/detail-page-data`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching organization detail page data:', error);
+      
+      // Fallback: make individual calls if combined endpoint fails
+      console.warn('Falling back to individual API calls...');
+      const [organization, departments, jobsResponse] = await Promise.all([
+        this.getOrganizationById(organizationId),
+        this.getDepartmentsByOrganization(organizationId),
+        this.getJobsByOrganization(organizationId)
+      ]);
+      
+      const jobs = jobsResponse?.data || [];
+      
+      return {
+        organization,
+        departments,
+        jobs,
+        stats: {
+          totalJobs: jobs.length,
+          activeDepartments: departments.filter(d => d.activeJobs > 0).length,
+          totalEmployees: organization.totalEmployees
+        }
+      };
+    }
+  }
+
+  /**
+   * Get department jobs page data in a single request (OPTIMIZED)
+   * This combines organization, department, and jobs data to reduce API calls
+   */
+  async getDepartmentJobsPageData(organizationId: string, departmentId: string): Promise<DepartmentJobsPageData> {
+    try {
+      // Use the new optimized organizations endpoint
+      const response = await apiClient.get(`/organizations/${organizationId}/departments/${departmentId}/jobs-page-data`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching department jobs page data:', error);
+      
+      // Fallback: make individual calls if combined endpoint fails
+      console.warn('Falling back to individual API calls...');
+      const [organization, department, jobsResponse] = await Promise.all([
+        this.getOrganizationById(organizationId),
+        this.getDepartmentById(organizationId, departmentId),
+        this.getJobsByDepartment(organizationId, departmentId)
+      ]);
+      
+      const jobs = jobsResponse?.data || [];
+      
+      return {
+        organization,
+        department,
+        jobs,
+        stats: {
+          totalJobs: jobs.length,
+          activeJobs: jobs.filter(j => j.status === 'Published').length,
+          totalApplicants: jobs.reduce((sum, job) => sum + (job.applicantsCount || 0), 0)
+        }
+      };
+    }
+  }
+
+  /**
+   * Get job ATS page data in a single request (SUPER OPTIMIZED)
+   * This combines ALL data needed for the Job ATS page to reduce API calls from 12+ to 1
+   */
+  async getJobATSPageData(organizationId: string, jobId: string): Promise<JobATSPageData> {
+    try {
+      // Use the new super optimized endpoint
+      const response = await apiClient.get(`/organizations/${organizationId}/jobs/${jobId}/ats-page-data`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching job ATS page data:', error);
+      
+      // Fallback: make individual calls if combined endpoint fails
+      console.warn('Falling back to individual API calls...');
+      const [jobResponse] = await Promise.all([
+        jobApiService.getJobById(jobId)
+      ]);
+      
+      // For fallback, return minimal data structure
+      return {
+        job: jobResponse,
+        department: null, // No department data available in fallback
+        pipeline: null,
+        applications: [],
+        tasks: [],
+        interviews: [],
+        taskStats: { total: 0, completed: 0, pending: 0, overdue: 0 },
+        applicationStats: []
+      };
+    }
+  }
+
+  /**
+   * Get departments page data in a single request (OPTIMIZED)
+   * This combines organization and departments data to reduce API calls
+   */
+  async getDepartmentsPageData(organizationId: string): Promise<DepartmentsPageData> {
+    try {
+      // Use the new optimized organizations endpoint
+      const response = await apiClient.get(`/organizations/${organizationId}/departments-page-data`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching departments page data:', error);
+      
+      // Fallback: make individual calls if combined endpoint fails
+      console.warn('Falling back to individual API calls...');
+      const [organization, departments] = await Promise.all([
+        this.getOrganizationById(organizationId),
+        this.getDepartmentsByOrganization(organizationId)
+      ]);
+      
+      return {
+        organization,
+        departments
       };
     }
   }
