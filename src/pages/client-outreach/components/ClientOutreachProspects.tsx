@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Plus, LayoutGrid, List, Filter, ChevronDown, Building } from 'lucide-react';
-import { useProjectProspects, useUpdateProspect, useProject } from '../../../hooks/useClientOutreach';
+import { useNavigate } from 'react-router-dom';
+import { useProjectProspects, useUpdateProspect, useProject, useDeleteProspect } from '../../../hooks/useClientOutreach';
 import { useClientDefaultPipeline } from '../../../hooks/useClientPipeline';
 import { ClientOutreachKanbanView } from './pipeline/ClientOutreachKanbanView';
 import ClientOutreachListView from './ClientOutreachListView';
+import ConfirmationModal from '../../../components/ConfirmationModal';
 import type { ClientOutreachProspect } from './pipeline/ClientOutreachKanbanView';
 
 interface FilterState {
@@ -23,8 +25,11 @@ interface ClientOutreachProspectsProps {
 }
 
 const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ projectId }) => {
+  const navigate = useNavigate();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [prospectToDelete, setProspectToDelete] = useState<ClientOutreachProspect | null>(null);
   
   // Get project data (which includes pipeline info)
   const { data: project, isLoading: projectLoading } = useProject(projectId!);
@@ -35,36 +40,16 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
   // Use project's pipeline if available, otherwise fall back to default
   const pipeline = project?.pipeline || defaultPipeline;
   
+  // Mutation for updating and deleting prospects
+  const updateProspectMutation = useUpdateProspect();
+  const deleteProspectMutation = useDeleteProspect();
+  
   // Validate pipeline has stages before using
   const isValidPipeline = pipeline && pipeline.stages && pipeline.stages.length > 0;
   
   if (!isValidPipeline && (project?.pipelineId || defaultPipeline)) {
     console.warn('WARNING: Pipeline missing stages, this may cause stage update errors');
   }
-  
-  // Debug: Log pipeline information
-  useEffect(() => {
-    console.log('DEBUG: ===== PIPELINE DEBUG INFO =====');
-    console.log('DEBUG: Project object:', project);
-    console.log('DEBUG: Project pipelineId:', project?.pipelineId);
-    console.log('DEBUG: Project pipeline object:', project?.pipeline);
-    console.log('DEBUG: Default pipeline:', defaultPipeline);
-    
-    if (pipeline) {
-      console.log('DEBUG: FINAL pipeline being used:', {
-        id: pipeline.id,
-        name: pipeline.name,
-        stageCount: pipeline.stages?.length || 0,
-        stages: pipeline.stages?.map(s => ({ id: s.id, name: s.name })) || []
-      });
-    } else {
-      console.log('DEBUG: NO PIPELINE AVAILABLE');
-    }
-    console.log('DEBUG: ================================');
-  }, [pipeline, project, defaultPipeline]);
-  
-  // Mutation for updating prospect stage
-  const updateProspectMutation = useUpdateProspect();
   
   // Helper function to get current stage ID for a prospect
   const getProspectStageId = (prospect: ClientOutreachProspect): string => {
@@ -184,8 +169,55 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
   }, [prospects]);
 
   const handleProspectClick = (prospect: ClientOutreachProspect) => {
-    // TODO: Open prospect detail panel/modal
-    console.log('Prospect clicked:', prospect);
+    // Navigate to company detail page with comprehensive prospect data
+    // Match the structure used in search results for consistent display
+    // Convert raw prospect data to match CompanyResult interface
+    const rawProspect = rawProspects.find(rp => rp.id === prospect.id);
+    
+    navigate(`/dashboard/client-outreach/projects/${projectId}/company-detail`, {
+      state: {
+        company: {
+          id: prospect.id,
+          name: prospect.companyName,
+          domain: prospect.website,
+          industry: prospect.industry,
+          location: prospect.location,
+          employeeCount: prospect.employeeCount,
+          sizeRange: prospect.sizeRange,
+          description: prospect.description,
+          linkedinUrl: prospect.linkedinUrl,
+          // Use actual prospect data from backend when available
+          specialties: rawProspect?.specialties || [],
+          technologies: rawProspect?.technologies || [],
+          logo: rawProspect?.logo,
+          score: rawProspect?.matchScore,
+          // Additional fields from prospect data
+          revenue: rawProspect?.revenue,
+          fundingStage: rawProspect?.fundingStage,
+          // Fields not available in prospect data - set to defaults expected by CompanyDetailPage
+          founded: undefined,
+          followers: undefined,
+          type: undefined,
+          phoneNumbers: [],
+          emails: [],
+          fullAddress: undefined,
+          socialLinks: rawProspect?.socialProfiles || {},
+        },
+        searchContext: {
+          fromProspects: true,
+          projectId: projectId,
+          // Add prospect-specific context for better UI integration
+          prospectId: prospect.id,
+          prospectStatus: prospect.status,
+          prospectStage: getProspectStageName(prospect),
+          prospectNotes: prospect.notes,
+          prospectPriority: rawProspect?.priority,
+          prospectTags: rawProspect?.tags,
+          prospectLastContact: rawProspect?.lastContactedAt,
+          prospectNextFollowUp: rawProspect?.nextFollowUpAt,
+        }
+      }
+    });
   };
 
   const handleProspectStageChange = async (prospectId: string, newStage: string) => {
@@ -222,8 +254,23 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
   };
 
   const handleProspectRemove = (prospect: ClientOutreachProspect) => {
-    // TODO: Implement prospect removal
-    console.log('Removing prospect:', prospect);
+    setProspectToDelete(prospect);
+    setShowDeleteConfirmation(true);
+  };
+
+  const confirmDeleteProspect = async () => {
+    if (!prospectToDelete) return;
+    
+    try {
+      await deleteProspectMutation.mutateAsync(prospectToDelete.id);
+      setProspectToDelete(null);
+      setShowDeleteConfirmation(false);
+      console.log('Prospect removed successfully:', prospectToDelete.companyName);
+    } catch (error) {
+      console.error('Failed to delete prospect:', error);
+      // Keep the modal open so user can try again
+      // Error handling could be enhanced with toast notifications
+    }
   };
 
   if (isLoading || pipelineLoading || projectLoading) {
@@ -450,6 +497,24 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onClose={() => {
+          // Don't allow closing while deleting
+          if (!deleteProspectMutation.isPending) {
+            setShowDeleteConfirmation(false);
+            setProspectToDelete(null);
+          }
+        }}
+        onConfirm={confirmDeleteProspect}
+        title="Remove Prospect"
+        message={`Are you sure you want to remove "${prospectToDelete?.companyName}" from this project? This action cannot be undone.`}
+        confirmText={deleteProspectMutation.isPending ? "Removing..." : "Remove"}
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

@@ -277,10 +277,37 @@ export const useDeleteProspect = () => {
   
   return useMutation({
     mutationFn: (id: string) => clientOutreachApiService.deleteProspect(id),
-    onSuccess: () => {
-      // Invalidate all prospects queries
-      queryClient.invalidateQueries({ queryKey: ['client-outreach', 'projects'] });
-      queryClient.invalidateQueries({ queryKey: ['client-outreach', 'searches'] });
+    onSuccess: (_, prospectId) => {
+      // Invalidate all project prospects queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['client-outreach', 'projects'],
+        predicate: (query) => {
+          // Invalidate project lists and individual projects
+          return query.queryKey.includes('projects');
+        }
+      });
+      
+      // Invalidate all search prospects queries  
+      queryClient.invalidateQueries({ 
+        queryKey: ['client-outreach', 'searches'],
+        predicate: (query) => {
+          // Invalidate search results and individual searches
+          return query.queryKey.includes('searches');
+        }
+      });
+      
+      // Also remove the prospect from any cached queries optimistically
+      queryClient.setQueriesData(
+        { queryKey: ['client-outreach'] },
+        (oldData: any) => {
+          if (Array.isArray(oldData)) {
+            return oldData.filter(item => item.id !== prospectId);
+          }
+          return oldData;
+        }
+      );
+      
+      console.log('Prospect deleted successfully and queries invalidated:', prospectId);
     },
   });
 };

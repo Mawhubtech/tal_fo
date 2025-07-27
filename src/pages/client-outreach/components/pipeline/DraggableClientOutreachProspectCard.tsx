@@ -95,7 +95,13 @@ export const DraggableClientOutreachProspectCard: React.FC<DraggableClientOutrea
 
       {/* Company Name */}
       <div className="mb-3">
-        <h4 className="font-semibold text-gray-900 pr-6 text-sm leading-tight">
+        <h4 
+          className="font-semibold text-gray-900 pr-6 text-sm leading-tight cursor-pointer hover:text-purple-600 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.();
+          }}
+        >
           {prospect.companyName}
         </h4>
       </div>
