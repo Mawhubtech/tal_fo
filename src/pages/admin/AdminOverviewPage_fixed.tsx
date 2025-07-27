@@ -80,6 +80,22 @@ const AdminOverviewPage: React.FC = () => {
       icon: BarChart3,
       color: 'bg-green-500',
       stats: 'Real-time data'
+    },
+    {
+      title: 'Resume Processing',
+      description: 'Process and manage resume uploads',
+      link: '/dashboard/admin/resume-processing',
+      icon: Activity,
+      color: 'bg-purple-500',
+      stats: 'Processing'
+    },
+    {
+      title: 'System Settings',
+      description: 'Configure platform settings',
+      link: '/dashboard/admin/system-settings',
+      icon: Settings,
+      color: 'bg-orange-500',
+      stats: 'Configure'
     }
   ];
 

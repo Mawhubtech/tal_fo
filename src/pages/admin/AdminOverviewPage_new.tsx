@@ -7,6 +7,7 @@ import {
   Loader2, AlertCircle
 } from 'lucide-react';
 import { useAdminStats, useAdminActivity, useSystemComponents } from '../../hooks/useAdminStats';
+import { adminApiService } from '../../services/adminApiService';
 
 const AdminOverviewPage: React.FC = () => {
   // Fetch admin statistics
@@ -53,8 +54,8 @@ const AdminOverviewPage: React.FC = () => {
   // Use actual data or fallbacks
   const adminStats = stats || {
     users: { total: 0, active: 0, inactive: 0, admins: 0, recruiters: 0, clients: 0, thisMonth: 0 },
-    jobs: { total: 0, published: 0, draft: 0, paused: 0, closed: 0, archived: 0 },
-    candidates: { total: 0, active: 0, hired: 0, interviewing: 0, rejected: 0, inactive: 0 },
+    jobs: { total: 0, active: 0, filled: 0, paused: 0, thisMonth: 0 },
+    candidates: { total: 0, active: 0, thisWeek: 0, thisMonth: 0 },
     organizations: { total: 0, active: 0, inactive: 0, premium: 0, trial: 0, thisMonth: 0 },
     system: { uptime: '99.9%', responseTime: 150, health: 'excellent' as const, apiStatus: 'operational' as const, databaseStatus: 'operational' as const, jobBoardStatus: 'operational' as const, securityStatus: 'operational' as const },
     recent_activity: []
@@ -71,7 +72,7 @@ const AdminOverviewPage: React.FC = () => {
       link: '/dashboard/admin/users',
       icon: Users,
       color: 'bg-blue-500',
-      stats: `${adminStats.users.total} users`
+      stats: `${adminStats.totalUsers} users`
     },
     {
       title: 'Analytics',
@@ -80,23 +81,24 @@ const AdminOverviewPage: React.FC = () => {
       icon: BarChart3,
       color: 'bg-green-500',
       stats: 'Real-time data'
+    },
+    {
+      title: 'Resume Processing',
+      description: 'Process and manage resume uploads',
+      link: '/dashboard/admin/resume-processing',
+      icon: Activity,
+      color: 'bg-purple-500',
+      stats: `${adminStats.pendingReviews} pending`
+    },
+    {
+      title: 'System Settings',
+      description: 'Configure platform settings',
+      link: '/dashboard/admin/system-settings',
+      icon: Settings,
+      color: 'bg-orange-500',
+      stats: 'Configure'
     }
   ];
-
-  // Format activity time
-  const formatActivityTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -110,12 +112,11 @@ const AdminOverviewPage: React.FC = () => {
           <p className="text-sm text-gray-500">System Status</p>
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${
-              adminStats.system.health === 'excellent' ? 'bg-green-500' :
-              adminStats.system.health === 'good' ? 'bg-blue-500' :
-              adminStats.system.health === 'warning' ? 'bg-yellow-500' :
+              adminStats.systemHealth === 'healthy' ? 'bg-green-500' :
+              adminStats.systemHealth === 'warning' ? 'bg-yellow-500' :
               'bg-red-500'
             }`}></div>
-            <p className="text-sm font-medium text-gray-900 capitalize">{adminStats.system.health}</p>
+            <p className="text-sm font-medium text-gray-900 capitalize">{adminStats.systemHealth}</p>
           </div>
         </div>
       </div>
@@ -126,10 +127,10 @@ const AdminOverviewPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Users</p>
-              <p className="text-3xl font-bold text-gray-900">{adminStats.users.total.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-gray-900">{adminStats.totalUsers.toLocaleString()}</p>
               <p className="text-sm text-green-600 flex items-center mt-1">
                 <TrendingUp className="w-4 h-4 mr-1" />
-                {adminStats.users.active} active
+                {adminStats.activeUsers} active
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
@@ -142,10 +143,10 @@ const AdminOverviewPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Candidates</p>
-              <p className="text-3xl font-bold text-gray-900">{adminStats.candidates.total.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-gray-900">{adminStats.totalCandidates.toLocaleString()}</p>
               <p className="text-sm text-purple-600 flex items-center mt-1">
                 <UserPlus className="w-4 h-4 mr-1" />
-                {adminStats.candidates.active} active
+                In system
               </p>
             </div>
             <div className="p-3 bg-purple-100 rounded-lg">
@@ -158,10 +159,10 @@ const AdminOverviewPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Jobs</p>
-              <p className="text-3xl font-bold text-gray-900">{adminStats.jobs.published}</p>
+              <p className="text-3xl font-bold text-gray-900">{adminStats.totalJobs}</p>
               <p className="text-sm text-orange-600 flex items-center mt-1">
                 <Building className="w-4 h-4 mr-1" />
-                {adminStats.organizations.total} orgs
+                {adminStats.totalOrganizations} orgs
               </p>
             </div>
             <div className="p-3 bg-orange-100 rounded-lg">
@@ -174,7 +175,7 @@ const AdminOverviewPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">System Uptime</p>
-              <p className="text-3xl font-bold text-gray-900">{adminStats.system.uptime}</p>
+              <p className="text-3xl font-bold text-gray-900">{adminStats.uptime}</p>
               <p className="text-sm text-green-600 flex items-center mt-1">
                 <CheckCircle className="w-4 h-4 mr-1" />
                 Operational
@@ -234,22 +235,19 @@ const AdminOverviewPage: React.FC = () => {
                       activity.type === 'user' ? 'bg-blue-100' :
                       activity.type === 'system' ? 'bg-orange-100' :
                       activity.type === 'security' ? 'bg-red-100' :
-                      activity.type === 'organization' ? 'bg-green-100' :
-                      activity.type === 'job' ? 'bg-purple-100' :
-                      activity.type === 'candidate' ? 'bg-pink-100' :
+                      activity.type === 'data' ? 'bg-green-100' :
                       'bg-gray-100'
                     }`}>
                       {activity.type === 'user' && <Users className="w-4 h-4 text-blue-600" />}
                       {activity.type === 'system' && <Settings className="w-4 h-4 text-orange-600" />}
                       {activity.type === 'security' && <Shield className="w-4 h-4 text-red-600" />}
-                      {activity.type === 'organization' && <Building className="w-4 h-4 text-green-600" />}
-                      {activity.type === 'job' && <Target className="w-4 h-4 text-purple-600" />}
-                      {activity.type === 'candidate' && <UserPlus className="w-4 h-4 text-pink-600" />}
+                      {activity.type === 'data' && <Database className="w-4 h-4 text-green-600" />}
+                      {activity.type === 'performance' && <Activity className="w-4 h-4 text-purple-600" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">{activity.action}</p>
                       <p className="text-sm text-gray-500">{activity.details}</p>
-                      <p className="text-xs text-gray-400 mt-1">{formatActivityTime(activity.timestamp)}</p>
+                      <p className="text-xs text-gray-400 mt-1">{adminApiService.formatActivityTime(activity.time)}</p>
                     </div>
                   </div>
                 ))}
@@ -272,38 +270,38 @@ const AdminOverviewPage: React.FC = () => {
               <div key={component.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-lg ${
-                    component.status === 'operational' ? 'bg-green-100' :
+                    component.status === 'healthy' ? 'bg-green-100' :
                     component.status === 'warning' ? 'bg-yellow-100' :
                     'bg-red-100'
                   }`}>
                     {component.name === 'Database' && <Database className={`w-5 h-5 ${
-                      component.status === 'operational' ? 'text-green-600' :
+                      component.status === 'healthy' ? 'text-green-600' :
                       component.status === 'warning' ? 'text-yellow-600' :
                       'text-red-600'
                     }`} />}
                     {component.name === 'API Server' && <Server className={`w-5 h-5 ${
-                      component.status === 'operational' ? 'text-green-600' :
+                      component.status === 'healthy' ? 'text-green-600' :
                       component.status === 'warning' ? 'text-yellow-600' :
                       'text-red-600'
                     }`} />}
                     {component.name === 'Cache' && <Cpu className={`w-5 h-5 ${
-                      component.status === 'operational' ? 'text-green-600' :
+                      component.status === 'healthy' ? 'text-green-600' :
                       component.status === 'warning' ? 'text-yellow-600' :
                       'text-red-600'
                     }`} />}
                     {!['Database', 'API Server', 'Cache'].includes(component.name) && <Globe className={`w-5 h-5 ${
-                      component.status === 'operational' ? 'text-green-600' :
+                      component.status === 'healthy' ? 'text-green-600' :
                       component.status === 'warning' ? 'text-yellow-600' :
                       'text-red-600'
                     }`} />}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{component.name}</p>
-                    <p className="text-sm text-gray-500">{component.value}</p>
+                    <p className="text-sm text-gray-500">{component.metric}</p>
                   </div>
                 </div>
                 <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  component.status === 'operational' ? 'bg-green-100 text-green-800' :
+                  component.status === 'healthy' ? 'bg-green-100 text-green-800' :
                   component.status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-red-100 text-red-800'
                 }`}>
