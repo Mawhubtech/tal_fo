@@ -26,6 +26,7 @@ import ExternalUserRegisterPage from './pages/external/ExternalUserRegisterPage'
 import JobEmailSequencesPage from './recruitment/organizations/pages/JobEmailSequencesPage';
 import JobSequenceDetailPage from './recruitment/organizations/pages/JobSequenceDetailPage';
 import JobSequenceStepsPage from './recruitment/organizations/pages/JobSequenceStepsPage';
+import JobSequenceEnrollmentsPage from './recruitment/organizations/pages/JobSequenceEnrollmentsPage';
 import JobEmailTemplatesPage from './recruitment/organizations/pages/JobEmailTemplatesPage';
 import CreateJobEmailSequencePage from './recruitment/organizations/pages/CreateJobEmailSequencePage';
 import { QueryProvider } from './providers/QueryProvider';
@@ -113,6 +114,7 @@ function App() {
                       <Route path="jobs/:jobId/email-sequences" element={<JobEmailSequencesPage />} />
                       <Route path="jobs/:jobId/email-sequences/:sequenceId" element={<JobSequenceDetailPage />} />
                       <Route path="jobs/:jobId/email-sequences/:sequenceId/steps" element={<JobSequenceStepsPage />} />
+                      <Route path="jobs/:jobId/email-sequences/:sequenceId/enrollments" element={<JobSequenceEnrollmentsPage />} />
                       <Route path="jobs/:jobId/email-templates" element={<JobEmailTemplatesPage />} />
                       <Route path="jobs/:jobId/email-sequences/create" element={<CreateJobEmailSequencePage />} />
                       <Route path="settings" element={<ExternalSettingsPage />} />

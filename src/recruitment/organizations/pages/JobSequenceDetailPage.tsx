@@ -670,6 +670,16 @@ const JobSequenceDetailPage: React.FC = () => {
           
           <div className="flex items-center gap-3">
             <Link 
+              to={isExternal 
+                ? `/external/jobs/${jobId}/email-sequences/${sequenceId}/enrollments`
+                : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${sequenceId}/enrollments`
+              }
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Manage Enrollments
+            </Link>
+            <Link 
               to={`${location.pathname}/steps`}
               className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >

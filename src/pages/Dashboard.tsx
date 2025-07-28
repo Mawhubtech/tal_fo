@@ -46,6 +46,7 @@ import JobATSPage from '../recruitment/organizations/pages/JobATSPage';
 import JobEmailSequencesPage from '../recruitment/organizations/pages/JobEmailSequencesPage';
 import JobSequenceDetailPage from '../recruitment/organizations/pages/JobSequenceDetailPage';
 import JobSequenceStepsPage from '../recruitment/organizations/pages/JobSequenceStepsPage';
+import JobSequenceEnrollmentsPage from '../recruitment/organizations/pages/JobSequenceEnrollmentsPage';
 import JobEmailTemplatesPage from '../recruitment/organizations/pages/JobEmailTemplatesPage';
 import CreateJobEmailSequencePage from '../recruitment/organizations/pages/CreateJobEmailSequencePage';
 
@@ -344,6 +345,12 @@ const Dashboard: React.FC = () => {
             <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/:sequenceId/steps" element={
               <RoutePermissionGuard>
                 <JobSequenceStepsPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/:sequenceId/enrollments" element={
+              <RoutePermissionGuard>
+                <JobSequenceEnrollmentsPage />
               </RoutePermissionGuard>
             } />
             

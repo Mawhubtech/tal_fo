@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Settings, Edit, Trash2, Mail, Clock, MessageSquare, Phone, CheckSquare, Timer } from 'lucide-react';
+import { ArrowLeft, Plus, Settings, Edit, Trash2, Mail, Clock, MessageSquare, Phone, CheckSquare, Timer, Users } from 'lucide-react';
 import { useJob } from '../../../hooks/useJobs';
 import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { useEmailSequence, useUpdateEmailSequence } from '../../../hooks/useEmailSequences';
