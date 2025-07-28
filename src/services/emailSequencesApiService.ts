@@ -228,4 +228,26 @@ export class EmailSequencesApiService {
   }): Promise<void> {
     await apiClient.post(`${this.baseUrl}/${id}/analytics`, analytics);
   }
+
+  static async previewTemplate(data: {
+    subject?: string;
+    content?: string;
+  }): Promise<{
+    subject: string;
+    content: string;
+  }> {
+    const response = await apiClient.post(`${this.baseUrl}/preview-template`, data);
+    return response.data;
+  }
+
+  static async validateTemplate(data: {
+    subject?: string;
+    content?: string;
+  }): Promise<{
+    subject: { isValid: boolean; errors: string[] };
+    content: { isValid: boolean; errors: string[] };
+  }> {
+    const response = await apiClient.post(`${this.baseUrl}/validate-template`, data);
+    return response.data;
+  }
 }

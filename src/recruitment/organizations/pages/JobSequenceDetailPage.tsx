@@ -1,24 +1,14 @@
 import React, { useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Play, Pause, Settings, Users, Mail, Eye, Plus, Archive, Edit, Search, Filter, X } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Settings, Users, Mail, Eye, Plus, Archive, Edit, Search, Filter, X, BarChart3 } from 'lucide-react';
 import { useJob } from '../../../hooks/useJobs';
 import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { useEmailSequence, useUpdateEmailSequence } from '../../../hooks/useEmailSequences';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
 import { EmailSequence } from '../../../services/emailSequencesApiService';
-
-// Mock enrollment data type
-interface Enrollment {
-  id: string;
-  candidateName: string;
-  candidateEmail: string;
-  currentStep: number;
-  status: 'active' | 'paused' | 'completed' | 'failed';
-  enrolledAt: string;
-  lastActivity: string;
-  progress: number;
-}
+import { EmailTrackingAnalytics } from '../../../components/EmailTrackingAnalytics';
+import EnrollmentManagement from '../components/EnrollmentManagement';
 
 // Edit Sequence Modal Component
 interface EditSequenceModalProps {
@@ -166,346 +156,6 @@ const EditSequenceModal: React.FC<EditSequenceModalProps> = ({ sequence, isOpen,
   );
 };
 
-// Enrollment Management Component
-interface EnrollmentManagementProps {
-  sequenceId: string;
-  jobId: string;
-  isExternal: boolean;
-  onEnrollCandidate: () => void;
-}
-
-const EnrollmentManagement: React.FC<EnrollmentManagementProps> = ({ 
-  sequenceId, 
-  jobId, 
-  isExternal, 
-  onEnrollCandidate 
-}) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  
-  // Mock enrollment data - replace with actual API call
-  const mockEnrollments: Enrollment[] = [
-    {
-      id: '1',
-      candidateName: 'John Doe',
-      candidateEmail: 'john.doe@email.com',
-      currentStep: 2,
-      status: 'active',
-      enrolledAt: '2025-01-15',
-      lastActivity: '2025-01-20',
-      progress: 40
-    },
-    {
-      id: '2',
-      candidateName: 'Jane Smith',
-      candidateEmail: 'jane.smith@email.com',
-      currentStep: 1,
-      status: 'paused',
-      enrolledAt: '2025-01-18',
-      lastActivity: '2025-01-18',
-      progress: 20
-    },
-    {
-      id: '3',
-      candidateName: 'Mike Johnson',
-      candidateEmail: 'mike.j@email.com',
-      currentStep: 5,
-      status: 'completed',
-      enrolledAt: '2025-01-10',
-      lastActivity: '2025-01-22',
-      progress: 100
-    }
-  ];
-
-  const filteredEnrollments = mockEnrollments.filter(enrollment => {
-    const matchesSearch = enrollment.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         enrollment.candidateEmail.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || enrollment.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      active: 'bg-green-100 text-green-800',
-      paused: 'bg-yellow-100 text-yellow-800',
-      completed: 'bg-blue-100 text-blue-800',
-      failed: 'bg-red-100 text-red-800'
-    };
-    return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800';
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Sequence Enrollments</h2>
-          <button
-            onClick={onEnrollCandidate}
-            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Enroll Candidate
-          </button>
-        </div>
-
-        {/* Search and Filter */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search candidates..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full"
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6">
-        {filteredEnrollments.length > 0 ? (
-          <div className="space-y-4">
-            {filteredEnrollments.map((enrollment) => (
-              <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{enrollment.candidateName}</h3>
-                    <p className="text-sm text-gray-600">{enrollment.candidateEmail}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(enrollment.status)}`}>
-                    {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
-                  <div>
-                    <p className="text-xs text-gray-500">Current Step</p>
-                    <p className="text-sm font-medium">{enrollment.currentStep}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Progress</p>
-                    <p className="text-sm font-medium">{enrollment.progress}%</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Enrolled</p>
-                    <p className="text-sm font-medium">{new Date(enrollment.enrolledAt).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Last Activity</p>
-                    <p className="text-sm font-medium">{new Date(enrollment.lastActivity).toLocaleDateString()}</p>
-                  </div>
-                </div>
-
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                  <div 
-                    className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${enrollment.progress}%` }}
-                  ></div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button className="text-purple-600 hover:text-purple-700 text-sm font-medium">
-                    View Details
-                  </button>
-                  <button className="text-gray-600 hover:text-gray-700 text-sm font-medium">
-                    Pause
-                  </button>
-                  <button className="text-red-600 hover:text-red-700 text-sm font-medium">
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No enrollments found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Try adjusting your search or filter criteria'
-                : 'Start by enrolling candidates in this sequence'
-              }
-            </p>
-            {(!searchTerm && statusFilter === 'all') && (
-              <button
-                onClick={onEnrollCandidate}
-                className="mt-4 inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Enroll First Candidate
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Enroll Candidate Modal Component
-interface EnrollCandidateModalProps {
-  sequenceId: string;
-  jobId: string;
-  isOpen: boolean;
-  onClose: () => void;
-  onEnroll: (candidateData: any) => Promise<void>;
-}
-
-const EnrollCandidateModal: React.FC<EnrollCandidateModalProps> = ({ 
-  sequenceId, 
-  jobId, 
-  isOpen, 
-  onClose, 
-  onEnroll 
-}) => {
-  const [formData, setFormData] = useState({
-    candidateName: '',
-    candidateEmail: '',
-    startStep: 1,
-    scheduledStart: '',
-    notes: ''
-  });
-  const [enrolling, setEnrolling] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEnrolling(true);
-    try {
-      await onEnroll(formData);
-      setFormData({
-        candidateName: '',
-        candidateEmail: '',
-        startStep: 1,
-        scheduledStart: '',
-        notes: ''
-      });
-    } catch (error) {
-      console.error('Failed to enroll candidate:', error);
-    } finally {
-      setEnrolling(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Enroll Candidate</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Candidate Name
-            </label>
-            <input
-              type="text"
-              value={formData.candidateName}
-              onChange={(e) => setFormData({ ...formData, candidateName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={formData.candidateEmail}
-              onChange={(e) => setFormData({ ...formData, candidateEmail: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Start from Step
-            </label>
-            <select
-              value={formData.startStep}
-              onChange={(e) => setFormData({ ...formData, startStep: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              {[1, 2, 3, 4, 5].map(step => (
-                <option key={step} value={step}>Step {step}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Scheduled Start (Optional)
-            </label>
-            <input
-              type="datetime-local"
-              value={formData.scheduledStart}
-              onChange={(e) => setFormData({ ...formData, scheduledStart: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              rows={3}
-              placeholder="Any special notes or instructions..."
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-              disabled={enrolling}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={enrolling}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
-            >
-              {enrolling ? 'Enrolling...' : 'Enroll Candidate'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 const JobSequenceDetailPage: React.FC = () => {
   const { organizationId, departmentId, jobId, sequenceId } = useParams<{ 
     organizationId: string; 
@@ -518,8 +168,7 @@ const JobSequenceDetailPage: React.FC = () => {
 
   // State for modals and forms
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'enrollments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'enrollments'>('overview');
 
   // Determine if current user is external and use appropriate hook
   const isExternal = isExternalUser(user);
@@ -670,16 +319,6 @@ const JobSequenceDetailPage: React.FC = () => {
           
           <div className="flex items-center gap-3">
             <Link 
-              to={isExternal 
-                ? `/external/jobs/${jobId}/email-sequences/${sequenceId}/enrollments`
-                : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${sequenceId}/enrollments`
-              }
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              Manage Enrollments
-            </Link>
-            <Link 
               to={`${location.pathname}/steps`}
               className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
@@ -766,6 +405,17 @@ const JobSequenceDetailPage: React.FC = () => {
               }`}
             >
               Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`flex items-center space-x-1 py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'analytics'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Analytics</span>
             </button>
             <button
               onClick={() => setActiveTab('enrollments')}
@@ -895,7 +545,15 @@ const JobSequenceDetailPage: React.FC = () => {
           sequenceId={sequenceId || ''}
           jobId={jobId || ''}
           isExternal={isExternal}
-          onEnrollCandidate={() => setIsEnrollmentModalOpen(true)}
+          organizationId={organizationId}
+          departmentId={departmentId}
+        />
+      )}
+
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && (
+        <EmailTrackingAnalytics 
+          sequenceId={sequenceId || ''}
         />
       )}
 
@@ -909,21 +567,6 @@ const JobSequenceDetailPage: React.FC = () => {
             await updateSequenceMutation.mutateAsync({ id: sequenceId || '', data });
             await refetchSequence();
             setIsEditModalOpen(false);
-          }}
-        />
-      )}
-
-      {/* Enroll Candidate Modal */}
-      {isEnrollmentModalOpen && (
-        <EnrollCandidateModal
-          sequenceId={sequenceId || ''}
-          jobId={jobId || ''}
-          isOpen={isEnrollmentModalOpen}
-          onClose={() => setIsEnrollmentModalOpen(false)}
-          onEnroll={async (candidateData) => {
-            // Handle enrollment logic here
-            console.log('Enrolling candidate:', candidateData);
-            setIsEnrollmentModalOpen(false);
           }}
         />
       )}

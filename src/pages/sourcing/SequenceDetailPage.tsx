@@ -1,8 +1,9 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Mail, Users, UserPlus, Settings, Play } from 'lucide-react';
+import { ArrowLeft, Mail, Users, UserPlus, Settings, Play, BarChart3 } from 'lucide-react';
 import { useProject } from '../../hooks/useSourcingProjects';
 import { useSequence, useSequenceEnrollments, useSendSequenceEmails } from '../../hooks/useSourcingSequences';
+import { EmailTrackingAnalytics } from '../../components/EmailTrackingAnalytics';
 
 const SequenceDetailPage: React.FC = () => {
   const { projectId, sequenceId } = useParams<{ projectId: string; sequenceId: string }>();
@@ -174,8 +175,8 @@ const SequenceDetailPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Sequence Steps */}
+      <div className="space-y-8">
+        {/* First Row: Sequence Steps */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -216,7 +217,22 @@ const SequenceDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Enrolled Candidates */}
+        {/* Second Row: Email Tracking Analytics */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="w-5 h-5 text-purple-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Email Analytics</h2>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <EmailTrackingAnalytics sequenceId={sequence.id} />
+          </div>
+        </div>
+
+        {/* Third Row: Enrolled Candidates */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Enrolled Candidates</h2>

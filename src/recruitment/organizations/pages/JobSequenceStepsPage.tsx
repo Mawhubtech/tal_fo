@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Settings, Edit, Trash2, Mail, Clock, MessageSquare, Phone, CheckSquare, Timer, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Settings, Edit, Trash2, Mail, Clock, MessageSquare, Phone, CheckSquare, Timer, Users, Eye, GitBranch, TestTube, Brain } from 'lucide-react';
 import { useJob } from '../../../hooks/useJobs';
 import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { useEmailSequence, useUpdateEmailSequence } from '../../../hooks/useEmailSequences';
-import { EmailSequence, EmailSequenceStep } from '../../../services/emailSequencesApiService';
+import { EmailSequence, EmailSequenceStep, EmailSequencesApiService } from '../../../services/emailSequencesApiService';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
 
@@ -384,10 +384,57 @@ const CreateEditStepModal: React.FC<{
   sequence: EmailSequence;
   steps: EmailSequenceStep[];
 }> = ({ isOpen, onClose, step, sequenceId, nextStepOrder, sequence, steps }) => {
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [previewData, setPreviewData] = useState<{
+    subject: string;
+    content: string;
+  } | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [activeSection, setActiveSection] = useState<'basic' | 'conditional' | 'abtesting' | 'timing'>('basic');
+  
   // Helper function to remove id from step
   const removeIdFromStep = (step: any) => {
     const { id, ...stepWithoutId } = step;
     return stepWithoutId;
+  };
+
+  // Function to insert variable at cursor position
+  const insertVariable = (variable: string) => {
+    const textarea = contentTextareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentValue = formData.content;
+      const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
+      
+      setFormData(prev => ({ ...prev, content: newValue }));
+      
+      // Set cursor position after the inserted variable
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + variable.length, start + variable.length);
+      }, 0);
+    }
+  };
+
+  // Function to generate preview
+  const handlePreview = async () => {
+    if (formData.type !== 'email') return;
+    
+    setIsLoadingPreview(true);
+    try {
+      const preview = await EmailSequencesApiService.previewTemplate({
+        subject: formData.subject,
+        content: formData.content,
+      });
+      setPreviewData(preview);
+      setActiveTab('preview');
+    } catch (error) {
+      console.error('Failed to generate preview:', error);
+    } finally {
+      setIsLoadingPreview(false);
+    }
   };
 
   const [formData, setFormData] = useState({
@@ -401,7 +448,23 @@ const CreateEditStepModal: React.FC<{
     triggerType: step?.triggerType || 'immediate',
     delayHours: step?.delayHours || 0,
     delayMinutes: step?.delayMinutes || 0,
-    isActive: step?.isActive ?? true
+    isActive: step?.isActive ?? true,
+    // Conditional Logic Fields
+    triggerConditions: step?.triggerConditions || [],
+    // A/B Testing Fields
+    abTestConfig: step?.abTestConfig || null,
+    // Branching Rules
+    branchingRules: step?.branchingRules || [],
+    // Smart Timing
+    smartTiming: step?.smartTiming || {
+      enabled: false,
+      candidateTimezone: false,
+      businessHoursStart: '09:00',
+      businessHoursEnd: '17:00',
+      sendingWindows: [],
+      avoidHolidays: false,
+      personalizedTiming: false
+    }
   });
 
   const updateSequenceMutation = useUpdateEmailSequence();
@@ -452,136 +515,1019 @@ const CreateEditStepModal: React.FC<{
           </div>
           
           <div className="p-6 space-y-4">
-            {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Step Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="e.g., Initial outreach email"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Step Type *
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+            {/* Section Navigation */}
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('basic')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeSection === 'basic'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
                 >
-                  <option value="email">Email</option>
-                  <option value="sms">SMS</option>
-                  <option value="call">Phone Call</option>
-                  <option value="task">Task</option>
-                  <option value="wait">Wait/Delay</option>
-                  <option value="linkedin_message">LinkedIn Message</option>
-                </select>
-              </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Basic Settings
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('conditional')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeSection === 'conditional'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <GitBranch className="w-4 h-4" />
+                    Conditional Logic
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('abtesting')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeSection === 'abtesting'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <TestTube className="w-4 h-4" />
+                    A/B Testing
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('timing')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeSection === 'timing'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Brain className="w-4 h-4" />
+                    Smart Timing
+                  </div>
+                </button>
+              </nav>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Brief description of this step..."
-              />
-            </div>
-
-            {/* Email-specific fields */}
-            {formData.type === 'email' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Subject *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.subject}
-                    onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-                    placeholder="Email subject line..."
-                    required={formData.type === 'email'}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Content *
-                  </label>
-                  <textarea
-                    value={formData.content}
-                    onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                    rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-                    placeholder="Email content..."
-                    required={formData.type === 'email'}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Timing Configuration */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trigger Type
-                </label>
-                <select
-                  value={formData.triggerType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, triggerType: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-                >
-                  <option value="immediate">Immediate</option>
-                  <option value="delay">After Delay</option>
-                  <option value="condition">Based on Condition</option>
-                  <option value="manual">Manual Trigger</option>
-                </select>
-              </div>
-              
-              {formData.triggerType === 'delay' && (
-                <>
+            {/* Basic Settings Section */}
+            {activeSection === 'basic' && (
+              <div className="space-y-4">
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Delay Hours
+                      Step Name *
                     </label>
                     <input
-                      type="number"
-                      min="0"
-                      value={formData.delayHours}
-                      onChange={(e) => setFormData(prev => ({ ...prev, delayHours: parseInt(e.target.value) || 0 }))}
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="e.g., Initial outreach email"
+                      required
                     />
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Delay Minutes
+                      Step Type *
                     </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      value={formData.delayMinutes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, delayMinutes: parseInt(e.target.value) || 0 }))}
+                    <select
+                      value={formData.type}
+                      onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-                    />
+                    >
+                      <option value="email">Email</option>
+                      <option value="sms">SMS</option>
+                      <option value="call">Phone Call</option>
+                      <option value="task">Task</option>
+                      <option value="wait">Wait/Delay</option>
+                      <option value="linkedin_message">LinkedIn Message</option>
+                    </select>
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="Brief description of this step..."
+                  />
+                </div>
+
+                {/* Email-specific fields */}
+                {formData.type === 'email' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Subject *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.subject}
+                        onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                        placeholder="Email subject line..."
+                        required={formData.type === 'email'}
+                      />
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Email Content *
+                          <span className="text-xs text-gray-500 ml-2">
+                            Use variables like {"{{candidate.name}}"}, {"{{job.title}}"}, {"{{company.name}}"}
+                          </span>
+                        </label>
+                        <div className="flex">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('edit')}
+                            className={`px-3 py-1 text-sm rounded-l-md border ${
+                              activeTab === 'edit'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handlePreview}
+                            disabled={isLoadingPreview}
+                            className={`px-3 py-1 text-sm rounded-r-md border-t border-r border-b flex items-center gap-1 ${
+                              activeTab === 'preview'
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Eye className="w-3 h-3" />
+                            {isLoadingPreview ? 'Loading...' : 'Preview'}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {activeTab === 'edit' ? (
+                        <>
+                          <div className="mb-2">
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => insertVariable('{{candidate.name}}')}
+                                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                              >
+                                Candidate Name
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertVariable('{{candidate.firstName}}')}
+                                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                              >
+                                First Name
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertVariable('{{job.title}}')}
+                                className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
+                              >
+                                Job Title
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertVariable('{{company.name}}')}
+                                className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                              >
+                                Company Name
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertVariable('{{recruiter.name}}')}
+                                className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200"
+                              >
+                                Recruiter Name
+                              </button>
+                            </div>
+                          </div>
+                          <textarea
+                            ref={contentTextareaRef}
+                            value={formData.content}
+                            onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                            rows={8}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 font-mono text-sm"
+                            placeholder={`Hi {{candidate.firstName}},
+
+I hope this email finds you well. I came across your profile and was impressed by your background in {{candidate.skills}}.
+
+We have an exciting opportunity for a {{job.title}} position at {{company.name}} that I think would be a great fit for your experience.
+
+Would you be interested in learning more about this role?
+
+Best regards,
+{{recruiter.name}}`}
+                            required={formData.type === 'email'}
+                          />
+                          <div className="mt-2 text-xs text-gray-500">
+                            <p><strong>Available Variables:</strong></p>
+                            <p>• <code>{"{{candidate.name}}"}</code>, <code>{"{{candidate.firstName}}"}</code>, <code>{"{{candidate.lastName}}"}</code></p>
+                            <p>• <code>{"{{candidate.email}}"}</code>, <code>{"{{candidate.phone}}"}</code>, <code>{"{{candidate.skills}}"}</code></p>
+                            <p>• <code>{"{{job.title}}"}</code>, <code>{"{{job.department}}"}</code>, <code>{"{{job.location}}"}</code></p>
+                            <p>• <code>{"{{company.name}}"}</code>, <code>{"{{recruiter.name}}"}</code>, <code>{"{{recruiter.email}}"}</code></p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                          {previewData ? (
+                            <div className="space-y-4">
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">Subject:</h4>
+                                <div className="bg-white p-3 rounded border text-sm">
+                                  {previewData.subject || 'No subject'}
+                                </div>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">Content:</h4>
+                                <div className="bg-white p-3 rounded border text-sm whitespace-pre-wrap">
+                                  {previewData.content || 'No content'}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-500 py-8">
+                              Click the Preview button to see how your email will look with sample data
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Timing Configuration */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Trigger Type
+                    </label>
+                    <select
+                      value={formData.triggerType}
+                      onChange={(e) => setFormData(prev => ({ ...prev, triggerType: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="immediate">Immediate</option>
+                      <option value="delay">After Delay</option>
+                      <option value="condition">Based on Condition</option>
+                      <option value="manual">Manual Trigger</option>
+                      <option value="branch">Branch to Multiple Paths</option>
+                      <option value="ab_test">A/B Test Variant</option>
+                    </select>
+                  </div>
+                  
+                  {formData.triggerType === 'delay' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Delay Hours
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.delayHours}
+                          onChange={(e) => setFormData(prev => ({ ...prev, delayHours: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Delay Minutes
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="59"
+                          value={formData.delayMinutes}
+                          onChange={(e) => setFormData(prev => ({ ...prev, delayMinutes: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Conditional Logic Section */}
+            {activeSection === 'conditional' && (
+              <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <GitBranch className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-lg font-medium text-blue-900">Conditional Logic & Branching</h3>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    Set up conditions and rules that determine when this step should execute or how the sequence should branch.
+                  </p>
+                </div>
+
+                {/* Trigger Conditions */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Trigger Conditions
+                  </label>
+                  <div className="space-y-3">
+                    {formData.triggerConditions.map((condition, index) => (
+                      <div key={index} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Field</label>
+                            <select
+                              value={condition.field || ''}
+                              onChange={(e) => {
+                                const newConditions = [...formData.triggerConditions];
+                                newConditions[index] = { ...newConditions[index], field: e.target.value };
+                                setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            >
+                              <option value="">Select field...</option>
+                              <option value="candidate.status">Candidate Status</option>
+                              <option value="candidate.rating">Candidate Rating</option>
+                              <option value="candidate.source">Candidate Source</option>
+                              <option value="candidate.location">Candidate Location</option>
+                              <option value="candidate.experience">Experience Level</option>
+                              <option value="email.opened">Email Opened</option>
+                              <option value="email.clicked">Email Clicked</option>
+                              <option value="email.replied">Email Replied</option>
+                              <option value="previous_step.completed">Previous Step Completed</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Operator</label>
+                            <select
+                              value={condition.operator || ''}
+                              onChange={(e) => {
+                                const newConditions = [...formData.triggerConditions];
+                                newConditions[index] = { ...newConditions[index], operator: e.target.value };
+                                setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            >
+                              <option value="">Select operator...</option>
+                              <option value="equals">Equals</option>
+                              <option value="not_equals">Not Equals</option>
+                              <option value="contains">Contains</option>
+                              <option value="not_contains">Does Not Contain</option>
+                              <option value="greater_than">Greater Than</option>
+                              <option value="less_than">Less Than</option>
+                              <option value="is_empty">Is Empty</option>
+                              <option value="is_not_empty">Is Not Empty</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Value</label>
+                            <input
+                              type="text"
+                              value={condition.value || ''}
+                              onChange={(e) => {
+                                const newConditions = [...formData.triggerConditions];
+                                newConditions[index] = { ...newConditions[index], value: e.target.value };
+                                setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
+                              }}
+                              placeholder="Condition value..."
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newConditions = formData.triggerConditions.filter((_, i) => i !== index);
+                                setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
+                              }}
+                              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newConditions = [...formData.triggerConditions, { field: '', operator: '', value: '' }];
+                        setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
+                      }}
+                      className="w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-300 hover:text-purple-600 flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Condition
+                    </button>
+                  </div>
+                </div>
+
+                {/* Branching Rules */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Branching Rules
+                  </label>
+                  <div className="space-y-3">
+                    {formData.branchingRules.map((rule, index) => (
+                      <div key={index} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Branch Name</label>
+                            <input
+                              type="text"
+                              value={rule.branchName || ''}
+                              onChange={(e) => {
+                                const newRules = [...formData.branchingRules];
+                                newRules[index] = { ...newRules[index], branchName: e.target.value };
+                                setFormData(prev => ({ ...prev, branchingRules: newRules }));
+                              }}
+                              placeholder="e.g., High Interest"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Percentage (%)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={rule.percentage || ''}
+                              onChange={(e) => {
+                                const newRules = [...formData.branchingRules];
+                                newRules[index] = { ...newRules[index], percentage: parseInt(e.target.value) || 0 };
+                                setFormData(prev => ({ ...prev, branchingRules: newRules }));
+                              }}
+                              placeholder="50"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newRules = formData.branchingRules.filter((_, i) => i !== index);
+                                setFormData(prev => ({ ...prev, branchingRules: newRules }));
+                              }}
+                              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newRules = [...formData.branchingRules, { branchName: '', percentage: 0 }];
+                        setFormData(prev => ({ ...prev, branchingRules: newRules }));
+                      }}
+                      className="w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-300 hover:text-purple-600 flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Branch
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* A/B Testing Section */}
+            {activeSection === 'abtesting' && (
+              <div className="space-y-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TestTube className="w-5 h-5 text-green-600" />
+                    <h3 className="text-lg font-medium text-green-900">A/B Testing Configuration</h3>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    Set up A/B tests to optimize your email performance by testing different variations.
+                  </p>
+                </div>
+
+                {/* Enable A/B Testing */}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="enableABTest"
+                    checked={!!formData.abTestConfig}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({
+                          ...prev,
+                          abTestConfig: {
+                            enabled: true,
+                            testName: '',
+                            variants: [
+                              { variantId: 'A', config: { name: 'Variant A', subject: '', content: '', delayHours: 0, delayMinutes: 0 } },
+                              { variantId: 'B', config: { name: 'Variant B', subject: '', content: '', delayHours: 0, delayMinutes: 0 } }
+                            ],
+                            trafficSplit: { A: 50, B: 50 },
+                            winnerCriteria: {
+                              metric: 'open_rate',
+                              minSampleSize: 100,
+                              confidenceLevel: 95,
+                              testDuration: 7
+                            }
+                          }
+                        }));
+                      } else {
+                        setFormData(prev => ({ ...prev, abTestConfig: null }));
+                      }
+                    }}
+                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <label htmlFor="enableABTest" className="text-sm font-medium text-gray-700">
+                    Enable A/B Testing for this step
+                  </label>
+                </div>
+
+                {formData.abTestConfig && (
+                  <div className="space-y-6">
+                    {/* Test Configuration */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Test Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.abTestConfig.testName || ''}
+                        onChange={(e) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            abTestConfig: { ...prev.abTestConfig!, testName: e.target.value }
+                          }));
+                        }}
+                        placeholder="e.g., Subject Line Test - Formal vs Casual"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                      />
+                    </div>
+
+                    {/* Variants */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Test Variants
+                      </label>
+                      <div className="space-y-4">
+                        {formData.abTestConfig.variants?.map((variant, index) => (
+                          <div key={variant.variantId} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-sm font-medium text-gray-900">
+                                Variant {variant.variantId}
+                              </h4>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">Traffic:</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={formData.abTestConfig.trafficSplit?.[variant.variantId] || 0}
+                                  onChange={(e) => {
+                                    const newSplit = { ...formData.abTestConfig!.trafficSplit };
+                                    newSplit[variant.variantId] = parseInt(e.target.value) || 0;
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      abTestConfig: { ...prev.abTestConfig!, trafficSplit: newSplit }
+                                    }));
+                                  }}
+                                  className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                />
+                                <span className="text-xs text-gray-500">%</span>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                  Variant Name
+                                </label>
+                                <input
+                                  type="text"
+                                  value={variant.config.name || ''}
+                                  onChange={(e) => {
+                                    const newVariants = [...formData.abTestConfig!.variants!];
+                                    newVariants[index] = {
+                                      ...newVariants[index],
+                                      config: { ...newVariants[index].config, name: e.target.value }
+                                    };
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      abTestConfig: { ...prev.abTestConfig!, variants: newVariants }
+                                    }));
+                                  }}
+                                  placeholder="e.g., Formal Tone"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                />
+                              </div>
+                              {formData.type === 'email' && (
+                                <>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                                      Subject Line
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={variant.config.subject || ''}
+                                      onChange={(e) => {
+                                        const newVariants = [...formData.abTestConfig!.variants!];
+                                        newVariants[index] = {
+                                          ...newVariants[index],
+                                          config: { ...newVariants[index].config, subject: e.target.value }
+                                        };
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          abTestConfig: { ...prev.abTestConfig!, variants: newVariants }
+                                        }));
+                                      }}
+                                      placeholder="Subject line for this variant..."
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                                      Email Content
+                                    </label>
+                                    <textarea
+                                      value={variant.config.content || ''}
+                                      onChange={(e) => {
+                                        const newVariants = [...formData.abTestConfig!.variants!];
+                                        newVariants[index] = {
+                                          ...newVariants[index],
+                                          config: { ...newVariants[index].config, content: e.target.value }
+                                        };
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          abTestConfig: { ...prev.abTestConfig!, variants: newVariants }
+                                        }));
+                                      }}
+                                      rows={4}
+                                      placeholder="Email content for this variant..."
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 font-mono"
+                                    />
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Winner Criteria */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Winner Criteria
+                      </label>
+                      <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Success Metric
+                            </label>
+                            <select
+                              value={formData.abTestConfig.winnerCriteria?.metric || 'open_rate'}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  abTestConfig: {
+                                    ...prev.abTestConfig!,
+                                    winnerCriteria: { ...prev.abTestConfig!.winnerCriteria!, metric: e.target.value }
+                                  }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            >
+                              <option value="open_rate">Open Rate</option>
+                              <option value="click_rate">Click Rate</option>
+                              <option value="response_rate">Response Rate</option>
+                              <option value="conversion_rate">Conversion Rate</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Minimum Sample Size
+                            </label>
+                            <input
+                              type="number"
+                              min="10"
+                              value={formData.abTestConfig.winnerCriteria?.minSampleSize || 100}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  abTestConfig: {
+                                    ...prev.abTestConfig!,
+                                    winnerCriteria: { ...prev.abTestConfig!.winnerCriteria!, minSampleSize: parseInt(e.target.value) || 100 }
+                                  }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Confidence Level (%)
+                            </label>
+                            <select
+                              value={formData.abTestConfig.winnerCriteria?.confidenceLevel || 95}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  abTestConfig: {
+                                    ...prev.abTestConfig!,
+                                    winnerCriteria: { ...prev.abTestConfig!.winnerCriteria!, confidenceLevel: parseInt(e.target.value) }
+                                  }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            >
+                              <option value="90">90%</option>
+                              <option value="95">95%</option>
+                              <option value="99">99%</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Test Duration (days)
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="30"
+                              value={formData.abTestConfig.winnerCriteria?.testDuration || 7}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  abTestConfig: {
+                                    ...prev.abTestConfig!,
+                                    winnerCriteria: { ...prev.abTestConfig!.winnerCriteria!, testDuration: parseInt(e.target.value) || 7 }
+                                  }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Smart Timing Section */}
+            {activeSection === 'timing' && (
+              <div className="space-y-6">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Brain className="w-5 h-5 text-orange-600" />
+                    <h3 className="text-lg font-medium text-orange-900">Smart Timing Configuration</h3>
+                  </div>
+                  <p className="text-sm text-orange-700">
+                    Optimize send times for better engagement using AI-powered timing and candidate preferences.
+                  </p>
+                </div>
+
+                {/* Enable Smart Timing */}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="enableSmartTiming"
+                    checked={formData.smartTiming.enabled}
+                    onChange={(e) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        smartTiming: { ...prev.smartTiming, enabled: e.target.checked }
+                      }));
+                    }}
+                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <label htmlFor="enableSmartTiming" className="text-sm font-medium text-gray-700">
+                    Enable Smart Timing for this step
+                  </label>
+                </div>
+
+                {formData.smartTiming.enabled && (
+                  <div className="space-y-6">
+                    {/* Timezone & Business Hours */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Timezone & Business Hours</h4>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id="candidateTimezone"
+                            checked={formData.smartTiming.candidateTimezone}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                smartTiming: { ...prev.smartTiming, candidateTimezone: e.target.checked }
+                              }));
+                            }}
+                            className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <label htmlFor="candidateTimezone" className="text-sm text-gray-700">
+                            Adjust for candidate's timezone
+                          </label>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Business Hours Start
+                            </label>
+                            <input
+                              type="time"
+                              value={formData.smartTiming.businessHoursStart}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  smartTiming: { ...prev.smartTiming, businessHoursStart: e.target.value }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Business Hours End
+                            </label>
+                            <input
+                              type="time"
+                              value={formData.smartTiming.businessHoursEnd}
+                              onChange={(e) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  smartTiming: { ...prev.smartTiming, businessHoursEnd: e.target.value }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sending Windows */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Preferred Sending Windows</h4>
+                      <div className="space-y-3">
+                        {formData.smartTiming.sendingWindows.map((window, index) => (
+                          <div key={index} className="border border-gray-300 rounded-lg p-3 bg-gray-50">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Day</label>
+                                <select
+                                  value={window.day || ''}
+                                  onChange={(e) => {
+                                    const newWindows = [...formData.smartTiming.sendingWindows];
+                                    newWindows[index] = { ...newWindows[index], day: e.target.value };
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
+                                    }));
+                                  }}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                >
+                                  <option value="">Select day...</option>
+                                  <option value="monday">Monday</option>
+                                  <option value="tuesday">Tuesday</option>
+                                  <option value="wednesday">Wednesday</option>
+                                  <option value="thursday">Thursday</option>
+                                  <option value="friday">Friday</option>
+                                  <option value="saturday">Saturday</option>
+                                  <option value="sunday">Sunday</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Start Time</label>
+                                <input
+                                  type="time"
+                                  value={window.startTime || ''}
+                                  onChange={(e) => {
+                                    const newWindows = [...formData.smartTiming.sendingWindows];
+                                    newWindows[index] = { ...newWindows[index], startTime: e.target.value };
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
+                                    }));
+                                  }}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">End Time</label>
+                                <input
+                                  type="time"
+                                  value={window.endTime || ''}
+                                  onChange={(e) => {
+                                    const newWindows = [...formData.smartTiming.sendingWindows];
+                                    newWindows[index] = { ...newWindows[index], endTime: e.target.value };
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
+                                    }));
+                                  }}
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                />
+                              </div>
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newWindows = formData.smartTiming.sendingWindows.filter((_, i) => i !== index);
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
+                                    }));
+                                  }}
+                                  className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newWindows = [...formData.smartTiming.sendingWindows, { day: '', startTime: '', endTime: '' }];
+                            setFormData(prev => ({
+                              ...prev,
+                              smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
+                            }));
+                          }}
+                          className="w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-300 hover:text-purple-600 flex items-center justify-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Sending Window
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Additional Options */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Options</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id="avoidHolidays"
+                            checked={formData.smartTiming.avoidHolidays}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                smartTiming: { ...prev.smartTiming, avoidHolidays: e.target.checked }
+                              }));
+                            }}
+                            className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <label htmlFor="avoidHolidays" className="text-sm text-gray-700">
+                            Avoid major holidays
+                          </label>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id="personalizedTiming"
+                            checked={formData.smartTiming.personalizedTiming}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                smartTiming: { ...prev.smartTiming, personalizedTiming: e.target.checked }
+                              }));
+                            }}
+                            className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <label htmlFor="personalizedTiming" className="text-sm text-gray-700">
+                            Use AI-powered personalized timing
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
