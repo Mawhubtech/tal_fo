@@ -182,7 +182,7 @@ export class EmailSequencesApiService {
   }
 
   static async updateSequence(id: string, data: UpdateSequenceRequest): Promise<EmailSequence> {
-    const response = await apiClient.put(`${this.baseUrl}/${id}`, data);
+    const response = await apiClient.patch(`${this.baseUrl}/${id}`, data);
     return response.data;
   }
 
@@ -196,7 +196,7 @@ export class EmailSequencesApiService {
   }
 
   static async toggleFavorite(id: string): Promise<EmailSequence> {
-    const response = await apiClient.put(`${this.baseUrl}/${id}/favorite`);
+    const response = await apiClient.post(`${this.baseUrl}/${id}/favorite`);
     return response.data;
   }
 

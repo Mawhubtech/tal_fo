@@ -73,6 +73,12 @@ const JobSequenceStepsPage: React.FC = () => {
     return colors[type as keyof typeof colors] || 'bg-blue-100 text-blue-600';
   };
 
+  // Helper function to remove id from step
+  const removeIdFromStep = (step: any) => {
+    const { id, ...stepWithoutId } = step;
+    return stepWithoutId;
+  };
+
   const handleCreateStep = () => {
     setIsCreateModalOpen(true);
   };
@@ -86,8 +92,10 @@ const JobSequenceStepsPage: React.FC = () => {
     
     setDeletingStepId(stepId);
     try {
-      // Remove step from sequence steps array
-      const updatedSteps = steps.filter(step => step.id !== stepId);
+      // Remove step from sequence steps array and strip IDs
+      const updatedSteps = steps
+        .filter(step => step.id !== stepId)
+        .map(removeIdFromStep);
       await updateSequenceMutation.mutateAsync({
         id: sequenceId,
         data: { steps: updatedSteps }
@@ -376,6 +384,12 @@ const CreateEditStepModal: React.FC<{
   sequence: EmailSequence;
   steps: EmailSequenceStep[];
 }> = ({ isOpen, onClose, step, sequenceId, nextStepOrder, sequence, steps }) => {
+  // Helper function to remove id from step
+  const removeIdFromStep = (step: any) => {
+    const { id, ...stepWithoutId } = step;
+    return stepWithoutId;
+  };
+
   const [formData, setFormData] = useState({
     name: step?.name || '',
     description: step?.description || '',
@@ -399,21 +413,21 @@ const CreateEditStepModal: React.FC<{
     
     try {
       if (step) {
-        // Update existing step in sequence
-        const updatedSteps = steps.map(s => 
-          s.id === step.id ? { ...s, ...formData } : s
-        );
+        // Update existing step in sequence - strip IDs from all steps
+        const updatedSteps = steps
+          .map(s => s.id === step.id ? { ...s, ...formData } : s)
+          .map(removeIdFromStep);
         await updateSequenceMutation.mutateAsync({
           id: sequenceId,
           data: { steps: updatedSteps }
         });
       } else {
-        // Add new step to sequence
+        // Add new step to sequence - strip IDs from all steps
         const newStep = {
-          id: Date.now().toString(), // Generate temporary ID
           ...formData
         };
-        const updatedSteps = [...steps, newStep];
+        const allSteps = [...steps, newStep];
+        const updatedSteps = allSteps.map(removeIdFromStep);
         await updateSequenceMutation.mutateAsync({
           id: sequenceId,
           data: { steps: updatedSteps }
