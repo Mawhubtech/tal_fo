@@ -75,61 +75,45 @@ const JobSequenceStepsPage: React.FC = () => {
     return colors[type as keyof typeof colors] || 'bg-blue-100 text-blue-600';
   };
 
-  // Helper function to remove id and database-generated fields from step
+  // Helper function to remove id from step and filter allowed properties only
   const removeIdFromStep = (step: any) => {
-    const { 
-      id, 
-      analytics, 
-      createdAt, 
-      updatedAt, 
-      openRate, 
-      clickRate, 
-      responseRate,
-      ...stepWithoutGeneratedFields 
-    } = step;
-    
-    // Transform triggerConditions from array to object format expected by backend
-    if (stepWithoutGeneratedFields.triggerConditions && Array.isArray(stepWithoutGeneratedFields.triggerConditions)) {
-      stepWithoutGeneratedFields.triggerConditions = {
-        conditions: stepWithoutGeneratedFields.triggerConditions.length > 0 ? stepWithoutGeneratedFields.triggerConditions : undefined
-      };
-    }
-    
-    // Transform branchingRules from array to object format expected by backend
-    if (stepWithoutGeneratedFields.branchingRules && Array.isArray(stepWithoutGeneratedFields.branchingRules)) {
-      stepWithoutGeneratedFields.branchingRules = {
-        enabled: stepWithoutGeneratedFields.branchingRules.length > 0,
-        branches: stepWithoutGeneratedFields.branchingRules.map((rule: any) => ({
-          id: Math.random().toString(36).substr(2, 9),
-          name: rule.branchName || rule.name,
-          percentage: rule.percentage || 0,
-          conditions: []
-        })),
-        defaultBranch: undefined
-      };
-    }
-    
-    // Transform abTestConfig to match entity structure
-    if (stepWithoutGeneratedFields.abTestConfig) {
-      const frontend = stepWithoutGeneratedFields.abTestConfig;
-      stepWithoutGeneratedFields.abTestConfig = {
-        enabled: frontend.enabled,
-        variants: frontend.variants?.map((variant: any) => ({
-          id: variant.variantId,
-          name: variant.config?.name || variant.name,
-          percentage: frontend.trafficSplit?.[variant.variantId] || 50,
-          subject: variant.config?.subject,
-          content: variant.config?.content,
-          delayHours: variant.config?.delayHours,
-          delayMinutes: variant.config?.delayMinutes
-        })) || [],
-        winnerCriteria: frontend.winnerCriteria?.metric || 'open_rate',
-        testDuration: frontend.winnerCriteria?.testDuration || 7,
-        autoSelectWinner: true
-      };
-    }
-    
-    return stepWithoutGeneratedFields;
+    // Only include properties that are allowed by the backend DTO
+    const allowedStepProps = {
+      name: step.name,
+      description: step.description,
+      type: step.type,
+      status: step.status,
+      stepOrder: step.stepOrder,
+      subject: step.subject,
+      content: step.content,
+      htmlContent: step.htmlContent,
+      variables: step.variables,
+      triggerType: step.triggerType,
+      delayHours: step.delayHours,
+      delayMinutes: step.delayMinutes,
+      // Convert triggerConditions array to the expected object format
+      triggerConditions: Array.isArray(step.triggerConditions) && step.triggerConditions.length > 0 
+        ? {
+            // Convert array to object format expected by backend
+            responseReceived: step.triggerConditions.some((c: any) => c.field === 'response.received'),
+            emailOpened: step.triggerConditions.some((c: any) => c.field === 'email.opened'),
+            linkClicked: step.triggerConditions.some((c: any) => c.field === 'link.clicked'),
+            customCondition: step.triggerConditions.find((c: any) => c.field === 'custom')?.value || undefined
+          }
+        : step.triggerConditions,
+      sendingSettings: step.sendingSettings,
+      isActive: step.isActive,
+      metadata: step.metadata
+    };
+
+    // Remove undefined values to keep the payload clean
+    Object.keys(allowedStepProps).forEach(key => {
+      if (allowedStepProps[key as keyof typeof allowedStepProps] === undefined) {
+        delete allowedStepProps[key as keyof typeof allowedStepProps];
+      }
+    });
+
+    return allowedStepProps;
   };
 
   const handleCreateStep = () => {
@@ -451,61 +435,45 @@ const CreateEditStepModal: React.FC<{
   // Template hooks
   const { data: recruitmentTemplates, isLoading: recruitmentLoading } = useRecruitmentTemplates();
   
-  // Helper function to remove id and database-generated fields from step
+  // Helper function to remove id from step and filter allowed properties only
   const removeIdFromStep = (step: any) => {
-    const { 
-      id, 
-      analytics, 
-      createdAt, 
-      updatedAt, 
-      openRate, 
-      clickRate, 
-      responseRate,
-      ...stepWithoutGeneratedFields 
-    } = step;
-    
-    // Transform triggerConditions from array to object format expected by backend
-    if (stepWithoutGeneratedFields.triggerConditions && Array.isArray(stepWithoutGeneratedFields.triggerConditions)) {
-      stepWithoutGeneratedFields.triggerConditions = {
-        conditions: stepWithoutGeneratedFields.triggerConditions.length > 0 ? stepWithoutGeneratedFields.triggerConditions : undefined
-      };
-    }
-    
-    // Transform branchingRules from array to object format expected by backend
-    if (stepWithoutGeneratedFields.branchingRules && Array.isArray(stepWithoutGeneratedFields.branchingRules)) {
-      stepWithoutGeneratedFields.branchingRules = {
-        enabled: stepWithoutGeneratedFields.branchingRules.length > 0,
-        branches: stepWithoutGeneratedFields.branchingRules.map((rule: any) => ({
-          id: Math.random().toString(36).substr(2, 9),
-          name: rule.branchName || rule.name,
-          percentage: rule.percentage || 0,
-          conditions: []
-        })),
-        defaultBranch: undefined
-      };
-    }
-    
-    // Transform abTestConfig to match entity structure
-    if (stepWithoutGeneratedFields.abTestConfig) {
-      const frontend = stepWithoutGeneratedFields.abTestConfig;
-      stepWithoutGeneratedFields.abTestConfig = {
-        enabled: frontend.enabled,
-        variants: frontend.variants?.map((variant: any) => ({
-          id: variant.variantId,
-          name: variant.config?.name || variant.name,
-          percentage: frontend.trafficSplit?.[variant.variantId] || 50,
-          subject: variant.config?.subject,
-          content: variant.config?.content,
-          delayHours: variant.config?.delayHours,
-          delayMinutes: variant.config?.delayMinutes
-        })) || [],
-        winnerCriteria: frontend.winnerCriteria?.metric || 'open_rate',
-        testDuration: frontend.winnerCriteria?.testDuration || 7,
-        autoSelectWinner: true
-      };
-    }
-    
-    return stepWithoutGeneratedFields;
+    // Only include properties that are allowed by the backend DTO
+    const allowedStepProps = {
+      name: step.name,
+      description: step.description,
+      type: step.type,
+      status: step.status,
+      stepOrder: step.stepOrder,
+      subject: step.subject,
+      content: step.content,
+      htmlContent: step.htmlContent,
+      variables: step.variables,
+      triggerType: step.triggerType,
+      delayHours: step.delayHours,
+      delayMinutes: step.delayMinutes,
+      // Convert triggerConditions array to the expected object format
+      triggerConditions: Array.isArray(step.triggerConditions) && step.triggerConditions.length > 0 
+        ? {
+            // Convert array to object format expected by backend
+            responseReceived: step.triggerConditions.some((c: any) => c.field === 'response.received'),
+            emailOpened: step.triggerConditions.some((c: any) => c.field === 'email.opened'),
+            linkClicked: step.triggerConditions.some((c: any) => c.field === 'link.clicked'),
+            customCondition: step.triggerConditions.find((c: any) => c.field === 'custom')?.value || undefined
+          }
+        : step.triggerConditions,
+      sendingSettings: step.sendingSettings,
+      isActive: step.isActive,
+      metadata: step.metadata
+    };
+
+    // Remove undefined values to keep the payload clean
+    Object.keys(allowedStepProps).forEach(key => {
+      if (allowedStepProps[key as keyof typeof allowedStepProps] === undefined) {
+        delete allowedStepProps[key as keyof typeof allowedStepProps];
+      }
+    });
+
+    return allowedStepProps;
   };
 
   // Function to apply template to form
@@ -567,28 +535,15 @@ const CreateEditStepModal: React.FC<{
     stepOrder: step?.stepOrder || nextStepOrder,
     subject: step?.subject || '',
     content: step?.content || '',
+    htmlContent: step?.htmlContent || null,
+    variables: step?.variables || null,
     triggerType: step?.triggerType || 'immediate',
     delayHours: step?.delayHours || 0,
     delayMinutes: step?.delayMinutes || 0,
+    triggerConditions: step?.triggerConditions || null,
+    sendingSettings: step?.sendingSettings || null,
     isActive: step?.isActive ?? true,
-    // Conditional Logic Fields - ensure it's always an array
-    triggerConditions: Array.isArray(step?.triggerConditions) ? step.triggerConditions : 
-                      (step?.triggerConditions?.conditions && Array.isArray(step.triggerConditions.conditions)) ? step.triggerConditions.conditions : [],
-    // A/B Testing Fields
-    abTestConfig: step?.abTestConfig || null,
-    // Branching Rules - ensure it's always an array
-    branchingRules: Array.isArray(step?.branchingRules) ? step.branchingRules :
-                   (step?.branchingRules?.branches && Array.isArray(step.branchingRules.branches)) ? step.branchingRules.branches : [],
-    // Smart Timing
-    smartTiming: step?.smartTiming || {
-      enabled: false,
-      candidateTimezone: false,
-      businessHoursStart: '09:00',
-      businessHoursEnd: '17:00',
-      sendingWindows: [],
-      avoidHolidays: false,
-      personalizedTiming: false
-    }
+    metadata: step?.metadata || null
   });
 
   const updateSequenceMutation = useUpdateEmailSequence();
@@ -1046,18 +1001,50 @@ Best regards,
               </div>
             )}
 
-            {/* Conditional Logic Section */}
-            {activeSection === 'conditional' && (
+            {/* Other sections temporarily disabled */}
+            {(activeSection === 'conditional' || activeSection === 'abtesting' || activeSection === 'timing') && (
               <div className="space-y-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <GitBranch className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-medium text-blue-900">Conditional Logic & Branching</h3>
+                    {activeSection === 'conditional' && <GitBranch className="w-5 h-5 text-yellow-600" />}
+                    {activeSection === 'abtesting' && <TestTube className="w-5 h-5 text-yellow-600" />}
+                    {activeSection === 'timing' && <Brain className="w-5 h-5 text-yellow-600" />}
+                    <h3 className="text-lg font-medium text-yellow-900">
+                      {activeSection === 'conditional' && 'Conditional Logic'}
+                      {activeSection === 'abtesting' && 'A/B Testing'}
+                      {activeSection === 'timing' && 'Smart Timing'}
+                    </h3>
                   </div>
-                  <p className="text-sm text-blue-700">
-                    Set up conditions and rules that determine when this step should execute or how the sequence should branch.
+                  <p className="text-sm text-yellow-700">
+                    This feature is coming soon. Focus on basic email step configuration for now.
                   </p>
                 </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              {step ? 'Update Step' : 'Create Step'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default JobSequenceStepsPage;
 
                 {/* Trigger Conditions */}
                 <div>
@@ -1065,7 +1052,7 @@ Best regards,
                     Trigger Conditions
                   </label>
                   <div className="space-y-3">
-                    {(formData.triggerConditions || []).map((condition, index) => (
+                    {formData.triggerConditions.map((condition, index) => (
                       <div key={index} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                           <div>
@@ -1073,7 +1060,7 @@ Best regards,
                             <select
                               value={condition.field || ''}
                               onChange={(e) => {
-                                const newConditions = [...(formData.triggerConditions || [])];
+                                const newConditions = [...formData.triggerConditions];
                                 newConditions[index] = { ...newConditions[index], field: e.target.value };
                                 setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
                               }}
@@ -1096,7 +1083,7 @@ Best regards,
                             <select
                               value={condition.operator || ''}
                               onChange={(e) => {
-                                const newConditions = [...(formData.triggerConditions || [])];
+                                const newConditions = [...formData.triggerConditions];
                                 newConditions[index] = { ...newConditions[index], operator: e.target.value };
                                 setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
                               }}
@@ -1119,7 +1106,7 @@ Best regards,
                               type="text"
                               value={condition.value || ''}
                               onChange={(e) => {
-                                const newConditions = [...(formData.triggerConditions || [])];
+                                const newConditions = [...formData.triggerConditions];
                                 newConditions[index] = { ...newConditions[index], value: e.target.value };
                                 setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
                               }}
@@ -1131,7 +1118,7 @@ Best regards,
                             <button
                               type="button"
                               onClick={() => {
-                                const newConditions = (formData.triggerConditions || []).filter((_, i) => i !== index);
+                                const newConditions = formData.triggerConditions.filter((_, i) => i !== index);
                                 setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
                               }}
                               className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
@@ -1145,7 +1132,7 @@ Best regards,
                     <button
                       type="button"
                       onClick={() => {
-                        const newConditions = [...(formData.triggerConditions || []), { field: '', operator: '', value: '' }];
+                        const newConditions = [...formData.triggerConditions, { field: '', operator: '', value: '' }];
                         setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
                       }}
                       className="w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-300 hover:text-purple-600 flex items-center justify-center gap-2"
@@ -1162,7 +1149,7 @@ Best regards,
                     Branching Rules
                   </label>
                   <div className="space-y-3">
-                    {(formData.branchingRules || []).map((rule, index) => (
+                    {formData.branchingRules.map((rule, index) => (
                       <div key={index} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                           <div>
@@ -1171,7 +1158,7 @@ Best regards,
                               type="text"
                               value={rule.branchName || ''}
                               onChange={(e) => {
-                                const newRules = [...(formData.branchingRules || [])];
+                                const newRules = [...formData.branchingRules];
                                 newRules[index] = { ...newRules[index], branchName: e.target.value };
                                 setFormData(prev => ({ ...prev, branchingRules: newRules }));
                               }}
@@ -1187,7 +1174,7 @@ Best regards,
                               max="100"
                               value={rule.percentage || ''}
                               onChange={(e) => {
-                                const newRules = [...(formData.branchingRules || [])];
+                                const newRules = [...formData.branchingRules];
                                 newRules[index] = { ...newRules[index], percentage: parseInt(e.target.value) || 0 };
                                 setFormData(prev => ({ ...prev, branchingRules: newRules }));
                               }}
@@ -1199,7 +1186,7 @@ Best regards,
                             <button
                               type="button"
                               onClick={() => {
-                                const newRules = (formData.branchingRules || []).filter((_, i) => i !== index);
+                                const newRules = formData.branchingRules.filter((_, i) => i !== index);
                                 setFormData(prev => ({ ...prev, branchingRules: newRules }));
                               }}
                               className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
@@ -1213,7 +1200,7 @@ Best regards,
                     <button
                       type="button"
                       onClick={() => {
-                        const newRules = [...(formData.branchingRules || []), { branchName: '', percentage: 0 }];
+                        const newRules = [...formData.branchingRules, { branchName: '', percentage: 0 }];
                         setFormData(prev => ({ ...prev, branchingRules: newRules }));
                       }}
                       className="w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-purple-300 hover:text-purple-600 flex items-center justify-center gap-2"
@@ -1605,7 +1592,7 @@ Best regards,
                     <div>
                       <h4 className="text-sm font-medium text-gray-700 mb-3">Preferred Sending Windows</h4>
                       <div className="space-y-3">
-                        {(formData.smartTiming.sendingWindows || []).map((window, index) => (
+                        {formData.smartTiming.sendingWindows.map((window, index) => (
                           <div key={index} className="border border-gray-300 rounded-lg p-3 bg-gray-50">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                               <div>
@@ -1613,7 +1600,7 @@ Best regards,
                                 <select
                                   value={window.day || ''}
                                   onChange={(e) => {
-                                    const newWindows = [...(formData.smartTiming.sendingWindows || [])];
+                                    const newWindows = [...formData.smartTiming.sendingWindows];
                                     newWindows[index] = { ...newWindows[index], day: e.target.value };
                                     setFormData(prev => ({
                                       ...prev,
@@ -1638,7 +1625,7 @@ Best regards,
                                   type="time"
                                   value={window.startTime || ''}
                                   onChange={(e) => {
-                                    const newWindows = [...(formData.smartTiming.sendingWindows || [])];
+                                    const newWindows = [...formData.smartTiming.sendingWindows];
                                     newWindows[index] = { ...newWindows[index], startTime: e.target.value };
                                     setFormData(prev => ({
                                       ...prev,
@@ -1654,7 +1641,7 @@ Best regards,
                                   type="time"
                                   value={window.endTime || ''}
                                   onChange={(e) => {
-                                    const newWindows = [...(formData.smartTiming.sendingWindows || [])];
+                                    const newWindows = [...formData.smartTiming.sendingWindows];
                                     newWindows[index] = { ...newWindows[index], endTime: e.target.value };
                                     setFormData(prev => ({
                                       ...prev,
@@ -1668,7 +1655,7 @@ Best regards,
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const newWindows = (formData.smartTiming.sendingWindows || []).filter((_, i) => i !== index);
+                                    const newWindows = formData.smartTiming.sendingWindows.filter((_, i) => i !== index);
                                     setFormData(prev => ({
                                       ...prev,
                                       smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
@@ -1685,7 +1672,7 @@ Best regards,
                         <button
                           type="button"
                           onClick={() => {
-                            const newWindows = [...(formData.smartTiming.sendingWindows || []), { day: '', startTime: '', endTime: '' }];
+                            const newWindows = [...formData.smartTiming.sendingWindows, { day: '', startTime: '', endTime: '' }];
                             setFormData(prev => ({
                               ...prev,
                               smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
