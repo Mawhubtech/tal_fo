@@ -79,6 +79,7 @@ import { ClientManagementPage, ClientDetailPage, CreateDepartmentPage } from './
 import JobBoardConfigPage from './admin/JobBoardConfigPage'; // Import JobBoardConfigPage
 import AnalyticsPage from './admin/AnalyticsPage'; // Import AnalyticsPage
 import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSettingsPage
+import SupportDashboardPage from './admin/SupportDashboardPage'; // Import SupportDashboardPage
 
 // Job Board Pages
 import OrganizationJobBoardsPage from '../recruitment/organizations/pages/OrganizationJobBoardsPage';
@@ -548,6 +549,12 @@ const Dashboard: React.FC = () => {
               <Route path="analytics" element={
                 <RoutePermissionGuard>
                   <AnalyticsPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="support" element={
+                <RoutePermissionGuard>
+                  <SupportDashboardPage />
                 </RoutePermissionGuard>
               } />
               

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { 
   Users, UserPlus, Building, Target, BarChart3, Settings, GitBranch,
-   Bell, Search, Shield, ChevronRight, ChevronDown,
+   Bell, Search, Shield, ChevronRight, ChevronDown, MessageSquare,
   Activity, Database, Lock,
   LayoutDashboard
 } from 'lucide-react';
@@ -79,6 +79,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       path: '/dashboard/admin/analytics',
       icon: BarChart3,
       description: 'View platform analytics'
+    },
+    {
+      id: 'support',
+      label: 'Support Dashboard',
+      path: '/dashboard/admin/support',
+      icon: MessageSquare,
+      description: 'Manage support tickets and customer inquiries'
     },
     {
       id: 'system-settings',

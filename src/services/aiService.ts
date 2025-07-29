@@ -21,25 +21,15 @@ export const aiService = {
    * Stream chat completions using Server-Sent Events
    */
   async streamChat(data: AIChatStreamRequest): Promise<ReadableStream<Uint8Array>> {
-    const params = new URLSearchParams();
-    params.append('messages', JSON.stringify(data.messages));
-    if (data.model) {
-      params.append('model', data.model);
-    }
-    if (data.max_tokens !== undefined) {
-      params.append('max_tokens', data.max_tokens.toString());
-    }
-    if (data.temperature !== undefined) {
-      params.append('temperature', data.temperature.toString());
-    }
-
-    const response = await fetch(`${api.defaults.baseURL}/ai/chat/stream?${params}`, {
-      method: 'GET',
+    const response = await fetch(`${api.defaults.baseURL}/ai/chat/stream`, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'application/json',
         'Accept': 'text/event-stream',
         'Cache-Control': 'no-cache',
       },
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {

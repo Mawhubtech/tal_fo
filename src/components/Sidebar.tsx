@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search, Users, MessageSquare, 
-  Settings, HelpCircle, ChevronDown, Users as ContactsIcon, // Added ContactsIcon (alias for Users)
+  Settings, HelpCircle, ChevronDown,
   Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3, GitBranch, KeyRound, // Added for Jobs and Admin
   Mail, UserCircle, Atom
 } from 'lucide-react';
@@ -202,19 +202,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             </Link>
           )}
 
-          {/* Contacts Section */}
-          {hasPermission(SIDEBAR_PERMISSIONS.CONTACTS_ACCESS) && (
-            <Link 
-              to="/dashboard/contacts" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/contacts') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
-              title={!isExpanded ? "Contacts" : ""}
-            >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/contacts') ? '#7e22ce' : '#9ca3af' }}>
-                <ContactsIcon className="w-4 h-4" />
-              </div>
-              {isExpanded && "Contacts"}
-            </Link>
-          )}
+
 
           {/* Admin Section */}
           {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ACCESS) && (
@@ -271,6 +259,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                       <Link to="/dashboard/admin/job-boards" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Briefcase className="w-3 h-3 mr-2" />
                         Job Boards
+                      </Link>
+                    )}
+                    
+                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
+                      <Link to="/dashboard/admin/support" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/support') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                        <MessageSquare className="w-3 h-3 mr-2" />
+                        Support Dashboard
                       </Link>
                     )}
                     
@@ -376,6 +371,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
+                          <Link to="/dashboard/admin/support" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/support') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/support') ? '#7e22ce' : '' }} />
+                            Support Dashboard
+                          </Link>
+                        )}
+                        
+                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
                           <Link to="/dashboard/admin/settings" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/settings') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                             <Settings className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/settings') ? '#7e22ce' : '' }} />
                             Settings
@@ -458,6 +460,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             </div>
             {isExpanded && "Contact Support"}
           </Link>
+
           
         </nav>
       </div>
