@@ -57,7 +57,7 @@ import CandidatesPage from './candidates'; // Import the new CandidatesPage
 import ClientOutreachRouter from './client-outreach/ClientOutreachRouter';
 
 // Support Pages
-import ResourcesPage from './ResourcesPage';
+import { ResourcesPage } from './resources';
 import ContactSupportPage from './ContactSupportPage';
 
 // Admin Pages
