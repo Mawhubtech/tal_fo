@@ -25,6 +25,7 @@ import { UserModal } from '../../components/UserModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { CompanyMember } from '../../services/companyApiService';
 import { toast } from '../../components/ToastContainer';
+import { COMPANY_TYPE_OPTIONS, COMPANY_SIZE_OPTIONS } from '../../constants/company';
 
 export const CompanyDetailPage: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
@@ -155,12 +156,32 @@ export const CompanyDetailPage: React.FC = () => {
       case 'active':
         return 'bg-green-100 text-green-800';
       case 'pending':
+      case 'pending_invitation':
+      case 'pending_verification':
         return 'bg-yellow-100 text-yellow-800';
       case 'inactive':
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Helper functions to get display labels
+  const getCompanyTypeLabel = (type: string) => {
+    const option = COMPANY_TYPE_OPTIONS.find(opt => opt.value === type);
+    return option ? option.label : type.replace('_', ' ');
+  };
+
+  const getCompanySizeLabel = (size: string) => {
+    const option = COMPANY_SIZE_OPTIONS.find(opt => opt.value === size);
+    return option ? option.label : size;
+  };
+
+  // Helper function to get full logo URL
+  const getLogoUrl = (logoUrl: string | null | undefined) => {
+    if (!logoUrl) return null;
+    if (logoUrl.startsWith('http')) return logoUrl;
+    return `${import.meta.env.VITE_API_URL}${logoUrl}`;
   };
 
   return (
@@ -171,16 +192,24 @@ export const CompanyDetailPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div 
-                className="p-3 rounded-lg"
+                className="p-3 rounded-lg relative overflow-hidden"
                 style={{ backgroundColor: company.brandColor || '#6366f1' }}
               >
-                <Building2 className="h-8 w-8 text-white" />
+                {company.logoUrl ? (
+                  <img 
+                    src={getLogoUrl(company.logoUrl)} 
+                    alt={`${company.name} logo`}
+                    className="h-8 w-8 object-contain"
+                  />
+                ) : (
+                  <Building2 className="h-8 w-8 text-white" />
+                )}
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
                 <div className="flex items-center space-x-4 mt-1">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(company.status)}`}>
-                    {company.status}
+                    {company.status.replace('_', ' ')}
                   </span>
                   <span className="text-sm text-gray-500">{company.industry}</span>
                 </div>
@@ -402,16 +431,16 @@ export const CompanyDetailPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Company Type</span>
-                  <span className="font-medium capitalize">{company.type}</span>
+                  <span className="font-medium">{getCompanyTypeLabel(company.type)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Company Size</span>
-                  <span className="font-medium capitalize">{company.size?.replace('_', '-')}</span>
+                  <span className="font-medium">{getCompanySizeLabel(company.size)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Status</span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(company.status)}`}>
-                    {company.status}
+                    {company.status.replace(/_/g, ' ')}
                   </span>
                 </div>
               </div>

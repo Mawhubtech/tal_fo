@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Building2, AlertCircle } from 'lucide-react';
+import { X, Building2, AlertCircle, Upload } from 'lucide-react';
 import { useUpdateCompany } from '../../hooks/useCompany';
 import { Company, UpdateCompanyData } from '../../services/companyApiService';
 import { toast } from '../ToastContainer';
+import { COMPANY_TYPE_OPTIONS, COMPANY_SIZE_OPTIONS, COMPANY_STATUS_OPTIONS } from '../../constants/company';
+import apiClient from '../../services/api';
 
 interface EditCompanyModalProps {
   isOpen: boolean;
@@ -17,6 +19,8 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<UpdateCompanyData>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const updateCompany = useUpdateCompany();
 
   useEffect(() => {
@@ -33,9 +37,51 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
         country: company.country || '',
         zipCode: company.zipCode || '',
         brandColor: company.brandColor || '',
+        type: company.type,
+        size: company.size,
+        status: company.status,
       });
+      // Set logo preview with the backend static URL if company has a logo
+      if (company.logoUrl) {
+        const logoUrl = `${import.meta.env.VITE_API_URL}${company.logoUrl}`;
+        setLogoPreview(logoUrl);
+      } else {
+        setLogoPreview(null);
+      }
     }
   }, [company]);
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Invalid File', 'Please select an image file.');
+        return;
+      }
+      
+      // Validate file size (2MB max)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File Too Large', 'Please select an image smaller than 2MB.');
+        return;
+      }
+
+      setLogoFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    setFormData(prev => ({ ...prev, logoUrl: '' }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +97,31 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     }
 
     try {
-      await updateCompany.mutateAsync({ id: company.id, data: formData });
+      let dataToUpdate = { ...formData };
+      
+      // Upload logo if there's a new file
+      if (logoFile) {
+        const logoFormData = new FormData();
+        logoFormData.append('logo', logoFile);
+        
+        try {
+          const response = await apiClient.post(`/companies/${company.id}/upload-logo`, logoFormData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          
+          dataToUpdate.logoUrl = response.data.logoUrl;
+        } catch (logoError) {
+          console.error('Logo upload error:', logoError);
+          toast.error('Logo Upload Failed', 'Failed to upload logo, but other changes will be saved.');
+        }
+      } else if (logoPreview === null && company.logoUrl) {
+        // User removed the logo
+        dataToUpdate.logoUrl = '';
+      }
+
+      await updateCompany.mutateAsync({ id: company.id, data: dataToUpdate });
       toast.success('Company Updated', 'Company details have been updated successfully.');
       onClose();
     } catch (error) {
@@ -145,6 +215,117 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Brief description of your company"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Company Type
+                </label>
+                <select
+                  name="type"
+                  value={formData.type || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">Select company type</option>
+                  {COMPANY_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Company Size
+                </label>
+                <select
+                  name="size"
+                  value={formData.size || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">Select company size</option>
+                  {COMPANY_SIZE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Company Status
+              </label>
+              <select
+                name="status"
+                value={formData.status || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="">Select status</option>
+                {COMPANY_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Logo Upload */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Company Logo</h3>
+            
+            <div className="flex items-start space-x-4">
+              {logoPreview ? (
+                <div className="relative">
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-24 h-24 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                  <Building2 className="h-8 w-8 text-gray-400" />
+                </div>
+              )}
+              
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Logo
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose File
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  PNG, JPG up to 2MB. Recommended size: 200x200px
+                </p>
+              </div>
             </div>
           </div>
 

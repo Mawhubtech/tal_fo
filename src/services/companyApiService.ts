@@ -83,6 +83,9 @@ export interface UpdateCompanyData {
   logoUrl?: string;
   brandColor?: string;
   settings?: any;
+  type?: string;
+  size?: string;
+  status?: string;
 }
 
 export interface InviteMemberData {

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { X, Building2, AlertCircle } from 'lucide-react';
+import { X, Building2, AlertCircle, Upload } from 'lucide-react';
 import { useCreateCompany } from '../../hooks/useCompany';
 import { CreateCompanyData } from '../../services/companyApiService';
 import { toast } from '../ToastContainer';
+import { COMPANY_TYPE_OPTIONS, COMPANY_SIZE_OPTIONS, COMPANY_STATUS_OPTIONS } from '../../constants/company';
+import apiClient from '../../services/api';
 
 interface CreateCompanyModalProps {
   isOpen: boolean;
@@ -29,7 +31,40 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const createCompany = useCreateCompany();
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Invalid File', 'Please select an image file.');
+        return;
+      }
+      
+      // Validate file size (2MB max)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File Too Large', 'Please select an image smaller than 2MB.');
+        return;
+      }
+
+      setLogoFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +82,31 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
     }
 
     try {
-      await createCompany.mutateAsync(formData);
+      let dataToCreate = { ...formData };
+      
+      // Create the company first
+      const result = await createCompany.mutateAsync(dataToCreate);
+      const company = 'company' in result ? result.company : result;
+      
+      // If there's a logo file to upload, upload it after company creation
+      if (logoFile && company?.id) {
+        const logoFormData = new FormData();
+        logoFormData.append('logo', logoFile);
+        
+        try {
+          const response = await apiClient.post(`/companies/${company.id}/upload-logo`, logoFormData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          
+          console.log('Logo uploaded successfully for new company');
+        } catch (logoError) {
+          console.error('Logo upload error:', logoError);
+          toast.error('Logo Upload Failed', 'Company created successfully, but logo upload failed.');
+        }
+      }
+
       toast.success('Company Created', 'Your company has been created successfully.');
       onClose();
       // Reset form
@@ -66,6 +125,8 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
         zipCode: '',
       });
       setErrors({});
+      setLogoFile(null);
+      setLogoPreview(null);
     } catch (error) {
       toast.error('Creation Failed', 'Failed to create company. Please try again.');
     }
@@ -142,12 +203,11 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
                     errors.type ? 'border-red-300' : 'border-gray-300'
                   }`}
                 >
-                  <option value="internal_hr">Internal HR</option>
-                  <option value="external_hr_agency">HR Agency</option>
-                  <option value="freelance_hr">Freelance HR</option>
-                  <option value="startup">Startup</option>
-                  <option value="enterprise">Enterprise</option>
-                  <option value="consulting">Consulting</option>
+                  {COMPANY_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
                 {errors.type && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -169,11 +229,11 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
                     errors.size ? 'border-red-300' : 'border-gray-300'
                   }`}
                 >
-                  <option value="1">Just me</option>
-                  <option value="2-10">2-10 employees</option>
-                  <option value="11-50">11-50 employees</option>
-                  <option value="51-200">51-200 employees</option>
-                  <option value="200+">200+ employees</option>
+                  {COMPANY_SIZE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
                 {errors.size && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -210,6 +270,58 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Brief description of your company"
               />
+            </div>
+          </div>
+
+          {/* Logo Upload */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Company Logo</h3>
+            
+            <div className="flex items-start space-x-4">
+              {logoPreview ? (
+                <div className="relative">
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-24 h-24 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                  <Building2 className="h-8 w-8 text-gray-400" />
+                </div>
+              )}
+              
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Logo
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose File
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  PNG, JPG up to 2MB. Recommended size: 200x200px
+                </p>
+              </div>
             </div>
           </div>
 
