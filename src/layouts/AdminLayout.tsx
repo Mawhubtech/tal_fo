@@ -62,9 +62,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     {
       id: 'company-management',
       label: 'Company Management',
-      path: '/dashboard/admin/company-management',
+      path: '/dashboard/admin/companies',
       icon: Building,
-      description: 'Manage client companies'
+      description: 'Manage HR companies and teams'
     },
     {
       id: 'job-board-config',
