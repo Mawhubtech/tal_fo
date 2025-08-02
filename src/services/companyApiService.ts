@@ -167,6 +167,7 @@ class CompanyApiService {
     member: CompanyMember;
     emailSent: boolean;
     emailError: string | null;
+    userCreated: boolean;
   }> {
     const response = await apiClient.post(`/companies/${companyId}/members/invite`, data);
     return response.data;
@@ -199,6 +200,18 @@ class CompanyApiService {
   async getMyPendingInvitations(): Promise<{ invitations: CompanyMember[] }> {
     const response = await apiClient.get('/companies/my-pending-invitations');
     return response.data;
+  }
+
+  async checkUserExists(email: string): Promise<{ exists: boolean; user?: any }> {
+    try {
+      const response = await apiClient.get(`/users/check-email/${encodeURIComponent(email)}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return { exists: false };
+      }
+      throw error;
+    }
   }
 
   async updateMember(companyId: string, memberId: string, data: UpdateMemberData): Promise<{ member: CompanyMember }> {

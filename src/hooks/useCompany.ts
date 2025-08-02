@@ -205,3 +205,10 @@ export const useCreateDepartment = () => {
 };
 
 // No team mutations - teams functionality removed
+
+// User existence check
+export const useCheckUserExists = () => {
+  return useMutation({
+    mutationFn: (email: string) => companyApiService.checkUserExists(email),
+  });
+};

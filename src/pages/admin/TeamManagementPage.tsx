@@ -282,7 +282,7 @@ const TeamManagementPage: React.FC = () => {
     }
   };
 
-  // Handle user deletion
+  // Handle user deletion  
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
@@ -292,9 +292,33 @@ const TeamManagementPage: React.FC = () => {
       await deleteUserMutation.mutateAsync(userId);
       toast.success('User deleted successfully!');
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
-      toast.error('Failed to delete user. Please try again.');
+      
+      // Handle specific error messages from backend
+      const errorMessage = error.response?.data?.message || 'Failed to delete user. Please try again.';
+      
+      // Show more user-friendly error handling
+      if (errorMessage.includes('hiring teams')) {
+        toast.error(
+          'Cannot Delete User: This user is assigned to hiring teams. Please remove them from all hiring teams before deleting their account.'
+        );
+      } else if (errorMessage.includes('companies')) {
+        toast.error(
+          'Cannot Delete User: This user is a member of one or more companies. Please remove them from all companies before deleting their account.'
+        );
+      } else if (errorMessage.includes('candidates')) {
+        toast.error(
+          'Cannot Delete User: This user has created candidates in the system. Please reassign or remove their candidates before deleting their account.'
+        );
+      } else if (errorMessage.includes('jobs')) {
+        toast.error(
+          'Cannot Delete User: This user has created jobs in the system. Please reassign or remove their jobs before deleting their account.'
+        );
+      } else {
+        // Generic error message
+        toast.error(`Delete Failed: ${errorMessage}`);
+      }
     }
   };
 

@@ -7,6 +7,7 @@ import ExternalUserGuard from './components/ExternalUserGuard';
 import SignIn from './components/SignIn';
 import OrganizationSignIn from './components/OrganizationSignIn';
 import OAuthCallback from './components/OAuthCallback';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import LandingPage from './pages/LandingPage';
 import JobBoardPage from './pages/jobSeeker/JobBoardPage';
 import JobDetailPage from './pages/jobSeeker/JobDetailPage';
@@ -44,6 +45,10 @@ function App() {
             <Route
               path="/signin"
               element={<SignIn />}
+            />
+            <Route
+              path="/reset-password"
+              element={<ResetPasswordPage />}
             />
             <Route
               path="/organization/signin"

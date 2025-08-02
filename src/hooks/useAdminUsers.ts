@@ -139,6 +139,13 @@ export function useDeleteUser() {
       // Invalidate all admin user queries
       queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
     },
+    onError: (error: any) => {
+      // Log the error for debugging
+      console.error('Delete user error:', error);
+      
+      // The error will be handled by the calling component
+      // but we can add any additional global error handling here if needed
+    },
   });
 }
 

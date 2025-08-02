@@ -199,8 +199,39 @@ const UserManagementPage: React.FC = () => {
       setIsDetailsModalOpen(false);
       setSelectedUser(null);
       setUserToDelete(null);
-    } catch (error) {
-      toast.error('Delete Failed', 'Failed to delete user. Please try again.');
+    } catch (error: any) {
+      // Handle specific error messages from backend
+      const errorMessage = error.response?.data?.message || 'Failed to delete user. Please try again.';
+      
+      // Show more user-friendly error handling
+      if (errorMessage.includes('hiring teams')) {
+        toast.error(
+          'Cannot Delete User', 
+          'This user is assigned to hiring teams. Please remove them from all hiring teams before deleting their account.',
+          6000
+        );
+      } else if (errorMessage.includes('companies')) {
+        toast.error(
+          'Cannot Delete User', 
+          'This user is a member of one or more companies. Please remove them from all companies before deleting their account.',
+          6000
+        );
+      } else if (errorMessage.includes('candidates')) {
+        toast.error(
+          'Cannot Delete User', 
+          'This user has created candidates in the system. Please reassign or remove their candidates before deleting their account.',
+          6000
+        );
+      } else if (errorMessage.includes('jobs')) {
+        toast.error(
+          'Cannot Delete User', 
+          'This user has created jobs in the system. Please reassign or remove their jobs before deleting their account.',
+          6000
+        );
+      } else {
+        // Generic error message
+        toast.error('Delete Failed', errorMessage);
+      }
     }
   };
 
