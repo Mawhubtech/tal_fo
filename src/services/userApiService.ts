@@ -45,4 +45,9 @@ export class UserApiService {
   static async updateNotificationPreferences(preferences: NotificationPreferences): Promise<void> {
     await apiClient.patch('/users/me/notifications', preferences);
   }
+
+  static async searchUsers(query: string): Promise<UserProfile[]> {
+    const response = await apiClient.get('/users/search', { params: { q: query } });
+    return response.data.users;
+  }
 }

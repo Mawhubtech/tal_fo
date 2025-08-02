@@ -16,9 +16,11 @@ import {
   Clock,
   XCircle
 } from 'lucide-react';
-import { useMyCompanies, useMemberCompanies } from '../../hooks/useCompany';
+import { useMyCompanies, useMemberCompanies, useAllCompanies } from '../../hooks/useCompany';
 import { CreateCompanyModal } from '../../components/company/CreateCompanyModal';
 import { Company } from '../../services/companyApiService';
+import { useAuth } from '../../hooks/useAuth';
+import { isSuperAdmin } from '../../utils/roleUtils';
 
 const CompanyManagementPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -26,19 +28,36 @@ const CompanyManagementPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
+  const { user } = useAuth();
+  const isUserSuperAdmin = isSuperAdmin(user);
+
   const { data: ownedCompaniesData, isLoading: isLoadingOwned } = useMyCompanies();
   const { data: memberCompaniesData, isLoading: isLoadingMember } = useMemberCompanies();
+  const { data: allCompaniesData, isLoading: isLoadingAll } = useAllCompanies({
+    enabled: isUserSuperAdmin
+  });
 
+  // For super-admin users, show all companies; for others, show owned + member companies
   const ownedCompanies = ownedCompaniesData?.companies || [];
   const memberCompanies = memberCompaniesData?.companies || [];
+  const allSystemCompanies = allCompaniesData?.companies || [];
 
-  // Combine and deduplicate companies
-  const allCompanies = [...ownedCompanies, ...memberCompanies].reduce((acc, company) => {
-    if (!acc.find(c => c.id === company.id)) {
-      acc.push(company);
-    }
-    return acc;
-  }, [] as Company[]);
+  // Combine and deduplicate companies based on user role
+  const allCompanies = isUserSuperAdmin 
+    ? allSystemCompanies
+    : [...ownedCompanies, ...memberCompanies].reduce((acc, company) => {
+        if (!acc.find(c => c.id === company.id)) {
+          acc.push(company);
+        }
+        return acc;
+      }, [] as Company[]);
+
+  // Helper function to get full logo URL
+  const getLogoUrl = (logoUrl: string | null | undefined) => {
+    if (!logoUrl) return null;
+    if (logoUrl.startsWith('http')) return logoUrl;
+    return `${import.meta.env.VITE_API_URL}${logoUrl}`;
+  };
 
   // Filter companies based on search and filters
   const filteredCompanies = allCompanies.filter(company => {
@@ -90,7 +109,7 @@ const CompanyManagementPage: React.FC = () => {
     );
   };
 
-  if (isLoadingOwned || isLoadingMember) {
+  if ((isUserSuperAdmin && isLoadingAll) || (!isUserSuperAdmin && (isLoadingOwned || isLoadingMember))) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -104,7 +123,12 @@ const CompanyManagementPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Company Management</h1>
-          <p className="text-gray-600">Manage companies in the system</p>
+          <p className="text-gray-600">
+            {isUserSuperAdmin 
+              ? 'Manage all companies in the system' 
+              : 'Manage companies in the system'
+            }
+          </p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
@@ -163,8 +187,12 @@ const CompanyManagementPage: React.FC = () => {
               <Users className="w-6 h-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">My Companies</p>
-              <p className="text-2xl font-bold text-gray-900">{ownedCompanies.length}</p>
+              <p className="text-sm font-medium text-gray-600">
+                {isUserSuperAdmin ? 'System View' : 'My Companies'}
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {isUserSuperAdmin ? allCompanies.length : ownedCompanies.length}
+              </p>
             </div>
           </div>
         </div>
@@ -264,11 +292,34 @@ const CompanyManagementPage: React.FC = () => {
                   <tr key={company.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div 
-                          className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-medium"
-                          style={{ backgroundColor: company.brandColor || '#6366f1' }}
-                        >
-                          {company.name.charAt(0).toUpperCase()}
+                        <div className="h-10 w-10 rounded-lg overflow-hidden flex items-center justify-center">
+                          {company.logoUrl ? (
+                            <img
+                              src={getLogoUrl(company.logoUrl)}
+                              alt={`${company.name} logo`}
+                              className="h-10 w-10 object-cover rounded-lg"
+                              onError={(e) => {
+                                // Fallback to company initial
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `
+                                    <div class="h-10 w-10 rounded-lg flex items-center justify-center text-white font-medium" style="background-color: ${company.brandColor || '#6366f1'}">
+                                      ${company.name.charAt(0).toUpperCase()}
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div 
+                              className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-medium"
+                              style={{ backgroundColor: company.brandColor || '#6366f1' }}
+                            >
+                              {company.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">

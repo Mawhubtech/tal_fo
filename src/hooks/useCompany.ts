@@ -4,6 +4,7 @@ import { companyApiService, CreateCompanyData, UpdateCompanyData, InviteMemberDa
 // Query keys
 export const companyKeys = {
   all: ['companies'] as const,
+  allCompanies: () => [...companyKeys.all, 'all-companies'] as const,
   myCompanies: () => [...companyKeys.all, 'my-companies'] as const,
   memberCompanies: () => [...companyKeys.all, 'member-companies'] as const,
   company: (id: string) => [...companyKeys.all, 'company', id] as const,
@@ -26,6 +27,14 @@ export const useMemberCompanies = () => {
   return useQuery({
     queryKey: companyKeys.memberCompanies(),
     queryFn: () => companyApiService.getMemberCompanies(),
+  });
+};
+
+export const useAllCompanies = (options?: { enabled?: boolean }) => {
+  return useQuery({
+    queryKey: companyKeys.allCompanies(),
+    queryFn: () => companyApiService.getAllCompanies(),
+    enabled: options?.enabled ?? true,
   });
 };
 
@@ -84,8 +93,9 @@ export const useCreateCompany = () => {
   return useMutation({
     mutationFn: (data: CreateCompanyData) => companyApiService.createCompany(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.myCompanies() });
-      queryClient.invalidateQueries({ queryKey: companyKeys.memberCompanies() });
+      // Invalidate all company-related queries using the base key
+      // This is more efficient than invalidating each query individually
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
     },
   });
 };
@@ -97,9 +107,9 @@ export const useUpdateCompany = () => {
     mutationFn: ({ id, data }: { id: string; data: UpdateCompanyData }) => 
       companyApiService.updateCompany(id, data),
     onSuccess: (result, variables) => {
+      // Invalidate the specific company and all company lists
       queryClient.invalidateQueries({ queryKey: companyKeys.company(variables.id) });
-      queryClient.invalidateQueries({ queryKey: companyKeys.myCompanies() });
-      queryClient.invalidateQueries({ queryKey: companyKeys.memberCompanies() });
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
     },
   });
 };
@@ -110,8 +120,8 @@ export const useDeleteCompany = () => {
   return useMutation({
     mutationFn: (id: string) => companyApiService.deleteCompany(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.myCompanies() });
-      queryClient.invalidateQueries({ queryKey: companyKeys.memberCompanies() });
+      // Invalidate all company-related queries
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
     },
   });
 };
@@ -124,8 +134,11 @@ export const useInviteMember = () => {
     mutationFn: ({ companyId, data }: { companyId: string; data: InviteMemberData }) => 
       companyApiService.inviteMember(companyId, data),
     onSuccess: (result, variables) => {
+      // Invalidate specific company queries and all company lists
       queryClient.invalidateQueries({ queryKey: companyKeys.companyMembers(variables.companyId) });
       queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(variables.companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(variables.companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
     },
   });
 };
@@ -136,9 +149,8 @@ export const useAcceptInvitation = () => {
   return useMutation({
     mutationFn: (memberId: string) => companyApiService.acceptInvitation(memberId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.memberCompanies() });
-      // We don't know the companyId here, so invalidate all member queries
-      queryClient.invalidateQueries({ queryKey: ['companies', 'members'] });
+      // Invalidate all company-related queries since user's membership status changed
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
     },
   });
 };
@@ -150,7 +162,10 @@ export const useUpdateMember = () => {
     mutationFn: ({ memberId, data, companyId }: { memberId: string; data: UpdateMemberData; companyId: string }) => 
       companyApiService.updateMember(companyId, memberId, data),
     onSuccess: (result, variables) => {
+      // Invalidate specific company queries and all company lists
       queryClient.invalidateQueries({ queryKey: companyKeys.companyMembers(variables.companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(variables.companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
     },
   });
 };
@@ -162,8 +177,11 @@ export const useRemoveMember = () => {
     mutationFn: ({ memberId, companyId }: { memberId: string; companyId: string }) => 
       companyApiService.removeMember(companyId, memberId),
     onSuccess: (result, variables) => {
+      // Invalidate specific company queries and all company lists
       queryClient.invalidateQueries({ queryKey: companyKeys.companyMembers(variables.companyId) });
       queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(variables.companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(variables.companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
     },
   });
 };

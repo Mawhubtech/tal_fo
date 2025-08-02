@@ -67,6 +67,7 @@ export interface CreateCompanyData {
   country?: string;
   zipCode?: string;
   settings?: any;
+  targetOwnerId?: string; // For super admin to assign ownership to another user
 }
 
 export interface UpdateCompanyData {
@@ -168,6 +169,11 @@ class CompanyApiService {
 
   async getMemberCompanies(): Promise<{ companies: Company[] }> {
     const response = await apiClient.get('/companies/member-companies');
+    return response.data;
+  }
+
+  async getAllCompanies(): Promise<{ companies: Company[] }> {
+    const response = await apiClient.get('/companies/all-companies');
     return response.data;
   }
 

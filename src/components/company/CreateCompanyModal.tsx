@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Building2, AlertCircle, Upload } from 'lucide-react';
 import { useCreateCompany } from '../../hooks/useCompany';
 import { CreateCompanyData } from '../../services/companyApiService';
 import { toast } from '../ToastContainer';
 import { COMPANY_TYPE_OPTIONS, COMPANY_SIZE_OPTIONS, COMPANY_STATUS_OPTIONS } from '../../constants/company';
 import apiClient from '../../services/api';
+import { UserSelector } from '../common/UserSelector';
+import { UserProfile } from '../../services/userApiService';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { isSuperAdmin } from '../../utils/roleUtils';
 
 interface CreateCompanyModalProps {
   isOpen: boolean;
@@ -15,6 +19,7 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { user } = useAuthContext();
   const [formData, setFormData] = useState<CreateCompanyData>({
     name: '',
     description: '',
@@ -31,9 +36,21 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string>('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [selectedOwner, setSelectedOwner] = useState<UserProfile | null>(null);
   const createCompany = useCreateCompany();
+
+  const isUserSuperAdmin = isSuperAdmin(user);
+
+  // Clear errors when modal is closed/opened
+  useEffect(() => {
+    if (!isOpen) {
+      setGeneralError('');
+      setErrors({});
+    }
+  }, [isOpen]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,11 +95,17 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setGeneralError(''); // Clear general error when showing field-specific errors
       return;
     }
 
     try {
       let dataToCreate = { ...formData };
+      
+      // If super admin and owner is selected, add targetOwnerId
+      if (isUserSuperAdmin && selectedOwner) {
+        dataToCreate.targetOwnerId = selectedOwner.id;
+      }
       
       // Create the company first
       const result = await createCompany.mutateAsync(dataToCreate);
@@ -125,18 +148,60 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
         zipCode: '',
       });
       setErrors({});
+      setGeneralError('');
       setLogoFile(null);
       setLogoPreview(null);
-    } catch (error) {
-      toast.error('Creation Failed', 'Failed to create company. Please try again.');
+      setSelectedOwner(null);
+    } catch (error: any) {
+      console.error('Company creation error:', error);
+      
+      // Extract error message from API response
+      let errorMessage = 'Failed to create company. Please try again.';
+      let errorTitle = 'Creation Failed';
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+        
+        // Customize title based on error type
+        if (errorMessage.includes('already a member of') || errorMessage.includes('already owns a company')) {
+          errorTitle = 'Company Association Exists';
+        } else if (errorMessage.includes('User not found')) {
+          errorTitle = 'User Not Found';
+        } else if (errorMessage.includes('permission')) {
+          errorTitle = 'Permission Denied';
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      // Set general error to display in the form
+      setGeneralError(errorMessage);
+      
+      // Also show toast notification
+      toast.error(errorTitle, errorMessage);
+    }
+  };
+
+  const handleOwnerSelect = (owner: UserProfile | null) => {
+    setSelectedOwner(owner);
+    // Clear general error when user changes owner selection
+    if (generalError) {
+      setGeneralError('');
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear field-specific error
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    
+    // Clear general error when user starts making changes
+    if (generalError) {
+      setGeneralError('');
     }
   };
 
@@ -164,6 +229,24 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* General Error Display */}
+          {generalError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-red-800 mb-1">Unable to Create Company</h4>
+                  <p className="text-sm text-red-700">{generalError}</p>
+                  {generalError.includes('already a member of') || generalError.includes('already owns a company') ? (
+                    <p className="text-xs text-red-600 mt-2">
+                      <strong>Note:</strong> Users can only be associated with one company at a time. To create a new company, you must first leave your current company or contact an administrator.
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
@@ -272,6 +355,26 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               />
             </div>
           </div>
+
+          {/* Owner Selection (Super Admin Only) */}
+          {isUserSuperAdmin && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Company Owner</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign Owner
+                </label>
+                <UserSelector
+                  selectedUser={selectedOwner}
+                  onUserSelect={handleOwnerSelect}
+                  placeholder="Search for a user to assign as company owner..."
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Leave empty to assign ownership to yourself
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Logo Upload */}
           <div className="space-y-4">

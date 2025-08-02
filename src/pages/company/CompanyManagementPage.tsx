@@ -23,6 +23,7 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { CreateCompanyModal } from '../../components/company/CreateCompanyModal';
 import { EditCompanyModal } from '../../components/company/EditCompanyModal';
 import ToastContainer, { toast } from '../../components/ToastContainer';
+import { isSuperAdmin } from '../../utils/roleUtils';
 
 const CompanyManagementPage: React.FC = () => {
   const { user } = useAuthContext();
@@ -38,6 +39,15 @@ const CompanyManagementPage: React.FC = () => {
   const myCompanies = myCompaniesData?.companies || [];
   const memberCompanies = memberCompaniesData?.companies || [];
   const allCompanies = [...myCompanies, ...memberCompanies.filter(c => !myCompanies.find(mc => mc.id === c.id))];
+
+  const isUserSuperAdmin = isSuperAdmin(user);
+
+  // Helper function to get full logo URL
+  const getLogoUrl = (logoUrl: string | null | undefined) => {
+    if (!logoUrl) return null;
+    if (logoUrl.startsWith('http')) return logoUrl;
+    return `${import.meta.env.VITE_API_URL}${logoUrl}`;
+  };
 
   const handleDeleteCompany = async (company: Company) => {
     if (!window.confirm(`Are you sure you want to delete "${company.name}"? This action cannot be undone.`)) {
@@ -134,15 +144,28 @@ const CompanyManagementPage: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Company Management</h1>
-          <p className="text-gray-600">Manage your HR companies and team members</p>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-gray-900">Company Management</h1>
+            {isUserSuperAdmin && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                <Crown className="h-3 w-3 mr-1" />
+                Super Admin
+              </span>
+            )}
+          </div>
+          <p className="text-gray-600">
+            {isUserSuperAdmin 
+              ? "Manage all companies and assign ownership to users" 
+              : "Manage your HR companies and team members"
+            }
+          </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Create Company
+          {isUserSuperAdmin ? "Create Company" : "Create Company"}
         </button>
       </div>
 
@@ -243,9 +266,24 @@ const CompanyManagementPage: React.FC = () => {
                     </div>
                     {company.logoUrl ? (
                       <img
-                        src={company.logoUrl}
+                        src={getLogoUrl(company.logoUrl)}
                         alt={`${company.name} logo`}
                         className="w-12 h-12 rounded-lg object-cover"
+                        onError={(e) => {
+                          // Fallback to default icon if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `
+                              <div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0a2 2 0 01-2 2H5a2 2 0 01-2-2m14 0V9a2 2 0 00-2-2H5a2 2 0 002-2h10a2 2 0 012 2v12z"></path>
+                                </svg>
+                              </div>
+                            `;
+                          }
+                        }}
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
