@@ -162,6 +162,11 @@ class CompanyApiService {
     return response.data;
   }
 
+  async getCompanyAccessibleClients(companyId: string): Promise<{ clients: any[] }> {
+    const response = await apiClient.get(`/companies/${companyId}/accessible-clients`);
+    return response.data;
+  }
+
   async inviteMember(companyId: string, data: InviteMemberData): Promise<{ 
     message: string;
     member: CompanyMember;

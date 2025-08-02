@@ -18,7 +18,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, useInviteMember, useDeleteCompany, useResendInvitation } from '../../hooks/useCompany';
-import { useCreateUser, useRoles } from '../../hooks/useAdminUsers';
+import { useCreateUser, useRoles, useClients, useCurrentUserClients } from '../../hooks/useAdminUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
 import { EditCompanyModal } from '../../components/company/EditCompanyModal';
@@ -64,6 +64,12 @@ export const CompanyDetailPage: React.FC = () => {
   const isUserSuperAdmin = isSuperAdmin(user);
   const canEditCompany = isOwner || isUserSuperAdmin;
   const canDeleteCompany = isOwner || isUserSuperAdmin;
+  
+  // Client data hooks - super-admin sees all clients, regular users see only their assigned clients
+  const { data: clientsResponse } = isUserSuperAdmin 
+    ? useClients()
+    : useCurrentUserClients();
+  const allClients = Array.isArray(clientsResponse) ? clientsResponse : clientsResponse?.clients || [];
 
   if (isLoadingCompany) {
     return (
@@ -491,6 +497,13 @@ export const CompanyDetailPage: React.FC = () => {
                           </span>
                         )}
                         
+                        {/* Client Access Indicator */}
+                        {member.user.clients && member.user.clients.length > 0 && (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200" title={`Has access to ${member.user.clients.length} client${member.user.clients.length !== 1 ? 's' : ''}`}>
+                            {member.user.clients.length} Client{member.user.clients.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                        
                         {canEditCompany && member.role !== 'owner' && (
                           <button
                             onClick={() => setMemberToEdit(member)}
@@ -640,6 +653,7 @@ export const CompanyDetailPage: React.FC = () => {
           isOpen={!!memberToEdit}
           onClose={() => setMemberToEdit(null)}
           member={memberToEdit}
+          companyId={company.id}
           companyType={company.type}
           onSuccess={handleEditMemberSuccess}
           onUpdateMember={handleUpdateMember}

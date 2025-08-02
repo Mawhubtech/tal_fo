@@ -9,6 +9,7 @@ export const companyKeys = {
   memberCompanies: () => [...companyKeys.all, 'member-companies'] as const,
   company: (id: string) => [...companyKeys.all, 'company', id] as const,
   companyMembers: (companyId: string) => [...companyKeys.all, 'members', companyId] as const,
+  companyAccessibleClients: (companyId: string) => [...companyKeys.all, 'accessible-clients', companyId] as const,
   companyDepartments: (companyId: string) => [...companyKeys.all, 'departments', companyId] as const,
   companyStats: (companyId: string) => [...companyKeys.all, 'stats', companyId] as const,
 };
@@ -48,6 +49,14 @@ export const useCompanyMembers = (companyId: string) => {
   return useQuery({
     queryKey: companyKeys.companyMembers(companyId),
     queryFn: () => companyApiService.getCompanyMembers(companyId),
+    enabled: !!companyId,
+  });
+};
+
+export const useCompanyAccessibleClients = (companyId: string) => {
+  return useQuery({
+    queryKey: companyKeys.companyAccessibleClients(companyId),
+    queryFn: () => companyApiService.getCompanyAccessibleClients(companyId),
     enabled: !!companyId,
   });
 };

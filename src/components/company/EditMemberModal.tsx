@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Shield, Building, UserCheck, UserX, Edit, Save } from 'lucide-react';
+import { X, User, Shield, Building, UserCheck, UserX, Edit, Save, Link as LinkIcon, Check } from 'lucide-react';
 import { CompanyMember } from '../../services/companyApiService';
-import { useUpdateUser, useUpdateUserStatus, useRoles, useAssignRole, useRemoveRole } from '../../hooks/useAdminUsers';
+import { 
+  useUpdateUser, 
+  useUpdateUserStatus, 
+  useRoles, 
+  useAssignRole, 
+  useRemoveRole,
+  useUpdateUserClients
+} from '../../hooks/useAdminUsers';
+import { useCompanyAccessibleClients } from '../../hooks/useCompany';
+import { useAuthContext } from '../../contexts/AuthContext';
 import { toast } from '../ToastContainer';
-import { formatApiError } from '../../utils/errorUtils';
+import { isSuperAdmin } from '../../utils/roleUtils';
 import { filterRolesByCompanyType, getRoleDescriptionsForCompanyType } from '../../utils/companyRoleMapping';
+import { formatApiError } from '../../utils/errorUtils';
 
 interface EditMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   member: CompanyMember;
+  companyId: string;
   companyType: string;
   onSuccess: () => void;
   onUpdateMember: (memberId: string, data: { role?: CompanyMember['role']; title?: string }) => Promise<void>;
@@ -20,20 +31,25 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
   isOpen,
   onClose,
   member,
+  companyId,
   companyType,
   onSuccess,
   onUpdateMember,
   isUpdating = false
 }) => {
+  const { user: currentUser } = useAuthContext();
   const [role, setRole] = useState<CompanyMember['role']>(member.role);
   const [title, setTitle] = useState(member.title || '');
-  const [activeTab, setActiveTab] = useState<'company' | 'user'>('company');
+  const [activeTab, setActiveTab] = useState<'company' | 'user' | 'clients'>('company');
   
   // User data states
   const [firstName, setFirstName] = useState(member.user.firstName);
   const [lastName, setLastName] = useState(member.user.lastName);
   const [userStatus, setUserStatus] = useState(member.user.status);
   const [selectedRoles, setSelectedRoles] = useState<string[]>(member.user.roles?.map(r => r.id) || []);
+  
+  // Client management states
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
 
   // Hooks
   const updateUser = useUpdateUser();
@@ -41,8 +57,14 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
   const { data: rolesData } = useRoles();
   const assignRole = useAssignRole();
   const removeRole = useRemoveRole();
+  const updateUserClients = useUpdateUserClients();
 
-  // Get system roles filtered by company type
+  // Check if current user is super admin
+  const isUserSuperAdmin = isSuperAdmin(currentUser);
+
+  // Client data hooks - show only clients accessible by company members
+  const { data: companyClientsResponse, isLoading: loadingClients } = useCompanyAccessibleClients(companyId);
+  const allClients = Array.isArray(companyClientsResponse?.clients) ? companyClientsResponse.clients : [];  // Get system roles filtered by company type
   const systemRoles = Array.isArray(rolesData) ? rolesData : rolesData?.roles || [];
   const availableRoles = filterRolesByCompanyType(systemRoles, companyType);
   const roleDescriptions = getRoleDescriptionsForCompanyType(companyType);
@@ -55,6 +77,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
       setLastName(member.user.lastName);
       setUserStatus(member.user.status);
       setSelectedRoles(member.user.roles?.map(r => r.id) || []);
+      // Initialize client selection with current user's clients
+      setSelectedClients(member.user.clients?.map(c => c.id) || []);
       setActiveTab('company');
     }
   }, [isOpen, member]);
@@ -103,7 +127,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
 
         await onUpdateMember(member.id, updateData);
         toast.success('Company Role Updated', `${member.user.firstName}'s company information has been updated successfully.`);
-      } else {
+      } else if (activeTab === 'user') {
         // Handle user details and system roles updates
         const hasUserDataChanges = 
           firstName !== member.user.firstName ||
@@ -155,6 +179,23 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
         }
 
         toast.success('User Updated', `${firstName}'s user information has been updated successfully.`);
+      } else if (activeTab === 'clients') {
+        // Handle client access updates
+        const currentClientIds = member.user.clients?.map(c => c.id) || [];
+        const hasClientChanges = selectedClients.length !== currentClientIds.length || 
+          selectedClients.some(id => !currentClientIds.includes(id));
+
+        if (!hasClientChanges) {
+          toast.info('No Changes', 'No changes were made to client access.');
+          return;
+        }
+
+        await updateUserClients.mutateAsync({
+          userId: member.user.id,
+          clientIds: selectedClients
+        });
+
+        toast.success('Client Access Updated', `${member.user.firstName}'s client access has been updated successfully.`);
       }
       
       onSuccess();
@@ -171,6 +212,14 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
       prev.includes(roleId) 
         ? prev.filter(id => id !== roleId)
         : [...prev, roleId]
+    );
+  };
+
+  const handleClientToggle = (clientId: string) => {
+    setSelectedClients(prev => 
+      prev.includes(clientId) 
+        ? prev.filter(id => id !== clientId)
+        : [...prev, clientId]
     );
   };
 
@@ -225,6 +274,17 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
             >
               <User className="h-4 w-4 inline mr-2" />
               User Details
+            </button>
+            <button
+              onClick={() => setActiveTab('clients')}
+              className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'clients'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <LinkIcon className="h-4 w-4 inline mr-2" />
+              Client Access
             </button>
           </nav>
         </div>
@@ -492,6 +552,100 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
             </div>
           )}
 
+          {/* Client Access Tab */}
+          {activeTab === 'clients' && (
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-4">
+                  Client Access Management
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select which clients/organizations {member.user.firstName} should have access to:
+                </p>
+
+                {loadingClients ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="text-sm mt-2">Loading clients...</p>
+                  </div>
+                ) : allClients.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                    {allClients.map((client) => (
+                      <label key={client.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedClients.includes(client.id)}
+                          onChange={() => handleClientToggle(client.id)}
+                          className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        />
+                        <Building className="h-5 w-5 text-gray-500" />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                          {client.industry && (
+                            <div className="text-xs text-gray-500">{client.industry}</div>
+                          )}
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {client.status}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                    <Building className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm">No clients available</p>
+                    <p className="text-xs mt-1">
+                      {isUserSuperAdmin ? 'No clients have been created yet.' : 'You don\'t have access to any clients.'}
+                    </p>
+                  </div>
+                )}
+
+                {selectedClients.length > 0 && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <Check className="h-4 w-4 inline mr-1" />
+                      {selectedClients.length} client{selectedClients.length > 1 ? 's' : ''} selected
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Client access determines which organizations and their data this user can view and manage.
+                </p>
+              </div>
+
+              {/* Changes Summary for Clients Tab */}
+              {(() => {
+                const currentClientIds = member.user.clients?.map(c => c.id) || [];
+                const hasClientChanges = selectedClients.length !== currentClientIds.length || 
+                  selectedClients.some(id => !currentClientIds.includes(id));
+                
+                return hasClientChanges && (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h4 className="text-sm font-medium text-yellow-800 mb-2">Client access changes to be made:</h4>
+                    <div className="space-y-1 text-sm text-yellow-700">
+                      <div>
+                        Current: {currentClientIds.length} client{currentClientIds.length !== 1 ? 's' : ''}
+                      </div>
+                      <div>
+                        New: {selectedClients.length} client{selectedClients.length !== 1 ? 's' : ''}
+                      </div>
+                      {selectedClients.length > currentClientIds.length && (
+                        <div>✅ Adding access to {selectedClients.length - currentClientIds.length} client{selectedClients.length - currentClientIds.length !== 1 ? 's' : ''}</div>
+                      )}
+                      {selectedClients.length < currentClientIds.length && (
+                        <div>❌ Removing access from {currentClientIds.length - selectedClients.length} client{currentClientIds.length - selectedClients.length !== 1 ? 's' : ''}</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           <div className="flex justify-end space-x-3 pt-6 border-t mt-6">
             <button
               type="button"
@@ -503,11 +657,12 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
             <button
               type="submit"
               disabled={isUpdating || updateUser.isPending || updateUserStatus.isPending || 
-                       assignRole.isPending || removeRole.isPending || (member.role === 'owner' && activeTab === 'company')}
+                       assignRole.isPending || removeRole.isPending || updateUserClients.isPending ||
+                       (member.role === 'owner' && activeTab === 'company')}
               className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
             >
               {(isUpdating || updateUser.isPending || updateUserStatus.isPending || 
-                assignRole.isPending || removeRole.isPending) ? (
+                assignRole.isPending || removeRole.isPending || updateUserClients.isPending) ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Updating...
@@ -515,7 +670,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Update {activeTab === 'company' ? 'Company Role' : 'User Details'}
+                  Update {activeTab === 'company' ? 'Company Role' : activeTab === 'user' ? 'User Details' : 'Client Access'}
                 </>
               )}
             </button>
