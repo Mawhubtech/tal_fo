@@ -16,17 +16,20 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, /* useInviteMember, */ useDeleteCompany } from '../../hooks/useCompany';
+import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, useInviteMember, useDeleteCompany } from '../../hooks/useCompany';
 import { useCreateUser, useRoles } from '../../hooks/useAdminUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
 import { EditCompanyModal } from '../../components/company/EditCompanyModal';
-// import { InviteMemberModal } from '../../components/company/InviteMemberModal'; // TODO: Re-enable when needed
+import { InviteMemberModal } from '../../components/company/InviteMemberModal';
+import { EditMemberModal } from '../../components/company/EditMemberModal';
 import { UserModal } from '../../components/UserModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { CompanyMember } from '../../services/companyApiService';
 import { toast } from '../../components/ToastContainer';
 import { COMPANY_TYPE_OPTIONS, COMPANY_SIZE_OPTIONS } from '../../constants/company';
+import { filterRolesByCompanyType } from '../../utils/companyRoleMapping';
+import { formatApiError } from '../../utils/errorUtils';
 
 export const CompanyDetailPage: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
@@ -34,16 +37,17 @@ export const CompanyDetailPage: React.FC = () => {
   const { user } = useAuthContext();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  // const [isInviteModalOpen, setIsInviteModalOpen] = useState(false); // TODO: Re-enable when needed
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<CompanyMember | null>(null);
+  const [memberToEdit, setMemberToEdit] = useState<CompanyMember | null>(null);
   const [showDeleteCompanyModal, setShowDeleteCompanyModal] = useState(false);
   
   const { data: companyData, isLoading: isLoadingCompany, error: companyError } = useCompany(companyId!);
   const { data: membersData, isLoading: isLoadingMembers, refetch: refetchMembers } = useCompanyMembers(companyId!);
   const removeMember = useRemoveMember();
   const updateMember = useUpdateMember();
-  // const inviteMember = useInviteMember(); // TODO: Re-enable when needed
+  const inviteMember = useInviteMember();
   const deleteCompany = useDeleteCompany();
   const createUserMutation = useCreateUser();
   const { data: rolesData } = useRoles();
@@ -93,21 +97,24 @@ export const CompanyDetailPage: React.FC = () => {
       });
       toast.success('Member Removed', `${member.user.firstName} ${member.user.lastName} has been removed from the company.`);
       setMemberToRemove(null);
-    } catch (error) {
-      toast.error('Remove Failed', 'Failed to remove member. Please try again.');
+    } catch (error: any) {
+      console.error('Error removing member:', error);
+      const errorMessage = formatApiError(error);
+      toast.error('Remove Failed', errorMessage);
     }
   };
 
-  const handleRoleChange = async (member: CompanyMember, newRole: CompanyMember['role']) => {
+  const handleUpdateMember = async (memberId: string, data: { role?: CompanyMember['role']; title?: string }) => {
     try {
       await updateMember.mutateAsync({
         companyId: company.id,
-        memberId: member.id,
-        data: { role: newRole }
+        memberId: memberId,
+        data: data
       });
-      toast.success('Role Updated', `${member.user.firstName}'s role has been updated to ${newRole}.`);
-    } catch (error) {
-      toast.error('Update Failed', 'Failed to update member role. Please try again.');
+      refetchMembers(); // Refresh the members list
+    } catch (error: any) {
+      console.error('Error updating member:', error);
+      throw error; // Re-throw to let the modal handle the error display
     }
   };
 
@@ -119,35 +126,39 @@ export const CompanyDetailPage: React.FC = () => {
       const response = await createUserMutation.mutateAsync(userData);
       const newUser = (response as any)?.user || response;
       
-      // TODO: Re-enable when invite member functionality is available
-      /*
+      // Determine default role based on company type
+      const getDefaultRole = () => {
+        if (company.type === 'external_hr_agency') {
+          return 'hr_agency_specialist';
+        }
+        return 'recruiter';
+      };
+      
       // Invite user to company as member
       await inviteMember.mutateAsync({
         companyId: company.id,
         data: { 
           email: newUser.email,
-          role: 'recruiter' // Default role for new users
+          role: getDefaultRole() // Role based on company type
         }
       });
-      */
       
-      toast.success('User Created', 'User created successfully! You can manually add them to the company when invite functionality is re-enabled.');
+      toast.success('User Created', 'User created successfully and invited to the company.');
       setIsCreateUserModalOpen(false);
-      // refetchMembers(); // TODO: Re-enable when invite functionality is available
+      refetchMembers(); // Refresh the members list
     } catch (error: any) {
       console.error('Error creating user:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to create user. Please try again.';
+      
+      // Use the error utility to format the message properly
+      const errorMessage = formatApiError(error);
       toast.error('Creation Failed', errorMessage);
     }
   };
 
-  // TODO: Re-enable when invite member functionality is needed
-  /*
   const handleInviteMemberSuccess = () => {
     refetchMembers();
     setIsInviteModalOpen(false);
   };
-  */
 
   const handleDeleteCompany = async () => {
     if (!company) return;
@@ -158,7 +169,7 @@ export const CompanyDetailPage: React.FC = () => {
       navigate('/dashboard/admin/companies');
     } catch (error: any) {
       console.error('Error deleting company:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to delete company. Please try again.';
+      const errorMessage = formatApiError(error);
       toast.error('Delete Failed', errorMessage);
     } finally {
       setShowDeleteCompanyModal(false);
@@ -179,8 +190,45 @@ export const CompanyDetailPage: React.FC = () => {
         return 'bg-yellow-100 text-yellow-800';
       case 'viewer':
         return 'bg-gray-100 text-gray-800';
+      // HR Agency roles
+      case 'hr_agency_admin':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'hr_agency_director':
+        return 'bg-blue-100 text-blue-800';
+      case 'hr_agency_associate':
+        return 'bg-green-100 text-green-800';
+      case 'hr_agency_specialist':
+        return 'bg-teal-100 text-teal-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatRole = (role: CompanyMember['role']) => {
+    switch (role) {
+      case 'owner':
+        return 'Owner';
+      case 'admin':
+        return 'Admin';
+      case 'hr_manager':
+        return 'HR Manager';
+      case 'recruiter':
+        return 'Recruiter';
+      case 'coordinator':
+        return 'Coordinator';
+      case 'viewer':
+        return 'Viewer';
+      // HR Agency roles
+      case 'hr_agency_admin':
+        return 'Admin';
+      case 'hr_agency_director':
+        return 'Director';
+      case 'hr_agency_associate':
+        return 'Associate';
+      case 'hr_agency_specialist':
+        return 'Specialist';
+      default:
+        return String(role).replace('_', ' ');
     }
   };
 
@@ -255,11 +303,11 @@ export const CompanyDetailPage: React.FC = () => {
                   <button
                     onClick={() => setIsCreateUserModalOpen(true)}
                     className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    title={`Create user with roles suitable for ${getCompanyTypeLabel(company.type)} companies`}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Create User
                   </button>
-                  {/* TODO: Re-enable invite member functionality when needed
                   <button
                     onClick={() => setIsInviteModalOpen(true)}
                     className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
@@ -267,7 +315,6 @@ export const CompanyDetailPage: React.FC = () => {
                     <UserPlus className="h-4 w-4 mr-2" />
                     Invite Member
                   </button>
-                  */}
                 </>
               )}
               {canEditCompany && (
@@ -398,36 +445,23 @@ export const CompanyDetailPage: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center space-x-3">
-                        {member.role === 'owner' ? (
-                          <span className="text-sm text-gray-500 px-2 py-1">
-                            Role cannot be changed
-                          </span>
-                        ) : !canEditCompany ? (
-                          <span className="text-sm text-gray-500 px-2 py-1">
-                            Only owner or super-admin can change roles
-                          </span>
-                        ) : (
-                          <select
-                            value={member.role}
-                            onChange={(e) => handleRoleChange(member, e.target.value as CompanyMember['role'])}
-                            className="text-sm border border-gray-300 rounded px-2 py-1"
-                            disabled={updateMember.isPending}
-                          >
-                            <option value="viewer">Viewer</option>
-                            <option value="coordinator">Coordinator</option>
-                            <option value="recruiter">Recruiter</option>
-                            <option value="hr_manager">HR Manager</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                        )}
-                        
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
-                          {member.role}
+                          {formatRole(member.role)}
                         </span>
                         
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(member.status)}`}>
                           {member.status}
                         </span>
+                        
+                        {canEditCompany && member.role !== 'owner' && (
+                          <button
+                            onClick={() => setMemberToEdit(member)}
+                            className="text-blue-500 hover:text-blue-700 p-1"
+                            title="Edit member"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                        )}
                         
                         {member.role !== 'owner' && canEditCompany && (
                           <button
@@ -447,7 +481,6 @@ export const CompanyDetailPage: React.FC = () => {
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No team members yet</h3>
                   <p className="text-gray-500 mb-4">Start building your team by inviting members.</p>
-                  {/* TODO: Re-enable invite member functionality when needed
                   {canEditCompany && (
                     <button
                       onClick={() => setIsInviteModalOpen(true)}
@@ -456,7 +489,6 @@ export const CompanyDetailPage: React.FC = () => {
                       Invite First Member
                     </button>
                   )}
-                  */}
                 </div>
               )}
             </div>
@@ -516,16 +548,15 @@ export const CompanyDetailPage: React.FC = () => {
         />
       )}
 
-      {/* TODO: Re-enable invite member functionality when needed
       {isInviteModalOpen && (
         <InviteMemberModal
           isOpen={isInviteModalOpen}
           onClose={() => setIsInviteModalOpen(false)}
           companyId={company.id}
+          companyType={company.type}
           onSuccess={handleInviteMemberSuccess}
         />
       )}
-      */}
 
       {/* Create User Modal */}
       {isCreateUserModalOpen && (
@@ -538,6 +569,7 @@ export const CompanyDetailPage: React.FC = () => {
           isLoading={createUserMutation.isPending}
           roles={allRoles}
           filterAdminRoles={true} // Filter out admin roles for company management
+          companyType={company?.type} // Pass company type for role filtering
         />
       )}
 
@@ -551,6 +583,18 @@ export const CompanyDetailPage: React.FC = () => {
           confirmText="Remove Member"
           cancelText="Cancel"
           type="danger"
+        />
+      )}
+
+      {memberToEdit && (
+        <EditMemberModal
+          isOpen={!!memberToEdit}
+          onClose={() => setMemberToEdit(null)}
+          member={memberToEdit}
+          companyType={company.type}
+          onSuccess={() => setMemberToEdit(null)}
+          onUpdateMember={handleUpdateMember}
+          isUpdating={updateMember.isPending}
         />
       )}
 

@@ -38,7 +38,7 @@ export interface CompanyMember {
   id: string;
   companyId: string;
   userId: string;
-  role: 'owner' | 'admin' | 'hr_manager' | 'recruiter' | 'coordinator' | 'viewer';
+  role: 'owner' | 'admin' | 'hr_manager' | 'recruiter' | 'coordinator' | 'viewer' | 'hr_agency_admin' | 'hr_agency_director' | 'hr_agency_associate' | 'hr_agency_specialist';
   status: 'active' | 'inactive' | 'pending_invitation' | 'suspended';
   title?: string;
   permissions?: any;

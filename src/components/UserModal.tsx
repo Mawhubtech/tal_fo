@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { type User, type CreateUserData, type UpdateUserData, type Role } from '../services/adminUserApiService';
+import { filterRolesByCompanyType, getRoleDescriptionsForCompanyType } from '../utils/companyRoleMapping';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface UserModalProps {
   isEditing?: boolean;
   roles: Role[];
   filterAdminRoles?: boolean; // Filter out admin/super-admin roles for team management
+  companyType?: string; // Company type for role filtering
 }
 
 export const UserModal: React.FC<UserModalProps> = ({
@@ -21,7 +23,8 @@ export const UserModal: React.FC<UserModalProps> = ({
   user,
   isEditing = false,
   roles,
-  filterAdminRoles = false
+  filterAdminRoles = false,
+  companyType
 }) => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -34,10 +37,25 @@ export const UserModal: React.FC<UserModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Filter roles based on context (exclude admin roles for team management)
-  const availableRoles = filterAdminRoles 
-    ? roles.filter(role => !['admin', 'super-admin'].includes(role.name.toLowerCase()))
-    : roles;
+  // Filter roles based on context (exclude admin roles for team management or filter by company type)
+  const availableRoles = (() => {
+    let filteredRoles = roles;
+    
+    // Filter by company type if provided
+    if (companyType) {
+      filteredRoles = filterRolesByCompanyType(roles, companyType);
+    }
+    
+    // Additional filtering for admin roles if requested
+    if (filterAdminRoles) {
+      filteredRoles = filteredRoles.filter(role => !['admin', 'super-admin'].includes(role.name.toLowerCase()));
+    }
+    
+    return filteredRoles;
+  })();
+
+  // Get role descriptions for company type
+  const roleDescriptions = companyType ? getRoleDescriptionsForCompanyType(companyType) : {};
 
   // Reset form when modal opens/closes or user changes
   useEffect(() => {
@@ -89,8 +107,8 @@ export const UserModal: React.FC<UserModalProps> = ({
       newErrors.password = 'Password is required for new users';
     }
 
-    if (!isEditing && formData.password && formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters long';
+    if (!isEditing && formData.password && formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
     }
 
     setErrors(newErrors);
@@ -155,6 +173,18 @@ export const UserModal: React.FC<UserModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Company Type Info */}
+          {companyType && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-900 mb-2">
+                Roles for {companyType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Company
+              </h4>
+              <p className="text-sm text-blue-700">
+                The available roles below are specifically curated for your company type to ensure the right permissions and access levels.
+              </p>
+            </div>
+          )}
+
           {/* Basic Information */}
           <div className="space-y-4">
             <h4 className="text-md font-medium text-gray-900">Basic Information</h4>
@@ -233,6 +263,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password *
                 </label>
+                <p className="text-xs text-gray-500 mb-2">Must be at least 8 characters long</p>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -298,8 +329,11 @@ export const UserModal: React.FC<UserModalProps> = ({
                       {role.name}
                     </label>
                   </div>
-                  {role.description && (
-                    <p className="text-xs text-gray-600 ml-6 mb-2">{role.description}</p>
+                  {/* Show company-specific description if available, otherwise use role description */}
+                  {(roleDescriptions[role.name] || role.description) && (
+                    <p className="text-xs text-gray-600 ml-6 mb-2">
+                      {roleDescriptions[role.name] || role.description}
+                    </p>
                   )}
                   {role.permissions && role.permissions.length > 0 && (
                     <div className="ml-6">

@@ -2,27 +2,59 @@ import React, { useState } from 'react';
 import { X, UserPlus, AlertCircle } from 'lucide-react';
 import { useInviteMember } from '../../hooks/useCompany';
 import { toast } from '../ToastContainer';
+import { CompanyMember } from '../../services/companyApiService';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   companyId: string;
+  companyType?: string;
   onSuccess?: () => void;
 }
 
-type MemberRole = 'admin' | 'hr_manager' | 'recruiter' | 'coordinator' | 'viewer';
+type MemberRole = CompanyMember['role'];
 
 export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   isOpen,
   onClose,
   companyId,
+  companyType,
   onSuccess,
 }) => {
+  // Determine default role based on company type
+  const getDefaultRole = (): MemberRole => {
+    if (companyType === 'external_hr_agency') {
+      return 'hr_agency_specialist';
+    }
+    return 'recruiter';
+  };
+
   const [formData, setFormData] = useState({
     email: '',
-    role: 'recruiter' as MemberRole,
+    role: getDefaultRole(),
     title: '',
   });
+
+  // Get role options based on company type
+  const getRoleOptions = () => {
+    if (companyType === 'external_hr_agency') {
+      return [
+        { value: 'hr_agency_specialist', label: 'Specialist - Entry level with basic sourcing and candidate management' },
+        { value: 'hr_agency_associate', label: 'Associate - Mid-level with job management and client interaction' },
+        { value: 'hr_agency_director', label: 'Director - Senior level with team management and analytics access' },
+        { value: 'hr_agency_admin', label: 'Admin - Full administrative access for agency management' },
+      ];
+    }
+    
+    // Default roles for other company types
+    return [
+      { value: 'viewer', label: 'Viewer - Can view jobs and candidates' },
+      { value: 'coordinator', label: 'Coordinator - Can schedule interviews' },
+      { value: 'recruiter', label: 'Recruiter - Can manage jobs and candidates' },
+      { value: 'hr_manager', label: 'HR Manager - Can manage team and company settings' },
+      { value: 'admin', label: 'Admin - Full access to everything' },
+    ];
+  };
   const [errors, setErrors] = useState<Record<string, string>>({});
   const inviteMember = useInviteMember();
 
@@ -117,6 +149,13 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Role *
             </label>
+            {companyType === 'external_hr_agency' && (
+              <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>HR Agency Hierarchy:</strong> Select the appropriate level based on the member's experience and responsibilities.
+                </p>
+              </div>
+            )}
             <select
               name="role"
               value={formData.role}
@@ -125,11 +164,11 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                 errors.role ? 'border-red-300' : 'border-gray-300'
               }`}
             >
-              <option value="viewer">Viewer - Can view jobs and candidates</option>
-              <option value="coordinator">Coordinator - Can schedule interviews</option>
-              <option value="recruiter">Recruiter - Can manage jobs and candidates</option>
-              <option value="hr_manager">HR Manager - Can manage team and company settings</option>
-              <option value="admin">Admin - Full access to everything</option>
+              {getRoleOptions().map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             {errors.role && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
