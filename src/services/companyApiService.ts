@@ -113,48 +113,6 @@ export interface CompanyStats {
   totalHires: number;
 }
 
-export interface RecruitmentTeam {
-  id: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  companyId: string;
-  company?: Company;
-  createdById: string;
-  createdBy?: any;
-  members?: RecruitmentTeamMember[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface RecruitmentTeamMember {
-  id: string;
-  teamId: string;
-  userId: string;
-  role: 'admin' | 'member';
-  isActive: boolean;
-  addedById: string;
-  createdAt: Date;
-  updatedAt: Date;
-  user?: any;
-}
-
-export interface CreateTeamData {
-  name: string;
-  description?: string;
-}
-
-export interface UpdateTeamData {
-  name?: string;
-  description?: string;
-  isActive?: boolean;
-}
-
-export interface AddTeamMemberData {
-  userId: string;
-  role: RecruitmentTeamMember['role'];
-}
-
 class CompanyApiService {
   // Company CRUD
   async createCompany(data: CreateCompanyData): Promise<{ company: Company }> {
@@ -230,57 +188,6 @@ class CompanyApiService {
   // Company statistics
   async getCompanyStats(companyId: string): Promise<{ stats: CompanyStats }> {
     const response = await apiClient.get(`/companies/${companyId}/stats`);
-    return response.data;
-  }
-
-  // Company recruitment teams
-  async getCompanyTeams(companyId: string): Promise<{ teams: RecruitmentTeam[] }> {
-    const response = await apiClient.get(`/companies/${companyId}/teams`);
-    return response.data;
-  }
-
-  async createCompanyTeam(companyId: string, data: CreateTeamData): Promise<{ team: RecruitmentTeam; message: string }> {
-    const response = await apiClient.post(`/companies/${companyId}/teams`, data);
-    return response.data;
-  }
-
-  async getCompanyTeam(companyId: string, teamId: string): Promise<{ team: RecruitmentTeam }> {
-    const response = await apiClient.get(`/companies/${companyId}/teams/${teamId}`);
-    return response.data;
-  }
-
-  async updateCompanyTeam(companyId: string, teamId: string, data: UpdateTeamData): Promise<{ team: RecruitmentTeam; message: string }> {
-    const response = await apiClient.put(`/companies/${companyId}/teams/${teamId}`, data);
-    return response.data;
-  }
-
-  async deleteCompanyTeam(companyId: string, teamId: string): Promise<{ message: string }> {
-    const response = await apiClient.delete(`/companies/${companyId}/teams/${teamId}`);
-    return response.data;
-  }
-
-  async addTeamMember(companyId: string, teamId: string, data: AddTeamMemberData): Promise<{ member: RecruitmentTeamMember; message: string }> {
-    const response = await apiClient.post(`/companies/${companyId}/teams/${teamId}/members`, data);
-    return response.data;
-  }
-
-  async removeTeamMember(companyId: string, teamId: string, memberId: string): Promise<{ message: string }> {
-    const response = await apiClient.delete(`/companies/${companyId}/teams/${teamId}/members/${memberId}`);
-    return response.data;
-  }
-
-  async updateTeamMemberRole(companyId: string, teamId: string, memberId: string, role: RecruitmentTeamMember['role']): Promise<{ member: RecruitmentTeamMember; message: string }> {
-    const response = await apiClient.put(`/companies/${companyId}/teams/${teamId}/members/${memberId}/role`, { role });
-    return response.data;
-  }
-
-  async toggleTeamMemberStatus(companyId: string, teamId: string, memberId: string): Promise<{ member: RecruitmentTeamMember; message: string }> {
-    const response = await apiClient.put(`/companies/${companyId}/teams/${teamId}/members/${memberId}/toggle-status`);
-    return response.data;
-  }
-
-  async syncTeamMembersToCompany(teamId: string): Promise<{ message: string; synced: number; skipped: number }> {
-    const response = await apiClient.post(`/recruitment-teams/${teamId}/sync-members`);
     return response.data;
   }
 }

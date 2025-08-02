@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { companyApiService, CreateCompanyData, UpdateCompanyData, InviteMemberData, UpdateMemberData, CreateTeamData, UpdateTeamData, AddTeamMemberData } from '../services/companyApiService';
+import { companyApiService, CreateCompanyData, UpdateCompanyData, InviteMemberData, UpdateMemberData } from '../services/companyApiService';
 
 // Query keys
 export const companyKeys = {
@@ -11,8 +11,6 @@ export const companyKeys = {
   companyMembers: (companyId: string) => [...companyKeys.all, 'members', companyId] as const,
   companyDepartments: (companyId: string) => [...companyKeys.all, 'departments', companyId] as const,
   companyStats: (companyId: string) => [...companyKeys.all, 'stats', companyId] as const,
-  companyTeams: (companyId: string) => [...companyKeys.all, 'teams', companyId] as const,
-  companyTeam: (companyId: string, teamId: string) => [...companyKeys.all, 'teams', companyId, teamId] as const,
 };
 
 // Company queries
@@ -67,22 +65,6 @@ export const useCompanyStats = (companyId: string) => {
     queryKey: companyKeys.companyStats(companyId),
     queryFn: () => companyApiService.getCompanyStats(companyId),
     enabled: !!companyId,
-  });
-};
-
-export const useCompanyTeams = (companyId: string) => {
-  return useQuery({
-    queryKey: companyKeys.companyTeams(companyId),
-    queryFn: () => companyApiService.getCompanyTeams(companyId),
-    enabled: !!companyId,
-  });
-};
-
-export const useCompanyTeam = (companyId: string, teamId: string) => {
-  return useQuery({
-    queryKey: companyKeys.companyTeam(companyId, teamId),
-    queryFn: () => companyApiService.getCompanyTeam(companyId, teamId),
-    enabled: !!companyId && !!teamId,
   });
 };
 
@@ -200,107 +182,4 @@ export const useCreateDepartment = () => {
   });
 };
 
-// Team mutations
-export const useCreateCompanyTeam = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ companyId, data }: { companyId: string; data: CreateTeamData }) => 
-      companyApiService.createCompanyTeam(companyId, data),
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeams(variables.companyId) });
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(variables.companyId) });
-    },
-  });
-};
-
-export const useUpdateCompanyTeam = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ companyId, teamId, data }: { companyId: string; teamId: string; data: UpdateTeamData }) => 
-      companyApiService.updateCompanyTeam(companyId, teamId, data),
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeam(variables.companyId, variables.teamId) });
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeams(variables.companyId) });
-    },
-  });
-};
-
-export const useDeleteCompanyTeam = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ companyId, teamId }: { companyId: string; teamId: string }) => 
-      companyApiService.deleteCompanyTeam(companyId, teamId),
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeams(variables.companyId) });
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(variables.companyId) });
-    },
-  });
-};
-
-export const useAddTeamMember = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ companyId, teamId, data }: { companyId: string; teamId: string; data: AddTeamMemberData }) => 
-      companyApiService.addTeamMember(companyId, teamId, data),
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeam(variables.companyId, variables.teamId) });
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeams(variables.companyId) });
-    },
-  });
-};
-
-export const useRemoveTeamMember = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ companyId, teamId, memberId }: { companyId: string; teamId: string; memberId: string }) => 
-      companyApiService.removeTeamMember(companyId, teamId, memberId),
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeam(variables.companyId, variables.teamId) });
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeams(variables.companyId) });
-    },
-  });
-};
-
-export const useUpdateTeamMemberRole = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ companyId, teamId, memberId, role }: { companyId: string; teamId: string; memberId: string; role: 'admin' | 'member' }) => 
-      companyApiService.updateTeamMemberRole(companyId, teamId, memberId, role),
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeam(variables.companyId, variables.teamId) });
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeams(variables.companyId) });
-    },
-  });
-};
-
-export const useToggleTeamMemberStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ companyId, teamId, memberId }: { companyId: string; teamId: string; memberId: string }) => 
-      companyApiService.toggleTeamMemberStatus(companyId, teamId, memberId),
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeam(variables.companyId, variables.teamId) });
-      queryClient.invalidateQueries({ queryKey: companyKeys.companyTeams(variables.companyId) });
-    },
-  });
-};
-
-export const useSyncTeamMembersToCompany = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ teamId }: { teamId: string }) => 
-      companyApiService.syncTeamMembersToCompany(teamId),
-    onSuccess: () => {
-      // Invalidate all company queries to show newly synced members
-      queryClient.invalidateQueries({ queryKey: companyKeys.all });
-    },
-  });
-};
+// No team mutations - teams functionality removed

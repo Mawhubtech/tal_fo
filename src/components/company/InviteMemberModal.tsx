@@ -7,6 +7,7 @@ interface InviteMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   companyId: string;
+  onSuccess?: () => void;
 }
 
 type MemberRole = 'admin' | 'hr_manager' | 'recruiter' | 'coordinator' | 'viewer';
@@ -15,6 +16,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   isOpen,
   onClose,
   companyId,
+  onSuccess,
 }) => {
   const [formData, setFormData] = useState({
     email: '',
@@ -47,6 +49,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
         }
       });
       toast.success('Invitation Sent', `Invitation has been sent to ${formData.email}.`);
+      onSuccess?.();
       onClose();
       setFormData({ email: '', role: 'recruiter', title: '' });
       setErrors({});

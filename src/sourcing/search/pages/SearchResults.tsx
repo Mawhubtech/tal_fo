@@ -11,7 +11,7 @@ import { useProjectProspects, useAddProspectsToProject } from '../../../hooks/us
 import { useProject } from '../../../hooks/useSourcingProjects';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
-import { useMyTeams } from '../../../hooks/useRecruitmentTeams';
+import { useMyCompanies } from '../../../hooks/useCompany';
 import type { SearchFilters } from '../../../services/searchService';
 import type { AddProspectsToProjectDto } from '../../../services/sourcingApiService';
 
@@ -173,13 +173,9 @@ const SearchResultsPage: React.FC = () => {
   const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
   const { data: existingProspects } = useProjectProspects(projectId!);
   const { data: projectData, isLoading: projectLoading } = useProject(projectId || '', !!projectId);
-  const { data: recruitmentTeams } = useMyTeams();
+  const { data: myCompanies } = useMyCompanies();
   const { addToast } = useToast();
   const addProspectsToProjectMutation = useAddProspectsToProject();
-  
-  // State for team sharing
-  const [showTeamShare, setShowTeamShare] = useState<{ [key: string]: boolean }>({});
-  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
@@ -484,14 +480,13 @@ const SearchResultsPage: React.FC = () => {
       handleCloseStageSelector(candidate.id);
 
       // Show success feedback
-      const teamName = teamId ? recruitmentTeams?.find(t => t.id === teamId)?.name : null;
       const selectedStage = stageId ? availableStages.find(stage => stage.id === stageId) : null;
       const pipelineName = pipelineToUse?.name || defaultPipeline.name;
       
       addToast({
         type: 'success',
         title: 'Candidate Shortlisted',
-        message: `${candidate.fullName} has been added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}${teamName ? ` and shared with ${teamName}` : ''}`,
+        message: `${candidate.fullName} has been added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
         duration: 5000
       });
       
@@ -507,18 +502,7 @@ const SearchResultsPage: React.FC = () => {
     } finally {
       // Stop shortlisting process
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: false }));
-      // Hide team share dropdown
-      setShowTeamShare(prev => ({ ...prev, [candidate.id]: false }));
     }
-  };
-
-  const handleShowTeamShare = (candidateId: string) => {
-    setShowTeamShare(prev => ({ ...prev, [candidateId]: !prev[candidateId] }));
-  };
-
-  const handleTeamShare = async (candidate: any, teamId: string) => {
-    const stageId = selectedStageId[candidate.id];
-    await handleShortlist(candidate, teamId, stageId);
   };
 
   // Close dropdowns when clicking outside
@@ -526,7 +510,6 @@ const SearchResultsPage: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('[data-dropdown-container]')) {
-        setShowTeamShare({});
         setShowStageSelector({});
       }
     };
@@ -828,45 +811,7 @@ const SearchResultsPage: React.FC = () => {
                                     )}
                                     Shortlist
                                   </Button>
-                                  {/* Team Share Dropdown Trigger */}
-                                  {recruitmentTeams && recruitmentTeams.length > 0 && (
-                                    <button
-                                      className="bg-purple-600 hover:bg-purple-700 text-white px-2 py-2 text-sm border-l border-purple-500 rounded-r"
-                                      onClick={() => handleShowTeamShare(candidate.id)}
-                                      disabled={shortlistingCandidates[candidate.id] || pipelinesLoading}
-                                    >
-                                      <ChevronDown className="h-3 w-3" />
-                                    </button>
-                                  )}
                                 </div>
-                                
-                                {/* Team Share Dropdown Menu */}
-                                {showTeamShare[candidate.id] && recruitmentTeams && recruitmentTeams.length > 0 && (
-                                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
-                                    <div className="py-1">
-                                      <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b">
-                                        Share with Team
-                                      </div>
-                                      {recruitmentTeams.map((team) => (
-                                        <button
-                                          key={team.id}
-                                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                          onClick={() => {
-                                            // First show stage selector, then handle team share
-                                            if (!showStageSelector[candidate.id]) {
-                                              handleShowStageSelector(candidate.id);
-                                            }
-                                            setShowTeamShare(prev => ({ ...prev, [candidate.id]: false }));
-                                          }}
-                                          disabled={shortlistingCandidates[candidate.id]}
-                                        >
-                                          <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-                                          {team.name}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                             )}
                             <Button 

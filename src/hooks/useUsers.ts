@@ -12,7 +12,7 @@ export const useAssignableUsers = () => {
   });
 };
 
-// User management hooks for recruitment teams
+// User management hooks
 export const useUsers = (params?: { page?: number; limit?: number }) => {
   return useQuery({
     queryKey: ['users', params],

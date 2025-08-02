@@ -16,12 +16,12 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, useInviteMember, useDeleteCompany } from '../../hooks/useCompany';
+import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, /* useInviteMember, */ useDeleteCompany } from '../../hooks/useCompany';
 import { useCreateUser, useRoles } from '../../hooks/useAdminUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
 import { EditCompanyModal } from '../../components/company/EditCompanyModal';
-import { CompanyTeamsSection } from '../../components/company/CompanyTeamsSection';
+// import { InviteMemberModal } from '../../components/company/InviteMemberModal'; // TODO: Re-enable when needed
 import { UserModal } from '../../components/UserModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { CompanyMember } from '../../services/companyApiService';
@@ -34,7 +34,7 @@ export const CompanyDetailPage: React.FC = () => {
   const { user } = useAuthContext();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  // const [isInviteModalOpen, setIsInviteModalOpen] = useState(false); // TODO: Re-enable when needed
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<CompanyMember | null>(null);
   const [showDeleteCompanyModal, setShowDeleteCompanyModal] = useState(false);
@@ -43,7 +43,7 @@ export const CompanyDetailPage: React.FC = () => {
   const { data: membersData, isLoading: isLoadingMembers, refetch: refetchMembers } = useCompanyMembers(companyId!);
   const removeMember = useRemoveMember();
   const updateMember = useUpdateMember();
-  const inviteMember = useInviteMember();
+  // const inviteMember = useInviteMember(); // TODO: Re-enable when needed
   const deleteCompany = useDeleteCompany();
   const createUserMutation = useCreateUser();
   const { data: rolesData } = useRoles();
@@ -115,11 +115,13 @@ export const CompanyDetailPage: React.FC = () => {
     if (!company) return;
 
     try {
-      // 1. Create the user
+      // Create the user
       const response = await createUserMutation.mutateAsync(userData);
       const newUser = (response as any)?.user || response;
       
-      // 2. Invite user to company as member
+      // TODO: Re-enable when invite member functionality is available
+      /*
+      // Invite user to company as member
       await inviteMember.mutateAsync({
         companyId: company.id,
         data: { 
@@ -127,16 +129,25 @@ export const CompanyDetailPage: React.FC = () => {
           role: 'recruiter' // Default role for new users
         }
       });
+      */
       
-      toast.success('User Created', 'User created and added to company successfully!');
+      toast.success('User Created', 'User created successfully! You can manually add them to the company when invite functionality is re-enabled.');
       setIsCreateUserModalOpen(false);
-      refetchMembers();
+      // refetchMembers(); // TODO: Re-enable when invite functionality is available
     } catch (error: any) {
       console.error('Error creating user:', error);
       const errorMessage = error.response?.data?.message || 'Failed to create user. Please try again.';
       toast.error('Creation Failed', errorMessage);
     }
   };
+
+  // TODO: Re-enable when invite member functionality is needed
+  /*
+  const handleInviteMemberSuccess = () => {
+    refetchMembers();
+    setIsInviteModalOpen(false);
+  };
+  */
 
   const handleDeleteCompany = async () => {
     if (!company) return;
@@ -248,6 +259,7 @@ export const CompanyDetailPage: React.FC = () => {
                     <UserPlus className="h-4 w-4 mr-2" />
                     Create User
                   </button>
+                  {/* TODO: Re-enable invite member functionality when needed
                   <button
                     onClick={() => setIsInviteModalOpen(true)}
                     className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
@@ -255,6 +267,7 @@ export const CompanyDetailPage: React.FC = () => {
                     <UserPlus className="h-4 w-4 mr-2" />
                     Invite Member
                   </button>
+                  */}
                 </>
               )}
               {canEditCompany && (
@@ -434,6 +447,7 @@ export const CompanyDetailPage: React.FC = () => {
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No team members yet</h3>
                   <p className="text-gray-500 mb-4">Start building your team by inviting members.</p>
+                  {/* TODO: Re-enable invite member functionality when needed
                   {canEditCompany && (
                     <button
                       onClick={() => setIsInviteModalOpen(true)}
@@ -442,12 +456,10 @@ export const CompanyDetailPage: React.FC = () => {
                       Invite First Member
                     </button>
                   )}
+                  */}
                 </div>
               )}
             </div>
-
-            {/* Recruitment Teams */}
-            <CompanyTeamsSection companyId={company.id} />
           </div>
 
           {/* Sidebar */}
@@ -504,12 +516,13 @@ export const CompanyDetailPage: React.FC = () => {
         />
       )}
 
-      {/* TODO: Implement InviteMemberModal 
+      {/* TODO: Re-enable invite member functionality when needed
       {isInviteModalOpen && (
         <InviteMemberModal
           isOpen={isInviteModalOpen}
           onClose={() => setIsInviteModalOpen(false)}
           companyId={company.id}
+          onSuccess={handleInviteMemberSuccess}
         />
       )}
       */}
