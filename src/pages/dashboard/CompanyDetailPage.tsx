@@ -120,6 +120,11 @@ export const CompanyDetailPage: React.FC = () => {
     }
   };
 
+  const handleEditMemberSuccess = () => {
+    setMemberToEdit(null);
+    refetchMembers(); // Refresh members to show updated user data
+  };
+
   const handleResendInvitation = async (member: CompanyMember) => {
     try {
       const response = await resendInvitation.mutateAsync({
@@ -470,9 +475,21 @@ export const CompanyDetailPage: React.FC = () => {
                           {formatRole(member.role)}
                         </span>
                         
+                        {/* Member Status */}
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(member.status)}`}>
                           {member.status}
                         </span>
+                        
+                        {/* User Status - Show if different from member status or if user is inactive */}
+                        {(member.user.status !== 'active' || member.status !== member.user.status) && (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                            member.user.status === 'active' 
+                              ? 'bg-green-50 text-green-700 border-green-200' 
+                              : 'bg-red-50 text-red-700 border-red-200'
+                          }`}>
+                            User: {member.user.status}
+                          </span>
+                        )}
                         
                         {canEditCompany && member.role !== 'owner' && (
                           <button
@@ -624,7 +641,7 @@ export const CompanyDetailPage: React.FC = () => {
           onClose={() => setMemberToEdit(null)}
           member={memberToEdit}
           companyType={company.type}
-          onSuccess={() => setMemberToEdit(null)}
+          onSuccess={handleEditMemberSuccess}
           onUpdateMember={handleUpdateMember}
           isUpdating={updateMember.isPending}
         />
