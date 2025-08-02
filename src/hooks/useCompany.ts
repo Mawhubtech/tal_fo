@@ -133,6 +133,7 @@ export const useAcceptInvitation = () => {
     onSuccess: () => {
       // Invalidate all company-related queries since user's membership status changed
       queryClient.invalidateQueries({ queryKey: companyKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['my-pending-invitations'] });
     },
   });
 };
@@ -165,6 +166,27 @@ export const useRemoveMember = () => {
       queryClient.invalidateQueries({ queryKey: companyKeys.company(variables.companyId) });
       queryClient.invalidateQueries({ queryKey: companyKeys.all });
     },
+  });
+};
+
+export const useResendInvitation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ memberId, companyId }: { memberId: string; companyId: string }) => 
+      companyApiService.resendInvitation(companyId, memberId),
+    onSuccess: (result, variables) => {
+      // Invalidate specific company queries to refresh member data
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyMembers(variables.companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(variables.companyId) });
+    },
+  });
+};
+
+export const useMyPendingInvitations = () => {
+  return useQuery({
+    queryKey: ['my-pending-invitations'],
+    queryFn: () => companyApiService.getMyPendingInvitations(),
   });
 };
 

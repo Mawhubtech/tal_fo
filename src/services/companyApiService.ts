@@ -46,9 +46,16 @@ export interface CompanyMember {
   invitedBy?: string;
   invitedAt?: Date;
   joinedAt?: Date;
+  invitationExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   user?: any;
+  company?: {
+    id: string;
+    name: string;
+    type: string;
+    description?: string;
+  };
   department?: any;
   inviter?: any;
 }
@@ -155,13 +162,42 @@ class CompanyApiService {
     return response.data;
   }
 
-  async inviteMember(companyId: string, data: InviteMemberData): Promise<{ member: CompanyMember }> {
+  async inviteMember(companyId: string, data: InviteMemberData): Promise<{ 
+    message: string;
+    member: CompanyMember;
+    emailSent: boolean;
+    emailError: string | null;
+  }> {
     const response = await apiClient.post(`/companies/${companyId}/members/invite`, data);
+    return response.data;
+  }
+
+  async resendInvitation(companyId: string, memberId: string): Promise<{
+    message: string;
+    emailSent: boolean;
+    emailError: string | null;
+  }> {
+    const response = await apiClient.post(`/companies/${companyId}/members/${memberId}/resend-invitation`);
     return response.data;
   }
 
   async acceptInvitation(memberId: string): Promise<{ member: CompanyMember }> {
     const response = await apiClient.put(`/companies/members/${memberId}/accept`);
+    return response.data;
+  }
+
+  async acceptInvitationByToken(token: string): Promise<{ member: CompanyMember }> {
+    const response = await apiClient.post(`/companies/invitations/accept/${token}`);
+    return response.data;
+  }
+
+  async getInvitationByToken(token: string): Promise<{ invitation: any }> {
+    const response = await apiClient.get(`/companies/invitations/${token}`);
+    return response.data;
+  }
+
+  async getMyPendingInvitations(): Promise<{ invitations: CompanyMember[] }> {
+    const response = await apiClient.get('/companies/my-pending-invitations');
     return response.data;
   }
 

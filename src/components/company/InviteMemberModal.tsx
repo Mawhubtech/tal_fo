@@ -56,10 +56,21 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     ];
   };
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submissionError, setSubmissionError] = useState<string>('');
   const inviteMember = useInviteMember();
+
+  const handleClose = () => {
+    setFormData({ email: '', role: getDefaultRole(), title: '' });
+    setErrors({});
+    setSubmissionError('');
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear previous submission error
+    setSubmissionError('');
     
     // Basic validation
     const newErrors: Record<string, string> = {};
@@ -72,7 +83,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     }
 
     try {
-      await inviteMember.mutateAsync({
+      const result = await inviteMember.mutateAsync({
         companyId,
         data: {
           email: formData.email,
@@ -80,13 +91,31 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
           title: formData.title || undefined,
         }
       });
-      toast.success('Invitation Sent', `Invitation has been sent to ${formData.email}.`);
+      
+      // Handle success with email status feedback
+      if (result.emailSent) {
+        toast.success('Invitation Sent', `Invitation has been sent to ${formData.email}.`);
+      } else {
+        // Show warning if email failed but invitation was created
+        if (result.emailError?.includes('Gmail not connected')) {
+          toast.warning(
+            'Invitation Created', 
+            `Invitation created for ${formData.email}, but email could not be sent. Please connect your Gmail account to send invitation emails.`
+          );
+        } else {
+          toast.warning(
+            'Invitation Created', 
+            `Invitation created for ${formData.email}, but email could not be sent. You can resend the invitation from the members list.`
+          );
+        }
+      }
+      
       onSuccess?.();
-      onClose();
-      setFormData({ email: '', role: 'recruiter', title: '' });
-      setErrors({});
+      handleClose();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to send invitation. Please try again.';
+      setSubmissionError(errorMessage);
+      // Also show toast for better UX
       toast.error('Invitation Failed', errorMessage);
     }
   };
@@ -96,6 +125,10 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    // Clear submission error when user starts typing
+    if (submissionError) {
+      setSubmissionError('');
     }
   };
 
@@ -115,7 +148,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="h-6 w-6" />
@@ -192,10 +225,20 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             />
           </div>
 
+          {/* Submission Error Display */}
+          {submissionError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700 flex items-start">
+                <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                {submissionError}
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Cancel

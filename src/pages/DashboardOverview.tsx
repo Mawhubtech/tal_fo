@@ -8,6 +8,7 @@ import {
 import { usePermissionCheck, SIDEBAR_PERMISSIONS } from '../hooks/usePermissionCheck';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApiService } from '../services/dashboardApiService';
+import PendingInvitations from '../components/company/PendingInvitations';
 
 const DashboardOverview: React.FC = () => {
   const { hasPermission, hasAnyPermission } = usePermissionCheck();
@@ -156,6 +157,9 @@ const DashboardOverview: React.FC = () => {
           <p className="text-sm font-medium text-gray-900">{new Date().toLocaleDateString()}</p>
         </div>
       </div>
+
+      {/* Pending Invitations */}
+      <PendingInvitations />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

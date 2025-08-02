@@ -17,6 +17,7 @@ import Dashboard from './pages/Dashboard';
 import RequestDemoPage from './pages/RequestDemoPage';
 import AcceptInvitationPage from './pages/hiring-teams/AcceptInvitationPage';
 import InvitationAcceptedPage from './pages/hiring-teams/InvitationAcceptedPage';
+import CompanyInvitationPage from './pages/AcceptInvitationPage';
 import ExternalTeamAccessPage from './pages/hiring-teams/ExternalTeamAccessPage';
 import ExternalUserLayout from './layouts/ExternalUserLayout';
 import ExternalJobsPage from './pages/external/ExternalJobsPage';
@@ -94,6 +95,11 @@ function App() {
             <Route
               path="/hiring-teams/external-access"
               element={<ExternalTeamAccessPage />}
+            />
+            {/* Company Invitation Route */}
+            <Route
+              path="/company/invitation"
+              element={<CompanyInvitationPage />}
             />
             {/* External User Registration (no auth required) */}
             <Route

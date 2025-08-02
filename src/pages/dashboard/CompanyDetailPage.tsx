@@ -14,9 +14,10 @@ import {
   Settings,
   AlertCircle,
   Check,
-  X
+  X,
+  RotateCcw
 } from 'lucide-react';
-import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, useInviteMember, useDeleteCompany } from '../../hooks/useCompany';
+import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, useInviteMember, useDeleteCompany, useResendInvitation } from '../../hooks/useCompany';
 import { useCreateUser, useRoles } from '../../hooks/useAdminUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
@@ -49,6 +50,7 @@ export const CompanyDetailPage: React.FC = () => {
   const updateMember = useUpdateMember();
   const inviteMember = useInviteMember();
   const deleteCompany = useDeleteCompany();
+  const resendInvitation = useResendInvitation();
   const createUserMutation = useCreateUser();
   const { data: rolesData } = useRoles();
 
@@ -115,6 +117,25 @@ export const CompanyDetailPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error updating member:', error);
       throw error; // Re-throw to let the modal handle the error display
+    }
+  };
+
+  const handleResendInvitation = async (member: CompanyMember) => {
+    try {
+      const response = await resendInvitation.mutateAsync({
+        companyId: company.id,
+        memberId: member.id
+      });
+      
+      if (response.emailSent) {
+        toast.success('Invitation Resent', `Invitation email has been sent to ${member.user.email}`);
+      } else {
+        toast.warning('Invitation Updated', `Invitation was updated but email could not be sent. ${response.emailError || 'Please check Gmail connection.'}`);
+      }
+    } catch (error: any) {
+      console.error('Error resending invitation:', error);
+      const errorMessage = formatApiError(error);
+      toast.error('Resend Failed', errorMessage);
     }
   };
 
@@ -460,6 +481,17 @@ export const CompanyDetailPage: React.FC = () => {
                             title="Edit member"
                           >
                             <Edit3 className="h-4 w-4" />
+                          </button>
+                        )}
+                        
+                        {canEditCompany && member.status === 'pending_invitation' && (
+                          <button
+                            onClick={() => handleResendInvitation(member)}
+                            className="text-orange-500 hover:text-orange-700 p-1"
+                            title="Resend invitation email"
+                            disabled={resendInvitation.isPending}
+                          >
+                            <RotateCcw className={`h-4 w-4 ${resendInvitation.isPending ? 'animate-spin' : ''}`} />
                           </button>
                         )}
                         
