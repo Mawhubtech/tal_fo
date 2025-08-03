@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, 
@@ -18,13 +18,16 @@ import {
   Check,
   X,
   Mail,
-  HelpCircle
+  HelpCircle,
+  RefreshCw
 } from 'lucide-react';
 import { calendarApiService, CalendarEvent } from '../services/calendarApiService';
 import { EventInviteModal } from '../components/calendar/EventInviteModal';
 import EventInvitationsManager from '../components/calendar/EventInvitationsManager';
 import { useEventInvitations } from '../hooks/useCalendarInvitations';
 import { useAuthContext } from '../contexts/AuthContext';
+import { GoogleCalendarSync } from '../components/GoogleCalendarSync';
+import { toast } from '../components/ToastContainer';
 
 /**
  * CalendarPage Component
@@ -56,6 +59,7 @@ const CalendarPage: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
+  const [showGoogleCalendarSync, setShowGoogleCalendarSync] = useState(false);
 
   // Get event invitations for the selected event
   const { data: eventInvitationsData } = useEventInvitations(selectedEvent?.id || '');
@@ -83,6 +87,23 @@ const CalendarPage: React.FC = () => {
   });
 
   const queryClient = useQueryClient();
+
+  // Handle Google Calendar OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const calendarConnected = urlParams.get('calendar_connected');
+    const error = urlParams.get('error');
+
+    if (calendarConnected === 'true') {
+      toast.success('Google Calendar Connected!', 'You can now sync your events with Google Calendar');
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (error) {
+      toast.error('Connection Failed', decodeURIComponent(error));
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Fetch calendar events
   const { 
@@ -559,6 +580,14 @@ const CalendarPage: React.FC = () => {
               >
                 <Plus className="w-4 h-4" />
                 New Event
+              </button>
+
+              <button
+                onClick={() => setShowGoogleCalendarSync(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Google Sync
               </button>
             </div>
           </div>
@@ -1317,6 +1346,19 @@ const CalendarPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Google Calendar Sync Modal */}
+        <GoogleCalendarSync
+          isOpen={showGoogleCalendarSync}
+          onClose={() => setShowGoogleCalendarSync(false)}
+          onSyncComplete={(result) => {
+            // Refresh calendar events after sync
+            queryClient.invalidateQueries({
+              queryKey: ['calendar', 'events']
+            });
+            console.log('Sync completed:', result);
+          }}
+        />
       </div>
     </div>
   );
