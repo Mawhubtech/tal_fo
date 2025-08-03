@@ -49,11 +49,10 @@ class DashboardApiService {
   async getDashboardStats(): Promise<DashboardStats> {
     try {
       // Make parallel requests to get all stats
-      const [candidateStats, jobStats, projectsResponse, sequencesResponse] = await Promise.allSettled([
+      const [candidateStats, jobStats, projectsResponse] = await Promise.allSettled([
         candidatesService.getStats(),
         jobApiService.getJobStats(),
-        sourcingProjectApiService.getProjects({ limit: 1000, page: 1 }), // Get all projects for counting
-        apiClient.get('/sourcing/sequences/stats') // Assuming this endpoint exists
+        sourcingProjectApiService.getProjects({ limit: 100, page: 1 }), // Get projects for counting (max limit 100)
       ]);
 
       // Process candidate stats
@@ -74,12 +73,23 @@ class DashboardApiService {
         completed: projectsData.projects?.filter((p: any) => p.status === 'completed').length || 0,
       };
 
-      // Process sequence stats
-      const sequencesData = sequencesResponse.status === 'fulfilled' ? sequencesResponse.value.data : {};
+      // Calculate sequence stats from projects data
+      let totalSequences = 0;
+      let activeSequences = 0;
+      let pausedSequences = 0;
+      
+      if (projectsData.projects) {
+        for (const project of projectsData.projects) {
+          totalSequences += project.totalSequences || 0;
+          activeSequences += project.activeSequences || 0;
+          pausedSequences += project.completedSequences || 0;
+        }
+      }
+      
       const sequences = {
-        total: sequencesData.total || 0,
-        active: sequencesData.active || 0,
-        paused: sequencesData.paused || 0,
+        total: totalSequences,
+        active: activeSequences,
+        paused: pausedSequences,
       };
 
       // Get recent activity
@@ -109,50 +119,58 @@ class DashboardApiService {
    * Get recent platform activity
    */
   async getRecentActivity(limit: number = 10): Promise<DashboardActivity[]> {
-    try {
-      const response = await apiClient.get(`/dashboard/activity?limit=${limit}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching recent activity:', error);
-      // Return mock data if endpoint doesn't exist yet
-      return [
-        {
-          id: '1',
-          type: 'candidate',
-          action: 'New candidate added',
-          details: 'John Doe - Software Engineer',
-          time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '2',
-          type: 'job',
-          action: 'Job posted',
-          details: 'Senior React Developer at TechCorp',
-          time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '3',
-          type: 'interview',
-          action: 'Interview scheduled',
-          details: 'Jane Smith - Product Manager',
-          time: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '4',
-          type: 'sequence',
-          action: 'Sequence completed',
-          details: 'Backend Engineers outreach campaign',
-          time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '5',
-          type: 'resume',
-          action: 'Resume processed',
-          details: '12 new resumes analyzed',
-          time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
-    }
+    // TODO: Implement /dashboard/activity endpoint on backend
+    // For now, return mock data until the endpoint is ready
+    
+    // Temporarily disabled API call to avoid 404 errors
+    // try {
+    //   const response = await apiClient.get(`/dashboard/activity?limit=${limit}`);
+    //   return response.data;
+    // } catch (error) {
+    //   console.error('Error fetching recent activity:', error);
+    
+    // Return mock data until endpoint is implemented
+    const mockActivities: DashboardActivity[] = [
+      {
+        id: '1',
+        type: 'candidate' as const,
+        action: 'New candidate added',
+        details: 'John Doe - Software Engineer',
+        time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: '2',
+        type: 'job' as const,
+        action: 'Job posted',
+        details: 'Senior React Developer at TechCorp',
+        time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: '3',
+        type: 'interview' as const,
+        action: 'Interview scheduled',
+        details: 'Jane Smith - Product Manager',
+        time: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: '4',
+        type: 'sequence' as const,
+        action: 'Sequence completed',
+        details: 'Backend Engineers outreach campaign',
+        time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: '5',
+        type: 'resume' as const,
+        action: 'Resume processed',
+        details: '12 new resumes analyzed',
+        time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+    
+    return mockActivities.slice(0, limit);
+    
+    // }
   }
 
   /**

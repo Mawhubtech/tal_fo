@@ -10,7 +10,7 @@ const CandidateOutreachAnalytics: React.FC = () => {
   // Fetch real data from APIs
   const { data: prospectStats, isLoading: statsLoading, error: statsError } = useSourcingProspectStats();
   const { data: candidateStats, isLoading: candidateStatsLoading } = useCandidateStats();
-  const { data: prospectsData, isLoading: prospectsLoading } = useSourcingProspects({ limit: 1000 });
+  const { data: prospectsData, isLoading: prospectsLoading } = useSourcingProspects({ limit: 100 }); // Max limit 100
 
   // Calculate analytics from real data using the service
   const analyticsData = useMemo(() => {

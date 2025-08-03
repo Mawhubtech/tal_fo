@@ -114,7 +114,7 @@ const RoleManagementPage: React.FC = () => {
   const totalPermissions = permissionsData?.total || 0;
   
   // Get all permissions for role modal
-  const { data: allPermissionsData } = usePermissions({ limit: 1000 }); // Get all permissions
+  const { data: allPermissionsData } = usePermissions({ limit: 100 }); // Get all permissions (max limit 100)
   const allPermissions = allPermissionsData?.permissions || [];
   
   const totalPages = activeTab === 'roles' 
