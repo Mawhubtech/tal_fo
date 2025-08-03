@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { X, Briefcase, User, Search } from 'lucide-react';
+import { X, Briefcase, User, Search, Users } from 'lucide-react';
 import { useJobs } from '../hooks/useJobs';
 import { useAssignableUsers } from '../hooks/useUsers';
 import { useCreateTask } from '../hooks/useTasks';
+import MultiUserSelect from './MultiUserSelect';
 import type { CreateTaskData } from '../recruitment/organizations/services/taskApiService';
 
 interface CreateTaskModalProps {
@@ -43,6 +44,10 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [jobSearch, setJobSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
+  
+  // Multiple assignees state
+  const [assignmentMode, setAssignmentMode] = useState<'single' | 'multiple'>('single');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const { data: jobsResponse, isLoading: jobsLoading } = useJobs();
   const { data: users = [], isLoading: usersLoading } = useAssignableUsers();
@@ -148,6 +153,15 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         candidateId: formData.entityType === 'candidate' ? formData.candidateId : undefined,
         candidateName: formData.entityType === 'candidate' ? formData.candidateName : undefined
       };
+
+      // Handle assignment mode
+      if (assignmentMode === 'multiple' && selectedUserIds.length > 0) {
+        taskData.assignedToUsers = selectedUserIds;
+        taskData.assignedTo = selectedUserIds[0]; // Keep first user as primary for backward compatibility
+      } else if (assignmentMode === 'single') {
+        taskData.assignedTo = formData.assignedTo;
+        taskData.assignedToUsers = formData.assignedTo ? [formData.assignedTo] : [];
+      }
 
       await createTaskMutation.mutateAsync(taskData);
       onClose();
@@ -429,88 +443,137 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             />
           </div>
 
-          {/* Assignee */}
+          {/* Assignment Mode Toggle */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Assign To
+              Assignment Mode
             </label>
-            <p className="text-xs text-gray-500 mb-2">
-              Leave blank to assign to yourself
-            </p>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 text-left flex items-center justify-between"
-              >
-                <span className={`${!formData.assignedTo ? 'text-gray-500' : 'text-gray-900'}`}>
-                  {getSelectedUserName()}
-                </span>
-                <User className="h-4 w-4 text-gray-400" />
-              </button>
-              
-              {showUserDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  <div className="p-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search users..."
-                        value={userSearch}
-                        onChange={(e) => setUserSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-                      />
-                    </div>
-                  </div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {/* Option to assign to self */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleInputChange('assignedTo', '');
-                        setShowUserDropdown(false);
-                        setUserSearch('');
-                      }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100"
-                    >
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 text-purple-500 mr-2" />
-                        <div>
-                          <div className="text-sm font-medium text-purple-600">Assign to myself</div>
-                          <div className="text-xs text-gray-500">Task will be auto-assigned to you</div>
-                        </div>
-                      </div>
-                    </button>
-                    
-                    {filteredUsers.length === 0 ? (
-                      <div className="p-4 text-sm text-gray-500 text-center">
-                        No users found
-                      </div>
-                    ) : (
-                      filteredUsers.map((user) => (
-                        <button
-                          key={user.id}
-                          type="button"
-                          onClick={() => {
-                            handleInputChange('assignedTo', user.id);
-                            setShowUserDropdown(false);
-                            setUserSearch('');
-                          }}
-                          className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="font-medium text-sm text-gray-900">
-                            {user.firstName} {user.lastName}
-                          </div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
+            <div className="flex gap-4 mb-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="single"
+                  checked={assignmentMode === 'single'}
+                  onChange={(e) => setAssignmentMode(e.target.value as 'single')}
+                  className="mr-2"
+                />
+                <User className="w-4 h-4 mr-1" />
+                Single Assignee
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="multiple"
+                  checked={assignmentMode === 'multiple'}
+                  onChange={(e) => setAssignmentMode(e.target.value as 'multiple')}
+                  className="mr-2"
+                />
+                <Users className="w-4 h-4 mr-1" />
+                Multiple Assignees
+              </label>
             </div>
           </div>
+
+          {/* Assignment Selection */}
+          {assignmentMode === 'single' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Assign To
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Leave blank to assign to yourself
+              </p>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 text-left flex items-center justify-between"
+                >
+                  <span className={`${!formData.assignedTo ? 'text-gray-500' : 'text-gray-900'}`}>
+                    {getSelectedUserName()}
+                  </span>
+                  <User className="h-4 w-4 text-gray-400" />
+                </button>
+                
+                {showUserDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="p-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search users..."
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto">
+                      {/* Option to assign to self */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleInputChange('assignedTo', '');
+                          setShowUserDropdown(false);
+                          setUserSearch('');
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100"
+                      >
+                        <div className="flex items-center">
+                          <User className="h-4 w-4 text-purple-500 mr-2" />
+                          <div>
+                            <div className="text-sm font-medium text-purple-600">Assign to myself</div>
+                            <div className="text-xs text-gray-500">Task will be auto-assigned to you</div>
+                          </div>
+                        </div>
+                      </button>
+                      
+                      {filteredUsers.length === 0 ? (
+                        <div className="p-4 text-sm text-gray-500 text-center">
+                          No users found
+                        </div>
+                      ) : (
+                        filteredUsers.map((user) => (
+                          <button
+                            key={user.id}
+                            type="button"
+                            onClick={() => {
+                              handleInputChange('assignedTo', user.id);
+                              setShowUserDropdown(false);
+                              setUserSearch('');
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="font-medium text-sm text-gray-900">
+                              {user.firstName} {user.lastName}
+                            </div>
+                            <div className="text-xs text-gray-500">{user.email}</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Assign To Multiple Users
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Select multiple users to assign this task to
+              </p>
+              <MultiUserSelect
+                users={users}
+                selectedUserIds={selectedUserIds}
+                onSelectionChange={setSelectedUserIds}
+                placeholder="Select users..."
+                isLoading={usersLoading}
+              />
+            </div>
+          )}
 
           {/* Submit Buttons */}
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">

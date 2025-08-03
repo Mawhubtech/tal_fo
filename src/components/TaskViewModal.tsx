@@ -211,8 +211,28 @@ const TaskViewModal: React.FC<TaskViewModalProps> = ({
               </div>
             )}
 
-            {/* Assigned User */}
-            {task.assignedUser && (
+            {/* Assigned Users */}
+            {(task.assignments && task.assignments.length > 0) ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assigned To {task.assignments.length > 1 && `(${task.assignments.length} people)`}
+                </label>
+                <div className="space-y-2">
+                  {task.assignments.filter(a => a.isActive).map((assignment) => (
+                    <div key={assignment.id} className="flex items-center space-x-2 text-gray-900">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span>{assignment.user.firstName} {assignment.user.lastName}</span>
+                      <span className="text-sm text-gray-500">({assignment.user.email})</span>
+                      {assignment.role !== 'assignee' && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                          {assignment.role}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : task.assignedUser ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Assigned To
@@ -223,7 +243,7 @@ const TaskViewModal: React.FC<TaskViewModalProps> = ({
                   <span className="text-sm text-gray-500">({task.assignedUser.email})</span>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Created By */}
             {task.createdBy && (

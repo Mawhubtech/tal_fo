@@ -25,6 +25,22 @@ export interface Task {
   
   // Assignee (every task has an assignee, auto-assigned to creator if not specified)
   assignedTo: string;
+  
+  // Multiple assignees support
+  hasMultipleAssignees?: boolean;
+  assignments?: {
+    id: string;
+    userId: string;
+    role: 'assignee' | 'collaborator' | 'watcher';
+    isActive: boolean;
+    user: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  }[];
+  
   candidateId?: string;
   candidateName?: string;
   createdById?: string;
@@ -75,6 +91,10 @@ export interface CreateTaskData {
   
   // Assignee (optional - will auto-assign to creator if not provided)
   assignedTo?: string;
+  
+  // Multiple assignees support
+  assignedToUsers?: string[];
+  
   candidateId?: string;
   candidateName?: string;
   tags?: string[];
@@ -98,6 +118,10 @@ export interface UpdateTaskData {
   entityId?: string;
   entityName?: string;
   assignedTo?: string;
+  
+  // Multiple assignees support
+  assignedToUsers?: string[];
+  
   candidateId?: string;
   candidateName?: string;
   tags?: string[];

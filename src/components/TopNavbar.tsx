@@ -80,7 +80,9 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
   return (
     <div className="border-b border-gray-200 flex items-center justify-between p-3">
       <div className="flex-1 flex items-center">
-        <img src="/TALL.png" alt="PeopleGPT" className="h-12" />
+        <Link to="/dashboard" className="hover:opacity-80 transition-opacity">
+          <img src="/TALL.png" alt="PeopleGPT" className="h-12" />
+        </Link>
       </div>
       
       {/* Company Info - Show if user has a company */}
