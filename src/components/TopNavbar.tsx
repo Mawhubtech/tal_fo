@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check } from 'lucide-react';
+import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2 } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useLogout } from '../hooks/useAuth';
 import { AccountSettingsModal } from './AccountSettingsModal';
+import { useMyCompanies, useMemberCompanies } from '../hooks/useCompany';
+import { isSuperAdmin } from '../utils/roleUtils';
 import Button from './Button';
 
 interface TopNavbarProps {
@@ -14,6 +16,38 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
   const logout = useLogout();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+
+  // Fetch user's company data
+  const { data: myCompaniesData } = useMyCompanies();
+  const { data: memberCompaniesData } = useMemberCompanies();
+  const isUserSuperAdmin = isSuperAdmin(user);
+
+  // Determine primary company (user's main company)
+  const myCompanies = myCompaniesData?.companies || [];
+  const memberCompanies = memberCompaniesData?.companies || [];
+  
+  // Get the primary company - prioritize owned companies, then member companies
+  const primaryCompany = myCompanies.length > 0 ? myCompanies[0] : 
+                        memberCompanies.length > 0 ? memberCompanies[0] : null;
+  
+  // Get user's role in the primary company
+  const getUserCompanyRole = () => {
+    if (!primaryCompany) return null;
+    
+    // If user owns the company
+    if (primaryCompany.ownerId === user?.id) {
+      return 'Owner';
+    }
+    
+    // If user is a member, find their role
+    const membership = primaryCompany.members?.find(member => member.userId === user?.id);
+    if (membership) {
+      // Format the role name
+      return membership.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+    
+    return null;
+  };
 
   const handleLogout = () => {
     logout.mutate();
@@ -29,11 +63,43 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
     
     return roleColors[roleName.toLowerCase()] || 'bg-gray-100 text-gray-800';
   };
+
+  // Helper function to get company logo URL
+  const getCompanyLogoUrl = (logoUrl?: string | null) => {
+    if (!logoUrl) return null;
+    if (logoUrl.startsWith('http')) return logoUrl;
+    return `${import.meta.env.VITE_API_URL}${logoUrl}`;
+  };
   return (
     <div className="border-b border-gray-200 flex items-center justify-between p-3">
       <div className="flex-1 flex items-center">
         <img src="/TALL.png" alt="PeopleGPT" className="h-12" />
       </div>
+      
+      {/* Company Info - Show if user has a company */}
+      {primaryCompany && !isUserSuperAdmin && (
+        <div className="flex items-center gap-3 mx-4 px-3 py-2 bg-gray-50 rounded-lg border">
+          {/* Company Logo */}
+          {primaryCompany.logoUrl ? (
+            <img 
+              src={getCompanyLogoUrl(primaryCompany.logoUrl)} 
+              alt={primaryCompany.name}
+              className="w-8 h-8 rounded-full object-cover border border-gray-200"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-blue-600" />
+            </div>
+          )}
+          
+          <div className="text-sm">
+            <p className="font-medium text-gray-800 leading-tight">{primaryCompany.name}</p>
+            {getUserCompanyRole() && (
+              <p className="text-xs text-gray-500">{getUserCompanyRole()}</p>
+            )}
+          </div>
+        </div>
+      )}
       
       <div className="flex items-center gap-4">
         {/* User profile dropdown */}
@@ -103,6 +169,35 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
                         <span className="text-xs font-medium">Status</span>
                         <span className="text-xs font-medium text-green-600">{user?.status}</span>
                       </div>
+                      
+                      {/* Company Information */}
+                      {primaryCompany && (
+                        <div className="mb-2 pb-2 border-b border-gray-200">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium">Company</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {primaryCompany.logoUrl ? (
+                              <img 
+                                src={getCompanyLogoUrl(primaryCompany.logoUrl)} 
+                                alt={primaryCompany.name}
+                                className="w-5 h-5 rounded-full object-cover border border-gray-200"
+                              />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center">
+                                <Building2 className="w-3 h-3 text-blue-600" />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-gray-800">{primaryCompany.name}</p>
+                              {getUserCompanyRole() && (
+                                <p className="text-xs text-gray-500">{getUserCompanyRole()}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {user?.roles && user.roles.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {user.roles.map(role => (
