@@ -35,13 +35,15 @@ const CalendarPage: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showDateEventsModal, setShowDateEventsModal] = useState(false);
-  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [showEventFormModal, setShowEventFormModal] = useState(false);
+  const [eventFormMode, setEventFormMode] = useState<'create' | 'edit'>('create');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
 
-  // Form state for new event
-  const [newEvent, setNewEvent] = useState({
+  // Form state for event (used for both create and edit)
+  const [eventForm, setEventForm] = useState({
+    id: '',
     title: '',
     description: '',
     startDate: '',
@@ -53,6 +55,7 @@ const CalendarPage: React.FC = () => {
     notes: '',
     type: 'meeting',
     priority: 'medium',
+    status: 'scheduled',
     isAllDay: false,
     isRecurring: false,
     recurrencePattern: '',
@@ -91,14 +94,27 @@ const CalendarPage: React.FC = () => {
     mutationFn: (eventData: any) => calendarApiService.createEvent(eventData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
-      setShowCreateEventModal(false);
-      resetNewEventForm();
+      setShowEventFormModal(false);
+      resetEventForm();
     },
   });
 
-  // Helper functions for create event form
-  const resetNewEventForm = () => {
-    setNewEvent({
+  // Update event mutation
+  const updateEventMutation = useMutation({
+    mutationFn: ({ eventId, eventData }: { eventId: string; eventData: any }) => 
+      calendarApiService.updateEvent(eventId, eventData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
+      setShowEventFormModal(false);
+      setShowEventModal(false);
+      setSelectedEvent(null);
+    },
+  });
+
+  // Helper functions for event form
+  const resetEventForm = () => {
+    setEventForm({
+      id: '',
       title: '',
       description: '',
       startDate: '',
@@ -110,6 +126,7 @@ const CalendarPage: React.FC = () => {
       notes: '',
       type: 'meeting',
       priority: 'medium',
+      status: 'scheduled',
       isAllDay: false,
       isRecurring: false,
       recurrencePattern: '',
@@ -119,13 +136,14 @@ const CalendarPage: React.FC = () => {
   };
 
   const openCreateEventModal = (date?: Date) => {
+    resetEventForm();
     if (date) {
       const dateStr = date.toISOString().split('T')[0];
       // Set default times for new events
       const defaultStartTime = '09:00';
       const defaultEndTime = '10:00';
       
-      setNewEvent(prev => ({
+      setEventForm(prev => ({
         ...prev,
         startDate: dateStr,
         endDate: dateStr,
@@ -133,13 +151,45 @@ const CalendarPage: React.FC = () => {
         endTime: defaultEndTime
       }));
     }
-    setShowCreateEventModal(true);
+    setEventFormMode('create');
+    setShowEventFormModal(true);
+  };
+
+  const openEditEventModal = (event: CalendarEvent) => {
+    // Parse the existing event data for editing
+    const startDate = new Date(event.startDate);
+    const endDate = new Date(event.endDate);
+    
+    setEventForm({
+      id: event.id,
+      title: event.title,
+      description: event.description || '',
+      startDate: startDate.toISOString().split('T')[0],
+      startTime: event.isAllDay ? '' : startDate.toTimeString().slice(0, 5),
+      endDate: endDate.toISOString().split('T')[0],
+      endTime: event.isAllDay ? '' : endDate.toTimeString().slice(0, 5),
+      location: event.location || '',
+      meetingLink: event.meetingLink || '',
+      notes: event.notes || '',
+      type: event.type,
+      priority: event.priority,
+      status: event.status,
+      isAllDay: event.isAllDay,
+      isRecurring: event.isRecurring,
+      recurrencePattern: event.recurrencePattern || '',
+      recurrenceEndDate: event.recurrenceEndDate || '',
+      attendeeIds: event.attendees?.map(a => a.id) || []
+    });
+    
+    setEventFormMode('edit');
+    setShowEventModal(false);
+    setShowEventFormModal(true);
   };
 
   // Handle event creation with proper timezone handling
   // This function ensures that times entered by the user are preserved in their local timezone
   const handleCreateEvent = () => {
-    if (!newEvent.title || !newEvent.startDate) return;
+    if (!eventForm.title || !eventForm.startDate) return;
 
     // Helper function to create proper local datetime
     const createLocalDateTime = (date: string, time?: string, isAllDay?: boolean) => {
@@ -160,31 +210,82 @@ const CalendarPage: React.FC = () => {
     };
 
     const eventData = {
-      title: newEvent.title,
-      description: newEvent.description || undefined,
-      type: newEvent.type as any,
-      priority: newEvent.priority as any,
+      title: eventForm.title,
+      description: eventForm.description || undefined,
+      type: eventForm.type as any,
+      priority: eventForm.priority as any,
       startDate: createLocalDateTime(
-        newEvent.startDate, 
-        newEvent.startTime, 
-        newEvent.isAllDay
+        eventForm.startDate, 
+        eventForm.startTime, 
+        eventForm.isAllDay
       ),
       endDate: createLocalDateTime(
-        newEvent.endDate || newEvent.startDate, 
-        newEvent.endTime, 
-        newEvent.isAllDay
+        eventForm.endDate || eventForm.startDate, 
+        eventForm.endTime, 
+        eventForm.isAllDay
       ),
-      location: newEvent.location || undefined,
-      meetingLink: newEvent.meetingLink || undefined,
-      notes: newEvent.notes || undefined,
-      isAllDay: newEvent.isAllDay,
-      isRecurring: newEvent.isRecurring,
-      recurrencePattern: newEvent.recurrencePattern || undefined,
-      recurrenceEndDate: newEvent.recurrenceEndDate || undefined,
-      attendeeIds: newEvent.attendeeIds.length > 0 ? newEvent.attendeeIds : undefined
+      location: eventForm.location || undefined,
+      meetingLink: eventForm.meetingLink || undefined,
+      notes: eventForm.notes || undefined,
+      isAllDay: eventForm.isAllDay,
+      isRecurring: eventForm.isRecurring,
+      recurrencePattern: eventForm.recurrencePattern || undefined,
+      recurrenceEndDate: eventForm.recurrenceEndDate || undefined,
+      attendeeIds: eventForm.attendeeIds.length > 0 ? eventForm.attendeeIds : undefined
     };
 
     createEventMutation.mutate(eventData);
+  };
+
+  // Handle event update with proper timezone handling
+  const handleUpdateEvent = () => {
+    if (!eventForm.title || !eventForm.startDate) return;
+
+    // Helper function to create proper local datetime
+    const createLocalDateTime = (date: string, time?: string, isAllDay?: boolean) => {
+      if (isAllDay) {
+        // For all-day events, use just the date without time
+        return date;
+      }
+      
+      // Ensure we have a valid time
+      const validTime = time && time.match(/^\d{2}:\d{2}$/) ? time : '09:00';
+      
+      // Create a local datetime string in ISO format
+      // This approach preserves the user's intended local time
+      const localDateTime = new Date(`${date}T${validTime}:00`);
+      
+      // Convert to ISO string which will be in UTC but represents the correct time
+      return localDateTime.toISOString();
+    };
+
+    const eventData = {
+      title: eventForm.title,
+      description: eventForm.description || undefined,
+      type: eventForm.type as any,
+      priority: eventForm.priority as any,
+      status: eventForm.status as any,
+      startDate: createLocalDateTime(
+        eventForm.startDate, 
+        eventForm.startTime, 
+        eventForm.isAllDay
+      ),
+      endDate: createLocalDateTime(
+        eventForm.endDate || eventForm.startDate, 
+        eventForm.endTime, 
+        eventForm.isAllDay
+      ),
+      location: eventForm.location || undefined,
+      meetingLink: eventForm.meetingLink || undefined,
+      notes: eventForm.notes || undefined,
+      isAllDay: eventForm.isAllDay,
+      isRecurring: eventForm.isRecurring,
+      recurrencePattern: eventForm.recurrencePattern || undefined,
+      recurrenceEndDate: eventForm.recurrenceEndDate || undefined,
+      attendeeIds: eventForm.attendeeIds.length > 0 ? eventForm.attendeeIds : undefined
+    };
+
+    updateEventMutation.mutate({ eventId: eventForm.id, eventData });
   };
 
   // Filter events based on search and filters
@@ -438,7 +539,8 @@ const CalendarPage: React.FC = () => {
                     {dayEvents.slice(0, 3).map((event) => (
                       <div
                         key={event.id}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedEvent(event);
                           setShowEventModal(true);
                         }}
@@ -449,7 +551,13 @@ const CalendarPage: React.FC = () => {
                       </div>
                     ))}
                     {dayEvents.length > 3 && (
-                      <div className="text-xs text-gray-500 font-medium">
+                      <div 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDateClick(date);
+                        }}
+                        className="text-xs text-gray-500 font-medium cursor-pointer hover:text-gray-700"
+                      >
                         +{dayEvents.length - 3} more
                       </div>
                     )}
@@ -547,7 +655,7 @@ const CalendarPage: React.FC = () => {
 
               <div className="flex justify-end gap-2 mt-6">
                 <button
-                  onClick={() => {/* TODO: Open edit modal */}}
+                  onClick={() => openEditEventModal(selectedEvent)}
                   className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md"
                 >
                   <Edit className="w-4 h-4" />
@@ -688,14 +796,16 @@ const CalendarPage: React.FC = () => {
           </div>
         )}
 
-        {/* Create Event Modal */}
-        {showCreateEventModal && (
+        {/* Event Form Modal (Create/Edit) */}
+        {showEventFormModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
             <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-start justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Create New Event</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {eventFormMode === 'create' ? 'Create New Event' : 'Edit Event'}
+                </h3>
                 <button
-                  onClick={() => setShowCreateEventModal(false)}
+                  onClick={() => setShowEventFormModal(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   ×
@@ -710,8 +820,8 @@ const CalendarPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={newEvent.title}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                    value={eventForm.title}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Enter event title"
                     required
@@ -724,21 +834,41 @@ const CalendarPage: React.FC = () => {
                     Description
                   </label>
                   <textarea
-                    value={newEvent.description}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                    value={eventForm.description}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Enter event description"
                   />
                 </div>
 
+                {/* Status (only show in edit mode) */}
+                {eventFormMode === 'edit' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      value={eventForm.status}
+                      onChange={(e) => setEventForm(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="scheduled">Scheduled</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="no_show">No Show</option>
+                    </select>
+                  </div>
+                )}
+
                 {/* All Day Toggle */}
                 <div className="flex items-center">
                   <input
                     type="checkbox"
                     id="isAllDay"
-                    checked={newEvent.isAllDay}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, isAllDay: e.target.checked }))}
+                    checked={eventForm.isAllDay}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, isAllDay: e.target.checked }))}
                     className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                   />
                   <label htmlFor="isAllDay" className="ml-2 text-sm text-gray-700">
@@ -754,22 +884,22 @@ const CalendarPage: React.FC = () => {
                     </label>
                     <input
                       type="date"
-                      value={newEvent.startDate}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, startDate: e.target.value }))}
+                      value={eventForm.startDate}
+                      onChange={(e) => setEventForm(prev => ({ ...prev, startDate: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     />
                   </div>
                   
-                  {!newEvent.isAllDay && (
+                  {!eventForm.isAllDay && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Start Time
                       </label>
                       <input
                         type="time"
-                        value={newEvent.startTime}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
+                        value={eventForm.startTime}
+                        onChange={(e) => setEventForm(prev => ({ ...prev, startTime: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                     </div>
@@ -781,28 +911,28 @@ const CalendarPage: React.FC = () => {
                     </label>
                     <input
                       type="date"
-                      value={newEvent.endDate}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, endDate: e.target.value }))}
+                      value={eventForm.endDate}
+                      onChange={(e) => setEventForm(prev => ({ ...prev, endDate: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
 
-                  {!newEvent.isAllDay && (
+                  {!eventForm.isAllDay && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         End Time
                       </label>
                       <input
                         type="time"
-                        value={newEvent.endTime}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                        value={eventForm.endTime}
+                        onChange={(e) => setEventForm(prev => ({ ...prev, endTime: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                     </div>
                   )}
                 </div>
 
-                {!newEvent.isAllDay && (
+                {!eventForm.isAllDay && (
                   <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-blue-600" />
@@ -819,8 +949,8 @@ const CalendarPage: React.FC = () => {
                       Event Type
                     </label>
                     <select
-                      value={newEvent.type}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
+                      value={eventForm.type}
+                      onChange={(e) => setEventForm(prev => ({ ...prev, type: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="meeting">Meeting</option>
@@ -838,8 +968,8 @@ const CalendarPage: React.FC = () => {
                       Priority
                     </label>
                     <select
-                      value={newEvent.priority}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, priority: e.target.value }))}
+                      value={eventForm.priority}
+                      onChange={(e) => setEventForm(prev => ({ ...prev, priority: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="low">Low</option>
@@ -857,8 +987,8 @@ const CalendarPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={newEvent.location}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
+                    value={eventForm.location}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Enter location or address"
                   />
@@ -871,8 +1001,8 @@ const CalendarPage: React.FC = () => {
                   </label>
                   <input
                     type="url"
-                    value={newEvent.meetingLink}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, meetingLink: e.target.value }))}
+                    value={eventForm.meetingLink}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, meetingLink: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="https://..."
                   />
@@ -884,8 +1014,8 @@ const CalendarPage: React.FC = () => {
                     Notes
                   </label>
                   <textarea
-                    value={newEvent.notes}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, notes: e.target.value }))}
+                    value={eventForm.notes}
+                    onChange={(e) => setEventForm(prev => ({ ...prev, notes: e.target.value }))}
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Additional notes..."
@@ -895,25 +1025,25 @@ const CalendarPage: React.FC = () => {
 
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => setShowCreateEventModal(false)}
+                  onClick={() => setShowEventFormModal(false)}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleCreateEvent}
-                  disabled={createEventMutation.isPending || !newEvent.title || !newEvent.startDate}
+                  onClick={eventFormMode === 'create' ? handleCreateEvent : handleUpdateEvent}
+                  disabled={(eventFormMode === 'create' ? createEventMutation.isPending : updateEventMutation.isPending) || !eventForm.title || !eventForm.startDate}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {createEventMutation.isPending ? (
+                  {(eventFormMode === 'create' ? createEventMutation.isPending : updateEventMutation.isPending) ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Creating...
+                      {eventFormMode === 'create' ? 'Creating...' : 'Updating...'}
                     </>
                   ) : (
                     <>
-                      <Plus className="w-4 h-4" />
-                      Create Event
+                      {eventFormMode === 'create' ? <Plus className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+                      {eventFormMode === 'create' ? 'Create Event' : 'Update Event'}
                     </>
                   )}
                 </button>

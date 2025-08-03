@@ -7,7 +7,11 @@ import {
   ChevronRight,
   Target,
   Building,
-  BarChart3
+  BarChart3,
+  Clock,
+  MapPin,
+  Video,
+  Plus
 } from 'lucide-react';
 import { CalendarEvent } from '../../services/calendarApiService';
 
@@ -19,6 +23,8 @@ interface CalendarWidgetProps {
 const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events = [] }) => {
   const [showCalendarView, setShowCalendarView] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDateEventsModal, setShowDateEventsModal] = useState(false);
 
   // Use provided events (no fallback to mock data)
   const upcomingEvents: CalendarEvent[] = events;
@@ -55,6 +61,56 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
       hour: '2-digit', 
       minute: '2-digit' 
     });
+  };
+
+  // Handle date click to show events modal
+  const handleDateClick = (day: number | null) => {
+    if (!day) return;
+    
+    const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    setSelectedDate(clickedDate);
+    setShowDateEventsModal(true);
+  };
+
+  // Get events for a specific date
+  const getEventsForDate = (date: Date) => {
+    return upcomingEvents.filter(event => {
+      const eventDate = new Date(event.startDate);
+      return eventDate.toDateString() === date.toDateString();
+    });
+  };
+
+  // Format event time for modal display
+  const formatEventTimeForModal = (event: CalendarEvent) => {
+    if (event.isAllDay) return 'All day';
+    
+    const startDate = new Date(event.startDate);
+    const endDate = new Date(event.endDate);
+    
+    const startTime = startDate.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    const endTime = endDate.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    return `${startTime} - ${endTime}`;
+  };
+
+  // Get event type color
+  const getEventTypeColor = (type: string) => {
+    const colors = {
+      interview: 'bg-purple-500',
+      meeting: 'bg-purple-600',
+      call: 'bg-purple-400',
+      review: 'bg-purple-700',
+      deadline: 'bg-red-500',
+      follow_up: 'bg-purple-300',
+      other: 'bg-gray-500'
+    };
+    return colors[type as keyof typeof colors] || colors.other;
   };
 
   // Calendar helper functions
@@ -173,9 +229,10 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
             {calendarDays.map((day, index) => (
               <div
                 key={index}
+                onClick={() => handleDateClick(day)}
                 className={`
                   w-6 h-6 flex items-center justify-center text-xs rounded cursor-pointer transition-colors
-                  ${day === null ? 'invisible' : ''}
+                  ${day === null ? 'invisible pointer-events-none' : ''}
                   ${isToday(day) 
                     ? 'bg-purple-600 text-white font-semibold' 
                     : hasEvent(day)
@@ -236,6 +293,118 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
       >
         {showCalendarView ? 'View Full Calendar' : 'View Full Events'} →
       </Link>
+
+      {/* Date Events Modal */}
+      {showDateEventsModal && selectedDate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Events for {selectedDate.toLocaleDateString([], { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric',
+                    year: 'numeric' 
+                  })}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {getEventsForDate(selectedDate).length} event(s)
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDateEventsModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {getEventsForDate(selectedDate).length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No events scheduled for this date</p>
+                </div>
+              ) : (
+                getEventsForDate(selectedDate).map((event) => (
+                  <div
+                    key={event.id}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium text-gray-900">{event.title}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getEventTypeColor(event.type)}`}>
+                            {event.type}
+                          </span>
+                        </div>
+                        
+                        {event.description && (
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                            {event.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatEventTimeForModal(event)}
+                          </div>
+                          
+                          {event.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              <span className="truncate max-w-[100px]">{event.location}</span>
+                            </div>
+                          )}
+                          
+                          {event.meetingLink && (
+                            <div className="flex items-center gap-1">
+                              <Video className="w-3 h-3" />
+                              <span>Online</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="ml-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          event.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          event.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                          event.status === 'no_show' ? 'bg-orange-100 text-orange-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {event.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowDateEventsModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md"
+              >
+                Close
+              </button>
+              <Link
+                to="/dashboard/calendar"
+                onClick={() => setShowDateEventsModal(false)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+              >
+                <Plus className="w-4 h-4" />
+                View Full Calendar
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
