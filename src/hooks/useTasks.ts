@@ -13,6 +13,13 @@ export const taskKeys = {
 };
 
 // Hooks
+export const useTasks = (params?: Record<string, any>) => {
+  return useQuery({
+    queryKey: taskKeys.list(params || {}),
+    queryFn: () => taskApiService.getTasks(params),
+  });
+};
+
 export const useTasksByJobId = (jobId: string) => {
   return useQuery({
     queryKey: taskKeys.byJob(jobId),

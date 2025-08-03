@@ -5,18 +5,38 @@ export interface Task {
   title: string;
   description?: string;
   dueDate?: string;
-  priority: 'High' | 'Medium' | 'Low';
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
-  type: 'Review' | 'Schedule' | 'Offer' | 'Interview' | 'Follow-up' | 'Document' | 'Assessment' | 'Reference Check';
-  jobId: string;
-  assignedTo?: string;
+  priority: 'High' | 'Medium' | 'Low' | 'Urgent';
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled' | 'On Hold';
+  type: 'General' | 'Reminder' | 'Meeting' | 'Call' | 'Email' | 'Document' | 'Research' | 
+        'Review' | 'Schedule' | 'Offer' | 'Interview' | 'Follow-up' | 'Assessment' | 'Reference Check' |
+        'Candidate Search' | 'Outreach' | 'Profile Review' | 'Client Meeting' | 'Proposal' | 
+        'Contract Review' | 'Admin' | 'Personal' | 'Training';
+  category: 'Recruitment' | 'Sourcing' | 'Client Management' | 'Business Development' | 
+           'Personal' | 'Admin' | 'Team Management' | 'Outreach' | 'Marketing' | 'General';
+  
+  // Generic entity linking
+  entityType?: 'job' | 'candidate' | 'client' | 'project' | 'sourcing_project' | 'sequence' | 
+              'team' | 'user' | 'company' | 'organization' | 'none';
+  entityId?: string;
+  entityName?: string;
+  
+  // Legacy job support (optional now)
+  jobId?: string;
+  
+  // Assignee (every task has an assignee, auto-assigned to creator if not specified)
+  assignedTo: string;
   candidateId?: string;
   candidateName?: string;
   createdById?: string;
+  
+  // New fields
+  tags?: string[];
   metadata?: Record<string, any>;
+  
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  
   // Relations
   assignedUser?: {
     id: string;
@@ -36,12 +56,28 @@ export interface CreateTaskData {
   title: string;
   description?: string;
   dueDate?: string;
-  priority?: 'High' | 'Medium' | 'Low';
-  type: 'Review' | 'Schedule' | 'Offer' | 'Interview' | 'Follow-up' | 'Document' | 'Assessment' | 'Reference Check';
-  jobId: string;
+  priority?: 'High' | 'Medium' | 'Low' | 'Urgent';
+  type: 'General' | 'Reminder' | 'Meeting' | 'Call' | 'Email' | 'Document' | 'Research' | 
+        'Review' | 'Schedule' | 'Offer' | 'Interview' | 'Follow-up' | 'Assessment' | 'Reference Check' |
+        'Candidate Search' | 'Outreach' | 'Profile Review' | 'Client Meeting' | 'Proposal' | 
+        'Contract Review' | 'Admin' | 'Personal' | 'Training';
+  category?: 'Recruitment' | 'Sourcing' | 'Client Management' | 'Business Development' | 
+            'Personal' | 'Admin' | 'Team Management' | 'Outreach' | 'Marketing' | 'General';
+  
+  // Generic entity linking
+  entityType?: 'job' | 'candidate' | 'client' | 'project' | 'sourcing_project' | 'sequence' | 
+              'team' | 'user' | 'company' | 'organization' | 'none';
+  entityId?: string;
+  entityName?: string;
+  
+  // Legacy job support (optional now)
+  jobId?: string;
+  
+  // Assignee (optional - will auto-assign to creator if not provided)
   assignedTo?: string;
   candidateId?: string;
   candidateName?: string;
+  tags?: string[];
   metadata?: Record<string, any>;
 }
 
@@ -49,24 +85,44 @@ export interface UpdateTaskData {
   title?: string;
   description?: string;
   dueDate?: string;
-  priority?: 'High' | 'Medium' | 'Low';
-  status?: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
-  type?: 'Review' | 'Schedule' | 'Offer' | 'Interview' | 'Follow-up' | 'Document' | 'Assessment' | 'Reference Check';
+  priority?: 'High' | 'Medium' | 'Low' | 'Urgent';
+  status?: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled' | 'On Hold';
+  type?: 'General' | 'Reminder' | 'Meeting' | 'Call' | 'Email' | 'Document' | 'Research' | 
+         'Review' | 'Schedule' | 'Offer' | 'Interview' | 'Follow-up' | 'Assessment' | 'Reference Check' |
+         'Candidate Search' | 'Outreach' | 'Profile Review' | 'Client Meeting' | 'Proposal' | 
+         'Contract Review' | 'Admin' | 'Personal' | 'Training';
+  category?: 'Recruitment' | 'Sourcing' | 'Client Management' | 'Business Development' | 
+            'Personal' | 'Admin' | 'Team Management' | 'Outreach' | 'Marketing' | 'General';
+  entityType?: 'job' | 'candidate' | 'client' | 'project' | 'sourcing_project' | 'sequence' | 
+              'team' | 'user' | 'company' | 'organization' | 'none';
+  entityId?: string;
+  entityName?: string;
   assignedTo?: string;
   candidateId?: string;
   candidateName?: string;
+  tags?: string[];
   metadata?: Record<string, any>;
 }
 
 export interface TaskQueryParams {
   jobId?: string;
-  status?: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
-  priority?: 'High' | 'Medium' | 'Low';
-  type?: 'Review' | 'Schedule' | 'Offer' | 'Interview' | 'Follow-up' | 'Document' | 'Assessment' | 'Reference Check';
+  status?: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled' | 'On Hold';
+  priority?: 'High' | 'Medium' | 'Low' | 'Urgent';
+  type?: 'General' | 'Reminder' | 'Meeting' | 'Call' | 'Email' | 'Document' | 'Research' | 
+         'Review' | 'Schedule' | 'Offer' | 'Interview' | 'Follow-up' | 'Assessment' | 'Reference Check' |
+         'Candidate Search' | 'Outreach' | 'Profile Review' | 'Client Meeting' | 'Proposal' | 
+         'Contract Review' | 'Admin' | 'Personal' | 'Training';
+  category?: 'Recruitment' | 'Sourcing' | 'Client Management' | 'Business Development' | 
+            'Personal' | 'Admin' | 'Team Management' | 'Outreach' | 'Marketing' | 'General';
+  entityType?: 'job' | 'candidate' | 'client' | 'project' | 'sourcing_project' | 'sequence' | 
+              'team' | 'user' | 'company' | 'organization' | 'none';
+  entityId?: string;
   assignedTo?: string;
   candidateId?: string;
   dueDateFrom?: string;
   dueDateTo?: string;
+  tags?: string[];
+  search?: string;
 }
 
 export interface TaskStats {

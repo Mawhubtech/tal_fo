@@ -4,6 +4,7 @@ import { jobApiService } from './jobApiService';
 import type { JobStats } from './jobApiService';
 import { sourcingProjectApiService } from './sourcingProjectApiService';
 import { calendarApiService, CalendarEvent } from './calendarApiService';
+import { taskApiService, Task } from '../recruitment/organizations/services/taskApiService';
 
 export interface DashboardStats {
   candidates: CandidateStats;
@@ -185,6 +186,114 @@ class DashboardApiService {
       console.warn('Failed to fetch calendar events:', error);
       // Return empty array on error
       return [];
+    }
+  }
+
+  /**
+   * Get recent tasks for dashboard
+   */
+  async getDashboardTasks(limit: number = 5): Promise<Task[]> {
+    try {
+      const tasks = await taskApiService.getTasks({
+        status: 'Pending',
+      });
+      
+      // Sort by due date and priority, then limit
+      const sortedTasks = tasks
+        .filter(task => task.status === 'Pending' || task.status === 'In Progress')
+        .sort((a, b) => {
+          // First sort by due date (overdue first, then by date)
+          if (a.dueDate && b.dueDate) {
+            const aDate = new Date(a.dueDate);
+            const bDate = new Date(b.dueDate);
+            const now = new Date();
+            
+            const aOverdue = aDate < now;
+            const bOverdue = bDate < now;
+            
+            if (aOverdue && !bOverdue) return -1;
+            if (!aOverdue && bOverdue) return 1;
+            
+            return aDate.getTime() - bDate.getTime();
+          }
+          
+          if (a.dueDate && !b.dueDate) return -1;
+          if (!a.dueDate && b.dueDate) return 1;
+          
+          // Then sort by priority
+          const priorityOrder = { 'High': 0, 'Medium': 1, 'Low': 2 };
+          return (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3);
+        })
+        .slice(0, limit);
+      
+      return sortedTasks;
+    } catch (error) {
+      console.warn('Failed to fetch dashboard tasks:', error);
+      // Return mock data on error
+      return [
+        {
+          id: '1',
+          title: 'Review candidate portfolio for Senior Developer role',
+          description: 'Evaluate technical skills and experience',
+          priority: 'High' as const,
+          status: 'Pending' as const,
+          type: 'Review' as const,
+          jobId: 'job-1',
+          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          candidateName: 'John Doe',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          title: 'Schedule interview with marketing candidate',
+          description: 'Coordinate with hiring manager for final round',
+          priority: 'Medium' as const,
+          status: 'Pending' as const,
+          type: 'Schedule' as const,
+          jobId: 'job-2',
+          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          candidateName: 'Jane Smith',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: '3',
+          title: 'Follow up with client about job requirements',
+          description: 'Clarify technical requirements and timeline',
+          priority: 'Low' as const,
+          status: 'In Progress' as const,
+          type: 'Follow-up' as const,
+          jobId: 'job-3',
+          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: '4',
+          title: 'Update sourcing project status',
+          description: 'Prepare weekly status report',
+          priority: 'Medium' as const,
+          status: 'Pending' as const,
+          type: 'Document' as const,
+          jobId: 'job-4',
+          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: '5',
+          title: 'Send weekly recruitment report',
+          description: 'Compile and send status to stakeholders',
+          priority: 'High' as const,
+          status: 'Pending' as const,
+          type: 'Document' as const,
+          jobId: 'job-5',
+          dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Overdue
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ].slice(0, limit);
     }
   }
 

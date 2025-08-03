@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, Users, Briefcase, Shield, BarChart3, 
@@ -11,9 +11,12 @@ import { dashboardApiService } from '../services/dashboardApiService';
 import { PendingInvitations } from '../components/calendar/PendingEventInvitations';
 import CalendarWidget from '../components/dashboard/CalendarWidget';
 import TodoListWidget from '../components/dashboard/TodoListWidget';
+import CreateTaskModal from '../components/CreateTaskModal';
+import { toast } from '../components/ToastContainer';
 
 const DashboardOverview: React.FC = () => {
   const { hasPermission, hasAnyPermission } = usePermissionCheck();
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   
   // Fetch dashboard metrics
   const { 
@@ -126,6 +129,16 @@ const DashboardOverview: React.FC = () => {
   };
 
   const quickActions = getQuickActions();
+
+  const handleAddTaskClick = () => {
+    setShowCreateTaskModal(true);
+  };
+
+  const handleTaskCreated = () => {
+    setShowCreateTaskModal(false);
+    toast.success('Task created successfully!');
+    // Optionally refetch dashboard data here
+  };
 
   // Handle loading state
   if (metricsLoading) {
@@ -248,7 +261,10 @@ const DashboardOverview: React.FC = () => {
         />
 
         {/* To-Do List */}
-        <TodoListWidget className="md:col-span-1" />
+        <TodoListWidget 
+          className="md:col-span-1" 
+          onAddTaskClick={handleAddTaskClick}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -306,6 +322,13 @@ const DashboardOverview: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        isOpen={showCreateTaskModal}
+        onClose={() => setShowCreateTaskModal(false)}
+        onTaskCreated={handleTaskCreated}
+      />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   MessageSquare, 
   Mail, 
@@ -54,7 +55,11 @@ interface ChatMessage {
 }
 
 const ContactSupportPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'chat' | 'email' | 'tickets'>('chat');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const initialTab = (tabParam === 'email' || tabParam === 'tickets') ? tabParam : 'chat';
+  
+  const [activeTab, setActiveTab] = useState<'chat' | 'email' | 'tickets'>(initialTab);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [ticketMessages, setTicketMessages] = useState<SupportMessage[]>([]);

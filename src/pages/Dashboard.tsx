@@ -60,6 +60,7 @@ import ClientOutreachRouter from './client-outreach/ClientOutreachRouter';
 // Support Pages
 import { ResourcesPage } from './resources';
 import ContactSupportPage from './ContactSupportPage';
+import TasksPage from './TasksPage'; // Import TasksPage
 
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
@@ -272,6 +273,13 @@ const Dashboard: React.FC = () => {
                 <UnifiedContactsPage />
               </RoutePermissionGuard>
             } /> {/* Route for Unified Contact Management */}            
+            
+            {/* Tasks Route */}
+            <Route path="tasks" element={
+              <RoutePermissionGuard>
+                <TasksPage />
+              </RoutePermissionGuard>
+            } />
             
             {/* Jobs redirect to organizations - hierarchical approach */}
             <Route path="jobs" element={<Navigate to="/dashboard/organizations" replace />} />

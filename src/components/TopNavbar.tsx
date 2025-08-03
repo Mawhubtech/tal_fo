@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell } from 'lucide-react';
+import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell, Calendar, CheckSquare, MessageSquare } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useLogout } from '../hooks/useAuth';
 import { AccountSettingsModal } from './AccountSettingsModal';
@@ -8,6 +8,7 @@ import { isSuperAdmin } from '../utils/roleUtils';
 import Button from './Button';
 import { PendingInvitations } from './calendar/PendingEventInvitations';
 import { useMyPendingEventInvitations } from '../hooks/useCalendarInvitations';
+import { Link } from 'react-router-dom';
 
 interface TopNavbarProps {
   onNewSearch?: () => void;
@@ -108,6 +109,33 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
       )}
       
       <div className="flex items-center gap-4">
+        {/* Quick Action Icons */}
+        <div className="flex items-center gap-2">
+          <Link 
+            to="/dashboard/calendar"
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            title="Calendar"
+          >
+            <Calendar className="w-5 h-5" />
+          </Link>
+          
+          <Link 
+            to="/dashboard/tasks"
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            title="Tasks"
+          >
+            <CheckSquare className="w-5 h-5" />
+          </Link>
+          
+          <Link 
+            to="/dashboard/contact-support?tab=email"
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            title="Submit Ticket"
+          >
+            <MessageSquare className="w-5 h-5" />
+          </Link>
+        </div>
+
         {/* Notifications */}
         <div className="relative">
           <button 
