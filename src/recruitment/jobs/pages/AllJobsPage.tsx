@@ -17,7 +17,7 @@ import {
   Eye,
   Globe
 } from 'lucide-react';
-import { useJobs, useDeleteJob, useJobsByOrganization } from '../../../hooks/useJobs';
+import { useJobs, useDeleteJob } from '../../../hooks/useJobs';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyAssignment } from '../../../hooks/useUserAssignment';
 import type { JobFilters } from '../../../services/jobApiService';
@@ -38,122 +38,38 @@ const AllJobsPage: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
 
-  // Role-based access state management
-  const [isInternalRecruiter, setIsInternalRecruiter] = useState(false);
-  const [defaultOrganizationId, setDefaultOrganizationId] = useState<string | null>(null);
-  const [defaultDepartmentId, setDefaultDepartmentId] = useState<string | null>(null);
+  // Get user's organization assignment for navigation purposes
+  const { data: userAssignment, isLoading: assignmentLoading } = useMyAssignment();
 
-  // Get user's organization assignment for role-based access
-  const { data: userAssignment, isLoading: assignmentLoading, error: assignmentError } = useMyAssignment();
-
-  // Check if user needs client-based filtering based on role or organization assignment
-  useEffect(() => {
-    if (!user) return;
-    
-    // Wait for assignment loading to complete before making decisions
-    if (assignmentLoading) return;
-
-    // Get user roles
-    const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
-    
-    // Check for super-admin role first (they see all jobs)
-    const hasSuperAdminRole = userRoles.some(role => 
-      role === 'super-admin'
-    );
-    
-    if (hasSuperAdminRole) {
-      // Super-admins see all jobs, no assignment needed
-      setIsInternalRecruiter(false);
-      setDefaultOrganizationId(null);
-      setDefaultDepartmentId(null);
-      return;
-    }
-    
-    // Check for roles that need organization assignment (including admin, external-hr, freelance-hr)
-    const hasAssignmentRole = userRoles.some(role => 
-      role === 'internal-admin' || 
-      role === 'internal-hr' || 
-      role === 'external-hr' ||
-      role === 'freelance-hr' ||
-      role === 'admin' ||
-      role === 'user'
-    );
-    
-    if (hasAssignmentRole) {
-      setIsInternalRecruiter(true);
-      
-      // Get the organization ID from user's assignment
-      const assignedOrgId = userAssignment?.organizationId || userAssignment?.clientId;
-      const assignedDeptId = userAssignment?.departmentId;
-      
-      setDefaultOrganizationId(assignedOrgId || null);
-      setDefaultDepartmentId(assignedDeptId || null);
-    } else {
-      // Other roles see all jobs
-      setIsInternalRecruiter(false);
-      setDefaultOrganizationId(null);
-      setDefaultDepartmentId(null);
-    }
-  }, [user, userAssignment, assignmentLoading]);
-
-  // Use appropriate hook based on user type
-  // For users with client assignments, check if they have an assignment
-  const shouldFetchJobs = !isInternalRecruiter || (isInternalRecruiter && !!defaultOrganizationId);
-  
-  // Determine which hooks should be enabled
-  const enableAllJobs = shouldFetchJobs && !isInternalRecruiter;
-  const enableOrgJobs = shouldFetchJobs && isInternalRecruiter && !!defaultOrganizationId;
-  
-  // Always call hooks, but with conditional parameters
-  const { 
-    data: allJobsResponse,
-    isLoading: allJobsLoading,
-    error: allJobsError,
-    refetch: refetchAllJobs
-  } = useJobs(filters, { enabled: enableAllJobs });
-
-  const { 
-    data: orgJobsResponse,
-    isLoading: orgJobsLoading,
-    error: orgJobsError,
-    refetch: refetchOrgJobs
-  } = useJobsByOrganization(
-    defaultOrganizationId || '', 
-    filters,
-    { enabled: enableOrgJobs }
+  // Determine user type for UI purposes
+  const userRoleNames = user?.roles?.map(role => role.name.toLowerCase()) || [];
+  const isSuperAdmin = userRoleNames.some(role => role === 'super-admin');
+  const hasAssignmentRole = userRoleNames.some(role => 
+    role === 'internal-recruiter' || 
+    role === 'internal-hr' ||
+    role === 'internal-admin' ||
+    role === 'external-hr' ||
+    role === 'freelance-hr' ||
+    role === 'admin' ||
+    role === 'user'
   );
 
-  // Determine which data to use
-  const jobsResponse = isInternalRecruiter && defaultOrganizationId ? orgJobsResponse : allJobsResponse;
-  const loading = isInternalRecruiter && defaultOrganizationId ? orgJobsLoading : allJobsLoading;
-  const queryError = isInternalRecruiter && defaultOrganizationId ? orgJobsError : allJobsError;
-  const loadJobs = isInternalRecruiter && defaultOrganizationId ? refetchOrgJobs : refetchAllJobs;
+  // Use the main jobs hook - filtering is now done in the backend
+  const { 
+    data: jobsResponse,
+    isLoading: loading,
+    error: queryError,
+    refetch: refetchJobs
+  } = useJobs(filters);
 
   const deleteJobMutation = useDeleteJob();
 
   // Extract data from response or use defaults
-  const jobs = !shouldFetchJobs 
-    ? [] // User with no assignment - show no jobs
-    : (isInternalRecruiter && defaultOrganizationId
-        ? (jobsResponse as { jobs: Job[]; total: number })?.jobs || []
-        : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.data || []);
-    
+  const jobs = (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.data || [];
   const pagination = {
-    total: !shouldFetchJobs 
-      ? 0 // User with no assignment - show 0 total
-      : (isInternalRecruiter && defaultOrganizationId
-          ? (jobsResponse as { jobs: Job[]; total: number })?.total || 0
-          : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.total || 0),
-    page: !shouldFetchJobs 
-      ? 1
-      : (isInternalRecruiter && defaultOrganizationId
-          ? filters.page || 1
-          : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.page || 1),
-    limit: !shouldFetchJobs 
-      ? 10
-      : (isInternalRecruiter && defaultOrganizationId
-          ? filters.limit || 10
-          : (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.limit || 10)
+    total: (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.total || 0,
+    page: (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.page || 1,
+    limit: (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.limit || 10
   };
   
   // Convert error to string format
@@ -184,9 +100,10 @@ const AllJobsPage: React.FC = () => {
 
   // Handler functions for CRUD operations
   const handleEditJob = (job: Job) => {
-    if (isInternalRecruiter && defaultOrganizationId && defaultDepartmentId) {
+    if (hasAssignmentRole && userAssignment?.organizationId) {
       // For users with client assignments, use their default organization and department
-      navigate(`/dashboard/organizations/${defaultOrganizationId}/departments/${defaultDepartmentId}/create-job?edit=${job.id}`);
+      const departmentId = userAssignment.departmentId || 'default-dept';
+      navigate(`/dashboard/organizations/${userAssignment.organizationId}/departments/${departmentId}/create-job?edit=${job.id}`);
     } else {
       // For super-admins, use the job's organization and department
       const organizationId = job.organizationId || 'default-org';
@@ -197,14 +114,13 @@ const AllJobsPage: React.FC = () => {
 
   const handleCreateJob = () => {
     // Prevent users with no assignment from creating jobs
-    if (isInternalRecruiter && !defaultOrganizationId) {
+    if (hasAssignmentRole && !userAssignment?.organizationId) {
       return;
     }
     
-    if (isInternalRecruiter && defaultOrganizationId) {
+    if (hasAssignmentRole && userAssignment?.organizationId) {
       // For users with client assignments, go directly to job creation within their assigned organization
-      // Since they work across all departments, we can let them choose the department during creation
-      navigate(`/dashboard/organizations/${defaultOrganizationId}/create-job`);
+      navigate(`/dashboard/organizations/${userAssignment.organizationId}/create-job`);
     } else {
       // For super-admins, navigate to organizations page to choose client
       navigate('/dashboard/organizations');
@@ -212,10 +128,10 @@ const AllJobsPage: React.FC = () => {
   };
 
   const handleJobClick = (job: Job) => {
-    if (isInternalRecruiter && defaultOrganizationId) {
+    if (hasAssignmentRole && userAssignment?.organizationId) {
       // For users with client assignments, use their organization and the job's department
-      const departmentId = job.departmentId || defaultDepartmentId || 'default-dept';
-      navigate(`/dashboard/organizations/${defaultOrganizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
+      const departmentId = job.departmentId || userAssignment.departmentId || 'default-dept';
+      navigate(`/dashboard/organizations/${userAssignment.organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
     } else {
       // For super-admins, use the job's organization and department
       const organizationId = job.organizationId || 'default-org';
@@ -314,7 +230,7 @@ const AllJobsPage: React.FC = () => {
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
-  if (loading) {
+  if (loading || assignmentLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex items-center space-x-2">
@@ -333,7 +249,7 @@ const AllJobsPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Jobs</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={() => loadJobs()}
+            onClick={() => refetchJobs()}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
           >
             Try Again
@@ -350,31 +266,21 @@ const AllJobsPage: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {(() => {
-                const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
-                const hasSuperAdminRole = userRoles.some(role => role === 'super-admin');
-                
-                if (hasSuperAdminRole) return 'All Jobs';
-                if (isInternalRecruiter) return 'My Client Jobs';
-                return 'All Jobs';
-              })()}
+              {isSuperAdmin ? 'All Jobs' : (hasAssignmentRole ? 'My Client Jobs' : 'All Jobs')}
             </h1>
             <p className="text-gray-600">
-              {(() => {
-                const userRoles = user?.roles?.map(role => role.name.toLowerCase()) || [];
-                const hasSuperAdminRole = userRoles.some(role => role === 'super-admin');
-                
-                if (hasSuperAdminRole) return 'Manage all job openings across the platform (Super Admin)';
-                if (isInternalRecruiter) return 'Manage job openings for your assigned client organization';
-                return 'Manage all job openings across your clients';
-              })()}
+              {isSuperAdmin 
+                ? 'Manage all job openings across the platform (Super Admin)'
+                : (hasAssignmentRole 
+                    ? 'Manage job openings for your assigned client organization'
+                    : 'Manage all job openings across your clients')}
             </p>
           </div>
           <button
             onClick={handleCreateJob}
-            disabled={isInternalRecruiter && !defaultOrganizationId}
+            disabled={hasAssignmentRole && !userAssignment?.organizationId}
             className={`px-4 py-2 rounded-lg flex items-center space-x-2 border ${
-              isInternalRecruiter && !defaultOrganizationId 
+              hasAssignmentRole && !userAssignment?.organizationId
                 ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed' 
                 : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
             }`}
@@ -463,7 +369,7 @@ const AllJobsPage: React.FC = () => {
         {jobs.length === 0 ? (
           <div className="p-12 text-center">
             <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            {isInternalRecruiter && !defaultOrganizationId ? (
+            {hasAssignmentRole && !userAssignment?.organizationId ? (
               // User with no assignment
               <>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Client Assignment</h3>
