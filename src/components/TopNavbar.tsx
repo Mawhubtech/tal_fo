@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2 } from 'lucide-react';
+import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useLogout } from '../hooks/useAuth';
 import { AccountSettingsModal } from './AccountSettingsModal';
 import { useMyCompanies, useMemberCompanies } from '../hooks/useCompany';
 import { isSuperAdmin } from '../utils/roleUtils';
 import Button from './Button';
+import { PendingInvitations } from './calendar/PendingEventInvitations';
+import { useMyPendingEventInvitations } from '../hooks/useCalendarInvitations';
 
 interface TopNavbarProps {
   onNewSearch?: () => void;
@@ -16,11 +18,15 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
   const logout = useLogout();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Fetch user's company data
   const { data: myCompaniesData } = useMyCompanies();
   const { data: memberCompaniesData } = useMemberCompanies();
   const isUserSuperAdmin = isSuperAdmin(user);
+
+  // Get pending event invitations for notification count
+  const { data: pendingInvitationsData } = useMyPendingEventInvitations();
 
   // Determine primary company (user's main company)
   const myCompanies = myCompaniesData?.companies || [];
@@ -102,6 +108,38 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
       )}
       
       <div className="flex items-center gap-4">
+        {/* Notifications */}
+        <div className="relative">
+          <button 
+            className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md"
+            onClick={() => setShowNotifications(!showNotifications)}
+          >
+            <Bell className="w-5 h-5" />
+            {pendingInvitationsData?.invitations && pendingInvitationsData.invitations.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {pendingInvitationsData.invitations.length}
+              </span>
+            )}
+          </button>
+          
+          {/* Notifications dropdown */}
+          {showNotifications && (
+            <>
+              {/* Backdrop to close dropdown */}
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setShowNotifications(false)}
+              />
+              <div className="absolute top-full right-0 mt-1 w-96 bg-white border border-gray-200 shadow-lg z-20 rounded-md max-h-96 overflow-y-auto">
+                <div className="p-3">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Notifications</h3>
+                  <PendingInvitations />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
         {/* User profile dropdown */}
         <div className="relative">
           <button 

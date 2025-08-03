@@ -8,7 +8,7 @@ import {
 import { usePermissionCheck, SIDEBAR_PERMISSIONS } from '../hooks/usePermissionCheck';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApiService } from '../services/dashboardApiService';
-import PendingInvitations from '../components/company/PendingInvitations';
+import { PendingInvitations } from '../components/calendar/PendingEventInvitations';
 import CalendarWidget from '../components/dashboard/CalendarWidget';
 import TodoListWidget from '../components/dashboard/TodoListWidget';
 
@@ -173,9 +173,6 @@ const DashboardOverview: React.FC = () => {
         </div>
       </div>
 
-      {/* Pending Invitations */}
-      <PendingInvitations />
-
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
@@ -255,38 +252,8 @@ const DashboardOverview: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        {/* Quick Actions - To-Do List Style */}
-        <div className="md:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 h-full">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              {quickActions.map((action, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="mt-0.5 w-4 h-4 rounded border-2 border-gray-300 flex items-center justify-center flex-shrink-0">
-                    <div className={`w-2 h-2 rounded-full bg-${action.color}-500`}></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <Link 
-                      to={action.link} 
-                      className="block hover:bg-gray-50 rounded-lg p-2 transition-colors group"
-                    >
-                      <div className="flex items-center">
-                        <div className={`p-1 rounded-lg bg-${action.color}-100 group-hover:bg-${action.color}-200 transition-colors flex-shrink-0 mr-3`}>
-                          <action.icon className={`w-4 h-4 text-${action.color}-600`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{action.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{action.description}</p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 flex-shrink-0" />
-                      </div>
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Pending Event Invitations */}
+        <PendingInvitations className="md:col-span-1" />
 
         {/* Recent Activity - To-Do List Style */}
         <div className="md:col-span-1">

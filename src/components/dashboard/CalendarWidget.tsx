@@ -172,6 +172,7 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
   ];
 
   const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Shorter day names for compact view
+  const dayNamesWithIndex = dayNames.map((day, index) => ({ day, index })); // Make keys unique
   const calendarDays = getDaysInMonth(currentDate);
 
   return (
@@ -181,6 +182,12 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
           {showCalendarView ? 'Calendar' : 'Upcoming Events'}
         </h3>
         <div className="flex items-center space-x-2">
+          <Link 
+            to="/dashboard/calendar" 
+            className="px-2 py-1 text-xs text-purple-600 hover:text-purple-800 font-medium border border-purple-200 rounded-md hover:bg-purple-50 transition-colors"
+          >
+            View Full
+          </Link>
           <button
             onClick={() => setShowCalendarView(!showCalendarView)}
             className="p-1 rounded-lg hover:bg-purple-50 transition-colors"
@@ -196,72 +203,62 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
       </div>
 
       {showCalendarView ? (
-        <div className="space-y-2">
+        <div className="flex-1 flex flex-col">
           {/* Calendar Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <button
               onClick={() => navigateMonth('prev')}
-              className="p-0.5 rounded hover:bg-purple-50 transition-colors"
+              className="p-1 rounded hover:bg-purple-50 transition-colors"
             >
-              <ChevronLeft className="w-3 h-3 text-purple-600" />
+              <ChevronLeft className="w-4 h-4 text-purple-600" />
             </button>
-            <h4 className="text-xs font-medium text-gray-900">
+            <h4 className="text-sm font-medium text-gray-900">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h4>
             <button
               onClick={() => navigateMonth('next')}
-              className="p-0.5 rounded hover:bg-purple-50 transition-colors"
+              className="p-1 rounded hover:bg-purple-50 transition-colors"
             >
-              <ChevronRight className="w-3 h-3 text-purple-600" />
+              <ChevronRight className="w-4 h-4 text-purple-600" />
             </button>
           </div>
 
-          {/* Calendar Grid - Compact */}
-          <div className="grid grid-cols-7 gap-0.5">
-            {/* Day headers */}
-            {dayNames.map((day) => (
-              <div key={day} className="text-xs font-medium text-gray-400 text-center py-0.5">
-                {day}
-              </div>
-            ))}
-            
-            {/* Calendar days */}
-            {calendarDays.map((day, index) => (
-              <div
-                key={index}
-                onClick={() => handleDateClick(day)}
-                className={`
-                  w-6 h-6 flex items-center justify-center text-xs rounded cursor-pointer transition-colors
-                  ${day === null ? 'invisible pointer-events-none' : ''}
-                  ${isToday(day) 
-                    ? 'bg-purple-600 text-white font-semibold' 
-                    : hasEvent(day)
-                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                    : 'hover:bg-purple-50 text-gray-700'
-                  }
-                `}
-              >
-                {day && (
-                  <div className="relative">
-                    <span className="text-xs">{day}</span>
-                    {hasEvent(day) && !isToday(day) && (
-                      <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-0.5 h-0.5 bg-purple-500 rounded-full"></div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Legend - Compact */}
-          <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
-            <div className="flex items-center space-x-0.5">
-              <div className="w-1 h-1 bg-purple-600 rounded-full"></div>
-              <span>Today</span>
-            </div>
-            <div className="flex items-center space-x-0.5">
-              <div className="w-1 h-1 bg-purple-500 rounded-full"></div>
-              <span>Events</span>
+          {/* Calendar Grid - Full Size */}
+          <div className="flex-1">
+            <div className="grid grid-cols-7 gap-1 h-full">
+              {/* Day headers */}
+              {dayNamesWithIndex.map(({ day, index }) => (
+                <div key={`day-header-${index}`} className="text-xs font-medium text-gray-400 text-center py-2 border-b border-gray-100">
+                  {day}
+                </div>
+              ))}
+              
+              {/* Calendar days */}
+              {calendarDays.map((day, index) => (
+                <div
+                  key={`calendar-day-${index}`}
+                  onClick={() => handleDateClick(day)}
+                  className={`
+                    min-h-[32px] flex items-center justify-center text-sm rounded cursor-pointer transition-colors relative
+                    ${day === null ? 'invisible pointer-events-none' : ''}
+                    ${isToday(day) 
+                      ? 'bg-purple-600 text-white font-semibold' 
+                      : hasEvent(day)
+                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                      : 'hover:bg-purple-50 text-gray-700'
+                    }
+                  `}
+                >
+                  {day && (
+                    <>
+                      <span className="text-sm">{day}</span>
+                      {hasEvent(day) && !isToday(day) && (
+                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-purple-500 rounded-full"></div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -286,13 +283,6 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
           ))}
         </div>
       )}
-
-      <Link 
-        to="/dashboard/calendar" 
-        className="mt-3 block text-center text-sm text-purple-600 hover:text-purple-700 font-medium"
-      >
-        {showCalendarView ? 'View Full Calendar' : 'View Full Events'} →
-      </Link>
 
       {/* Date Events Modal */}
       {showDateEventsModal && selectedDate && (
@@ -347,7 +337,7 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
                           </p>
                         )}
                         
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
                           <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatEventTimeForModal(event)}
@@ -366,6 +356,16 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
                               <span>Online</span>
                             </div>
                           )}
+                        </div>
+
+                        {/* Event actions */}
+                        <div className="flex gap-2">
+                          <Link
+                            to="/dashboard/calendar"
+                            className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                          >
+                            View Details →
+                          </Link>
                         </div>
                       </div>
                       

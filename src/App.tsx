@@ -9,6 +9,7 @@ import OrganizationSignIn from './components/OrganizationSignIn';
 import OAuthCallback from './components/OAuthCallback';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import LandingPage from './pages/LandingPage';
+import InvitationResponsePage from './pages/InvitationResponsePage';
 import JobBoardPage from './pages/jobSeeker/JobBoardPage';
 import JobDetailPage from './pages/jobSeeker/JobDetailPage';
 import JobSeekerLoginPage from './pages/jobSeeker/JobSeekerLoginPage';
@@ -105,6 +106,11 @@ function App() {
             <Route
               path="/company/invitation"
               element={<CompanyInvitationPage />}
+            />
+            {/* Calendar Invitation Response Route */}
+            <Route
+              path="/calendar/invitation/:invitationId/respond"
+              element={<InvitationResponsePage />}
             />
             {/* External User Registration (no auth required) */}
             <Route

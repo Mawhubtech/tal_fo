@@ -33,7 +33,7 @@ export interface CalendarEvent {
     lastName: string;
     email: string;
   };
-  attendees: Array<{
+  attendees?: Array<{
     id: string;
     firstName: string;
     lastName: string;
@@ -90,6 +90,47 @@ export interface CalendarStats {
   upcomingEvents: number;
   todayEvents: number;
   overdue: number;
+}
+
+// Event Invitation Interfaces
+export interface EventInvitation {
+  id: string;
+  eventId: string;
+  inviteeEmail: string;
+  inviteeName?: string;
+  inviteeId?: string; // For internal users
+  invitedById: string;
+  invitedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  status: 'pending' | 'accepted' | 'declined' | 'maybe';
+  responseDate?: string;
+  responseMessage?: string;
+  isExternal: boolean; // true for external invitees, false for company members
+  createdAt: string;
+  updatedAt: string;
+  event?: CalendarEvent; // Populated when needed
+}
+
+export interface InviteToEventRequest {
+  eventId: string;
+  invitees: Array<{
+    email: string;
+    name?: string;
+    userId?: string; // For internal users
+    isExternal?: boolean;
+  }>;
+  message?: string;
+  sendEmail?: boolean;
+}
+
+export interface EventInvitationResponse {
+  invitationId: string;
+  response: 'accepted' | 'declined' | 'maybe';
+  message?: string;
 }
 
 class CalendarApiService {
@@ -340,6 +381,78 @@ class CalendarApiService {
     };
 
     return typeStyles[type] || typeStyles.other;
+  }
+
+  // Event Invitation Methods
+
+  /**
+   * Invite users to a calendar event
+   */
+  async inviteToEvent(data: InviteToEventRequest): Promise<{ invitations: EventInvitation[] }> {
+    const { eventId, ...requestBody } = data;
+    const response = await apiClient.post(`${this.baseUrl}/events/${eventId}/invite`, requestBody);
+    return response.data;
+  }
+
+  /**
+   * Get invitations for a specific event
+   */
+  async getEventInvitations(eventId: string): Promise<{ invitations: EventInvitation[] }> {
+    const response = await apiClient.get(`${this.baseUrl}/events/${eventId}/invitations`);
+    return response.data;
+  }
+
+  /**
+   * Get user's pending event invitations
+   */
+  async getMyPendingEventInvitations(): Promise<{ invitations: EventInvitation[] }> {
+    const response = await apiClient.get(`${this.baseUrl}/invitations/pending`);
+    return response.data;
+  }
+
+  /**
+   * Respond to an event invitation
+   */
+  async respondToEventInvitation(invitationId: string, data: EventInvitationResponse): Promise<{ invitation: EventInvitation }> {
+    const { invitationId: _, ...requestBody } = data;
+    const response = await apiClient.post(`${this.baseUrl}/invitations/${invitationId}/respond`, requestBody);
+    return response.data;
+  }
+
+  /**
+   * Resend an event invitation
+   */
+  async resendEventInvitation(invitationId: string): Promise<{ invitation: EventInvitation }> {
+    const response = await apiClient.post(`${this.baseUrl}/invitations/${invitationId}/resend`);
+    return response.data;
+  }
+
+  /**
+   * Cancel an event invitation
+   */
+  async cancelEventInvitation(invitationId: string): Promise<{ success: boolean }> {
+    const response = await apiClient.delete(`${this.baseUrl}/invitations/${invitationId}`);
+    return response.data;
+  }
+
+  /**
+   * Get all users in the company for invitation purposes
+   */
+  async getCompanyUsers(): Promise<{ users: Array<{ id: string; firstName: string; lastName: string; email: string; role: string; }> }> {
+    const response = await apiClient.get(`${this.baseUrl}/users/company-members`);
+    return response.data;
+  }
+
+  /**
+   * Respond to event invitation via direct link (for email responses)
+   */
+  async respondToEventInvitationByLink(invitationId: string, response: 'accepted' | 'declined' | 'maybe', message?: string): Promise<{ invitation: EventInvitation }> {
+    const requestBody: any = { response };
+    if (message) {
+      requestBody.message = message;
+    }
+    const responseData = await apiClient.post(`${this.baseUrl}/invitations/${invitationId}/respond`, requestBody);
+    return responseData.data;
   }
 }
 
