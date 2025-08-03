@@ -96,6 +96,50 @@ class CalendarApiService {
   private readonly baseUrl = '/calendar';
 
   /**
+   * Helper function to handle timezone conversion for event creation
+   */
+  private createDateTimeString(date: string, time?: string, isAllDay = false): string {
+    if (isAllDay) {
+      // For all-day events, return just the date
+      return date;
+    }
+
+    if (!time) {
+      time = '09:00'; // Default time
+    }
+
+    // Create a local datetime and convert to ISO string
+    // This preserves the user's local timezone intention
+    const localDateTime = new Date(`${date}T${time}:00`);
+    return localDateTime.toISOString();
+  }
+
+  /**
+   * Helper function to format dates for display in local timezone
+   */
+  formatDisplayDate(dateString: string, includeTime = true): string {
+    const date = new Date(dateString);
+    
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    };
+
+    const timeOptions: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    };
+
+    if (includeTime) {
+      return `${date.toLocaleDateString([], dateOptions)} at ${date.toLocaleTimeString([], timeOptions)}`;
+    }
+    
+    return date.toLocaleDateString([], dateOptions);
+  }
+
+  /**
    * Create a new calendar event
    */
   async createEvent(eventData: CreateCalendarEventRequest): Promise<CalendarEvent> {
@@ -249,20 +293,23 @@ class CalendarApiService {
    * Format event for display
    */
   formatEventTime(event: CalendarEvent): string {
-    const startDate = new Date(event.startDate);
-    const endDate = new Date(event.endDate);
-    
     if (event.isAllDay) {
       return 'All day';
     }
 
+    const startDate = new Date(event.startDate);
+    const endDate = new Date(event.endDate);
+    
+    // Use local time for display
     const startTime = startDate.toLocaleTimeString([], { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      hour12: true
     });
     const endTime = endDate.toLocaleTimeString([], { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      hour12: true
     });
 
     // If same day, show time range
