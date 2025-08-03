@@ -9,30 +9,53 @@ import {
   Building,
   BarChart3
 } from 'lucide-react';
-
-interface Event {
-  id: number;
-  title: string;
-  time: string;
-  date: string;
-  type: 'interview' | 'meeting' | 'review';
-}
+import { CalendarEvent } from '../../services/calendarApiService';
 
 interface CalendarWidgetProps {
   className?: string;
+  events?: CalendarEvent[];
 }
 
-const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '' }) => {
+const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events = [] }) => {
   const [showCalendarView, setShowCalendarView] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const upcomingEvents: Event[] = [
-    { id: 1, title: 'Interview: Frontend Developer', time: '10:00 AM', date: 'Today', type: 'interview' },
-    { id: 2, title: 'Client Meeting: TechCorp', time: '2:00 PM', date: 'Today', type: 'meeting' },
-    { id: 3, title: 'Team Standup', time: '9:00 AM', date: 'Tomorrow', type: 'meeting' },
-    { id: 4, title: 'Interview: Backend Developer', time: '11:00 AM', date: 'Tomorrow', type: 'interview' },
-    { id: 5, title: 'Quarterly Review', time: '3:00 PM', date: 'Friday', type: 'review' }
-  ];
+  // Use provided events (no fallback to mock data)
+  const upcomingEvents: CalendarEvent[] = events;
+
+  // Helper function to format event date for display
+  const formatEventDate = (event: CalendarEvent): string => {
+    const eventDate = new Date(event.startDate);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    if (eventDate.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (eventDate.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow';
+    } else {
+      const diffTime = eventDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 7) {
+        return eventDate.toLocaleDateString([], { weekday: 'long' });
+      } else {
+        return eventDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    }
+  };
+
+  // Helper function to format event time for display
+  const formatEventTime = (event: CalendarEvent): string => {
+    if (event.isAllDay) return 'All day';
+    
+    const startDate = new Date(event.startDate);
+    return startDate.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
 
   // Calendar helper functions
   const getDaysInMonth = (date: Date) => {
@@ -68,8 +91,13 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '' }) => {
 
   const hasEvent = (day: number | null) => {
     if (!day) return false;
-    // Mock logic - days 3, 15, 22, 28 have events
-    return day === 3 || day === 15 || day === 22 || day === 28;
+    
+    // Check if any events exist on this day
+    const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    return upcomingEvents.some(event => {
+      const eventDate = new Date(event.startDate);
+      return eventDate.toDateString() === targetDate.toDateString();
+    });
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -99,13 +127,13 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '' }) => {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setShowCalendarView(!showCalendarView)}
-            className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1 rounded-lg hover:bg-purple-50 transition-colors"
             title={showCalendarView ? 'Show Upcoming Events' : 'Show Calendar'}
           >
             {showCalendarView ? (
-              <CalendarDays className="w-4 h-4 text-gray-400" />
+              <CalendarDays className="w-4 h-4 text-purple-600" />
             ) : (
-              <Calendar className="w-4 h-4 text-gray-400" />
+              <Calendar className="w-4 h-4 text-purple-600" />
             )}
           </button>
         </div>
@@ -117,18 +145,18 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '' }) => {
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigateMonth('prev')}
-              className="p-0.5 rounded hover:bg-gray-100 transition-colors"
+              className="p-0.5 rounded hover:bg-purple-50 transition-colors"
             >
-              <ChevronLeft className="w-3 h-3 text-gray-600" />
+              <ChevronLeft className="w-3 h-3 text-purple-600" />
             </button>
             <h4 className="text-xs font-medium text-gray-900">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h4>
             <button
               onClick={() => navigateMonth('next')}
-              className="p-0.5 rounded hover:bg-gray-100 transition-colors"
+              className="p-0.5 rounded hover:bg-purple-50 transition-colors"
             >
-              <ChevronRight className="w-3 h-3 text-gray-600" />
+              <ChevronRight className="w-3 h-3 text-purple-600" />
             </button>
           </div>
 
@@ -151,8 +179,8 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '' }) => {
                   ${isToday(day) 
                     ? 'bg-purple-600 text-white font-semibold' 
                     : hasEvent(day)
-                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                    : 'hover:bg-gray-100 text-gray-700'
+                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                    : 'hover:bg-purple-50 text-gray-700'
                   }
                 `}
               >
@@ -160,7 +188,7 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '' }) => {
                   <div className="relative">
                     <span className="text-xs">{day}</span>
                     {hasEvent(day) && !isToday(day) && (
-                      <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-0.5 h-0.5 bg-blue-500 rounded-full"></div>
+                      <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-0.5 h-0.5 bg-purple-500 rounded-full"></div>
                     )}
                   </div>
                 )}
@@ -175,7 +203,7 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '' }) => {
               <span>Today</span>
             </div>
             <div className="flex items-center space-x-0.5">
-              <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+              <div className="w-1 h-1 bg-purple-500 rounded-full"></div>
               <span>Events</span>
             </div>
           </div>
@@ -183,19 +211,19 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '' }) => {
       ) : (
         <div className="space-y-2">
           {upcomingEvents.slice(0, 3).map((event) => (
-            <div key={event.id} className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-gray-50">
+            <div key={event.id} className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-purple-50">
               <div className={`p-1 rounded flex-shrink-0 ${
                 event.type === 'interview' ? 'bg-purple-100' :
-                event.type === 'meeting' ? 'bg-blue-100' :
-                'bg-green-100'
+                event.type === 'meeting' ? 'bg-purple-100' :
+                'bg-purple-100'
               }`}>
                 {event.type === 'interview' && <Target className="w-3 h-3 text-purple-600" />}
-                {event.type === 'meeting' && <Building className="w-3 h-3 text-blue-600" />}
-                {event.type === 'review' && <BarChart3 className="w-3 h-3 text-green-600" />}
+                {event.type === 'meeting' && <Building className="w-3 h-3 text-purple-600" />}
+                {event.type === 'review' && <BarChart3 className="w-3 h-3 text-purple-600" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-gray-900 truncate">{event.title}</p>
-                <p className="text-xs text-gray-500">{event.date} at {event.time}</p>
+                <p className="text-xs text-gray-500">{formatEventDate(event)} at {formatEventTime(event)}</p>
               </div>
             </div>
           ))}

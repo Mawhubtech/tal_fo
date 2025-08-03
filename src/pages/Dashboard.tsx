@@ -6,6 +6,7 @@ import RoutePermissionGuard from '../components/RoutePermissionGuard'; // Route 
 import { useAuthContext } from '../contexts/AuthContext';
 import { isExternalUser } from '../utils/userUtils';
 import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
+import CalendarPage from './CalendarPage'; // Import the Calendar page
 // Sourcing imports
 import { Search, SearchResults } from '../sourcing';
 import UnifiedContactsPage from '../sourcing/contacts/pages/UnifiedContactsPage'; // Import UnifiedContactsPage
@@ -146,6 +147,13 @@ const Dashboard: React.FC = () => {
                 <DashboardOverview />
               </RoutePermissionGuard>
             } /> {/* Dashboard Overview as default route */}            
+            
+            {/* Calendar Route */}
+            <Route path="calendar" element={
+              <RoutePermissionGuard>
+                <CalendarPage />
+              </RoutePermissionGuard>
+            } />
             
             {/* Sourcing Projects Routes */}
             <Route path="sourcing/projects" element={

@@ -3,6 +3,7 @@ import { candidatesService, CandidateStats } from './candidatesService';
 import { jobApiService } from './jobApiService';
 import type { JobStats } from './jobApiService';
 import { sourcingProjectApiService } from './sourcingProjectApiService';
+import { calendarApiService, CalendarEvent } from './calendarApiService';
 
 export interface DashboardStats {
   candidates: CandidateStats;
@@ -171,6 +172,45 @@ class DashboardApiService {
     return mockActivities.slice(0, limit);
     
     // }
+  }
+
+  /**
+   * Get upcoming calendar events for dashboard
+   */
+  async getUpcomingEvents(limit: number = 5): Promise<CalendarEvent[]> {
+    try {
+      const events = await calendarApiService.getUpcomingEvents(limit);
+      return events;
+    } catch (error) {
+      console.warn('Failed to fetch calendar events:', error);
+      // Return empty array on error
+      return [];
+    }
+  }
+
+  /**
+   * Format event date for display
+   */
+  private formatEventDate(dateString: string): string {
+    const eventDate = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    if (eventDate.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (eventDate.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow';
+    } else {
+      const diffTime = eventDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 7) {
+        return eventDate.toLocaleDateString([], { weekday: 'long' });
+      } else {
+        return eventDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    }
   }
 
   /**

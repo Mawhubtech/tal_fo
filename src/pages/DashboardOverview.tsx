@@ -41,6 +41,18 @@ const DashboardOverview: React.FC = () => {
     refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
   });
 
+  // Fetch upcoming calendar events
+  const { 
+    data: upcomingEventsData, 
+    isLoading: eventsLoading 
+  } = useQuery({
+    queryKey: ['dashboard', 'upcoming-events'],
+    queryFn: () => dashboardApiService.getUpcomingEvents(5),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
+  });
+
   // Use real data or fallback to defaults
   const stats = dashboardMetrics || {
     totalCandidates: 0,
@@ -54,6 +66,7 @@ const DashboardOverview: React.FC = () => {
   };
 
   const recentActivity = recentActivityData || [];
+  const upcomingEvents = upcomingEventsData || [];
 
   // Dynamic quick actions based on permissions
   const getQuickActions = () => {
@@ -232,7 +245,10 @@ const DashboardOverview: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Calendar & Upcoming Events */}
-        <CalendarWidget className="md:col-span-1" />
+        <CalendarWidget 
+          className="md:col-span-1" 
+          events={upcomingEvents}
+        />
 
         {/* To-Do List */}
         <TodoListWidget className="md:col-span-1" />
