@@ -30,6 +30,16 @@ export function useHiringTeams(organizationIds?: string[]) {
   });
 }
 
+// Get hiring teams by company
+export function useCompanyHiringTeams(companyId: string) {
+  return useQuery({
+    queryKey: [...hiringTeamKeys.all, 'company', companyId] as const,
+    queryFn: () => hiringTeamApiService.getTeamsByCompany(companyId),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
 // Get single hiring team
 export function useHiringTeam(teamId: string) {
   return useQuery({
@@ -236,5 +246,56 @@ export function useVerifyExternalAccess(token: string, teamId: string, enabled: 
     enabled: enabled && !!token && !!teamId,
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: false, // Don't retry on failed access verification
+  });
+}
+
+// Client management hooks
+export function useTeamClients(teamId: string) {
+  return useQuery({
+    queryKey: [...hiringTeamKeys.all, 'teamClients', teamId] as const,
+    queryFn: () => hiringTeamApiService.getTeamClients(teamId),
+    enabled: !!teamId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+export function useAvailableClientsForTeam(teamId: string) {
+  return useQuery({
+    queryKey: [...hiringTeamKeys.all, 'availableClients', teamId] as const,
+    queryFn: () => hiringTeamApiService.getAvailableClientsForTeam(teamId),
+    enabled: !!teamId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+export function useAssignClientsToTeam() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ teamId, clientIds }: { teamId: string; clientIds: string[] }) =>
+      hiringTeamApiService.assignClientsToTeam(teamId, clientIds),
+    onSuccess: (data, variables) => {
+      // Update the team query with the new data
+      queryClient.setQueryData(hiringTeamKeys.team(variables.teamId), data);
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: [...hiringTeamKeys.all, 'teamClients', variables.teamId] });
+      queryClient.invalidateQueries({ queryKey: [...hiringTeamKeys.all, 'availableClients', variables.teamId] });
+    },
+  });
+}
+
+export function useRemoveClientsFromTeam() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ teamId, clientIds }: { teamId: string; clientIds: string[] }) =>
+      hiringTeamApiService.removeClientsFromTeam(teamId, clientIds),
+    onSuccess: (data, variables) => {
+      // Update the team query with the new data
+      queryClient.setQueryData(hiringTeamKeys.team(variables.teamId), data);
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: [...hiringTeamKeys.all, 'teamClients', variables.teamId] });
+      queryClient.invalidateQueries({ queryKey: [...hiringTeamKeys.all, 'availableClients', variables.teamId] });
+    },
   });
 }

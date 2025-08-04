@@ -24,6 +24,7 @@ import { isSuperAdmin } from '../../utils/roleUtils';
 import { EditCompanyModal } from '../../components/company/EditCompanyModal';
 import { InviteMemberModal } from '../../components/company/InviteMemberModal';
 import { EditMemberModal } from '../../components/company/EditMemberModal';
+import { HiringTeamsSection } from '../../components/company/HiringTeamsSection';
 import { UserModal } from '../../components/UserModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { CompanyMember } from '../../services/companyApiService';
@@ -65,7 +66,11 @@ export const CompanyDetailPage: React.FC = () => {
   const canEditCompany = isOwner || isUserSuperAdmin;
   const canDeleteCompany = isOwner || isUserSuperAdmin;
   
-  // Client data hooks - super-admin sees all clients, regular users see only their assigned clients
+  // Client data hooks - implements hierarchy:
+  // - Super-admin sees all clients
+  // - Company owners see all company clients 
+  // - HR agency admins see all company clients
+  // - Regular users see only clients from hiring teams they're members of + individual assignments
   const { data: clientsResponse } = isUserSuperAdmin 
     ? useClients()
     : useCurrentUserClients();
@@ -554,6 +559,12 @@ export const CompanyDetailPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Hiring Teams */}
+            <HiringTeamsSection 
+              companyId={company.id} 
+              canManage={canEditCompany} 
+            />
           </div>
 
           {/* Sidebar */}
