@@ -50,39 +50,83 @@ const Hero: React.FC = () => {
 
       {/* Main Content - moved up */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12 lg:pt-16 flex-1 flex flex-col justify-center">
-        <div className="text-center space-y-8 md:space-y-12 mb-16">
+        <div className="text-center space-y-16 md:space-y-20 mb-16">
           {/* Headline */}
-          <h1 
-            className={`text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight transition-all duration-700 delay-150 transform ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
-            Your <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">AI Co-Pilot</span> for<br />
-            Smarter, Faster Hiring.
-          </h1>
-          
-          {/* Subheadline */}
-          <p 
-            className={`text-lg md:text-xl text-gray-600 max-w-3xl mx-auto transition-all duration-700 delay-300 transform ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
-            From intelligent sourcing and automated screening to personalized reachouts and a seamless ATS, 
-            Tal revolutionizes your entire HR workflow. Hire the best, effortlessly.
-          </p>
-          
-          {/* CTA buttons */}
-          <div
-            className={`flex flex-row items-center justify-center gap-4 pt-4 transition-all duration-700 delay-450 transform ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            } px-4 sm:px-0`}
-          >
-            <Button variant="primary" size="lg" className="flex-1 sm:flex-initial">
-              Try for free
-            </Button>
-            <Button variant="outline" size="lg" icon={<Play className="w-4 h-4" />} className="flex-1 sm:flex-initial">
-              Watch Tour
-            </Button>
+          <div>
+            <h1 
+              className={`text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight transition-all duration-700 delay-150 transform ${
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}
+            >
+              Where Talent Meets<br />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600">Opportunity</span>
+            </h1>
+            
+            {/* Target Audience Cards */}
+            <div 
+              className={`mt-12 transition-all duration-700 delay-200 transform ${
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}
+            >
+              <div className="relative max-w-5xl mx-auto">
+                {/* Connection Lines */}
+                <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent -translate-y-1/2"></div>
+                
+                {/* Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+                  {/* Recruiters Card */}
+                  <div className="group relative">
+                    <div className="relative bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1">
+                      {/* Connection dot */}
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-purple-500 rounded-full border-2 border-white shadow-sm"></div>
+                      
+                      <div className="text-center pt-4">
+                        <div className="text-2xl font-bold text-purple-600 mb-2">
+                          Recruiters
+                        </div>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                          AI-powered sourcing and intelligent candidate matching
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Job Seekers Card - Elevated */}
+                  <div className="group relative md:-mt-4">
+                    <div className="relative bg-white/95 backdrop-blur-sm border border-gray-100 rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1">
+                      {/* Connection dot */}
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-pink-500 rounded-full border-2 border-white shadow-sm"></div>
+                      
+                      <div className="text-center pt-4">
+                        <div className="text-3xl font-bold text-pink-600 mb-3">
+                          Job Seekers
+                        </div>
+                        <p className="text-gray-600 leading-relaxed">
+                          Discover opportunities that align with your ambitions
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TA Agencies Card */}
+                  <div className="group relative">
+                    <div className="relative bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1">
+                      {/* Connection dot */}
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-500 rounded-full border-2 border-white shadow-sm"></div>
+                      
+                      <div className="text-center pt-4">
+                        <div className="text-2xl font-bold text-indigo-600 mb-2">
+                          TA Agencies
+                        </div>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                          Streamline operations with precision and excellence
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
