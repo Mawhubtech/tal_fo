@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Star, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
 import AddCandidateModal from '../../components/AddCandidateModal';
 import BulkImportModal from '../../components/BulkImportModal';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
 import { CreateCandidateDto } from '../../types/candidate.types';
-import { useCandidates, useCandidate, useCandidateStats, useUpdateCandidateStatus, useUpdateCandidateRating, useCreateCandidate, useUpdateCandidate, useDeleteCandidate } from '../../hooks/useCandidates';
+import { useCandidates, useCandidate, useCandidateStats, useUpdateCandidateStatus, useCreateCandidate, useUpdateCandidate, useDeleteCandidate } from '../../hooks/useCandidates';
 import { useQueryClient } from '@tanstack/react-query';
 import { getAvatarUrl } from '../../utils/fileUtils';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { isSuperAdmin } from '../../utils/roleUtils';
 
 // Enhanced candidate interface with additional professional fields
 interface EnhancedCandidate {
@@ -28,7 +30,6 @@ interface EnhancedCandidate {
   avatar?: string | null;
   summary?: string | null;
   status: 'active' | 'inactive' | 'hired' | 'interviewing' | 'rejected';
-  rating: string | number; // API returns rating as string
   appliedDate: string | null;
   lastActivity: string | null;
   source?: string;
@@ -47,10 +48,17 @@ interface EnhancedCandidate {
   interests?: any[]; // Interests from API
   references?: any[]; // References from API
   customFields?: any[]; // Custom fields from API
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 const CandidatesPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuthContext();
+  const isUserSuperAdmin = isSuperAdmin(user);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
@@ -90,7 +98,6 @@ const CandidatesPage: React.FC = () => {
   
   // Mutations for data updates
   const updateStatusMutation = useUpdateCandidateStatus();
-  const updateRatingMutation = useUpdateCandidateRating();
   const createCandidateMutation = useCreateCandidate();
   const updateCandidateMutation = useUpdateCandidate();
   const deleteCandidateMutation = useDeleteCandidate();
@@ -249,10 +256,6 @@ const CandidatesPage: React.FC = () => {
       console.error('Error updating candidate status:', error);
       // Display some error notification here
     }
-  };  // Function to handle rating change that will be used in the future
-  const handleRatingChange = (id: string, rating: number) => {
-    // Create a star rating component here in the future
-    updateRatingMutation.mutate({ id, rating });
   };  // Function to handle adding a new candidate
   const handleAddCandidate = async (candidateData: CreateCandidateDto & { avatarFile?: File | null }) => {
     try {
@@ -343,27 +346,6 @@ const CandidatesPage: React.FC = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const renderStarRating = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />);
-    }
-
-    if (hasHalfStar) {
-      stars.push(<Star key="half" className="h-3 w-3 fill-yellow-200 text-yellow-400" />);
-    }
-
-    const remainingStars = 5 - Math.ceil(rating);
-    for (let i = 0; i < remainingStars; i++) {
-      stars.push(<Star key={`empty-${i}`} className="h-3 w-3 text-gray-300" />);
-    }
-
-    return <div className="flex items-center space-x-1">{stars}</div>;
   };  // We're now using server-side filtering, so this is just a fallback  // Pagination calculations
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -442,8 +424,15 @@ const CandidatesPage: React.FC = () => {
         <div className="bg-white rounded-lg border p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Candidate Management</h1>
-              <p className="text-gray-600 mt-1">Manage and review candidate applications efficiently</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {isUserSuperAdmin ? 'All Candidates' : 'Candidate Management'}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {isUserSuperAdmin 
+                  ? 'Manage and review all candidates across all companies' 
+                  : 'Manage and review candidate applications efficiently'
+                }
+              </p>
             </div>            <div className="flex items-center space-x-4">
               <div className="text-right">
                 <div className="text-2xl font-bold text-purple-600">{totalItems}</div>
@@ -500,17 +489,21 @@ const CandidatesPage: React.FC = () => {
                 <Upload className="h-4 w-4 mr-2" />
                 Import
               </button>
-			   <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </button>              <Link to="/dashboard/resume-processing" className="flex items-center px-4 py-2 bg-white border border-purple-600 rounded-lg hover:bg-gray-50 text-purple-700">
+              {isUserSuperAdmin && (
+                <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </button>
+              )}
+              <Link to="/dashboard/resume-processing" className="flex items-center px-4 py-2 bg-white border border-purple-600 rounded-lg hover:bg-gray-50 text-purple-700">
                 <FileText className="h-4 w-4 mr-2" />
                 Process CV
               </Link>
-			<Link to="/dashboard/sourcing/projects" className="flex items-center px-4 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors">
-				<SearchCheckIcon className="h-4 w-4 mr-2" />
-				Sourcing Projects
-			</Link>              <button 
+              <Link to="/dashboard/sourcing/projects" className="flex items-center px-4 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors">
+                <SearchCheckIcon className="h-4 w-4 mr-2" />
+                Sourcing Projects
+              </Link>              
+              <button 
                 className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm"
                 onClick={() => setIsAddModalOpen(true)}
               >
@@ -566,15 +559,17 @@ const CandidatesPage: React.FC = () => {
                     <th className="w-44 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Location & Salary
                     </th>
+                    {isUserSuperAdmin && (
+                      <th className="w-40 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Company
+                      </th>
+                    )}
                     <th className="w-36 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Status & Rating
+                      Status
                     </th>
                     <th className="w-48 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Skills
                     </th>
-                    {/* <th className="w-32 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Applied Date
-                    </th> */}
                     <th className="w-28 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Actions
                     </th>
@@ -649,7 +644,7 @@ const CandidatesPage: React.FC = () => {
                           </div>
                         </div>
                       </td>                      
-					  <td className="px-6 py-4">
+                      <td className="px-6 py-4">
                         <div>
                           <div className="text-sm text-gray-900 flex items-center truncate">
                             <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
@@ -660,15 +655,19 @@ const CandidatesPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="space-y-2">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(candidate.status)}`}>
-                            {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
-                          </span>                          <div className="flex items-center space-x-1">
-                            {renderStarRating(typeof candidate.rating === 'string' ? parseFloat(candidate.rating) : candidate.rating)}
-                            <span className="text-xs text-gray-500">({candidate.rating})</span>
+                      
+                      {isUserSuperAdmin && (
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 truncate" title={candidate.company?.name || 'No company'}>
+                            {candidate.company?.name || 'No company'}
                           </div>
-                        </div>
+                        </td>
+                      )}
+                      
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(candidate.status)}`}>
+                          {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
+                        </span>
                       </td>                      
 					  <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
@@ -790,7 +789,7 @@ const CandidatesPage: React.FC = () => {
                     </tr>                  
 					)) : (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={isUserSuperAdmin ? 7 : 6} className="px-6 py-4 text-center text-gray-500">
                         No candidates found.
                       </td>
                     </tr>
