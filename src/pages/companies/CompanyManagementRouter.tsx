@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthContext } from '../contexts/AuthContext';
-import { useMyCompanies, useMemberCompanies } from '../hooks/useCompany';
-import CompanyManagementPage from '../pages/admin/CompanyManagementPage';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { useMyCompanies, useMemberCompanies } from '../../hooks/useCompany';
+import CompanyManagementPage from './CompanyManagementPage';
 
 const CompanyManagementRouter: React.FC = () => {
   const { user } = useAuthContext();

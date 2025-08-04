@@ -80,8 +80,7 @@ import JobBoardConfigPage from './admin/JobBoardConfigPage'; // Import JobBoardC
 import AnalyticsPage from './admin/AnalyticsPage'; // Import AnalyticsPage
 import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSettingsPage
 import SupportDashboardPage from './admin/SupportDashboardPage'; // Import SupportDashboardPage
-import { CompanyDetailPage } from '../pages/dashboard/CompanyDetailPage'; // Import CompanyDetailPage
-import CompanyManagementRouter from '../components/CompanyManagementRouter'; // Import CompanyManagementRouter
+import { CompanyDetailPage, CompanyManagementRouter } from './companies'; // Import Company pages
 
 // Job Board Pages
 import OrganizationJobBoardsPage from '../recruitment/organizations/pages/OrganizationJobBoardsPage';

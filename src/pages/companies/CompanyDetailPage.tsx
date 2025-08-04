@@ -87,7 +87,7 @@ export const CompanyDetailPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Company Not Found</h2>
           <p className="text-gray-600 mb-4">The requested company could not be found.</p>
           <button
-            onClick={() => navigate('/dashboard/companies')}
+            onClick={() => navigate('/dashboard/admin/companies')}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             Back to Companies
