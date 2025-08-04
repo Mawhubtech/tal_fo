@@ -60,22 +60,16 @@ const Navbar: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              {/* Image logo */}
-              <img 
-                src="/TALL.png" 
-                alt="TAL" 
-                className="h-8 md:h-10 w-auto"
-              />
+              {/* Text logo using ROMA font */}
+              <span 
+                className="text-3xl md:text-4xl font-bold text-black"
+                style={{ fontFamily: 'ROMA, serif' }}
+              >
+                TAL
+              </span>
             </Link>
           </div>          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <div className="relative group">
-              <button className={`flex items-center space-x-1 transition-colors text-base font-medium ${linkTextColor}`}>
-                <span>Product</span>
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              {/* Dropdown would go here */}
-            </div>
             <a href="/pricing" className={`transition-colors text-base font-medium ${linkTextColor}`}>
               Pricing
             </a>
@@ -96,12 +90,6 @@ const Navbar: React.FC = () => {
             >
               Sign in
             </button>
-            <Link 
-              to="/try-free" 
-              className={outlineButtonClasses}
-            >
-              Try for free
-            </Link>
           </nav>
 
           {/* Mobile menu button */}
@@ -118,9 +106,6 @@ const Navbar: React.FC = () => {
       {mobileMenuOpen && (
         <div className={`md:hidden py-2 ${isScrolled ? 'bg-white/95' : 'bg-white'} absolute left-0 right-0 top-full shadow-lg`}> {/* Added absolute positioning and shadow */}
           <div className="px-4 pt-2 pb-3 space-y-2">
-            <a href="#" className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 rounded-md">
-              Product
-            </a>
             <a href="/pricing" className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 rounded-md">
               Pricing
             </a>
@@ -141,11 +126,7 @@ const Navbar: React.FC = () => {
             >
               Sign in
             </button>
-            <Link 
-              to="/try-free" 
-              className={`block w-full text-center rounded-full px-5 py-2.5 text-base font-medium transition-colors ${outlineButtonClasses}`}            >
-              Try for free
-            </Link>          </div>
+          </div>
         </div>      )}
     </header>
     

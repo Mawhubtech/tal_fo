@@ -51,19 +51,6 @@ const Hero: React.FC = () => {
       {/* Main Content - moved up */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12 lg:pt-16 flex-1 flex flex-col justify-center">
         <div className="text-center space-y-8 md:space-y-12 mb-16">
-          {/* New feature tag */}
-          <div 
-            className={`inline-flex transition-all duration-700 transform ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-          >
-            <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full shadow-sm px-4 py-1.5 flex items-center">
-              <span className="bg-primary-100 text-primary-700 text-xs font-medium px-2.5 py-0.5 rounded-full">New</span>
-              <span className="ml-2 text-sm text-gray-600">Try Tal Agents, your 24/7 AI assistants</span>
-              <span className="ml-1 text-gray-400">→</span>
-            </div>
-          </div>
-          
           {/* Headline */}
           <h1 
             className={`text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight transition-all duration-700 delay-150 transform ${
