@@ -326,6 +326,13 @@ const ClientDetailPage: React.FC = () => {
             {getStatusIcon(client.status)}
             <span className="ml-1 capitalize">{client.status}</span>
           </span>
+          <button 
+            onClick={() => navigate(`/dashboard/organizations/${client.id}`)}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Briefcase className="w-4 h-4 mr-2" />
+            View Jobs
+          </button>
           {!isInternalUserRole && (
             <>
               <button 
@@ -355,13 +362,13 @@ const ClientDetailPage: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg mr-3">
-              <Globe className="w-5 h-5 text-blue-600" />
+            <div className="p-2 bg-purple-100 rounded-lg mr-3">
+              <Globe className="w-5 h-5 text-purple-600" />
             </div>
             <div>
               <p className="text-sm text-gray-500">Website</p>
               <a href={client.website} target="_blank" rel="noopener noreferrer" 
-                 className="text-blue-600 hover:text-blue-800 flex items-center">
+                 className="text-purple-600 hover:text-purple-800 flex items-center">
                 {client.website.replace('https://', '')}
                 <ExternalLink className="w-3 h-3 ml-1" />
               </a>
@@ -413,8 +420,8 @@ const ClientDetailPage: React.FC = () => {
               <p className="text-2xl font-bold text-gray-900">{client.size}</p>
               <p className="text-sm text-gray-500">{client.employees.toLocaleString()} employees</p>
             </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="w-5 h-5 text-blue-600" />
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Users className="w-5 h-5 text-purple-600" />
             </div>
           </div>
         </div>
@@ -597,7 +604,11 @@ const ClientDetailPage: React.FC = () => {
               ) : departments.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {departments.map((dept) => (
-                    <div key={dept.id} className="bg-white border rounded-lg p-4 hover:shadow-md transition-all duration-200 group relative">
+                    <div 
+                      key={dept.id} 
+                      className="bg-white border rounded-lg p-4 hover:shadow-md transition-all duration-200 group relative cursor-pointer"
+                      onClick={() => navigate(`/dashboard/organizations/${client.id}/departments/${dept.id}/jobs`)}
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center">
                           <div 
@@ -615,14 +626,18 @@ const ClientDetailPage: React.FC = () => {
                         {/* Action buttons - Now always visible on mobile, hover on desktop */}
                         <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                           <button
-                            onClick={() => handleEditDepartment(dept)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-150"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditDepartment(dept);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors duration-150"
                             title="Edit department"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setDepartmentToDelete(dept);
                               setShowDeleteDepartmentDialog(true);
                             }}
