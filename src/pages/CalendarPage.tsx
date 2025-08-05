@@ -27,6 +27,7 @@ import EventInvitationsManager from '../components/calendar/EventInvitationsMana
 import { useEventInvitations } from '../hooks/useCalendarInvitations';
 import { useAuthContext } from '../contexts/AuthContext';
 import { GoogleCalendarSync } from '../components/GoogleCalendarSync';
+import { InterviewCalendarEvent } from '../components/InterviewCalendarEvent';
 import { toast } from '../components/ToastContainer';
 
 /**
@@ -653,17 +654,29 @@ const CalendarPage: React.FC = () => {
                   {/* Events for this day */}
                   <div className="space-y-1">
                     {dayEvents.slice(0, 3).map((event) => (
-                      <div
-                        key={event.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedEvent(event);
-                          setShowEventModal(true);
-                        }}
-                        className={`text-xs p-1 rounded text-white truncate cursor-pointer hover:opacity-80 ${getEventTypeColor(event.type)}`}
-                      >
-                        <span className="mr-1">{getPriorityIndicator(event.priority)}</span>
-                        {event.title}
+                      <div key={event.id}>
+                        {event.type === 'interview' ? (
+                          <InterviewCalendarEvent
+                            event={event}
+                            isCompact={true}
+                            onClick={() => {
+                              setSelectedEvent(event);
+                              setShowEventModal(true);
+                            }}
+                          />
+                        ) : (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedEvent(event);
+                              setShowEventModal(true);
+                            }}
+                            className={`text-xs p-1 rounded text-white truncate cursor-pointer hover:opacity-80 ${getEventTypeColor(event.type)}`}
+                          >
+                            <span className="mr-1">{getPriorityIndicator(event.priority)}</span>
+                            {event.title}
+                          </div>
+                        )}
                       </div>
                     ))}
                     {dayEvents.length > 3 && (
@@ -932,67 +945,80 @@ const CalendarPage: React.FC = () => {
                   </div>
                 ) : (
                   getEventsForDate(selectedDate).map((event) => (
-                    <div
-                      key={event.id}
-                      onClick={() => {
-                        setSelectedEvent(event);
-                        setShowDateEventsModal(false);
-                        setShowEventModal(true);
-                      }}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-medium text-gray-900">{event.title}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getEventTypeColor(event.type)}`}>
-                              {event.type}
-                            </span>
-                            <span className="text-sm">
-                              {getPriorityIndicator(event.priority)}
-                            </span>
-                          </div>
-                          
-                          {event.description && (
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                              {event.description}
-                            </p>
-                          )}
-                          
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {formatEventTime(event)}
+                    <div key={event.id}>
+                      {event.type === 'interview' ? (
+                        <InterviewCalendarEvent
+                          event={event}
+                          isCompact={false}
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setShowDateEventsModal(false);
+                            setShowEventModal(true);
+                          }}
+                        />
+                      ) : (
+                        <div
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setShowDateEventsModal(false);
+                            setShowEventModal(true);
+                          }}
+                          className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-medium text-gray-900">{event.title}</h4>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getEventTypeColor(event.type)}`}>
+                                  {event.type}
+                                </span>
+                                <span className="text-sm">
+                                  {getPriorityIndicator(event.priority)}
+                                </span>
+                              </div>
+                              
+                              {event.description && (
+                                <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                  {event.description}
+                                </p>
+                              )}
+                              
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatEventTime(event)}
+                                </div>
+                                
+                                {event.location && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {event.location}
+                                  </div>
+                                )}
+                                
+                                {event.meetingLink && (
+                                  <div className="flex items-center gap-1">
+                                    <Video className="w-3 h-3" />
+                                    Online Meeting
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             
-                            {event.location && (
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {event.location}
-                              </div>
-                            )}
-                            
-                            {event.meetingLink && (
-                              <div className="flex items-center gap-1">
-                                <Video className="w-3 h-3" />
-                                Online Meeting
-                              </div>
-                            )}
+                            <div className="ml-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                event.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                event.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                event.status === 'no_show' ? 'bg-orange-100 text-orange-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {event.status.replace('_', ' ')}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        
-                        <div className="ml-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            event.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                            event.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                            event.status === 'no_show' ? 'bg-orange-100 text-orange-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {event.status.replace('_', ' ')}
-                          </span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   ))
                 )}

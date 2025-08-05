@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Filter, Users, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { Plus, Filter, Users, Calendar, Clock, CheckCircle, RefreshCw } from 'lucide-react';
 import { useInterviews, useInterviewStats, useInterviewFilters, useUpdateInterview, useAddInterviewFeedback } from '../../../../../hooks/useInterviews';
+import { useInterviewCalendarSync } from '../../../../../hooks/useInterviewCalendarSync';
 import { useStageMovement } from '../../../../../hooks/useStageMovement';
 import { useJobApplicationsByJob } from '../../../../../hooks/useJobApplications';
 import { usePipeline } from '../../../../../hooks/usePipelines';
@@ -43,6 +44,9 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Calendar sync integration
+  const calendarSync = useInterviewCalendarSync();
 
   // Debug logging
   // Component props for tracking interviews
@@ -245,6 +249,31 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
     }
   };
 
+  const handleSyncToCalendar = async () => {
+    try {
+      if (interviews.length === 0) {
+        toast.info('No Interviews', 'No interviews to sync to calendar.');
+        return;
+      }
+
+      const result = await calendarSync.syncAllInterviews.mutateAsync(interviews);
+      
+      if (result.success > 0) {
+        toast.success(
+          'Calendar Sync Complete',
+          `Successfully synced ${result.success} interview${result.success !== 1 ? 's' : ''} to calendar.${
+            result.failed > 0 ? ` ${result.failed} failed to sync.` : ''
+          }`
+        );
+      } else {
+        toast.error('Sync Failed', 'Failed to sync interviews to calendar.');
+      }
+    } catch (error) {
+      console.error('Failed to sync interviews to calendar:', error);
+      toast.error('Sync Failed', 'Failed to sync interviews to calendar. Please try again.');
+    }
+  };
+
   const handleAddFeedback = async (interview: Interview, feedback: any) => {
     try {
       await addFeedbackMutation.mutateAsync({
@@ -295,6 +324,14 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
           >
             <Filter className="w-4 h-4 mr-2" />
             Filter
+          </button>
+          <button 
+            className="px-4 py-2 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSyncToCalendar}
+            disabled={calendarSync.isSyncingAll || interviews.length === 0}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${calendarSync.isSyncingAll ? 'animate-spin' : ''}`} />
+            {calendarSync.isSyncingAll ? 'Syncing...' : 'Sync to Calendar'}
           </button>
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
             <button

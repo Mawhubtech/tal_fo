@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import InterviewService from '../services/interviewService';
+import InterviewCalendarIntegration from '../services/interviewCalendarIntegration';
 import type {
   Interview,
   InterviewsResponse,
@@ -94,7 +95,7 @@ export const useCreateInterview = () => {
 
   return useMutation({
     mutationFn: (data: CreateInterviewRequest) => InterviewService.createInterview(data),
-    onSuccess: (newInterview) => {
+    onSuccess: async (newInterview) => {
       // Invalidate and refetch interview lists
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
@@ -105,6 +106,16 @@ export const useCreateInterview = () => {
         INTERVIEW_QUERY_KEYS.detail(newInterview.id),
         newInterview
       );
+      
+      // Create corresponding calendar event
+      try {
+        await InterviewCalendarIntegration.createCalendarEventForInterview(newInterview);
+        // Invalidate calendar queries to show the new event
+        queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
+      } catch (error) {
+        console.warn('Failed to create calendar event for interview:', error);
+        // Don't throw - interview creation should succeed even if calendar fails
+      }
     },
   });
 };
@@ -118,7 +129,7 @@ export const useUpdateInterview = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateInterviewRequest }) =>
       InterviewService.updateInterview(id, data),
-    onSuccess: (updatedInterview) => {
+    onSuccess: async (updatedInterview) => {
       // Update the specific interview cache
       queryClient.setQueryData(
         INTERVIEW_QUERY_KEYS.detail(updatedInterview.id),
@@ -128,6 +139,16 @@ export const useUpdateInterview = () => {
       // Invalidate lists to reflect changes
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
+      
+      // Update corresponding calendar event
+      try {
+        await InterviewCalendarIntegration.updateCalendarEventForInterview(updatedInterview);
+        // Invalidate calendar queries to show the updated event
+        queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
+      } catch (error) {
+        console.warn('Failed to update calendar event for interview:', error);
+        // Don't throw - interview update should succeed even if calendar fails
+      }
     },
   });
 };
@@ -141,13 +162,21 @@ export const useRescheduleInterview = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: RescheduleInterviewRequest }) =>
       InterviewService.rescheduleInterview(id, data),
-    onSuccess: (updatedInterview) => {
+    onSuccess: async (updatedInterview) => {
       queryClient.setQueryData(
         INTERVIEW_QUERY_KEYS.detail(updatedInterview.id),
         updatedInterview
       );
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.upcoming() });
+      
+      // Update corresponding calendar event with new schedule
+      try {
+        await InterviewCalendarIntegration.updateCalendarEventForInterview(updatedInterview);
+        queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
+      } catch (error) {
+        console.warn('Failed to update calendar event for rescheduled interview:', error);
+      }
     },
   });
 };
@@ -161,13 +190,21 @@ export const useCancelInterview = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CancelInterviewRequest }) =>
       InterviewService.cancelInterview(id, data),
-    onSuccess: (updatedInterview) => {
+    onSuccess: async (updatedInterview) => {
       queryClient.setQueryData(
         INTERVIEW_QUERY_KEYS.detail(updatedInterview.id),
         updatedInterview
       );
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
+      
+      // Update calendar event status to cancelled
+      try {
+        await InterviewCalendarIntegration.updateCalendarEventForInterview(updatedInterview);
+        queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
+      } catch (error) {
+        console.warn('Failed to update calendar event for cancelled interview:', error);
+      }
     },
   });
 };
