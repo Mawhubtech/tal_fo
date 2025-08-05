@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, CheckSquare, Clock, AlertCircle, User, Filter, Edit, Trash2, MoreVertical, Check, X, CalendarDays } from 'lucide-react';
+import { Plus, Calendar, CheckSquare, Clock, AlertCircle, User, Filter, Edit, Trash2, MoreVertical, Check, X, CalendarDays, Pause } from 'lucide-react';
 import { useTasksByJobId, useDeleteTask, useUpdateTask } from '../../../../../hooks/useTasks';
 import { useStageMovement } from '../../../../../hooks/useStageMovement';
 import { useJobApplicationsByJob } from '../../../../../hooks/useJobApplications';
@@ -10,6 +10,7 @@ import { Task } from '../../../services/taskApiService';
 import { TasksCalendarView } from './TasksCalendarView';
 import { TasksByDateModal } from './TasksByDateModal';
 import { toast } from '../../../../../components/ToastContainer';
+import ConfirmationModal from '../../../../../components/ConfirmationModal';
 
 interface TasksTabProps {
   jobId: string;
@@ -34,7 +35,7 @@ export const TasksTab: React.FC<TasksTabProps> = ({
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'inprogress' | 'completed' | 'cancelled'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'inprogress' | 'completed' | 'cancelled' | 'onhold'>('all');
   const [filterDate, setFilterDate] = useState<'all' | 'today' | 'thisweek' | 'thismonth' | 'thisyear' | 'custom'>('all');
   const [customDateFrom, setCustomDateFrom] = useState<string>('');
   const [customDateTo, setCustomDateTo] = useState<string>('');
@@ -42,6 +43,8 @@ export const TasksTab: React.FC<TasksTabProps> = ({
   const [showDateModal, setShowDateModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDateTasks, setSelectedDateTasks] = useState<Task[]>([]);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   
   const { data: tasks, isLoading, error, refetch } = useTasksByJobId(jobId);
   const deleteTaskMutation = useDeleteTask();
@@ -104,9 +107,22 @@ export const TasksTab: React.FC<TasksTabProps> = ({
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      try {
-        await deleteTaskMutation.mutateAsync(taskId);
+    const task = actualTasks?.find(t => t.id === taskId);
+    if (task) {
+      setTaskToDelete(task);
+      setShowDeleteConfirmation(true);
+    }
+  };
+
+  const confirmDeleteTask = () => {
+    if (!taskToDelete) return;
+    
+    // Close modal immediately to prevent double-clicking
+    setShowDeleteConfirmation(false);
+    
+    // Perform the async deletion
+    deleteTaskMutation.mutateAsync(taskToDelete.id)
+      .then(async () => {
         await refetch();
         
         // Call onDataChange if provided to invalidate all queries
@@ -118,10 +134,24 @@ export const TasksTab: React.FC<TasksTabProps> = ({
         if (showDateModal) {
           setShowDateModal(false);
         }
-      } catch (error) {
+        
+        // Show success toast
+        toast.success('Task Deleted', `Task "${taskToDelete.title}" has been deleted successfully.`);
+      })
+      .catch((error) => {
         console.error('Error deleting task:', error);
-      }
-    }
+        
+        // Show error toast
+        toast.error('Delete Failed', 'Failed to delete the task. Please try again.');
+      })
+      .finally(() => {
+        setTaskToDelete(null);
+      });
+  };
+
+  const cancelDeleteTask = () => {
+    setShowDeleteConfirmation(false);
+    setTaskToDelete(null);
   };
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
@@ -263,6 +293,7 @@ export const TasksTab: React.FC<TasksTabProps> = ({
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
+      case 'Urgent': return 'text-purple-600 bg-purple-50 border-purple-200';
       case 'High': return 'text-red-600 bg-red-50 border-red-200';
       case 'Medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
       case 'Low': return 'text-green-600 bg-green-50 border-green-200';
@@ -276,6 +307,7 @@ export const TasksTab: React.FC<TasksTabProps> = ({
       case 'In Progress': return <Clock className="w-4 h-4 text-blue-500" />;
       case 'Pending': return <AlertCircle className="w-4 h-4 text-yellow-500" />;
       case 'Cancelled': return <X className="w-4 h-4 text-red-500" />;
+      case 'On Hold': return <Pause className="w-4 h-4 text-orange-500" />;
       default: return <Clock className="w-4 h-4 text-gray-500" />;
     }
   };
@@ -287,6 +319,7 @@ export const TasksTab: React.FC<TasksTabProps> = ({
       if (filterStatus === 'inprogress' && task.status !== 'In Progress') return false;
       if (filterStatus === 'completed' && task.status !== 'Completed') return false;
       if (filterStatus === 'cancelled' && task.status !== 'Cancelled') return false;
+      if (filterStatus === 'onhold' && task.status !== 'On Hold') return false;
     }
 
     // Date filter
@@ -437,7 +470,8 @@ export const TasksTab: React.FC<TasksTabProps> = ({
               { key: 'pending', label: 'Pending' },
               { key: 'inprogress', label: 'In Progress' },
               { key: 'completed', label: 'Completed' },
-              { key: 'cancelled', label: 'Cancelled' }
+              { key: 'cancelled', label: 'Cancelled' },
+              { key: 'onhold', label: 'On Hold' }
             ].map(filter => (
               <button
                 key={filter.key}
@@ -604,7 +638,15 @@ export const TasksTab: React.FC<TasksTabProps> = ({
                           </div>
                         )}
                         
-                        {task.assignedUser && (
+                        {/* Assignee(s) Display */}
+                        {task.hasMultipleAssignees && task.assignments && task.assignments.length > 0 ? (
+                          <div className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            Assigned to: {task.assignments.map(assignment => 
+                              `${assignment.user.firstName} ${assignment.user.lastName}`
+                            ).join(', ')}
+                          </div>
+                        ) : task.assignedUser && (
                           <div className="flex items-center gap-1">
                             <User className="w-4 h-4" />
                             Assigned to: {task.assignedUser.firstName} {task.assignedUser.lastName}
@@ -628,6 +670,7 @@ export const TasksTab: React.FC<TasksTabProps> = ({
                         task.status === 'Completed' ? 'bg-green-100 text-green-700' :
                         task.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
                         task.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                        task.status === 'On Hold' ? 'bg-orange-100 text-orange-700' :
                         'bg-yellow-100 text-yellow-700'
                       }`}>
                         {task.status}
@@ -731,6 +774,18 @@ export const TasksTab: React.FC<TasksTabProps> = ({
         onEditTask={handleEditTask}
         onDeleteTask={handleDeleteTask}
         onStatusChange={handleStatusChange}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onClose={cancelDeleteTask}
+        onConfirm={confirmDeleteTask}
+        title="Delete Task"
+        message={`Are you sure you want to delete the task "${taskToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Delete Task"
+        cancelText="Cancel"
+        type="danger"
       />
     </div>
   );
