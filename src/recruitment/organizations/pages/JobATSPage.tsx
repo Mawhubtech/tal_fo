@@ -868,98 +868,96 @@ const JobATSPage: React.FC = () => {
 		</div>
 	  )}
 
-	  {/* Header */}
-	  <div className="flex items-center justify-between mb-6">
-		<div className="flex items-center">
-		  {/* Back button - Only show for internal users */}
-		  {!isExternal && (
-			<Link 
-			  to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
-			  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-			>
-			  <ArrowLeft className="w-5 h-5" />
-			</Link>
-		  )}
-		  {/* For external users, show a back button to their jobs page */}
-		  {isExternal && (
-			<Link 
-			  to="/external/jobs"
-			  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-			>
-			  <ArrowLeft className="w-5 h-5" />
-			</Link>
-		  )}
-		  <div>
-			<h1 className="text-2xl font-bold text-gray-900">
-			  {isExternal ? 'Job Applications' : 'ATS Pipeline'}
-			</h1>
-			<p className="text-gray-600 mt-1">
-			  {isExternal ? 'View and manage candidates for this job' : 'Managing candidates for this specific job'}
-			</p>
-		  </div>
-		</div>
-		{/* Action buttons */}
-		<div className="flex items-center space-x-3">
-		  {/* View Job button */}
-		  <button 
-			onClick={() => setShowJobPreviewModal(true)}
-			className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 px-4 py-2 rounded-md flex items-center transition-colors"
-			title="View job details"
-		  >
-			<Eye className="w-4 h-4 mr-2" />
-			View Job
-		  </button>
-		  
-		  {/* Email Sequences button */}
-		  <Link
-			to={isExternal 
-			  ? `/external/jobs/${jobId}/email-sequences`
-			  : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences`
-			}
-			className="bg-white text-orange-600 border border-orange-600 hover:bg-orange-50 px-4 py-2 rounded-md flex items-center transition-colors"
-			title="Manage email sequences for this job"
-		  >
-			<Mail className="w-4 h-4 mr-2" />
-			Email Sequences
-		  </Link>
-		  
-		  {/* Refresh button */}
-		  <button 
-			onClick={handleRefreshData}
-			disabled={isRefreshing}
-			className={`bg-white text-purple-600 border border-purple-600 hover:text-purple-800 px-3 py-2 rounded-md flex items-center transition-colors ${
-			  isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-			}`}
-			title="Refresh all data"
-		  >
-			<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-		  </button>
-		  
-		  {/* Team Notes button */}
-		  <button 
-			onClick={() => handleCollaborativePanelStateChange('expanded')}
-			className="bg-white text-green-600 border border-green-600 hover:bg-green-50 px-4 py-2 rounded-md flex items-center transition-colors"
-			title="Team collaboration and notes"
-		  >
-			<MessageSquare className="w-4 h-4 mr-2" />
-			Team Notes
-		  </button>
-		  
-		  {/* Add Candidate button - Available for all users */}
-		  {effectivePipeline && (
-			<button 
-			  onClick={() => setShowAddCandidateModal(true)}
-			  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors"
-			>
-			  <Plus className="w-4 h-4 mr-2" />
-			  Add Candidate
-			</button>
-		  )}
-		</div>
-		
+  {/* Header */}
+  <div className="mb-6">
+	<div className="flex items-center mb-4">
+	  {/* Back button - Only show for internal users */}
+	  {!isExternal && (
+		<Link 
+		  to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
+		  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+		>
+		  <ArrowLeft className="w-5 h-5" />
+		</Link>
+	  )}
+	  {/* For external users, show a back button to their jobs page */}
+	  {isExternal && (
+		<Link 
+		  to="/external/jobs"
+		  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+		>
+		  <ArrowLeft className="w-5 h-5" />
+		</Link>
+	  )}
+	  <div>
+		<h1 className="text-2xl font-bold text-gray-900">
+		  {isExternal ? 'Job Applications' : 'ATS Pipeline'}
+		</h1>
+		<p className="text-gray-600 mt-1">
+		  {isExternal ? 'View and manage candidates for this job' : 'Managing candidates for this specific job'}
+		</p>
 	  </div>
-
-	  {/* Job Info Card */}
+	</div>
+	
+	{/* Action buttons - moved below title */}
+	<div className="flex items-center space-x-3">
+	  {/* View Job button */}
+	  <button 
+		onClick={() => setShowJobPreviewModal(true)}
+		className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 px-4 py-2 rounded-md flex items-center transition-colors"
+		title="View job details"
+	  >
+		<Eye className="w-4 h-4 mr-2" />
+		View Job
+	  </button>
+	  
+	  {/* Email Sequences button */}
+	  <Link
+		to={isExternal 
+		  ? `/external/jobs/${jobId}/email-sequences`
+		  : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences`
+		}
+		className="bg-white text-orange-600 border border-orange-600 hover:bg-orange-50 px-4 py-2 rounded-md flex items-center transition-colors"
+		title="Manage email sequences for this job"
+	  >
+		<Mail className="w-4 h-4 mr-2" />
+		Email Sequences
+	  </Link>
+	  
+	  {/* Refresh button */}
+	  <button 
+		onClick={handleRefreshData}
+		disabled={isRefreshing}
+		className={`bg-white text-purple-600 border border-purple-600 hover:text-purple-800 px-3 py-2 rounded-md flex items-center transition-colors ${
+		  isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+		}`}
+		title="Refresh all data"
+	  >
+		<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+	  </button>
+	  
+	  {/* Team Notes button */}
+	  <button 
+		onClick={() => handleCollaborativePanelStateChange('expanded')}
+		className="bg-white text-green-600 border border-green-600 hover:bg-green-50 px-4 py-2 rounded-md flex items-center transition-colors"
+		title="Team collaboration and notes"
+	  >
+		<MessageSquare className="w-4 h-4 mr-2" />
+		Team Notes
+	  </button>
+	  
+	  {/* Add Candidate button - Available for all users */}
+	  {effectivePipeline && (
+		<button 
+		  onClick={() => setShowAddCandidateModal(true)}
+		  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors"
+		>
+		  <Plus className="w-4 h-4 mr-2" />
+		  Add Candidate
+		</button>
+	  )}
+	</div>
+  </div>	  {/* Job Info Card */}
 	  <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
 		<div className="flex items-center justify-between">
 		  <div className="flex items-center">
