@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { X, Eye, EyeOff, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { type User, type CreateUserData, type UpdateUserData, type Role } from '../services/adminUserApiService';
 import { filterRolesByCompanyType, getRoleDescriptionsForCompanyType } from '../utils/companyRoleMapping';
 
@@ -36,6 +36,7 @@ export const UserModal: React.FC<UserModalProps> = ({
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
 
   // Filter roles based on context (exclude admin roles for team management or filter by company type)
   const availableRoles = (() => {
@@ -152,6 +153,18 @@ export const UserModal: React.FC<UserModalProps> = ({
         ? [...prev.roleIds, roleId]
         : prev.roleIds.filter(id => id !== roleId)
     }));
+  };
+
+  const toggleRoleExpansion = (roleId: string) => {
+    setExpandedRoles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(roleId)) {
+        newSet.delete(roleId);
+      } else {
+        newSet.add(roleId);
+      }
+      return newSet;
+    });
   };
 
   if (!isOpen) return null;
@@ -316,18 +329,34 @@ export const UserModal: React.FC<UserModalProps> = ({
             <div className="space-y-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
               {availableRoles.map((role) => (
                 <div key={role.id} className="border-b border-gray-100 pb-3 last:border-b-0">
-                  <div className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      id={`role-${role.id}`}
-                      checked={formData.roleIds.includes(role.id)}
-                      onChange={(e) => handleRoleChange(role.id, e.target.checked)}
-                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                      disabled={isLoading}
-                    />
-                    <label htmlFor={`role-${role.id}`} className="ml-2 text-sm font-medium text-gray-900">
-                      {role.name}
-                    </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`role-${role.id}`}
+                        checked={formData.roleIds.includes(role.id)}
+                        onChange={(e) => handleRoleChange(role.id, e.target.checked)}
+                        className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                        disabled={isLoading}
+                      />
+                      <label htmlFor={`role-${role.id}`} className="ml-2 text-sm font-medium text-gray-900">
+                        {role.name}
+                      </label>
+                    </div>
+                    {role.permissions && role.permissions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleRoleExpansion(role.id)}
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Toggle permissions"
+                      >
+                        {expandedRoles.has(role.id) ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
                   </div>
                   {/* Show company-specific description if available, otherwise use role description */}
                   {(roleDescriptions[role.name] || role.description) && (
@@ -335,7 +364,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                       {roleDescriptions[role.name] || role.description}
                     </p>
                   )}
-                  {role.permissions && role.permissions.length > 0 && (
+                  {role.permissions && role.permissions.length > 0 && expandedRoles.has(role.id) && (
                     <div className="ml-6">
                       <p className="text-xs font-medium text-gray-700 mb-1">Permissions:</p>
                       <div className="flex flex-wrap gap-1">

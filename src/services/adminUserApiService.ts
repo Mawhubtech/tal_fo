@@ -195,7 +195,7 @@ export class AdminUserApiService {
 
   // Get all roles
   static async getRoles(): Promise<{ roles: Role[]; message: string }> {
-    const response = await apiClient.get('/roles');
+    const response = await apiClient.get('/roles?limit=100'); // Get all roles without pagination limit
     return response.data;
   }
 
