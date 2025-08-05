@@ -705,6 +705,12 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
             addText(certDetails.join(' | '), 10);
           }
           
+          // Add certification description if it exists
+          if (cert.description) {
+            yPosition += 2;
+            addText(cert.description, 10);
+          }
+          
           if (cert.credentialUrl) {
             addText(`Verification: ${cert.credentialUrl}`, 10);
           }

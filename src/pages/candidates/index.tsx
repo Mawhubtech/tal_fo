@@ -64,6 +64,7 @@ const CandidatesPage: React.FC = () => {
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [includeJobseekers, setIncludeJobseekers] = useState(false);
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
@@ -89,9 +90,10 @@ const CandidatesPage: React.FC = () => {
     search: searchTerm || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     experienceLevel: experienceFilter !== 'all' ? experienceFilter : undefined,
+    includeJobseekers: isUserSuperAdmin ? includeJobseekers : false, // Only super admins can control this
   });
 
-  const statsQuery = useCandidateStats();
+  const statsQuery = useCandidateStats(isUserSuperAdmin ? includeJobseekers : false);
   
   // Hook for fetching individual candidate details
   const selectedCandidateQuery = useCandidate(selectedCandidateId || '');
@@ -367,7 +369,7 @@ const CandidatesPage: React.FC = () => {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, experienceFilter]);  // Get stats from React Query or provide fallback values
+  }, [searchTerm, statusFilter, experienceFilter, includeJobseekers]);  // Get stats from React Query or provide fallback values
   const stats = statsQuery.data || {
     total: totalItems || 0, // Use total from pagination, not just current page
     active: 0, // Use 0 as fallback when real stats are loading
@@ -425,11 +427,17 @@ const CandidatesPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {isUserSuperAdmin ? 'All Candidates' : 'Candidate Management'}
+                {isUserSuperAdmin 
+                  ? (includeJobseekers ? 'All Candidates + Job Seekers' : 'Company Candidates') 
+                  : 'Candidate Management'
+                }
               </h1>
               <p className="text-gray-600 mt-1">
                 {isUserSuperAdmin 
-                  ? 'Manage and review all candidates across all companies' 
+                  ? (includeJobseekers 
+                      ? 'Manage candidates from companies and independent job seekers' 
+                      : 'Manage candidates from all companies'
+                    )
                   : 'Manage and review candidate applications efficiently'
                 }
               </p>
@@ -481,7 +489,22 @@ const CandidatesPage: React.FC = () => {
                   <option value="mid">Mid (3-5 years)</option>
                   <option value="senior">Senior (5+ years)</option>
                 </select>
-              </div>            </div>            <div className="flex gap-3">
+              </div>
+              {isUserSuperAdmin && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="includeJobseekers"
+                    checked={includeJobseekers}
+                    onChange={(e) => setIncludeJobseekers(e.target.checked)}
+                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="includeJobseekers" className="text-sm text-gray-700 whitespace-nowrap">
+                    Include Job Seekers
+                  </label>
+                </div>
+              )}
+            </div>            <div className="flex gap-3">
               <button 
                 className="flex items-center px-4 py-2 bg-white border border-purple-600 rounded-lg hover:bg-purple-100 text-purple-700"
                 onClick={() => setIsBulkImportModalOpen(true)}
@@ -658,8 +681,12 @@ const CandidatesPage: React.FC = () => {
                       
                       {isUserSuperAdmin && (
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 truncate" title={candidate.company?.name || 'No company'}>
-                            {candidate.company?.name || 'No company'}
+                          <div className="text-sm text-gray-900 truncate" title={candidate.company?.name || 'Job Seeker (No Company)'}>
+                            {candidate.company?.name ? (
+                              <span className="text-gray-900">{candidate.company.name}</span>
+                            ) : (
+                              <span className="text-blue-600 font-medium">Job Seeker</span>
+                            )}
                           </div>
                         </td>
                       )}
