@@ -63,7 +63,12 @@ export const CompanyDetailPage: React.FC = () => {
   // Check if current user is the company owner or super-admin
   const isOwner = company?.ownerId === user?.id;
   const isUserSuperAdmin = isSuperAdmin(user);
-  const canEditCompany = isOwner || isUserSuperAdmin;
+  
+  // Check if user is a member of this company
+  const isCompanyMember = members?.some(member => member.user.id === user?.id && member.status === 'active');
+  
+  // Allow company members all actions except delete
+  const canEditCompany = isOwner || isUserSuperAdmin || isCompanyMember;
   const canDeleteCompany = isOwner || isUserSuperAdmin;
   
   // Client data hooks - implements hierarchy:
