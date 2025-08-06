@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Users, 
   Plus, 
@@ -21,8 +22,10 @@ import {
   useCompanyHiringTeams, 
   useCreateHiringTeam, 
   useUpdateHiringTeam, 
-  useDeleteHiringTeam 
+  useDeleteHiringTeam,
+  hiringTeamKeys
 } from '../../hooks/useHiringTeam';
+import { companyKeys } from '../../hooks/useCompany';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
 import { HiringTeamModal } from './HiringTeamModal';
@@ -42,6 +45,7 @@ export const HiringTeamsSection: React.FC<HiringTeamsSectionProps> = ({
 }) => {
   const { user } = useAuthContext();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [teamToDelete, setTeamToDelete] = useState<HiringTeam | null>(null);
   const [teamToEdit, setTeamToEdit] = useState<HiringTeam | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -68,6 +72,10 @@ export const HiringTeamsSection: React.FC<HiringTeamsSectionProps> = ({
       });
       toast.success('Team Created', 'Hiring team created successfully.');
       setShowCreateModal(false);
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(companyId) });
     } catch (error: any) {
       console.error('Error creating hiring team:', error);
       const errorMessage = formatApiError(error);
@@ -86,6 +94,10 @@ export const HiringTeamsSection: React.FC<HiringTeamsSectionProps> = ({
       });
       toast.success('Team Updated', 'Hiring team updated successfully.');
       setTeamToEdit(null);
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(companyId) });
     } catch (error: any) {
       console.error('Error updating hiring team:', error);
       const errorMessage = formatApiError(error);
@@ -101,6 +113,10 @@ export const HiringTeamsSection: React.FC<HiringTeamsSectionProps> = ({
       await deleteTeamMutation.mutateAsync(teamToDelete.id);
       toast.success('Team Deleted', 'Hiring team deleted successfully.');
       setTeamToDelete(null);
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(companyId) });
     } catch (error: any) {
       console.error('Error deleting hiring team:', error);
       const errorMessage = formatApiError(error);
@@ -117,6 +133,10 @@ export const HiringTeamsSection: React.FC<HiringTeamsSectionProps> = ({
         data: { isDefault: !team.isDefault }
       });
       toast.success('Default Status Updated', `Team ${team.isDefault ? 'removed from' : 'set as'} default successfully.`);
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(companyId) });
     } catch (error: any) {
       console.error('Error toggling default status:', error);
       const errorMessage = formatApiError(error);
@@ -137,6 +157,10 @@ export const HiringTeamsSection: React.FC<HiringTeamsSectionProps> = ({
         data: { status: newStatus }
       });
       toast.success('Team Status Updated', `Team ${newStatus === 'active' ? 'activated' : 'archived'} successfully.`);
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(companyId) });
     } catch (error: any) {
       console.error('Error updating team status:', error);
       const errorMessage = formatApiError(error);
@@ -161,6 +185,10 @@ export const HiringTeamsSection: React.FC<HiringTeamsSectionProps> = ({
         organizationIds: team.organizations?.map(org => org.id) || [],
       });
       toast.success('Team Duplicated', 'Team duplicated successfully.');
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(companyId) });
+      queryClient.invalidateQueries({ queryKey: companyKeys.company(companyId) });
     } catch (error: any) {
       console.error('Error duplicating team:', error);
       const errorMessage = formatApiError(error);

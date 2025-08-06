@@ -87,7 +87,7 @@ export function useCreateHiringTeam() {
   
   return useMutation({
     mutationFn: (data: CreateHiringTeamData) => hiringTeamApiService.createTeam(data),
-    onSuccess: (newTeam) => {
+    onSuccess: (newTeam, variables) => {
       // Invalidate teams list for all organizations this team belongs to
       if (newTeam.organizations && newTeam.organizations.length > 0) {
         const orgIds = newTeam.organizations.map(org => org.id);
@@ -99,6 +99,12 @@ export function useCreateHiringTeam() {
       queryClient.invalidateQueries({ 
         queryKey: hiringTeamKeys.teams() 
       });
+      // Invalidate company-specific hiring teams using companyId from variables
+      if (variables.companyId) {
+        queryClient.invalidateQueries({ 
+          queryKey: [...hiringTeamKeys.all, 'company', variables.companyId] 
+        });
+      }
     },
   });
 }
@@ -110,7 +116,7 @@ export function useUpdateHiringTeam() {
   return useMutation({
     mutationFn: ({ teamId, data }: { teamId: string; data: UpdateHiringTeamData }) => 
       hiringTeamApiService.updateTeam(teamId, data),
-    onSuccess: (updatedTeam) => {
+    onSuccess: (updatedTeam, variables) => {
       // Invalidate specific team and teams list
       queryClient.invalidateQueries({ queryKey: hiringTeamKeys.team(updatedTeam.id) });
       
@@ -126,6 +132,11 @@ export function useUpdateHiringTeam() {
       queryClient.invalidateQueries({ 
         queryKey: hiringTeamKeys.teams() 
       });
+      
+      // Invalidate company-specific hiring teams
+      queryClient.invalidateQueries({ 
+        queryKey: [...hiringTeamKeys.all, 'company'] 
+      });
     },
   });
 }
@@ -139,6 +150,10 @@ export function useDeleteHiringTeam() {
     onSuccess: () => {
       // Invalidate all teams queries
       queryClient.invalidateQueries({ queryKey: hiringTeamKeys.all });
+      // Also invalidate all company hiring teams queries
+      queryClient.invalidateQueries({ 
+        queryKey: [...hiringTeamKeys.all, 'company'] 
+      });
     },
   });
 }

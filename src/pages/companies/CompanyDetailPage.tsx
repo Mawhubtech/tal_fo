@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Building2, 
   Users, 
@@ -17,8 +18,8 @@ import {
   X,
   RotateCcw
 } from 'lucide-react';
-import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, useInviteMember, useDeleteCompany, useResendInvitation } from '../../hooks/useCompany';
-import { useCreateUser, useRoles, useClients, useCurrentUserClients } from '../../hooks/useAdminUsers';
+import { useCompany, useCompanyMembers, useRemoveMember, useUpdateMember, useInviteMember, useDeleteCompany, useResendInvitation, companyKeys } from '../../hooks/useCompany';
+import { useCreateUser, useRoles, useClients, useCurrentUserClients, adminUserKeys } from '../../hooks/useAdminUsers';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
 import { EditCompanyModal } from '../../components/company/EditCompanyModal';
@@ -37,6 +38,7 @@ export const CompanyDetailPage: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const queryClient = useQueryClient();
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -115,6 +117,10 @@ export const CompanyDetailPage: React.FC = () => {
       });
       toast.success('Member Removed', `${member.user.firstName} ${member.user.lastName} has been removed from the company.`);
       setMemberToRemove(null);
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
     } catch (error: any) {
       console.error('Error removing member:', error);
       const errorMessage = formatApiError(error);
@@ -130,6 +136,11 @@ export const CompanyDetailPage: React.FC = () => {
         data: data
       });
       refetchMembers(); // Refresh the members list
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(company.id) });
     } catch (error: any) {
       console.error('Error updating member:', error);
       throw error; // Re-throw to let the modal handle the error display
@@ -139,6 +150,11 @@ export const CompanyDetailPage: React.FC = () => {
   const handleEditMemberSuccess = () => {
     setMemberToEdit(null);
     refetchMembers(); // Refresh members to show updated user data
+    
+    // Additional query invalidations
+    queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+    queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+    queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(company.id) });
   };
 
   const handleResendInvitation = async (member: CompanyMember) => {
@@ -153,6 +169,10 @@ export const CompanyDetailPage: React.FC = () => {
       } else {
         toast.warning('Invitation Updated', `Invitation was updated but email could not be sent. ${response.emailError || 'Please check Gmail connection.'}`);
       }
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(company.id) });
     } catch (error: any) {
       console.error('Error resending invitation:', error);
       const errorMessage = formatApiError(error);
@@ -188,6 +208,11 @@ export const CompanyDetailPage: React.FC = () => {
       toast.success('User Created', 'User created successfully and invited to the company.');
       setIsCreateUserModalOpen(false);
       refetchMembers(); // Refresh the members list
+      
+      // Additional query invalidations
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(company.id) });
     } catch (error: any) {
       console.error('Error creating user:', error);
       
@@ -200,6 +225,11 @@ export const CompanyDetailPage: React.FC = () => {
   const handleInviteMemberSuccess = () => {
     refetchMembers();
     setIsInviteModalOpen(false);
+    
+    // Additional query invalidations
+    queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+    queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+    queryClient.invalidateQueries({ queryKey: companyKeys.companyStats(company.id) });
   };
 
   const handleDeleteCompany = async () => {
@@ -209,6 +239,11 @@ export const CompanyDetailPage: React.FC = () => {
       await deleteCompany.mutateAsync(company.id);
       toast.success('Company Deleted', 'Company has been successfully deleted.');
       navigate('/dashboard/admin/companies');
+      
+      // Additional query invalidations for comprehensive cleanup
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.clients() });
     } catch (error: any) {
       console.error('Error deleting company:', error);
       const errorMessage = formatApiError(error);
