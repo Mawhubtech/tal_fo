@@ -32,7 +32,8 @@ import {
   Eye,
   Archive,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Key
 } from 'lucide-react';
 import { 
   useUsers, 
@@ -601,6 +602,14 @@ const UserManagementPage: React.FC = () => {
                           title="Edit User"
                         >
                           <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleSendPasswordReset(user.id)}
+                          disabled={sendPasswordReset.isPending}
+                          className="px-3 py-1 text-sm border border-blue-300 rounded-lg hover:bg-blue-50 text-blue-600 hover:text-blue-700 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Send Password Reset"
+                        >
+                          <Key className="w-4 h-4" />
                         </button>
                         <button 
                           onClick={() => handleDeleteUser(user.id)}

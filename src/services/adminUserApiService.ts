@@ -225,7 +225,7 @@ export class AdminUserApiService {
 
   // Send password reset email
   static async sendPasswordReset(userId: string): Promise<{ message: string }> {
-    const response = await apiClient.post(`/users/${userId}/password-reset`);
+    const response = await apiClient.post(`/users/${userId}/send-password-reset`);
     return response.data;
   }
 
