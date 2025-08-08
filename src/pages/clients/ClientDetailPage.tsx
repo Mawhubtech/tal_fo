@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Building, Globe, Mail, Phone, MapPin, Users, Briefcase,
   Calendar, TrendingUp, Edit3, Settings, Trash2, MoreVertical,
-  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle
+  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle, Building2
 } from 'lucide-react';
 import { clientApi } from '../../services/api';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -15,6 +15,17 @@ import DepartmentForm from './components/DepartmentForm';
 import DeleteDepartmentDialog from './components/DeleteDepartmentDialog';
 import { DepartmentApiService } from '../../recruitment/organizations/services/departmentApiService';
 import type { Department } from '../../recruitment/organizations/services/departmentApiService';
+import { 
+  OrganizationChart, 
+  OrganizationChartDemo, 
+  PositionForm, 
+  DeletePositionDialog,
+  demoOrganizationData, 
+  demoDepartments, 
+  getDepartmentStats 
+} from '../../components/organization-chart';
+import { useOrganizationChart, useCreatePosition, useUpdatePosition, useDeletePosition } from '../../hooks/usePositions';
+import type { Position } from '../../services/positionApiService';
 
 // Utility function to generate consistent colors based on string
 const stringToColor = (str: string) => {
@@ -52,7 +63,7 @@ const ClientDetailPage: React.FC = () => {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts' | 'departments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts' | 'departments' | 'organization'>('overview');
   
   // Check if current user is internal (should not see edit/delete buttons)
   const isInternalUserRole = isInternalUser(currentUser);
@@ -71,7 +82,33 @@ const ClientDetailPage: React.FC = () => {
   const [showDeleteDepartmentDialog, setShowDeleteDepartmentDialog] = useState(false);
   const [deleteDepartmentLoading, setDeleteDepartmentLoading] = useState(false);
   
+  // Organization chart states
+  const [showPositionForm, setShowPositionForm] = useState(false);
+  const [editingPosition, setEditingPosition] = useState<Position | null>(null);
+  const [parentPosition, setParentPosition] = useState<Position | null>(null);
+  const [positionToDelete, setPositionToDelete] = useState<Position | null>(null);
+  const [showDeletePositionDialog, setShowDeletePositionDialog] = useState(false);
+  const [deletePositionLoading, setDeletePositionLoading] = useState(false);
+  const [organizationDepartmentFilter, setOrganizationDepartmentFilter] = useState<string>('');
+  
   const departmentApiService = new DepartmentApiService();
+  
+  // Position hooks
+  const { data: organizationPositions = [], isLoading: positionsLoading, refetch: refetchPositions, error: positionsError } = useOrganizationChart(
+    clientId || '', 
+    organizationDepartmentFilter || undefined
+  );
+  
+  // Use demo data if API is not available or returns empty
+  const finalOrganizationPositions = organizationPositions.length > 0 || !positionsError 
+    ? organizationPositions 
+    : demoOrganizationData.filter(pos => 
+        !organizationDepartmentFilter || pos.departmentId === organizationDepartmentFilter
+      );
+  
+  const createPositionMutation = useCreatePosition();
+  const updatePositionMutation = useUpdatePosition();
+  const deletePositionMutation = useDeletePosition();
   
   // Load client data
   useEffect(() => {
@@ -121,7 +158,7 @@ const ClientDetailPage: React.FC = () => {
   // Handle tab query parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'activity', 'contracts', 'departments'].includes(tabParam)) {
+    if (tabParam && ['overview', 'activity', 'contracts', 'departments', 'organization'].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -198,6 +235,84 @@ const ClientDetailPage: React.FC = () => {
     setShowDepartmentForm(false);
     setEditingDepartment(null);
   };
+
+  // Handle add position
+  const handleAddPosition = (parentId?: string) => {
+    const parent = parentId ? finalOrganizationPositions.find(pos => pos.id === parentId) : null;
+    setParentPosition(parent);
+    setEditingPosition(null);
+    setShowPositionForm(true);
+  };
+
+  // Handle edit position
+  const handleEditPosition = (position: Position) => {
+    setEditingPosition(position);
+    setParentPosition(null);
+    setShowPositionForm(true);
+  };
+
+  // Handle position form save
+  const handlePositionSave = async (positionData: Omit<Position, 'id' | 'children' | 'isExpanded'>) => {
+    try {
+      if (editingPosition) {
+        // Update existing position
+        await updatePositionMutation.mutateAsync({
+          id: editingPosition.id,
+          data: positionData
+        });
+      } else {
+        // Create new position
+        await createPositionMutation.mutateAsync({
+          ...positionData,
+          clientId: clientId!
+        });
+      }
+      
+      // Close form and refresh data
+      setShowPositionForm(false);
+      setEditingPosition(null);
+      setParentPosition(null);
+      refetchPositions();
+    } catch (error) {
+      console.error('Error saving position:', error);
+      // For demo purposes, just close the form
+      setShowPositionForm(false);
+      setEditingPosition(null);
+      setParentPosition(null);
+    }
+  };
+
+  // Handle position form close
+  const handlePositionFormClose = () => {
+    setShowPositionForm(false);
+    setEditingPosition(null);
+    setParentPosition(null);
+  };
+
+  // Handle delete position
+  const handleDeletePosition = async () => {
+    if (!positionToDelete) return;
+
+    try {
+      setDeletePositionLoading(true);
+      await deletePositionMutation.mutateAsync(positionToDelete.id);
+      setShowDeletePositionDialog(false);
+      setPositionToDelete(null);
+      refetchPositions();
+    } catch (error) {
+      console.error('Error deleting position:', error);
+      // For demo purposes, just close the dialog
+      setShowDeletePositionDialog(false);
+      setPositionToDelete(null);
+    } finally {
+      setDeletePositionLoading(false);
+    }
+  };
+
+  // Handle department filter change for organization chart
+  const handleDepartmentFilterChange = (departmentId: string) => {
+    setOrganizationDepartmentFilter(departmentId);
+  };
   
   // Helper functions
   const getStatusBadgeColor = (status: string) => {
@@ -236,7 +351,8 @@ const ClientDetailPage: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: Building },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'contracts', label: 'Contracts', icon: Target },
-    { id: 'departments', label: 'Departments', icon: Users }
+    { id: 'departments', label: 'Departments', icon: Users },
+    { id: 'organization', label: 'Organization Chart', icon: Building2 }
   ];
 
   // Loading state
@@ -682,8 +798,74 @@ const ClientDetailPage: React.FC = () => {
               )}
             </div>
           )}
+
+          {activeTab === 'organization' && (
+            <div>
+              {/* Organization Chart Demo */}
+              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                      Interactive Organization Chart Demo
+                    </h4>
+                    <p className="text-sm text-blue-800">
+                      This is a comprehensive demo showing the relationship between full organization charts and department-specific views for <strong>{client.name}</strong>. 
+                      Use the controls below to explore different perspectives of the organizational structure.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Embedded Demo Component */}
+              <div className="bg-white rounded-lg border shadow-sm">
+                <OrganizationChartDemo />
+              </div>
+            </div>
+          )}
         </div>
-      </div>      {/* Edit Client Form Modal */}
+      </div>
+
+      {/* Position Form Modal */}
+      {showPositionForm && client && (
+        <PositionForm
+          isOpen={showPositionForm}
+          onClose={handlePositionFormClose}
+          onSave={handlePositionSave}
+          position={editingPosition}
+          parentPosition={parentPosition}
+          clientId={client.id}
+          clientName={client.name}
+          departments={departments.length > 0 ? departments.map(dept => ({
+            id: dept.id,
+            name: dept.name,
+            color: dept.color
+          })) : demoDepartments}
+          allPositions={finalOrganizationPositions}
+          mode={editingPosition ? 'edit' : 'create'}
+        />
+      )}
+
+      {/* Delete Position Dialog */}
+      {showDeletePositionDialog && positionToDelete && (
+        <DeletePositionDialog
+          isOpen={showDeletePositionDialog}
+          positionTitle={positionToDelete.title}
+          employeeName={positionToDelete.employeeName}
+          hasSubordinates={positionToDelete.children && positionToDelete.children.length > 0}
+          subordinatesCount={positionToDelete.children?.length || 0}
+          onConfirm={handleDeletePosition}
+          onCancel={() => {
+            setShowDeletePositionDialog(false);
+            setPositionToDelete(null);
+          }}
+          loading={deletePositionLoading}
+        />
+      )}      {/* Edit Client Form Modal */}
       {showEditForm && client && (
         <ClientForm
           client={client}
