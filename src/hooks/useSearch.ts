@@ -10,6 +10,7 @@ export interface SearchParams {
     page: number;
     limit: number;
   };
+  after?: string; // For external source pagination
 }
 
 export interface SearchResult {
@@ -31,6 +32,12 @@ export interface SearchResponse {
     page: number;
     limit: number;
     totalPages: number;
+  };
+  externalPagination?: {
+    nextCursor?: string;
+    hasNextPage: boolean;
+    totalPages?: number;
+    totalResults?: number;
   };
 }
 

@@ -8,6 +8,7 @@ export interface SearchParams {
     page: number;
     limit: number;
   };
+  after?: string; // For external source pagination (CoreSignal cursor)
 }
 
 export interface SearchResult {
@@ -28,6 +29,13 @@ export interface SearchResponse {
   page: number;
   limit: number;
   totalPages: number;
+  source?: string;
+  externalPagination?: {
+    nextCursor?: string;
+    hasNextPage: boolean;
+    totalResults?: number;
+    totalPages?: number;
+  };
 }
 
 export interface CandidateSummaryRequest {
@@ -72,18 +80,25 @@ class SearchApiService {
    */
   async searchCandidatesWithCoreSignal(params: SearchParams): Promise<SearchResponse> {
     try {
-      // Extract pagination from params and send as query parameters
-      const { pagination, ...bodyParams } = params;
+      // Create a clean copy of params without pagination and after for the body
+      const bodyParams = {
+        filters: params.filters,
+        searchText: params.searchText
+      };
       
       const queryParams = new URLSearchParams();
-      if (pagination?.page) {
-        queryParams.append('page', pagination.page.toString());
+      if (params.pagination?.page) {
+        queryParams.append('page', params.pagination.page.toString());
       }
-      if (pagination?.limit) {
-        queryParams.append('limit', pagination.limit.toString());
+      if (params.pagination?.limit) {
+        queryParams.append('limit', params.pagination.limit.toString());
+      }
+      if (params.after) {
+        queryParams.append('after', params.after);
       }
       
       const url = `/search/candidates/coresignal${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
       const response = await apiClient.post(url, bodyParams);
       return response.data;
     } catch (error) {

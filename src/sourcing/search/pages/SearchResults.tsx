@@ -167,6 +167,13 @@ const SearchResultsPage: React.FC = () => {
   const [showStageSelector, setShowStageSelector] = useState<{ [key: string]: boolean }>({});
   const [selectedStageId, setSelectedStageId] = useState<{ [key: string]: string }>({});
   
+  // Pagination state
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
+  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
+  const [totalResults, setTotalResults] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  
   // Calculate overall loading state
   // Get current user context
   const { user } = useAuthContext();
@@ -342,12 +349,13 @@ const SearchResultsPage: React.FC = () => {
   }, [prospectsAddedCount]); // Only depend on prospectsAddedCount
   */
 
-  const fetchResults = async (filters: SearchFilters, query?: string, mode?: 'database' | 'coresignal' | 'combined') => {
+  const fetchResults = async (filters: SearchFilters, query?: string, mode?: 'database' | 'coresignal' | 'combined', cursor?: string, resetResults: boolean = true) => {
     try {
       const searchParams = {
         filters,
         searchText: query,
-        pagination: { page: 1, limit: 20 }
+        pagination: { page: 1, limit: 20 },
+        after: cursor
       };
       
       const searchMode = mode || 'database';
@@ -363,19 +371,68 @@ const SearchResultsPage: React.FC = () => {
       }
       
       console.log('Search results:', searchResults); // Debug log
+      console.log('Search results type:', typeof searchResults);
+      console.log('Search results keys:', searchResults ? Object.keys(searchResults) : 'null');
+      if (searchResults && searchResults.externalPagination) {
+        console.log('External pagination:', searchResults.externalPagination);
+      }
       
       // Handle the response structure from backend
+      let newResults: any[] = [];
       if (searchResults && typeof searchResults === 'object' && 'results' in searchResults) {
-        setResults((searchResults as any).results || []);
+        newResults = (searchResults as any).results || [];
       } else if (Array.isArray(searchResults)) {
-        setResults(searchResults);
-      } else {
-        setResults([]);
+        newResults = searchResults;
       }
+
+      // Handle pagination metadata for external sources
+      if (searchResults && searchResults.externalPagination) {
+        setNextCursor(searchResults.externalPagination.nextCursor);
+        setHasNextPage(searchResults.externalPagination.hasNextPage);
+        if (searchResults.externalPagination.totalResults) {
+          setTotalResults(searchResults.externalPagination.totalResults);
+        }
+      } else {
+        // Reset external pagination state for non-external searches
+        setNextCursor(undefined);
+        setHasNextPage(false);
+        if (searchResults && searchResults.pagination && searchResults.pagination.totalResults) {
+          setTotalResults(searchResults.pagination.totalResults);
+        }
+      }
+
+      // Update results - either replace or append based on resetResults
+      if (resetResults) {
+        setResults(newResults);
+        setCurrentPage(1);
+      } else {
+        setResults(prev => [...prev, ...newResults]);
+        setCurrentPage(prev => prev + 1);
+      }
+      
+      setCurrentCursor(cursor);
     } catch (error) {
       console.error('Error fetching search results:', error);
-      setResults([]);
+      if (resetResults) {
+        setResults([]);
+      }
     }
+  };
+
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (hasNextPage && nextCursor) {
+      fetchResults(filters, searchQuery, searchMode, nextCursor, false);
+    }
+  };
+
+  const handleRefresh = () => {
+    // Reset pagination state and fetch first page
+    setCurrentCursor(undefined);
+    setNextCursor(undefined);
+    setHasNextPage(false);
+    setCurrentPage(1);
+    fetchResults(filters, searchQuery, searchMode, undefined, true);
   };
 
   const handleSummarize = async (candidateId: string) => {
@@ -666,18 +723,36 @@ const SearchResultsPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600 font-medium">
-                  {results.length > 0 ? `Showing 1-${results.length > 15 ? 15 : results.length} of ${results.length}` : '0 results'} {/* Basic pagination text */}
+                  {searchMode === 'coresignal' || searchMode === 'combined' ? (
+                    totalResults > 0 ? `Showing ${results.length} of ${totalResults} results` : '0 results'
+                  ) : (
+                    results.length > 0 ? `Showing 1-${results.length > 15 ? 15 : results.length} of ${results.length}` : '0 results'
+                  )}
                 </span>
                 <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                  <button className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 transition-colors duration-200" title="Previous Page">
+                  <button 
+                    className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                    title="Refresh Results"
+                    onClick={handleRefresh}
+                    disabled={isSearchLoading}
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                   </button>
-                  <button className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l border-gray-300 transition-colors duration-200" title="Next Page">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                  <button 
+                    className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l border-gray-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                    title="Load More Results"
+                    onClick={handleNextPage}
+                    disabled={!hasNextPage || isSearchLoading}
+                  >
+                    {isSearchLoading ? (
+                      <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
