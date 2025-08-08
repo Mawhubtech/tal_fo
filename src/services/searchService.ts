@@ -274,6 +274,28 @@ class SearchService {
       return [];
     }
   }
+
+  /**
+   * Shortlist a CoreSignal candidate (save to database)
+   */
+  async shortlistCoreSignalCandidate(
+    coreSignalId: number,
+    candidateData: any,
+    createdBy: string
+  ): Promise<{ success: boolean; candidateId?: string; message: string; existingCandidateId?: string }> {
+    try {
+      const response = await apiClient.post(`${this.baseURL}/shortlist-coresignal-candidate`, {
+        coreSignalId,
+        candidateData,
+        createdBy
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error shortlisting CoreSignal candidate:', error);
+      throw error;
+    }
+  }
 }
 export const searchService = new SearchService();
 
@@ -284,3 +306,5 @@ export const searchUsers = (filters: SearchFilters, searchText?: string, paginat
 export const searchCandidates = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidates(filters, searchText, pagination);
 export const getAllCandidates = () => searchService.getAllUsers();
 export const getCandidateById = (id: string) => searchService.getCandidateById(id);
+export const shortlistCoreSignalCandidate = (coreSignalId: number, candidateData: any, createdBy: string) => 
+  searchService.shortlistCoreSignalCandidate(coreSignalId, candidateData, createdBy);

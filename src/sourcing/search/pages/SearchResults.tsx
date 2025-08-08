@@ -10,6 +10,7 @@ import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useProjectProspects, useAddProspectsToProject } from '../../../hooks/useSourcingProspects';
 import { useProject } from '../../../hooks/useSourcingProjects';
+import { useShortlistCoreSignalCandidate } from '../../../hooks/useShortlistCoreSignal';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyCompanies } from '../../../hooks/useCompany';
@@ -181,6 +182,7 @@ const SearchResultsPage: React.FC = () => {
   const { data: myCompanies } = useMyCompanies();
   const { addToast } = useToast();
   const addProspectsToProjectMutation = useAddProspectsToProject();
+  const shortlistCoreSignalMutation = useShortlistCoreSignalCandidate();
   
   // Calculate overall loading state
   const isSearchLoading = isLoading || isCoreSignalLoading || isCombinedLoading;
@@ -464,6 +466,45 @@ const SearchResultsPage: React.FC = () => {
       // Start shortlisting process
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: true }));
 
+      // Determine if this is a CoreSignal candidate
+      const isCoreSignalCandidate = searchMode === 'coresignal' || (searchMode === 'combined' && candidate.source === 'coresignal') || candidate.coreSignalId;
+      let candidateIdForProspects = candidate.id;
+
+      // Step 1: If CoreSignal candidate, save to database first
+      if (isCoreSignalCandidate && (candidate.coreSignalId || candidate.id)) {
+        try {
+          const coreSignalId = candidate.coreSignalId || candidate.id;
+          const shortlistResult = await shortlistCoreSignalMutation.mutateAsync({
+            coreSignalId: coreSignalId,
+            candidateData: candidate,
+            createdBy: user?.id || ''
+          });
+
+          if (shortlistResult.success) {
+            // Use the returned candidate ID for adding to prospects
+            candidateIdForProspects = shortlistResult.candidateId || shortlistResult.existingCandidateId || candidate.id;
+            
+            addToast({
+              type: 'success',
+              title: 'Candidate Saved',
+              message: shortlistResult.message,
+              duration: 3000
+            });
+          }
+        } catch (shortlistError) {
+          console.error('Error saving CoreSignal candidate:', shortlistError);
+          addToast({
+            type: 'error',
+            title: 'Failed to Save Candidate',
+            message: shortlistError instanceof Error ? shortlistError.message : 'Failed to save candidate to database. Please try again.',
+            duration: 5000
+          });
+          // Don't continue with prospects addition if candidate save failed
+          return;
+        }
+      }
+
+      // Step 2: Add candidate to sourcing project/prospects
       // Get the default sourcing pipeline
       if (!sourcingPipelines || sourcingPipelines.length === 0) {
         throw new Error('No sourcing pipelines available. Please create a sourcing pipeline first.');
@@ -478,7 +519,7 @@ const SearchResultsPage: React.FC = () => {
 
       // Create the prospects data using the bulk addition endpoint
       const prospectsData: AddProspectsToProjectDto = {
-        candidateIds: [candidate.id],
+        candidateIds: [candidateIdForProspects],
         searchId: searchId || undefined,
         stageId: stageId // Pass the selected stage ID if provided
       };
@@ -500,13 +541,13 @@ const SearchResultsPage: React.FC = () => {
       handleCloseStageSelector(candidate.id);
 
       // Show success feedback
-      const selectedStage = stageId ? availableStages.find(stage => stage.id === stageId) : null;
+      const selectedStage = stageId ? availableStages.find(stage => stage.id === stageId) : availableStages[0];
       const pipelineName = pipelineToUse?.name || defaultPipeline.name;
       
       addToast({
         type: 'success',
-        title: 'Candidate Shortlisted',
-        message: `${candidate.fullName} has been added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
+        title: 'Candidate Shortlisted Successfully',
+        message: `${candidate.fullName} has been ${isCoreSignalCandidate ? 'saved to your database and ' : ''}added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
         duration: 5000
       });
       
@@ -674,7 +715,8 @@ const SearchResultsPage: React.FC = () => {
                   email: candidate.email || '',
                   location: candidate.location || 'Location not specified',
                   linkedIn: candidate.linkedIn || '',
-                  github: candidate.github || ''
+                  github: candidate.github || '',
+                  avatar: candidate.avatar || ''
                 };
                 
                 const experience = candidate.experience || [];
@@ -693,6 +735,30 @@ const SearchResultsPage: React.FC = () => {
                         {/* Header with name, score, and actions */}
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
+                            {/* Avatar */}
+                            <div className="flex-shrink-0">
+                              {personalInfo.avatar ? (
+                                <img
+                                  src={personalInfo.avatar}
+                                  alt={`${personalInfo.fullName} avatar`}
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                  onError={(e) => {
+                                    // If image fails to load, hide it and show initials fallback
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              {/* Fallback initials avatar */}
+                              <div 
+                                className={`w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ${personalInfo.avatar ? 'hidden' : 'flex'}`}
+                                style={{ display: personalInfo.avatar ? 'none' : 'flex' }}
+                              >
+                                {personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </div>
+                            </div>
+                            
                             <h3
                               className="text-lg font-semibold cursor-pointer hover:text-purple-600 transition-colors duration-200 flex items-center gap-2"
                               onClick={() => handleOpenProfilePanel({
@@ -833,7 +899,7 @@ const SearchResultsPage: React.FC = () => {
                                   <Button 
                                     size="sm" 
                                     className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 rounded-r-none"
-                                    onClick={() => handleShowStageSelector(candidate.id)}
+                                    onClick={() => handleShortlist(candidate, undefined, availableStages[0]?.id)}
                                     disabled={shortlistingCandidates[candidate.id] || pipelinesLoading || projectLoading}
                                   >
                                     {shortlistingCandidates[candidate.id] ? (
