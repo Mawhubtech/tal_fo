@@ -43,7 +43,7 @@ export interface CandidateSummaryResponse {
 
 class SearchApiService {
   /**
-   * Search candidates with filters and text search
+   * Search candidates with filters and text search (local database)
    */
   async searchCandidates(params: SearchParams): Promise<SearchResponse> {
     try {
@@ -63,6 +63,59 @@ class SearchApiService {
       return response.data;
     } catch (error) {
       console.error('Error searching candidates:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search candidates using CoreSignal API for external candidate data
+   */
+  async searchCandidatesWithCoreSignal(params: SearchParams): Promise<SearchResponse> {
+    try {
+      // Extract pagination from params and send as query parameters
+      const { pagination, ...bodyParams } = params;
+      
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      if (pagination?.limit) {
+        queryParams.append('limit', pagination.limit.toString());
+      }
+      
+      const url = `/search/candidates/coresignal${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiClient.post(url, bodyParams);
+      return response.data;
+    } catch (error) {
+      console.error('Error searching candidates with CoreSignal:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search candidates from both local database and CoreSignal API
+   */
+  async searchCandidatesCombined(params: SearchParams, includeExternal: boolean = true): Promise<SearchResponse> {
+    try {
+      // Extract pagination from params and send as query parameters
+      const { pagination, ...bodyParams } = params;
+      
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      if (pagination?.limit) {
+        queryParams.append('limit', pagination.limit.toString());
+      }
+      if (includeExternal !== undefined) {
+        queryParams.append('includeExternal', includeExternal.toString());
+      }
+      
+      const url = `/search/candidates/combined${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiClient.post(url, bodyParams);
+      return response.data;
+    } catch (error) {
+      console.error('Error searching candidates with combined search:', error);
       throw error;
     }
   }

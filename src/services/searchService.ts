@@ -81,6 +81,12 @@ export interface SearchResponse {
   page: number;
   limit: number;
   totalPages: number;
+  source?: string;
+  metadata?: {
+    localTotal?: number;
+    externalTotal?: number;
+    duplicatesRemoved?: number;
+  };
 }
 
 export interface PaginationOptions {
@@ -131,6 +137,68 @@ class SearchService {
       return response.data;
     } catch (error) {
       console.error('Error searching candidates:', error);
+      return {
+        results: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0
+      };
+    }
+  }
+
+  /**
+   * Search candidates using CoreSignal API for external candidate data
+   */
+  async searchCandidatesWithCoreSignal(filters: SearchFilters, searchText?: string, pagination?: PaginationOptions): Promise<SearchResponse> {
+    try {
+      const response = await apiClient.post<SearchResponse>(`${this.baseURL}/candidates/coresignal`, {
+        filters,
+        searchText
+      }, {
+        params: {
+          page: pagination?.page || 1,
+          limit: pagination?.limit || 20
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error searching candidates with CoreSignal:', error);
+      return {
+        results: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0
+      };
+    }
+  }
+
+  /**
+   * Search candidates from both local database and CoreSignal API
+   */
+  async searchCandidatesCombined(
+    filters: SearchFilters, 
+    searchText?: string, 
+    pagination?: PaginationOptions,
+    includeExternal: boolean = true
+  ): Promise<SearchResponse> {
+    try {
+      const response = await apiClient.post<SearchResponse>(`${this.baseURL}/candidates/combined`, {
+        filters,
+        searchText
+      }, {
+        params: {
+          page: pagination?.page || 1,
+          limit: pagination?.limit || 20,
+          includeExternal
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error searching candidates with combined search:', error);
       return {
         results: [],
         total: 0,

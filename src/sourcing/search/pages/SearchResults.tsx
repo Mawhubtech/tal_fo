@@ -5,6 +5,7 @@ import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, 
 import Button from '../../../components/Button';
 import FilterDialog from '../../../components/FilterDialog';
 import { useSearch } from '../../../hooks/useSearch';
+import { useCoreSignalSearch, useCombinedSearch } from '../../../hooks/useSearch';
 import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useProjectProspects, useAddProspectsToProject } from '../../../hooks/useSourcingProspects';
@@ -156,6 +157,7 @@ const SearchResultsPage: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchId, setSearchId] = useState<string | null>(null);
+  const [searchMode, setSearchMode] = useState<'database' | 'coresignal' | 'combined'>('database');
   const [prospectsAddedCount, setProspectsAddedCount] = useState<number>(0);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [candidateSummaries, setCandidateSummaries] = useState<{ [key: string]: any }>({});
@@ -164,11 +166,14 @@ const SearchResultsPage: React.FC = () => {
   const [showStageSelector, setShowStageSelector] = useState<{ [key: string]: boolean }>({});
   const [selectedStageId, setSelectedStageId] = useState<{ [key: string]: string }>({});
   
+  // Calculate overall loading state
   // Get current user context
   const { user } = useAuthContext();
   
   // Use hooks
   const { executeSearch, isLoading, error, data } = useSearch();
+  const { executeSearch: executeCoreSignalSearch, isLoading: isCoreSignalLoading } = useCoreSignalSearch();
+  const { executeSearch: executeCombinedSearch, isLoading: isCombinedLoading } = useCombinedSearch();
   const { generateSummary, isLoading: summaryLoading } = useCandidateSummary();
   const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
   const { data: existingProspects } = useProjectProspects(projectId!);
@@ -176,6 +181,9 @@ const SearchResultsPage: React.FC = () => {
   const { data: myCompanies } = useMyCompanies();
   const { addToast } = useToast();
   const addProspectsToProjectMutation = useAddProspectsToProject();
+  
+  // Calculate overall loading state
+  const isSearchLoading = isLoading || isCoreSignalLoading || isCombinedLoading;
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
@@ -200,11 +208,12 @@ const SearchResultsPage: React.FC = () => {
 
   useEffect(() => {
     if (location.state) {
-      const { query, filters, searchId: stateSearchId } = location.state;
+      const { query, filters, searchId: stateSearchId, searchMode: stateSearchMode } = location.state;
       setSearchQuery(query || '');
       setFilters(filters || {});
       setSearchId(stateSearchId || null);
-      fetchResults(filters, query);
+      setSearchMode(stateSearchMode || 'database');
+      fetchResults(filters, query, stateSearchMode || 'database');
     } else {
       // Navigate back to project searches if no state
       navigate(`/dashboard/sourcing/projects/${projectId}/searches`);
@@ -331,7 +340,7 @@ const SearchResultsPage: React.FC = () => {
   }, [prospectsAddedCount]); // Only depend on prospectsAddedCount
   */
 
-  const fetchResults = async (filters: SearchFilters, query?: string) => {
+  const fetchResults = async (filters: SearchFilters, query?: string, mode?: 'database' | 'coresignal' | 'combined') => {
     try {
       const searchParams = {
         filters,
@@ -339,7 +348,18 @@ const SearchResultsPage: React.FC = () => {
         pagination: { page: 1, limit: 20 }
       };
       
-      const searchResults = await executeSearch(searchParams);
+      const searchMode = mode || 'database';
+      let searchResults: any;
+      
+      // Execute search based on mode
+      if (searchMode === 'coresignal') {
+        searchResults = await executeCoreSignalSearch(searchParams);
+      } else if (searchMode === 'combined') {
+        searchResults = await executeCombinedSearch(searchParams, true);
+      } else {
+        searchResults = await executeSearch(searchParams);
+      }
+      
       console.log('Search results:', searchResults); // Debug log
       
       // Handle the response structure from backend
@@ -387,8 +407,8 @@ const SearchResultsPage: React.FC = () => {
   const handleApplyFilters = (newFilters: SearchFilters) => {
     setFilters(newFilters);
     setIsFilterDialogOpen(false);
-    // Perform new search with updated filters
-    fetchResults(newFilters, searchQuery);
+    // Perform new search with updated filters using current search mode
+    fetchResults(newFilters, searchQuery, searchMode);
   };
   // Handlers for the profile side panel
   const handleOpenProfilePanel = (userData: UserStructuredData, candidateId?: string) => {
@@ -564,6 +584,18 @@ const SearchResultsPage: React.FC = () => {
              {searchQuery && (
                 <SearchQueryDisplay searchQuery={searchQuery} />
              )}
+             
+             {/* Search Mode Indicator */}
+             <div className="inline-flex items-center px-3 py-2 rounded-lg bg-blue-50 text-sm text-blue-700 border border-blue-200">
+               <span className="font-medium">Search Mode:</span>
+               <span className="font-semibold ml-1 capitalize">
+                 {searchMode === 'coresignal' ? 'CoreSignal' : searchMode === 'combined' ? 'Combined' : 'Database'}
+               </span>
+               {searchMode === 'coresignal' && <span className="ml-1 text-xs">(External candidates)</span>}
+               {searchMode === 'combined' && <span className="ml-1 text-xs">(Database + External)</span>}
+               {searchMode === 'database' && <span className="ml-1 text-xs">(Existing candidates)</span>}
+             </div>
+             
              <div className="flex items-center gap-3 flex-wrap">
             {Object.entries(filters).map(([key, value]) => (
               value && (typeof value === 'string' || typeof value === 'number') && (
@@ -609,7 +641,7 @@ const SearchResultsPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>          {isLoading ? (
+          </div>          {isSearchLoading ? (
             <div className="p-12 text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600 mx-auto"></div>
               <p className="mt-6 text-gray-600 font-medium">Searching candidates...</p>

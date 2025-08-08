@@ -64,6 +64,69 @@ export const useSearch = () => {
   };
 };
 
+// Hook for CoreSignal search
+export const useCoreSignalSearch = () => {
+  const [searchParams, setSearchParams] = useState<SearchParams | null>(null);
+
+  const searchMutation = useMutation({
+    mutationFn: (params: SearchParams) => searchApiService.searchCandidatesWithCoreSignal(params),
+    onSuccess: (data) => {
+      console.log('CoreSignal search completed successfully:', data);
+    },
+    onError: (error) => {
+      console.error('CoreSignal search failed:', error);
+    },
+  });
+
+  const executeSearch = (params: SearchParams) => {
+    setSearchParams(params);
+    return searchMutation.mutateAsync(params);
+  };
+
+  return {
+    executeSearch,
+    isLoading: searchMutation.isPending,
+    error: searchMutation.error,
+    data: searchMutation.data,
+    reset: () => {
+      searchMutation.reset();
+      setSearchParams(null);
+    },
+  };
+};
+
+// Hook for combined search
+export const useCombinedSearch = () => {
+  const [searchParams, setSearchParams] = useState<SearchParams | null>(null);
+
+  const searchMutation = useMutation({
+    mutationFn: ({ params, includeExternal }: { params: SearchParams; includeExternal?: boolean }) => 
+      searchApiService.searchCandidatesCombined(params, includeExternal),
+    onSuccess: (data) => {
+      console.log('Combined search completed successfully:', data);
+    },
+    onError: (error) => {
+      console.error('Combined search failed:', error);
+    },
+  });
+
+  const executeSearch = (params: SearchParams, includeExternal: boolean = true) => {
+    setSearchParams(params);
+    return searchMutation.mutateAsync({ params, includeExternal });
+  };
+
+  return {
+    executeSearch,
+    isLoading: searchMutation.isPending,
+    error: searchMutation.error,
+    data: searchMutation.data,
+    reset: () => {
+      searchMutation.reset();
+      setSearchParams(null);
+    },
+  };
+};
+
 // Hook for extracting keywords
 export const useExtractKeywords = () => {
   return useMutation({
