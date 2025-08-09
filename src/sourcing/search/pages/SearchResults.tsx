@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, ChevronDown, ChevronUp, X, Plus } from 'lucide-react';
 import Button from '../../../components/Button';
 import FilterDialog from '../../../components/FilterDialog';
 import { useSearch } from '../../../hooks/useSearch';
-import { useCoreSignalSearch, useCombinedSearch } from '../../../hooks/useSearch';
+import { useExternalSourceSearch, useCombinedSearch } from '../../../hooks/useSearch';
 import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useProjectProspects, useAddProspectsToProject } from '../../../hooks/useSourcingProspects';
@@ -158,7 +158,7 @@ const SearchResultsPage: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchId, setSearchId] = useState<string | null>(null);
-  const [searchMode, setSearchMode] = useState<'database' | 'coresignal' | 'combined'>('database');
+  const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external'); // Default to external search
   const [prospectsAddedCount, setProspectsAddedCount] = useState<number>(0);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [candidateSummaries, setCandidateSummaries] = useState<{ [key: string]: any }>({});
@@ -180,7 +180,7 @@ const SearchResultsPage: React.FC = () => {
   
   // Use hooks
   const { executeSearch, isLoading, error, data } = useSearch();
-  const { executeSearch: executeCoreSignalSearch, isLoading: isCoreSignalLoading } = useCoreSignalSearch();
+  const { executeSearch: executeExternalSourceSearch, isLoading: isExternalSourceLoading } = useExternalSourceSearch();
   const { executeSearch: executeCombinedSearch, isLoading: isCombinedLoading } = useCombinedSearch();
   const { generateSummary, isLoading: summaryLoading } = useCandidateSummary();
   const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
@@ -192,7 +192,7 @@ const SearchResultsPage: React.FC = () => {
   const shortlistCoreSignalMutation = useShortlistCoreSignalCandidate();
   
   // Calculate overall loading state
-  const isSearchLoading = isLoading || isCoreSignalLoading || isCombinedLoading;
+  const isSearchLoading = isLoading || isExternalSourceLoading || isCombinedLoading;
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
@@ -221,13 +221,56 @@ const SearchResultsPage: React.FC = () => {
       setSearchQuery(query || '');
       setFilters(filters || {});
       setSearchId(stateSearchId || null);
-      setSearchMode(stateSearchMode || 'database');
-      fetchResults(filters, query, stateSearchMode || 'database');
+      setSearchMode(stateSearchMode || 'external');
+      
+      // Check for pagination state in URL
+      const urlParams = new URLSearchParams(location.search);
+      const urlPage = urlParams.get('page');
+      const urlCursor = urlParams.get('cursor');
+      
+      if (urlPage && urlCursor && parseInt(urlPage) > 1) {
+        // Restore pagination state and fetch all pages up to current
+        const targetPage = parseInt(urlPage);
+        setCurrentPage(targetPage);
+        setNextCursor(urlCursor);
+        
+        // Fetch all pages from 1 to target page to rebuild the results list
+        fetchAllPagesUpTo(filters, query, stateSearchMode || 'external', targetPage);
+      } else {
+        // Fresh search - fetch first page only
+        fetchResults(filters, query, stateSearchMode || 'external');
+        
+        // Set initial URL parameters
+        const urlParams = new URLSearchParams();
+        urlParams.set('q', query || '');
+        urlParams.set('page', '1');
+        
+        const newUrl = `${location.pathname}?${urlParams.toString()}`;
+        window.history.replaceState(null, '', newUrl);
+      }
     } else {
-      // Navigate back to project searches if no state
-      navigate(`/dashboard/sourcing/projects/${projectId}/searches`);
+      // Check if we have URL params that can restore the search
+      const urlParams = new URLSearchParams(location.search);
+      const urlQuery = urlParams.get('q');
+      const urlPage = urlParams.get('page');
+      
+      if (urlQuery) {
+        // Try to restore from URL params
+        setSearchQuery(urlQuery);
+        setSearchMode('external');
+        const targetPage = urlPage ? parseInt(urlPage) : 1;
+        
+        if (targetPage > 1) {
+          fetchAllPagesUpTo({}, urlQuery, 'external', targetPage);
+        } else {
+          fetchResults({}, urlQuery, 'external');
+        }
+      } else {
+        // Navigate back to project searches if no state and no URL params
+        navigate(`/dashboard/sourcing/projects/${projectId}/searches`);
+      }
     }
-  }, [location.state, navigate, projectId]);
+  }, [location.state, location.search, navigate, projectId]);
 
   // Check for existing prospects and mark candidates as shortlisted
   useEffect(() => {
@@ -349,12 +392,12 @@ const SearchResultsPage: React.FC = () => {
   }, [prospectsAddedCount]); // Only depend on prospectsAddedCount
   */
 
-  const fetchResults = async (filters: SearchFilters, query?: string, mode?: 'database' | 'coresignal' | 'combined', cursor?: string, resetResults: boolean = true) => {
+  const fetchResults = async (filters: SearchFilters, query?: string, mode?: 'database' | 'external' | 'combined', cursor?: string, resetResults: boolean = true) => {
     try {
       const searchParams = {
         filters,
         searchText: query,
-        pagination: { page: 1, limit: 20 },
+        pagination: { page: 1, limit: 10 },
         after: cursor
       };
       
@@ -362,8 +405,8 @@ const SearchResultsPage: React.FC = () => {
       let searchResults: any;
       
       // Execute search based on mode
-      if (searchMode === 'coresignal') {
-        searchResults = await executeCoreSignalSearch(searchParams);
+      if (searchMode === 'external') {
+        searchResults = await executeExternalSourceSearch(searchParams);
       } else if (searchMode === 'combined') {
         searchResults = await executeCombinedSearch(searchParams, true);
       } else {
@@ -406,7 +449,15 @@ const SearchResultsPage: React.FC = () => {
         setResults(newResults);
         setCurrentPage(1);
       } else {
-        setResults(prev => [...prev, ...newResults]);
+        // For pagination, append new results but avoid duplicates
+        setResults(prev => {
+          const existingIds = new Set(prev.map(r => r.candidate?.id).filter(Boolean));
+          const uniqueNewResults = newResults.filter(r => 
+            r.candidate?.id && !existingIds.has(r.candidate.id)
+          );
+          console.log(`Appending ${uniqueNewResults.length} new unique candidates (filtered ${newResults.length - uniqueNewResults.length} duplicates)`);
+          return [...prev, ...uniqueNewResults];
+        });
         setCurrentPage(prev => prev + 1);
       }
       
@@ -419,10 +470,95 @@ const SearchResultsPage: React.FC = () => {
     }
   };
 
+  // Function to fetch all pages from 1 to target page (for restoring pagination state)
+  const fetchAllPagesUpTo = async (filters: SearchFilters, query?: string, mode?: 'database' | 'external' | 'combined', targetPage: number = 1) => {
+    try {
+      // Validate target page
+      if (targetPage < 1 || targetPage > 100) { // Reasonable limit
+        console.warn('Invalid target page:', targetPage);
+        return;
+      }
+      
+      let allResults: any[] = [];
+      let currentCursor: string | undefined = undefined;
+      
+      // Fetch pages sequentially from 1 to targetPage
+      for (let page = 1; page <= targetPage; page++) {
+        const searchParams = {
+          filters,
+          searchText: query,
+          pagination: { page: 1, limit: 10 },
+          after: currentCursor
+        };
+        
+        const searchMode = mode || 'database';
+        let searchResults: any;
+        
+        // Execute search based on mode
+        if (searchMode === 'external') {
+          searchResults = await executeExternalSourceSearch(searchParams);
+        } else if (searchMode === 'combined') {
+          searchResults = await executeCombinedSearch(searchParams, true);
+        } else {
+          searchResults = await executeSearch(searchParams);
+        }
+        
+        // Handle the response structure from backend
+        let newResults: any[] = [];
+        if (searchResults && typeof searchResults === 'object' && 'results' in searchResults) {
+          newResults = (searchResults as any).results || [];
+        } else if (Array.isArray(searchResults)) {
+          newResults = searchResults;
+        }
+        
+        // Accumulate results
+        const existingIds = new Set(allResults.map(r => r.candidate?.id).filter(Boolean));
+        const uniqueNewResults = newResults.filter(r => 
+          r.candidate?.id && !existingIds.has(r.candidate.id)
+        );
+        allResults = [...allResults, ...uniqueNewResults];
+        
+        // Update pagination metadata from the last page
+        if (page === targetPage && searchResults && searchResults.externalPagination) {
+          setNextCursor(searchResults.externalPagination.nextCursor);
+          setHasNextPage(searchResults.externalPagination.hasNextPage);
+          if (searchResults.externalPagination.totalResults) {
+            setTotalResults(searchResults.externalPagination.totalResults);
+          }
+        }
+        
+        // Update cursor for next page
+        if (searchResults && searchResults.externalPagination && searchResults.externalPagination.nextCursor) {
+          currentCursor = searchResults.externalPagination.nextCursor;
+        }
+      }
+      
+      // Set all accumulated results
+      setResults(allResults);
+      setCurrentPage(targetPage);
+      setCurrentCursor(currentCursor);
+      
+    } catch (error) {
+      console.error('Error fetching paginated results:', error);
+      setResults([]);
+    }
+  };
+
   // Pagination handlers
   const handleNextPage = () => {
     if (hasNextPage && nextCursor) {
       fetchResults(filters, searchQuery, searchMode, nextCursor, false);
+      
+      // Update URL with pagination state
+      const newPage = currentPage + 1;
+      const urlParams = new URLSearchParams(location.search);
+      urlParams.set('page', newPage.toString());
+      urlParams.set('cursor', nextCursor);
+      urlParams.set('q', searchQuery);
+      
+      // Update URL without triggering navigation
+      const newUrl = `${location.pathname}?${urlParams.toString()}`;
+      window.history.replaceState(null, '', newUrl);
     }
   };
 
@@ -433,6 +569,14 @@ const SearchResultsPage: React.FC = () => {
     setHasNextPage(false);
     setCurrentPage(1);
     fetchResults(filters, searchQuery, searchMode, undefined, true);
+    
+    // Reset URL parameters to page 1
+    const urlParams = new URLSearchParams();
+    urlParams.set('q', searchQuery);
+    urlParams.set('page', '1');
+    
+    const newUrl = `${location.pathname}?${urlParams.toString()}`;
+    window.history.replaceState(null, '', newUrl);
   };
 
   const handleSummarize = async (candidateId: string) => {
@@ -523,12 +667,12 @@ const SearchResultsPage: React.FC = () => {
       // Start shortlisting process
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: true }));
 
-      // Determine if this is a CoreSignal candidate
-      const isCoreSignalCandidate = searchMode === 'coresignal' || (searchMode === 'combined' && candidate.source === 'coresignal') || candidate.coreSignalId;
+      // Determine if this is an external source candidate
+      const isExternalSourceCandidate = searchMode === 'external' || (searchMode === 'combined' && candidate.source === 'coresignal') || candidate.coreSignalId;
       let candidateIdForProspects = candidate.id;
 
-      // Step 1: If CoreSignal candidate, save to database first
-      if (isCoreSignalCandidate && (candidate.coreSignalId || candidate.id)) {
+      // Step 1: If external source candidate, save to database first
+      if (isExternalSourceCandidate && (candidate.coreSignalId || candidate.id)) {
         try {
           const coreSignalId = candidate.coreSignalId || candidate.id;
           const shortlistResult = await shortlistCoreSignalMutation.mutateAsync({
@@ -604,7 +748,7 @@ const SearchResultsPage: React.FC = () => {
       addToast({
         type: 'success',
         title: 'Candidate Shortlisted Successfully',
-        message: `${candidate.fullName} has been ${isCoreSignalCandidate ? 'saved to your database and ' : ''}added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
+        message: `${candidate.fullName} has been ${isExternalSourceCandidate ? 'saved to your database and ' : ''}added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
         duration: 5000
       });
       
@@ -683,16 +827,7 @@ const SearchResultsPage: React.FC = () => {
                 <SearchQueryDisplay searchQuery={searchQuery} />
              )}
              
-             {/* Search Mode Indicator */}
-             <div className="inline-flex items-center px-3 py-2 rounded-lg bg-blue-50 text-sm text-blue-700 border border-blue-200">
-               <span className="font-medium">Search Mode:</span>
-               <span className="font-semibold ml-1 capitalize">
-                 {searchMode === 'coresignal' ? 'CoreSignal' : searchMode === 'combined' ? 'Combined' : 'Database'}
-               </span>
-               {searchMode === 'coresignal' && <span className="ml-1 text-xs">(External candidates)</span>}
-               {searchMode === 'combined' && <span className="ml-1 text-xs">(Database + External)</span>}
-               {searchMode === 'database' && <span className="ml-1 text-xs">(Existing candidates)</span>}
-             </div>
+             {/* Search Mode Indicator - Hidden from users */}
              
              <div className="flex items-center gap-3 flex-wrap">
             {Object.entries(filters).map(([key, value]) => (
@@ -723,11 +858,7 @@ const SearchResultsPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600 font-medium">
-                  {searchMode === 'coresignal' || searchMode === 'combined' ? (
-                    totalResults > 0 ? `Showing ${results.length} of ${totalResults} results` : '0 results'
-                  ) : (
-                    results.length > 0 ? `Showing 1-${results.length > 15 ? 15 : results.length} of ${results.length}` : '0 results'
-                  )}
+                  {totalResults > 0 ? `Showing ${results.length} of ${totalResults} results` : '0 results'}
                 </span>
                 <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                   <button 
@@ -739,20 +870,6 @@ const SearchResultsPage: React.FC = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                  </button>
-                  <button 
-                    className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l border-gray-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
-                    title="Load More Results"
-                    onClick={handleNextPage}
-                    disabled={!hasNextPage || isSearchLoading}
-                  >
-                    {isSearchLoading ? (
-                      <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    )}
                   </button>
                 </div>
               </div>
@@ -777,7 +894,7 @@ const SearchResultsPage: React.FC = () => {
           ) : (
             <div>
               {results.map((result, index) => {
-                const { candidate, score, matchCriteria } = result; // Backend returns CandidateMatchDto with candidate property and match criteria
+                const { candidate, matchCriteria } = result; // Backend returns CandidateMatchDto with candidate property and match criteria
                 // Ensure candidate exists
                 if (!candidate) {
                     console.warn("Candidate data is missing for result:", result);
@@ -807,7 +924,7 @@ const SearchResultsPage: React.FC = () => {
                       <input type="checkbox" className="mt-2 mr-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
                       <div className="flex-1">
                         
-                        {/* Header with name, score, and actions */}
+                        {/* Header with name and actions */}
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
                             {/* Avatar */}
@@ -856,14 +973,6 @@ const SearchResultsPage: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
                             </h3>
-                            
-                            {/* Match Score Badge */}
-                            {score > 0 && (
-                              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                                <CheckCircle className="h-3 w-3" />
-                                {Math.round(score * 100)}% match
-                              </div>
-                            )}
                             
                             {/* Social Links */}
                             {personalInfo.linkedIn && (
@@ -1143,6 +1252,29 @@ const SearchResultsPage: React.FC = () => {
                   </div>
                 );
               })}
+              
+              {/* Load More Button */}
+              {hasNextPage && (
+                <div className="flex justify-center py-8 border-t border-gray-200">
+                  <button
+                    onClick={handleNextPage}
+                    disabled={isExternalSourceLoading}
+                    className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isExternalSourceLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" />
+                        Load More Results
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

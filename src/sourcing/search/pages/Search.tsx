@@ -17,7 +17,7 @@ import { extractKeywords, convertKeywordsToFilters } from '../../../services/sea
 import type { SearchFilters } from '../../../services/searchService';
 import { useCreateSearch } from '../../../hooks/useSourcingSearches';
 import { useToast } from '../../../contexts/ToastContext';
-import { useSearch, useCoreSignalSearch, useCombinedSearch } from '../../../hooks/useSearch';
+import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../../../hooks/useSearch';
 
 export interface SearchRef {
   clearSearch: () => void;
@@ -32,7 +32,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
   
   // Search hooks for different modes
   const databaseSearch = useSearch();
-  const coreSignalSearch = useCoreSignalSearch();
+  const externalSourceSearch = useExternalSourceSearch();
   const combinedSearch = useCombinedSearch();
 
   // Redirect to projects page if no projectId (global search no longer supported)
@@ -49,7 +49,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
   const [isAIEnhancementModalOpen, setIsAIEnhancementModalOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchMode, setSearchMode] = useState<'database' | 'coresignal' | 'combined'>('database');
+  const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external'); // Default to external search
 
   // Handle state from SearchResults page - simplified since we don't store filters locally anymore
   useEffect(() => {
@@ -379,53 +379,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
             </div>
           </div>
 
-          {/* Search Mode Selection */}
-          <div className="w-full mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-              </div>
-              <h3 className="text-sm font-medium text-gray-700">Search Mode</h3>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                onClick={() => setSearchMode('database')}
-                className={`p-3 rounded-lg border text-center transition-all ${
-                  searchMode === 'database'
-                    ? 'border-purple-300 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <div className="text-sm font-medium mb-1">Database</div>
-                <div className="text-xs text-gray-500">Search existing candidates</div>
-              </button>
-              
-              <button
-                onClick={() => setSearchMode('coresignal')}
-                className={`p-3 rounded-lg border text-center transition-all ${
-                  searchMode === 'coresignal'
-                    ? 'border-purple-300 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <div className="text-sm font-medium mb-1">CoreSignal</div>
-                <div className="text-xs text-gray-500">Find new candidates</div>
-              </button>
-              
-              <button
-                onClick={() => setSearchMode('combined')}
-                className={`p-3 rounded-lg border text-center transition-all ${
-                  searchMode === 'combined'
-                    ? 'border-purple-300 bg-purple-50 text-purple-700'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <div className="text-sm font-medium mb-1">Combined</div>
-                <div className="text-xs text-gray-500">Database + external</div>
-              </button>
-            </div>
-          </div>
+          {/* Search Mode Selection - Hidden for now, defaults to external search */}
 
           {/* Search Button */}
           <div className="w-full mb-6">

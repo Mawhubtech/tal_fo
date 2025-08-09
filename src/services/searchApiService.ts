@@ -8,7 +8,7 @@ export interface SearchParams {
     page: number;
     limit: number;
   };
-  after?: string; // For external source pagination (CoreSignal cursor)
+  after?: string; // For external source pagination cursor
 }
 
 export interface SearchResult {
@@ -76,9 +76,9 @@ class SearchApiService {
   }
 
   /**
-   * Search candidates using CoreSignal API for external candidate data
+   * Search candidates using external candidate sources
    */
-  async searchCandidatesWithCoreSignal(params: SearchParams): Promise<SearchResponse> {
+  async searchCandidatesWithExternalSources(params: SearchParams): Promise<SearchResponse> {
     try {
       // Create a clean copy of params without pagination and after for the body
       const bodyParams = {
@@ -97,18 +97,18 @@ class SearchApiService {
         queryParams.append('after', params.after);
       }
       
-      const url = `/search/candidates/coresignal${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `/search/candidates/external${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       
       const response = await apiClient.post(url, bodyParams);
       return response.data;
     } catch (error) {
-      console.error('Error searching candidates with CoreSignal:', error);
+      console.error('Error searching candidates with external sources:', error);
       throw error;
     }
   }
 
   /**
-   * Search candidates from both local database and CoreSignal API
+   * Search candidates from both local database and external sources
    */
   async searchCandidatesCombined(params: SearchParams, includeExternal: boolean = true): Promise<SearchResponse> {
     try {

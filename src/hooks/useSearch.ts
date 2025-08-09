@@ -71,17 +71,17 @@ export const useSearch = () => {
   };
 };
 
-// Hook for CoreSignal search
-export const useCoreSignalSearch = () => {
+// Hook for external source search
+export const useExternalSourceSearch = () => {
   const [searchParams, setSearchParams] = useState<SearchParams | null>(null);
 
   const searchMutation = useMutation({
-    mutationFn: (params: SearchParams) => searchApiService.searchCandidatesWithCoreSignal(params),
+    mutationFn: (params: SearchParams) => searchApiService.searchCandidatesWithExternalSources(params),
     onSuccess: (data) => {
-      console.log('CoreSignal search completed successfully:', data);
+      console.log('External source search completed successfully:', data);
     },
     onError: (error) => {
-      console.error('CoreSignal search failed:', error);
+      console.error('External source search failed:', error);
     },
   });
 

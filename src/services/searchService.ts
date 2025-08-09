@@ -150,7 +150,7 @@ class SearchService {
   /**
    * Search candidates using CoreSignal API for external candidate data
    */
-  async searchCandidatesWithCoreSignal(filters: SearchFilters, searchText?: string, pagination?: PaginationOptions): Promise<SearchResponse> {
+  async searchCandidatesWithExternalSources(filters: SearchFilters, searchText?: string, pagination?: PaginationOptions): Promise<SearchResponse> {
     try {
       const response = await apiClient.post<SearchResponse>(`${this.baseURL}/candidates/coresignal`, {
         filters,
