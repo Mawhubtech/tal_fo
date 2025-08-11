@@ -10,7 +10,7 @@ import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useProjectProspects, useAddProspectsToProject } from '../../../hooks/useSourcingProspects';
 import { useProject } from '../../../hooks/useSourcingProjects';
-import { useShortlistCoreSignalCandidate } from '../../../hooks/useShortlistCoreSignal';
+import { useShortlistExternalCandidate } from '../../../hooks/useShortlistExternal';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyCompanies } from '../../../hooks/useCompany';
@@ -189,7 +189,7 @@ const SearchResultsPage: React.FC = () => {
   const { data: myCompanies } = useMyCompanies();
   const { addToast } = useToast();
   const addProspectsToProjectMutation = useAddProspectsToProject();
-  const shortlistCoreSignalMutation = useShortlistCoreSignalCandidate();
+  const shortlistExternalMutation = useShortlistExternalCandidate();
   
   // Calculate overall loading state
   const isSearchLoading = isLoading || isExternalSourceLoading || isCombinedLoading;
@@ -675,25 +675,36 @@ const SearchResultsPage: React.FC = () => {
       if (isExternalSourceCandidate && (candidate.coreSignalId || candidate.id)) {
         try {
           const coreSignalId = candidate.coreSignalId || candidate.id;
-          const shortlistResult = await shortlistCoreSignalMutation.mutateAsync({
+          const shortlistResult = await shortlistExternalMutation.mutateAsync({
             coreSignalId: coreSignalId,
             candidateData: candidate,
             createdBy: user?.id || ''
           });
 
+          // Extract candidate ID regardless of success status (for existing candidates)
+          candidateIdForProspects = shortlistResult.candidateId || shortlistResult.existingCandidateId || candidate.id;
+
           if (shortlistResult.success) {
-            // Use the returned candidate ID for adding to prospects
-            candidateIdForProspects = shortlistResult.candidateId || shortlistResult.existingCandidateId || candidate.id;
-            
             addToast({
               type: 'success',
               title: 'Candidate Saved',
               message: shortlistResult.message,
               duration: 3000
             });
+          } else if (shortlistResult.existingCandidateId) {
+            // Candidate already exists, show info message
+            addToast({
+              type: 'info',
+              title: 'Candidate Already Exists',
+              message: shortlistResult.message,
+              duration: 3000
+            });
+          } else {
+            // Other error
+            throw new Error(shortlistResult.message);
           }
         } catch (shortlistError) {
-          console.error('Error saving CoreSignal candidate:', shortlistError);
+          console.error('Error saving external candidate:', shortlistError);
           addToast({
             type: 'error',
             title: 'Failed to Save Candidate',
@@ -722,35 +733,60 @@ const SearchResultsPage: React.FC = () => {
       const prospectsData: AddProspectsToProjectDto = {
         candidateIds: [candidateIdForProspects],
         searchId: searchId || undefined,
-        stageId: stageId // Pass the selected stage ID if provided
+        // Don't pass stageId - let backend handle stage assignment for project-specific pipelines
       };
 
       // Add the prospects to the project
-      await addProspectsToProjectMutation.mutateAsync({
-        projectId: projectId!,
-        data: prospectsData
-      });
+      try {
+        await addProspectsToProjectMutation.mutateAsync({
+          projectId: projectId!,
+          data: prospectsData
+        });
 
-      // Update prospects added count
-      const newProspectsCount = prospectsAddedCount + 1;
-      setProspectsAddedCount(newProspectsCount);
+        // Update prospects added count
+        const newProspectsCount = prospectsAddedCount + 1;
+        setProspectsAddedCount(newProspectsCount);
 
-      // Mark candidate as shortlisted
-      setShortlistedCandidates(prev => ({ ...prev, [candidate.id]: true }));
+        // Mark candidate as shortlisted
+        setShortlistedCandidates(prev => ({ ...prev, [candidate.id]: true }));
 
-      // Close stage selector if it was open
-      handleCloseStageSelector(candidate.id);
+        // Close stage selector if it was open
+        handleCloseStageSelector(candidate.id);
 
-      // Show success feedback
-      const selectedStage = stageId ? availableStages.find(stage => stage.id === stageId) : availableStages[0];
-      const pipelineName = pipelineToUse?.name || defaultPipeline.name;
-      
-      addToast({
-        type: 'success',
-        title: 'Candidate Shortlisted Successfully',
-        message: `${candidate.fullName} has been ${isExternalSourceCandidate ? 'saved to your database and ' : ''}added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
-        duration: 5000
-      });
+        // Show success feedback
+        const selectedStage = stageId ? availableStages.find(stage => stage.id === stageId) : availableStages[0];
+        const pipelineName = pipelineToUse?.name || defaultPipeline.name;
+        
+        addToast({
+          type: 'success',
+          title: 'Candidate Shortlisted Successfully',
+          message: `${candidate.fullName} has been ${isExternalSourceCandidate ? 'saved to your database and ' : ''}added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
+          duration: 5000
+        });
+        
+      } catch (prospectError: any) {
+        // Handle duplicate shortlisting specifically
+        if (prospectError?.response?.status === 409 || prospectError?.message?.includes('already exist as prospects')) {
+          // Mark candidate as shortlisted even if it was already shortlisted
+          setShortlistedCandidates(prev => ({ ...prev, [candidate.id]: true }));
+          
+          addToast({
+            type: 'info',
+            title: 'Already Shortlisted',
+            message: `${candidate.fullName} is already shortlisted for this project.`,
+            duration: 5000
+          });
+        } else {
+          console.error('Error adding candidate to prospects:', prospectError);
+          addToast({
+            type: 'error',
+            title: 'Shortlisting Failed',
+            message: prospectError instanceof Error ? prospectError.message : 'Failed to shortlist candidate to the project. Please try again.',
+            duration: 7000
+          });
+        }
+        return;
+      }
       
     } catch (error) {
       console.error('Error shortlisting candidate:', error);
@@ -1060,8 +1096,8 @@ const SearchResultsPage: React.FC = () => {
                                           <Button
                                             variant="primary"
                                             size="sm"
-                                            onClick={() => handleShortlist(candidate, undefined, selectedStageId[candidate.id])}
-                                            disabled={!selectedStageId[candidate.id] || shortlistingCandidates[candidate.id]}
+                                            onClick={() => handleShortlist(candidate, undefined)}
+                                            disabled={shortlistingCandidates[candidate.id]}
                                             className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
                                           >
                                             {shortlistingCandidates[candidate.id] ? (
@@ -1083,7 +1119,7 @@ const SearchResultsPage: React.FC = () => {
                                   <Button 
                                     size="sm" 
                                     className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 rounded-r-none"
-                                    onClick={() => handleShortlist(candidate, undefined, availableStages[0]?.id)}
+                                    onClick={() => handleShortlist(candidate, undefined)}
                                     disabled={shortlistingCandidates[candidate.id] || pipelinesLoading || projectLoading}
                                   >
                                     {shortlistingCandidates[candidate.id] ? (

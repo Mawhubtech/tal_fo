@@ -105,6 +105,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             </Link>
           )}
 
+          {/* Global Search Section */}
+          <Link 
+            to="/dashboard/search" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+            title={!isExpanded ? "Global Search" : ""}
+          >
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/search') ? '#7e22ce' : '#9ca3af' }}>
+              <Search className="w-4 h-4" />
+            </div>
+            {isExpanded && "Global Search"}
+          </Link>
+
           {/* Sourcing Section - single menu item, renamed from Projects */}
           {hasPermission(SIDEBAR_PERMISSIONS.SOURCING_ACCESS) && (
             <Link 

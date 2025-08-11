@@ -164,7 +164,7 @@ class SearchService {
 
       return response.data;
     } catch (error) {
-      console.error('Error searching candidates with CoreSignal:', error);
+      console.error('Error searching candidates with external source:', error);
       return {
         results: [],
         total: 0,
@@ -276,15 +276,15 @@ class SearchService {
   }
 
   /**
-   * Shortlist a CoreSignal candidate (save to database)
+   * Shortlist an external candidate (save to database)
    */
-  async shortlistCoreSignalCandidate(
+  async shortlistExternalCandidate(
     coreSignalId: number,
     candidateData: any,
     createdBy: string
   ): Promise<{ success: boolean; candidateId?: string; message: string; existingCandidateId?: string }> {
     try {
-      const response = await apiClient.post(`${this.baseURL}/shortlist-coresignal-candidate`, {
+      const response = await apiClient.post(`${this.baseURL}/shortlist-external-candidate`, {
         coreSignalId,
         candidateData,
         createdBy
@@ -292,7 +292,7 @@ class SearchService {
 
       return response.data;
     } catch (error) {
-      console.error('Error shortlisting CoreSignal candidate:', error);
+      console.error('Error shortlisting external candidate:', error);
       throw error;
     }
   }
@@ -306,5 +306,5 @@ export const searchUsers = (filters: SearchFilters, searchText?: string, paginat
 export const searchCandidates = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidates(filters, searchText, pagination);
 export const getAllCandidates = () => searchService.getAllUsers();
 export const getCandidateById = (id: string) => searchService.getCandidateById(id);
-export const shortlistCoreSignalCandidate = (coreSignalId: number, candidateData: any, createdBy: string) => 
-  searchService.shortlistCoreSignalCandidate(coreSignalId, candidateData, createdBy);
+export const shortlistExternalCandidate = (coreSignalId: number, candidateData: any, createdBy: string) => 
+  searchService.shortlistExternalCandidate(coreSignalId, candidateData, createdBy);

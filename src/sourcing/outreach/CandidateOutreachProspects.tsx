@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Plus, LayoutGrid, List, X, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import { useSourcingProspects, useSourcingDefaultPipeline, useMoveSourcingProspectStage, useDeleteSourcingProspect } from '../../hooks/useSourcingProspects';
+import { useSourcingProspects, useProjectProspects, useSourcingDefaultPipeline, useMoveSourcingProspectStage, useDeleteSourcingProspect } from '../../hooks/useSourcingProspects';
 import { useCandidate } from '../../hooks/useCandidates';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { SourcingKanbanView } from '../components/pipeline/SourcingKanbanView';
@@ -268,7 +268,20 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
     // Exclude _timestamp from API params
   }), [appliedFilters.search, appliedFilters.status, appliedFilters.source, appliedFilters.location, appliedFilters.skills, appliedFilters.minRating, user?.id]);
   
-  const { data: sourcingData, isLoading: prospectsLoading, error: prospectsError } = useSourcingProspects(queryParams);
+  // Use project-specific prospects when projectId is provided, otherwise use global prospects
+  const { data: globalSourcingData, isLoading: globalProspectsLoading, error: globalProspectsError } = useSourcingProspects(
+    projectId ? {} : queryParams // Only fetch global prospects if no projectId
+  );
+  const { data: projectSourcingData, isLoading: projectProspectsLoading, error: projectProspectsError } = useProjectProspects(
+    projectId || '' // Only fetch project prospects if projectId is provided
+  );
+  
+  // Use the appropriate data source based on whether we have a projectId
+  const sourcingData = projectId 
+    ? { prospects: projectSourcingData || [], total: (projectSourcingData || []).length }
+    : globalSourcingData;
+  const prospectsLoading = projectId ? projectProspectsLoading : globalProspectsLoading;
+  const prospectsError = projectId ? projectProspectsError : globalProspectsError;
   
   // Debug effect to track query params changes
   useEffect(() => {

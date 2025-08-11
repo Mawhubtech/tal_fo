@@ -17,6 +17,7 @@ import {
 import { useProjects } from '../../hooks/useSourcingProjects';
 import { SourcingProject } from '../../services/sourcingProjectApiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import QuickSearch from '../../components/QuickSearch';
 
 const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
   const getStatusColor = (status: string) => {
@@ -199,6 +200,11 @@ const SourcingProjectsPage: React.FC = () => {
           <Plus className="w-5 h-5 mr-2" />
           New Project
         </Link>
+      </div>
+
+      {/* Quick Search Section */}
+      <div className="mb-8">
+        <QuickSearch className="max-w-2xl" />
       </div>
 
       {/* Filters */}
