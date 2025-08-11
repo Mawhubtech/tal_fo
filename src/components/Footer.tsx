@@ -4,65 +4,26 @@ import { Shield } from 'lucide-react';
 const Footer: React.FC = () => {
   const sections = [
     {
-      title: 'PRODUCTS',
+      title: 'COMPANY',
       links: [
-        { label: 'Search (PeopleGPT)', href: '/search' },
-        { label: 'Talent Insights', href: '/insights' },
-        { label: 'Email Outreach', href: '/email' },
-        { label: 'Chrome Extension', href: '/extension' },
+        { label: 'About', href: '/about' },
+        { label: 'Careers', href: '/careers' },
+        { label: 'Contact', href: '/contact' },
       ],
     },
     {
       title: 'LEGAL',
       links: [
-        { label: 'Terms and Conditions', href: '/terms' },
         { label: 'Privacy Policy', href: '/privacy' },
-        { label: 'Cookie Policy', href: '/cookies' },
-        { label: 'GDPR & CCPA', href: '/gdpr' },
-        { label: 'Cookie Settings', href: '#' },
+        { label: 'Terms of Service', href: '/terms' },
       ],
     },
     {
       title: 'SUPPORT',
       links: [
         { label: 'Help Center', href: '/help' },
-        { label: 'Privacy Choices', href: '/privacy-choices' },
-        { label: 'Email Support', href: '/support' },
-        { label: 'Request a Demo', href: '/demo' },
-        { label: 'Responsible Disclosure', href: '/disclosure' },
-        { label: 'Status', href: '/status' },
+        { label: 'Documentation', href: '/docs' },
       ],
-    },
-    {
-      title: 'RESOURCES',
-      links: [
-        { label: 'Docs', href: '/docs' },
-        { label: 'Announcements', href: '/announcements' },
-        { label: 'Articles', href: '/articles' },
-        { label: 'Referral Program', href: '/referral' },
-        { label: 'Pricing', href: '/pricing' },
-        { label: 'Search Library', href: '/library' },
-        { label: 'Video Demo', href: '/video-demo' },
-      ],
-    },
-    {
-      title: 'COMPANY',
-      links: [
-        { label: 'Careers', href: '/careers' },
-        { label: 'LinkedIn', href: 'https://linkedin.com' },
-        { label: 'Twitter', href: 'https://twitter.com' },
-      ],
-    },
-    {
-      title: 'SECURITY',
-      links: [
-        { label: 'Trust Center', href: '/trust' },
-        { label: 'AI Audit Center', href: '/ai-audit' }
-      ],
-      certifications: [
-        { name: 'SOC2 Type II Certified' },
-        { name: 'ISO 27001 Certified' }
-      ]
     },
   ];
 
@@ -71,7 +32,7 @@ const Footer: React.FC = () => {
       <div className="absolute inset-0 bg-grid-lines opacity-5 pointer-events-none"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {sections.map((section, index) => (
             <div key={index}>
               <h3 className="text-sm font-medium mb-4">{section.title}</h3>
@@ -87,19 +48,6 @@ const Footer: React.FC = () => {
                   </li>
                 ))}
               </ul>
-              {section.certifications && (
-                <div className="mt-4 space-y-2">
-                  {section.certifications.map((cert, certIndex) => (
-                    <div 
-                      key={certIndex}
-                      className="text-xs text-gray-400 flex items-center gap-2"
-                    >
-                      <Shield className="w-4 h-4" />
-                      {cert.name}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -111,10 +59,10 @@ const Footer: React.FC = () => {
           </div>
           
           <a 
-            href="mailto:sales@talgpt.work"
+            href="mailto:contact@talplatform.ai"
             className="text-gray-400 hover:text-white transition-colors"
           >
-            sales@talgpt.work
+            contact@talplatform.ai
           </a>
           
           <span className="text-gray-400">
