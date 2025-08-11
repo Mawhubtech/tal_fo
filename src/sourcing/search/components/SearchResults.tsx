@@ -81,19 +81,22 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Searching candidates...</p>
+      <div className="p-12 text-center bg-white rounded-2xl">
+        <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mx-auto mb-4 animate-pulse"></div>
+        <p className="text-lg font-medium text-gray-900">Finding perfect candidates...</p>
+        <p className="text-gray-600 mt-2">Searching across 30+ data sources</p>
       </div>
     );
   }
 
   if (results.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No candidates found</h3>
-        <p className="text-gray-600">
+      <div className="p-12 text-center bg-white rounded-2xl border border-gray-200">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <User className="w-8 h-8 text-gray-400" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">No candidates found</h3>
+        <p className="text-gray-600 max-w-md mx-auto">
           Try adjusting your search criteria or filters to find more candidates.
         </p>
       </div>
@@ -128,21 +131,21 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 bg-white rounded-2xl border border-gray-200 p-8">
       {/* Results Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900">
             {results.length} candidate{results.length !== 1 ? 's' : ''} found
           </h2>
           {searchQuery && (
-            <p className="text-sm text-gray-600 mt-1">
-              Results for: <span className="font-medium">"{searchQuery}"</span>
+            <p className="text-gray-600 mt-2">
+              Results for: <span className="font-semibold text-purple-600">"{searchQuery}"</span>
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <select className="text-sm border border-gray-300 rounded-md px-3 py-2">
+        <div className="flex items-center gap-3">
+          <select className="text-sm border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
             <option>Sort by relevance</option>
             <option>Sort by experience</option>
             <option>Sort by name</option>
@@ -151,27 +154,27 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       </div>
 
       {/* Results List */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {results.map((result) => {
           const { user, score, matchedCriteria } = result;
           const { personalInfo, experience, skills, summary } = user.structuredData;
           
           return (
-            <div key={result.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+            <div key={result.id} className="bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-2xl p-8 hover:shadow-lg hover:border-purple-200 transition-all duration-300">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
                         {personalInfo.fullName.split(' ').map(n => n[0]).join('')}
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-xl font-bold text-gray-900">
                           {personalInfo.fullName}
                         </h3>
-                        <p className="text-sm text-gray-600">{getCurrentRole(experience)}</p>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                        <p className="text-gray-600 font-medium">{getCurrentRole(experience)}</p>
+                        <div className="flex items-center gap-6 mt-2 text-sm text-gray-500">
                           {personalInfo.location && (
                             <div className="flex items-center gap-1">
                               <MapPin className="w-4 h-4" />
@@ -188,22 +191,22 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     
                     {/* Match Score */}
                     <div className="text-right">
-                      <div className="flex items-center gap-1 mb-2">
-                        <Star className="w-4 h-4 text-yellow-500" />
-                        <span className="text-sm font-medium text-gray-900">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Star className="w-5 h-5 text-yellow-500" />
+                        <span className="text-lg font-bold text-gray-900">
                           {formatMatchScore(score)}% match
                         </span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <button
                           onClick={() => onViewProfile(result.id)}
-                          className="text-xs text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 px-3 py-1 rounded-md transition-colors"
+                          className="px-4 py-2 text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg transition-all duration-200 font-medium"
                         >
                           View Profile
                         </button>
                         <button
                           onClick={() => onContactCandidate(result.id)}
-                          className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md transition-colors"
+                          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all duration-200 font-medium shadow-lg"
                         >
                           Contact
                         </button>
