@@ -11,8 +11,7 @@ import AnimatedSection from '../components/AnimatedSection';
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+    <div className="min-h-screen bg-white text-gray-900">
       <Navbar />
       <main className="space-y-16">
         <Hero />
