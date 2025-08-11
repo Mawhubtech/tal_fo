@@ -52,10 +52,10 @@ export const useCandidates = (params: CandidateQueryParams) => {
 };
 
 // Hook to fetch candidate statistics
-export const useCandidateStats = () => {
+export const useCandidateStats = (includeJobseekers?: boolean) => {
   return useQuery({
-    queryKey: [QUERY_KEYS.candidateStats],
-    queryFn: () => candidatesService.getStats(),
+    queryKey: [QUERY_KEYS.candidateStats, includeJobseekers],
+    queryFn: () => candidatesService.getStats(includeJobseekers),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };

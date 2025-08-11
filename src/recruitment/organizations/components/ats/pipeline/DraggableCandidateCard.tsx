@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Calendar, Mail, Phone, Star, GripVertical, Trash2 } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
@@ -43,6 +44,17 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
     id: candidate.id,
   });
 
+  // Make each card also a drop target for the stage
+  const { setNodeRef: setDropNodeRef, isOver } = useDroppable({
+    id: `${candidate.stage}-card-${candidate.id}`,
+  });
+
+  // Combine both refs
+  const setRefs = (node: HTMLElement | null) => {
+    setNodeRef(node);
+    setDropNodeRef(node);
+  };
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -50,9 +62,9 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
 
   return (
     <div 
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
-      className={`bg-white border border-gray-200 rounded-lg p-3 mb-2 transition-all duration-200 ${
+      className={`bg-white border border-gray-200 rounded-lg p-2 mb-1 transition-all duration-200 ${
         isBeingDragged || isDragging
           ? 'shadow-lg ring-2 ring-purple-500 ring-opacity-50 opacity-90 cursor-grabbing' 
           : 'hover:shadow-md cursor-pointer'
@@ -60,7 +72,14 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
         isPending 
           ? 'opacity-75 pointer-events-none relative overflow-hidden border-blue-300 bg-blue-50' 
           : ''
+      } ${
+        isOver
+          ? 'ring-2 ring-purple-400 ring-opacity-30 bg-purple-50 border-purple-300'
+          : ''
       }`}
+      onClick={onClick}
+      {...attributes}
+      {...listeners}
     >
       {/* Pending indicator with loading animation */}
       {isPending && (
@@ -79,106 +98,62 @@ export const DraggableCandidateCard: React.FC<DraggableCandidateCardProps> = ({
           {...listeners}
           className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0 mt-1"
         >
-          <GripVertical className="w-4 h-4" />
+          <GripVertical className="w-3 h-3" />
         </div>
 
-        {/* Card Content */}
+        {/* Card Content - Collapsed view only */}
         <div className="flex-1 min-w-0">
-          {/* Candidate Info */}
-          <div className="flex items-center mb-2 gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
-              {candidate.avatar ? (
-                <img 
-                  src={candidate.avatar} 
-                  alt={candidate.name} 
-                  className="w-8 h-8 rounded-full object-cover" 
-                />
-              ) : (
-                <span className="text-purple-600 font-medium text-xs">
-                  {getInitials(candidate.name)}
-                </span>
-              )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
+                {candidate.avatar ? (
+                  <img 
+                    src={candidate.avatar} 
+                    alt={candidate.name} 
+                    className="w-6 h-6 rounded-full object-cover" 
+                  />
+                ) : (
+                  <span className="text-purple-600 font-medium text-xs">
+                    {getInitials(candidate.name)}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClick?.();
+                  }}
+                  className="text-sm font-medium text-gray-900 truncate hover:text-purple-600 hover:underline cursor-pointer transition-colors text-left block w-full"
+                  title={`${candidate.name} - ${candidate.email} - ${candidate.phone || 'No phone'}`}
+                >
+                  {candidate.name}
+                </button>
+                <div className="text-xs text-gray-500 truncate">
+                  {candidate.email}
+                </div>
+                {candidate.phone && (
+                  <div className="text-xs text-gray-500 truncate">
+                    {candidate.phone}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <button 
+            {/* Remove Button */}
+            {onRemove && (
+              <button
                 onClick={(e) => {
-                  e.stopPropagation(); // Prevent card drag from interfering
-                  onClick?.();
+                  e.stopPropagation();
+                  onRemove();
                 }}
-                className="text-sm font-medium text-gray-900 truncate hover:text-purple-600 hover:underline cursor-pointer transition-colors text-left block w-full"
-                title="Click to view full profile"
+                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors flex-shrink-0"
+                title="Remove candidate from this job"
               >
-                {candidate.name}
+                <Trash2 className="w-3 h-3" />
               </button>
-              <div className="flex items-center">
-                <Star className="w-3 h-3 text-yellow-400 mr-1 flex-shrink-0" />
-                <span className={`text-xs font-medium ${getScoreColor(candidate.score)}`}>
-                  {candidate.score}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Contact Info */}
-          <div className="text-xs text-gray-500 mb-2 space-y-1">
-            <div className="flex items-center gap-1">
-              <Mail className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate flex-1">{candidate.email}</span>
-            </div>
-            {candidate.phone && (
-              <div className="flex items-center gap-1">
-                <Phone className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{candidate.phone}</span>
-              </div>
             )}
-          </div>
-          
-          {/* Tags */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            {candidate.tags.slice(0, 2).map((tag, index) => (
-              <span
-                key={index}
-                className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded truncate max-w-[80px]"
-                title={tag}
-              >
-                {tag}
-              </span>
-            ))}
-            {candidate.tags.length > 2 && (
-              <span 
-                className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
-                title={candidate.tags.slice(2).join(', ')}
-              >
-                +{candidate.tags.length - 2}
-              </span>
-            )}
-          </div>
-          
-          {/* Applied Date */}
-          <div className="flex items-center text-xs text-gray-400 mb-2 gap-1">
-            <Calendar className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">Applied {new Date(candidate.appliedDate).toLocaleDateString()}</span>
-          </div>
-          
-          {/* Source */}
-          <div className="text-xs text-gray-500">
-            Source: {candidate.source}
           </div>
         </div>
-
-        {/* Remove Button */}
-        {onRemove && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent card click
-              onRemove();
-            }}
-            className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors flex-shrink-0 self-start"
-            title="Remove candidate from this job"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
       </div>
     </div>
   );

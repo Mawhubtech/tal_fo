@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, ChevronDown, ChevronUp, X, Plus } from 'lucide-react';
 import Button from '../../../components/Button';
 import FilterDialog from '../../../components/FilterDialog';
 import { useSearch } from '../../../hooks/useSearch';
+import { useExternalSourceSearch, useCombinedSearch } from '../../../hooks/useSearch';
 import { useCandidateSummary } from '../../../hooks/useCandidateSummary';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useProjectProspects, useAddProspectsToProject } from '../../../hooks/useSourcingProspects';
 import { useProject } from '../../../hooks/useSourcingProjects';
+import { useShortlistCoreSignalCandidate } from '../../../hooks/useShortlistCoreSignal';
 import { useToast } from '../../../contexts/ToastContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyCompanies } from '../../../hooks/useCompany';
@@ -156,6 +158,7 @@ const SearchResultsPage: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchId, setSearchId] = useState<string | null>(null);
+  const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external'); // Default to external search
   const [prospectsAddedCount, setProspectsAddedCount] = useState<number>(0);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [candidateSummaries, setCandidateSummaries] = useState<{ [key: string]: any }>({});
@@ -164,11 +167,21 @@ const SearchResultsPage: React.FC = () => {
   const [showStageSelector, setShowStageSelector] = useState<{ [key: string]: boolean }>({});
   const [selectedStageId, setSelectedStageId] = useState<{ [key: string]: string }>({});
   
+  // Pagination state
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
+  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
+  const [totalResults, setTotalResults] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  
+  // Calculate overall loading state
   // Get current user context
   const { user } = useAuthContext();
   
   // Use hooks
   const { executeSearch, isLoading, error, data } = useSearch();
+  const { executeSearch: executeExternalSourceSearch, isLoading: isExternalSourceLoading } = useExternalSourceSearch();
+  const { executeSearch: executeCombinedSearch, isLoading: isCombinedLoading } = useCombinedSearch();
   const { generateSummary, isLoading: summaryLoading } = useCandidateSummary();
   const { data: sourcingPipelines, isLoading: pipelinesLoading } = useActivePipelines('sourcing');
   const { data: existingProspects } = useProjectProspects(projectId!);
@@ -176,6 +189,10 @@ const SearchResultsPage: React.FC = () => {
   const { data: myCompanies } = useMyCompanies();
   const { addToast } = useToast();
   const addProspectsToProjectMutation = useAddProspectsToProject();
+  const shortlistCoreSignalMutation = useShortlistCoreSignalCandidate();
+  
+  // Calculate overall loading state
+  const isSearchLoading = isLoading || isExternalSourceLoading || isCombinedLoading;
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
@@ -200,16 +217,60 @@ const SearchResultsPage: React.FC = () => {
 
   useEffect(() => {
     if (location.state) {
-      const { query, filters, searchId: stateSearchId } = location.state;
+      const { query, filters, searchId: stateSearchId, searchMode: stateSearchMode } = location.state;
       setSearchQuery(query || '');
       setFilters(filters || {});
       setSearchId(stateSearchId || null);
-      fetchResults(filters, query);
+      setSearchMode(stateSearchMode || 'external');
+      
+      // Check for pagination state in URL
+      const urlParams = new URLSearchParams(location.search);
+      const urlPage = urlParams.get('page');
+      const urlCursor = urlParams.get('cursor');
+      
+      if (urlPage && urlCursor && parseInt(urlPage) > 1) {
+        // Restore pagination state and fetch all pages up to current
+        const targetPage = parseInt(urlPage);
+        setCurrentPage(targetPage);
+        setNextCursor(urlCursor);
+        
+        // Fetch all pages from 1 to target page to rebuild the results list
+        fetchAllPagesUpTo(filters, query, stateSearchMode || 'external', targetPage);
+      } else {
+        // Fresh search - fetch first page only
+        fetchResults(filters, query, stateSearchMode || 'external');
+        
+        // Set initial URL parameters
+        const urlParams = new URLSearchParams();
+        urlParams.set('q', query || '');
+        urlParams.set('page', '1');
+        
+        const newUrl = `${location.pathname}?${urlParams.toString()}`;
+        window.history.replaceState(null, '', newUrl);
+      }
     } else {
-      // Navigate back to project searches if no state
-      navigate(`/dashboard/sourcing/projects/${projectId}/searches`);
+      // Check if we have URL params that can restore the search
+      const urlParams = new URLSearchParams(location.search);
+      const urlQuery = urlParams.get('q');
+      const urlPage = urlParams.get('page');
+      
+      if (urlQuery) {
+        // Try to restore from URL params
+        setSearchQuery(urlQuery);
+        setSearchMode('external');
+        const targetPage = urlPage ? parseInt(urlPage) : 1;
+        
+        if (targetPage > 1) {
+          fetchAllPagesUpTo({}, urlQuery, 'external', targetPage);
+        } else {
+          fetchResults({}, urlQuery, 'external');
+        }
+      } else {
+        // Navigate back to project searches if no state and no URL params
+        navigate(`/dashboard/sourcing/projects/${projectId}/searches`);
+      }
     }
-  }, [location.state, navigate, projectId]);
+  }, [location.state, location.search, navigate, projectId]);
 
   // Check for existing prospects and mark candidates as shortlisted
   useEffect(() => {
@@ -331,29 +392,191 @@ const SearchResultsPage: React.FC = () => {
   }, [prospectsAddedCount]); // Only depend on prospectsAddedCount
   */
 
-  const fetchResults = async (filters: SearchFilters, query?: string) => {
+  const fetchResults = async (filters: SearchFilters, query?: string, mode?: 'database' | 'external' | 'combined', cursor?: string, resetResults: boolean = true) => {
     try {
       const searchParams = {
         filters,
         searchText: query,
-        pagination: { page: 1, limit: 20 }
+        pagination: { page: 1, limit: 10 },
+        after: cursor
       };
       
-      const searchResults = await executeSearch(searchParams);
+      const searchMode = mode || 'database';
+      let searchResults: any;
+      
+      // Execute search based on mode
+      if (searchMode === 'external') {
+        searchResults = await executeExternalSourceSearch(searchParams);
+      } else if (searchMode === 'combined') {
+        searchResults = await executeCombinedSearch(searchParams, true);
+      } else {
+        searchResults = await executeSearch(searchParams);
+      }
+      
       console.log('Search results:', searchResults); // Debug log
+      console.log('Search results type:', typeof searchResults);
+      console.log('Search results keys:', searchResults ? Object.keys(searchResults) : 'null');
+      if (searchResults && searchResults.externalPagination) {
+        console.log('External pagination:', searchResults.externalPagination);
+      }
       
       // Handle the response structure from backend
+      let newResults: any[] = [];
       if (searchResults && typeof searchResults === 'object' && 'results' in searchResults) {
-        setResults((searchResults as any).results || []);
+        newResults = (searchResults as any).results || [];
       } else if (Array.isArray(searchResults)) {
-        setResults(searchResults);
-      } else {
-        setResults([]);
+        newResults = searchResults;
       }
+
+      // Handle pagination metadata for external sources
+      if (searchResults && searchResults.externalPagination) {
+        setNextCursor(searchResults.externalPagination.nextCursor);
+        setHasNextPage(searchResults.externalPagination.hasNextPage);
+        if (searchResults.externalPagination.totalResults) {
+          setTotalResults(searchResults.externalPagination.totalResults);
+        }
+      } else {
+        // Reset external pagination state for non-external searches
+        setNextCursor(undefined);
+        setHasNextPage(false);
+        if (searchResults && searchResults.pagination && searchResults.pagination.totalResults) {
+          setTotalResults(searchResults.pagination.totalResults);
+        }
+      }
+
+      // Update results - either replace or append based on resetResults
+      if (resetResults) {
+        setResults(newResults);
+        setCurrentPage(1);
+      } else {
+        // For pagination, append new results but avoid duplicates
+        setResults(prev => {
+          const existingIds = new Set(prev.map(r => r.candidate?.id).filter(Boolean));
+          const uniqueNewResults = newResults.filter(r => 
+            r.candidate?.id && !existingIds.has(r.candidate.id)
+          );
+          console.log(`Appending ${uniqueNewResults.length} new unique candidates (filtered ${newResults.length - uniqueNewResults.length} duplicates)`);
+          return [...prev, ...uniqueNewResults];
+        });
+        setCurrentPage(prev => prev + 1);
+      }
+      
+      setCurrentCursor(cursor);
     } catch (error) {
       console.error('Error fetching search results:', error);
+      if (resetResults) {
+        setResults([]);
+      }
+    }
+  };
+
+  // Function to fetch all pages from 1 to target page (for restoring pagination state)
+  const fetchAllPagesUpTo = async (filters: SearchFilters, query?: string, mode?: 'database' | 'external' | 'combined', targetPage: number = 1) => {
+    try {
+      // Validate target page
+      if (targetPage < 1 || targetPage > 100) { // Reasonable limit
+        console.warn('Invalid target page:', targetPage);
+        return;
+      }
+      
+      let allResults: any[] = [];
+      let currentCursor: string | undefined = undefined;
+      
+      // Fetch pages sequentially from 1 to targetPage
+      for (let page = 1; page <= targetPage; page++) {
+        const searchParams = {
+          filters,
+          searchText: query,
+          pagination: { page: 1, limit: 10 },
+          after: currentCursor
+        };
+        
+        const searchMode = mode || 'database';
+        let searchResults: any;
+        
+        // Execute search based on mode
+        if (searchMode === 'external') {
+          searchResults = await executeExternalSourceSearch(searchParams);
+        } else if (searchMode === 'combined') {
+          searchResults = await executeCombinedSearch(searchParams, true);
+        } else {
+          searchResults = await executeSearch(searchParams);
+        }
+        
+        // Handle the response structure from backend
+        let newResults: any[] = [];
+        if (searchResults && typeof searchResults === 'object' && 'results' in searchResults) {
+          newResults = (searchResults as any).results || [];
+        } else if (Array.isArray(searchResults)) {
+          newResults = searchResults;
+        }
+        
+        // Accumulate results
+        const existingIds = new Set(allResults.map(r => r.candidate?.id).filter(Boolean));
+        const uniqueNewResults = newResults.filter(r => 
+          r.candidate?.id && !existingIds.has(r.candidate.id)
+        );
+        allResults = [...allResults, ...uniqueNewResults];
+        
+        // Update pagination metadata from the last page
+        if (page === targetPage && searchResults && searchResults.externalPagination) {
+          setNextCursor(searchResults.externalPagination.nextCursor);
+          setHasNextPage(searchResults.externalPagination.hasNextPage);
+          if (searchResults.externalPagination.totalResults) {
+            setTotalResults(searchResults.externalPagination.totalResults);
+          }
+        }
+        
+        // Update cursor for next page
+        if (searchResults && searchResults.externalPagination && searchResults.externalPagination.nextCursor) {
+          currentCursor = searchResults.externalPagination.nextCursor;
+        }
+      }
+      
+      // Set all accumulated results
+      setResults(allResults);
+      setCurrentPage(targetPage);
+      setCurrentCursor(currentCursor);
+      
+    } catch (error) {
+      console.error('Error fetching paginated results:', error);
       setResults([]);
     }
+  };
+
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (hasNextPage && nextCursor) {
+      fetchResults(filters, searchQuery, searchMode, nextCursor, false);
+      
+      // Update URL with pagination state
+      const newPage = currentPage + 1;
+      const urlParams = new URLSearchParams(location.search);
+      urlParams.set('page', newPage.toString());
+      urlParams.set('cursor', nextCursor);
+      urlParams.set('q', searchQuery);
+      
+      // Update URL without triggering navigation
+      const newUrl = `${location.pathname}?${urlParams.toString()}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  };
+
+  const handleRefresh = () => {
+    // Reset pagination state and fetch first page
+    setCurrentCursor(undefined);
+    setNextCursor(undefined);
+    setHasNextPage(false);
+    setCurrentPage(1);
+    fetchResults(filters, searchQuery, searchMode, undefined, true);
+    
+    // Reset URL parameters to page 1
+    const urlParams = new URLSearchParams();
+    urlParams.set('q', searchQuery);
+    urlParams.set('page', '1');
+    
+    const newUrl = `${location.pathname}?${urlParams.toString()}`;
+    window.history.replaceState(null, '', newUrl);
   };
 
   const handleSummarize = async (candidateId: string) => {
@@ -387,8 +610,8 @@ const SearchResultsPage: React.FC = () => {
   const handleApplyFilters = (newFilters: SearchFilters) => {
     setFilters(newFilters);
     setIsFilterDialogOpen(false);
-    // Perform new search with updated filters
-    fetchResults(newFilters, searchQuery);
+    // Perform new search with updated filters using current search mode
+    fetchResults(newFilters, searchQuery, searchMode);
   };
   // Handlers for the profile side panel
   const handleOpenProfilePanel = (userData: UserStructuredData, candidateId?: string) => {
@@ -444,6 +667,45 @@ const SearchResultsPage: React.FC = () => {
       // Start shortlisting process
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: true }));
 
+      // Determine if this is an external source candidate
+      const isExternalSourceCandidate = searchMode === 'external' || (searchMode === 'combined' && candidate.source === 'coresignal') || candidate.coreSignalId;
+      let candidateIdForProspects = candidate.id;
+
+      // Step 1: If external source candidate, save to database first
+      if (isExternalSourceCandidate && (candidate.coreSignalId || candidate.id)) {
+        try {
+          const coreSignalId = candidate.coreSignalId || candidate.id;
+          const shortlistResult = await shortlistCoreSignalMutation.mutateAsync({
+            coreSignalId: coreSignalId,
+            candidateData: candidate,
+            createdBy: user?.id || ''
+          });
+
+          if (shortlistResult.success) {
+            // Use the returned candidate ID for adding to prospects
+            candidateIdForProspects = shortlistResult.candidateId || shortlistResult.existingCandidateId || candidate.id;
+            
+            addToast({
+              type: 'success',
+              title: 'Candidate Saved',
+              message: shortlistResult.message,
+              duration: 3000
+            });
+          }
+        } catch (shortlistError) {
+          console.error('Error saving CoreSignal candidate:', shortlistError);
+          addToast({
+            type: 'error',
+            title: 'Failed to Save Candidate',
+            message: shortlistError instanceof Error ? shortlistError.message : 'Failed to save candidate to database. Please try again.',
+            duration: 5000
+          });
+          // Don't continue with prospects addition if candidate save failed
+          return;
+        }
+      }
+
+      // Step 2: Add candidate to sourcing project/prospects
       // Get the default sourcing pipeline
       if (!sourcingPipelines || sourcingPipelines.length === 0) {
         throw new Error('No sourcing pipelines available. Please create a sourcing pipeline first.');
@@ -458,7 +720,7 @@ const SearchResultsPage: React.FC = () => {
 
       // Create the prospects data using the bulk addition endpoint
       const prospectsData: AddProspectsToProjectDto = {
-        candidateIds: [candidate.id],
+        candidateIds: [candidateIdForProspects],
         searchId: searchId || undefined,
         stageId: stageId // Pass the selected stage ID if provided
       };
@@ -480,13 +742,13 @@ const SearchResultsPage: React.FC = () => {
       handleCloseStageSelector(candidate.id);
 
       // Show success feedback
-      const selectedStage = stageId ? availableStages.find(stage => stage.id === stageId) : null;
+      const selectedStage = stageId ? availableStages.find(stage => stage.id === stageId) : availableStages[0];
       const pipelineName = pipelineToUse?.name || defaultPipeline.name;
       
       addToast({
         type: 'success',
-        title: 'Candidate Shortlisted',
-        message: `${candidate.fullName} has been added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
+        title: 'Candidate Shortlisted Successfully',
+        message: `${candidate.fullName} has been ${isExternalSourceCandidate ? 'saved to your database and ' : ''}added to the ${pipelineName} pipeline${selectedStage ? ` in ${selectedStage.name} stage` : ''}`,
         duration: 5000
       });
       
@@ -564,6 +826,9 @@ const SearchResultsPage: React.FC = () => {
              {searchQuery && (
                 <SearchQueryDisplay searchQuery={searchQuery} />
              )}
+             
+             {/* Search Mode Indicator - Hidden from users */}
+             
              <div className="flex items-center gap-3 flex-wrap">
             {Object.entries(filters).map(([key, value]) => (
               value && (typeof value === 'string' || typeof value === 'number') && (
@@ -593,23 +858,23 @@ const SearchResultsPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600 font-medium">
-                  {results.length > 0 ? `Showing 1-${results.length > 15 ? 15 : results.length} of ${results.length}` : '0 results'} {/* Basic pagination text */}
+                  {totalResults > 0 ? `Showing ${results.length} of ${totalResults} results` : '0 results'}
                 </span>
                 <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                  <button className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 transition-colors duration-200" title="Previous Page">
+                  <button 
+                    className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                    title="Refresh Results"
+                    onClick={handleRefresh}
+                    disabled={isSearchLoading}
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button className="px-3 py-2 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l border-gray-300 transition-colors duration-200" title="Next Page">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                   </button>
                 </div>
               </div>
             </div>
-          </div>          {isLoading ? (
+          </div>          {isSearchLoading ? (
             <div className="p-12 text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600 mx-auto"></div>
               <p className="mt-6 text-gray-600 font-medium">Searching candidates...</p>
@@ -629,7 +894,7 @@ const SearchResultsPage: React.FC = () => {
           ) : (
             <div>
               {results.map((result, index) => {
-                const { candidate, score, matchCriteria } = result; // Backend returns CandidateMatchDto with candidate property and match criteria
+                const { candidate, matchCriteria } = result; // Backend returns CandidateMatchDto with candidate property and match criteria
                 // Ensure candidate exists
                 if (!candidate) {
                     console.warn("Candidate data is missing for result:", result);
@@ -642,7 +907,8 @@ const SearchResultsPage: React.FC = () => {
                   email: candidate.email || '',
                   location: candidate.location || 'Location not specified',
                   linkedIn: candidate.linkedIn || '',
-                  github: candidate.github || ''
+                  github: candidate.github || '',
+                  avatar: candidate.avatar || ''
                 };
                 
                 const experience = candidate.experience || [];
@@ -658,9 +924,33 @@ const SearchResultsPage: React.FC = () => {
                       <input type="checkbox" className="mt-2 mr-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
                       <div className="flex-1">
                         
-                        {/* Header with name, score, and actions */}
+                        {/* Header with name and actions */}
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
+                            {/* Avatar */}
+                            <div className="flex-shrink-0">
+                              {personalInfo.avatar ? (
+                                <img
+                                  src={personalInfo.avatar}
+                                  alt={`${personalInfo.fullName} avatar`}
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                  onError={(e) => {
+                                    // If image fails to load, hide it and show initials fallback
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              {/* Fallback initials avatar */}
+                              <div 
+                                className={`w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ${personalInfo.avatar ? 'hidden' : 'flex'}`}
+                                style={{ display: personalInfo.avatar ? 'none' : 'flex' }}
+                              >
+                                {personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </div>
+                            </div>
+                            
                             <h3
                               className="text-lg font-semibold cursor-pointer hover:text-purple-600 transition-colors duration-200 flex items-center gap-2"
                               onClick={() => handleOpenProfilePanel({
@@ -683,14 +973,6 @@ const SearchResultsPage: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
                             </h3>
-                            
-                            {/* Match Score Badge */}
-                            {score > 0 && (
-                              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                                <CheckCircle className="h-3 w-3" />
-                                {Math.round(score * 100)}% match
-                              </div>
-                            )}
                             
                             {/* Social Links */}
                             {personalInfo.linkedIn && (
@@ -801,7 +1083,7 @@ const SearchResultsPage: React.FC = () => {
                                   <Button 
                                     size="sm" 
                                     className="text-sm bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 rounded-r-none"
-                                    onClick={() => handleShowStageSelector(candidate.id)}
+                                    onClick={() => handleShortlist(candidate, undefined, availableStages[0]?.id)}
                                     disabled={shortlistingCandidates[candidate.id] || pipelinesLoading || projectLoading}
                                   >
                                     {shortlistingCandidates[candidate.id] ? (
@@ -970,6 +1252,29 @@ const SearchResultsPage: React.FC = () => {
                   </div>
                 );
               })}
+              
+              {/* Load More Button */}
+              {hasNextPage && (
+                <div className="flex justify-center py-8 border-t border-gray-200">
+                  <button
+                    onClick={handleNextPage}
+                    disabled={isExternalSourceLoading}
+                    className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isExternalSourceLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" />
+                        Load More Results
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

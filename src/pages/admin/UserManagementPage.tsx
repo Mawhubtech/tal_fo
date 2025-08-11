@@ -32,7 +32,8 @@ import {
   Eye,
   Archive,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Key
 } from 'lucide-react';
 import { 
   useUsers, 
@@ -56,10 +57,16 @@ import { UserModal } from '../../components/UserModal';
 import { UserDetailsModal } from '../../components/UserDetailsModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import ToastContainer, { toast } from '../../components/ToastContainer';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { isSuperAdmin } from '../../utils/roleUtils';
 
 const UserManagementPage: React.FC = () => {
   // Query client for manual invalidation
   const queryClient = useQueryClient();
+  
+  // Get current user from auth context to check permissions
+  const { user: currentUser } = useAuthContext();
+  const isCurrentUserSuperAdmin = isSuperAdmin(currentUser);
   
   // State for filters and modals
   const [searchTerm, setSearchTerm] = useState('');
@@ -126,8 +133,19 @@ const UserManagementPage: React.FC = () => {
   // Extract roles from API responses
   const roles = rolesData?.roles || [];
 
-  // Filter roles for dropdown - show all roles when no filter, show available ones when filtering
-  const availableRoles = Array.isArray(roles) ? roles : [];
+  // Filter roles based on current user permissions
+  // Only super admins can assign super admin roles to other users
+  // Note: Super admins see ALL roles in the modal, but this filtering is used for the dropdown filter only
+  const availableRoles = Array.isArray(roles) ? 
+    roles.filter(role => {
+      // Super admins can assign any role including super admin
+      if (isCurrentUserSuperAdmin) {
+        return true;
+      }
+      // Non-super admins cannot assign super admin roles
+      // This prevents privilege escalation while allowing admins to manage other roles
+      return role.name !== 'super-admin';
+    }) : [];
 
   // Helper function to force refresh all data
   const forceRefreshData = async () => {
@@ -382,7 +400,7 @@ const UserManagementPage: React.FC = () => {
             disabled={isLoadingRoles}
           >
             <option value="all">All Roles</option>
-            {availableRoles.map((role) => (
+            {(isCurrentUserSuperAdmin ? roles : availableRoles).map((role) => (
               <option key={role.id} value={role.name}>
                 {role.name}
               </option>
@@ -586,6 +604,14 @@ const UserManagementPage: React.FC = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button 
+                          onClick={() => handleSendPasswordReset(user.id)}
+                          disabled={sendPasswordReset.isPending}
+                          className="px-3 py-1 text-sm border border-blue-300 rounded-lg hover:bg-blue-50 text-blue-600 hover:text-blue-700 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Send Password Reset"
+                        >
+                          <Key className="w-4 h-4" />
+                        </button>
+                        <button 
                           onClick={() => handleDeleteUser(user.id)}
                           className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 text-red-600 hover:text-red-700 flex items-center gap-1"
                           title="Delete User"
@@ -637,7 +663,7 @@ const UserManagementPage: React.FC = () => {
         isLoading={isEditing ? updateUser.isPending : createUser.isPending}
         user={isEditing ? selectedUser : null}
         isEditing={isEditing}
-        roles={roles}
+        roles={isCurrentUserSuperAdmin ? roles : availableRoles}
       />
 
       {/* User Details Modal */}

@@ -73,6 +73,7 @@ export interface CreateHiringTeamData {
   isDefault?: boolean;
   color?: string;
   icon?: string;
+  companyId?: string;
   organizationIds?: string[];
   // Legacy field for backward compatibility
   organizationId?: string;
@@ -86,6 +87,7 @@ export interface UpdateHiringTeamData {
   isDefault?: boolean;
   color?: string;
   icon?: string;
+  companyId?: string;
   organizationIds?: string[];
   // Legacy field for backward compatibility
   organizationId?: string;
@@ -142,6 +144,11 @@ export const hiringTeamApiService = {
     const response = await apiClient.get('/hiring-teams', {
       params: organizationIds && organizationIds.length > 0 ? { organizationIds: organizationIds.join(',') } : {},
     });
+    return response.data.data;
+  },
+
+  getTeamsByCompany: async (companyId: string): Promise<HiringTeam[]> => {
+    const response = await apiClient.get(`/hiring-teams/company/${companyId}`);
     return response.data.data;
   },
 
@@ -219,5 +226,30 @@ export const hiringTeamApiService = {
       hasAccess: response.data.hasAccess,
       teamMember: response.data.data,
     };
+  },
+
+  // Organization management methods (clients and organizations are the same)
+  async assignClientsToTeam(teamId: string, clientIds: string[]): Promise<HiringTeam> {
+    const response = await apiClient.post(`/hiring-teams/${teamId}/organizations/assign`, { 
+      organizationIds: clientIds 
+    });
+    return response.data.data;
+  },
+
+  async removeClientsFromTeam(teamId: string, clientIds: string[]): Promise<HiringTeam> {
+    const response = await apiClient.post(`/hiring-teams/${teamId}/organizations/remove`, { 
+      organizationIds: clientIds 
+    });
+    return response.data.data;
+  },
+
+  async getTeamClients(teamId: string): Promise<{ id: string; name: string; industry?: string; status: string; }[]> {
+    const response = await apiClient.get(`/hiring-teams/${teamId}/organizations`);
+    return response.data.data;
+  },
+
+  async getAvailableClientsForTeam(teamId: string): Promise<{ id: string; name: string; industry?: string; status: string; }[]> {
+    const response = await apiClient.get(`/hiring-teams/${teamId}/organizations/available`);
+    return response.data.data;
   },
 };

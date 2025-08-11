@@ -124,12 +124,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             <button
               onClick={handleJobsClick}
               className={`flex items-center w-full ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/jobs') || location.pathname.includes('/dashboard/organizations') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
-              title={!isExpanded ? "Jobs" : ""}
+              title={!isExpanded ? "Organizations" : ""}
             >
               <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/jobs') || location.pathname.includes('/dashboard/organizations') ? '#7e22ce' : '#9ca3af' }}>
                 <Briefcase className="w-4 h-4" />
               </div>
-              {isExpanded && "Jobs"}
+              {isExpanded && "Organizations"}
             </button>
           )}
 
@@ -300,14 +300,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                         Email Sequences
                       </Link>
                     )}
-                    
-                    {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
-                      <Link to="/dashboard/admin/hiring-teams" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/hiring-teams') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
-                        <Users className="w-3 h-3 mr-2" />
-                        Hiring Teams
-                      </Link>
-                    )}
-                    
 
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ANALYTICS) && (
                       <Link to="/dashboard/admin/analytics" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/analytics') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
@@ -410,14 +402,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                             Email Sequences
                           </Link>
                         )}
-                        
-                        {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
-                          <Link to="/dashboard/admin/hiring-teams" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/hiring-teams') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <Users className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/hiring-teams') ? '#7e22ce' : '' }} />
-                            Hiring Teams
-                          </Link>
-                        )}
-                        
 
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ANALYTICS) && (

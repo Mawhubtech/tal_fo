@@ -17,6 +17,7 @@ import { extractKeywords, convertKeywordsToFilters } from '../../../services/sea
 import type { SearchFilters } from '../../../services/searchService';
 import { useCreateSearch } from '../../../hooks/useSourcingSearches';
 import { useToast } from '../../../contexts/ToastContext';
+import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../../../hooks/useSearch';
 
 export interface SearchRef {
   clearSearch: () => void;
@@ -28,6 +29,11 @@ const Search = forwardRef<SearchRef>((props, ref) => {
   const { projectId } = useParams<{ projectId: string }>();
   const { addToast } = useToast();
   const createSearchMutation = useCreateSearch();
+  
+  // Search hooks for different modes
+  const databaseSearch = useSearch();
+  const externalSourceSearch = useExternalSourceSearch();
+  const combinedSearch = useCombinedSearch();
 
   // Redirect to projects page if no projectId (global search no longer supported)
   useEffect(() => {
@@ -43,6 +49,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
   const [isAIEnhancementModalOpen, setIsAIEnhancementModalOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external'); // Default to external search
 
   // Handle state from SearchResults page - simplified since we don't store filters locally anymore
   useEffect(() => {
@@ -151,12 +158,13 @@ const Search = forwardRef<SearchRef>((props, ref) => {
       // Create search record on backend
       const createdSearch = await createSearchRecord(searchQuery, filters, 'ai_assisted');
       
-      // Navigate to project search results
+      // Navigate to project search results with search mode
       navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: searchQuery,
           filters: filters,
-          searchId: createdSearch.id
+          searchId: createdSearch.id,
+          searchMode: searchMode
         }
       });
     } catch (error) {
@@ -176,12 +184,13 @@ const Search = forwardRef<SearchRef>((props, ref) => {
       // Create search record on backend
       const createdSearch = await createSearchRecord(searchQuery, filters, 'manual');
       
-      // Navigate to project search results
+      // Navigate to project search results with search mode
       navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: searchQuery,
           filters: filters,
-          searchId: createdSearch.id
+          searchId: createdSearch.id,
+          searchMode: searchMode
         }
       });
     } catch (error) {
@@ -200,12 +209,13 @@ const Search = forwardRef<SearchRef>((props, ref) => {
       // Create search record on backend
       const createdSearch = await createSearchRecord(searchQuery, filters, 'manual');
       
-      // Navigate to project search results
+      // Navigate to project search results with search mode
       navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: searchQuery,
           filters: filters,
-          searchId: createdSearch.id
+          searchId: createdSearch.id,
+          searchMode: searchMode
         }
       });
     } catch (error) {
@@ -226,12 +236,13 @@ const Search = forwardRef<SearchRef>((props, ref) => {
       // Create search record on backend
       const createdSearch = await createSearchRecord(query, filters, 'boolean');
       
-      // Navigate to project search results
+      // Navigate to project search results with search mode
       navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: query,
           filters: filters,
-          searchId: createdSearch.id
+          searchId: createdSearch.id,
+          searchMode: searchMode
         }
       });
     } catch (error) {
@@ -253,12 +264,13 @@ const Search = forwardRef<SearchRef>((props, ref) => {
       // Create search record on backend
       const createdSearch = await createSearchRecord(query, filters, 'ai_assisted');
       
-      // Navigate to project search results
+      // Navigate to project search results with search mode
       navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: query,
           filters: filters,
-          searchId: createdSearch.id
+          searchId: createdSearch.id,
+          searchMode: searchMode
         }
       });
     } catch (error) {
@@ -366,6 +378,8 @@ const Search = forwardRef<SearchRef>((props, ref) => {
               </div>
             </div>
           </div>
+
+          {/* Search Mode Selection - Hidden for now, defaults to external search */}
 
           {/* Search Button */}
           <div className="w-full mb-6">

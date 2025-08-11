@@ -27,6 +27,7 @@ export interface CandidateQueryParams {
   languages?: string[]; // Frontend uses array, gets converted to comma-separated string
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
+  includeJobseekers?: boolean; // Include candidates from jobseeker portal (no company)
 }
 
 export interface CandidateStats {
@@ -43,6 +44,7 @@ export const candidatesService = {  // Get candidates with filtering and paginat
   async getCandidates(params: CandidateQueryParams) {
     try {
       console.log('Fetching candidates with params:', params);
+      console.log('IMPORTANT: includeJobseekers value being sent:', params.includeJobseekers);
       console.time('API Request Time');
       
       // Transform array fields to comma-separated strings for backend compatibility
@@ -155,8 +157,9 @@ export const candidatesService = {  // Get candidates with filtering and paginat
   },
 
   // Get candidate statistics
-  async getStats() {
-    const response = await apiClient.get('/candidates/stats/overview');
+  async getStats(includeJobseekers?: boolean) {
+    const params = includeJobseekers ? { includeJobseekers: 'true' } : {};
+    const response = await apiClient.get('/candidates/stats/overview', { params });
     return response.data as CandidateStats;
   },
 

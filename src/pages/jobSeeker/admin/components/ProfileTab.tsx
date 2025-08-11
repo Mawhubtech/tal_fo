@@ -34,7 +34,9 @@ import {
   ArrowLeft,
   ArrowRight,
   Eye,
-  Download
+  Download,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { useJobSeekerProfile, useUpdateComprehensiveProfile } from '../../../../hooks/useJobSeekerProfile';
 import jsPDF from 'jspdf';
@@ -323,7 +325,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
     name: 'experience'
   });
 
-  const { fields: educationFields, append: appendEducation, remove: removeEducation } = useFieldArray({
+  const { fields: educationFields, append: appendEducation, remove: removeEducation, move: moveEducation } = useFieldArray({
     control,
     name: 'education'
   });
@@ -369,6 +371,21 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
   });
 
   const watchedData = watch();
+
+  // Functions for moving education entries up and down
+  const moveEducationUp = useCallback((index: number) => {
+    if (index > 0) {
+      moveEducation(index, index - 1);
+      setHasChanges(true);
+    }
+  }, [moveEducation]);
+
+  const moveEducationDown = useCallback((index: number) => {
+    if (index < educationFields.length - 1) {
+      moveEducation(index, index + 1);
+      setHasChanges(true);
+    }
+  }, [moveEducation, educationFields.length]);
 
   // Functions for scrollable navigation - memoized to prevent re-creation
   const checkScrollability = useCallback(() => {
@@ -686,6 +703,12 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
           
           if (certDetails.length > 0) {
             addText(certDetails.join(' | '), 10);
+          }
+          
+          // Add certification description if it exists
+          if (cert.description) {
+            yPosition += 2;
+            addText(cert.description, 10);
           }
           
           if (cert.credentialUrl) {
@@ -1129,15 +1152,53 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
         <div key={field.id} className="border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-md font-medium text-gray-900">Education #{index + 1}</h4>
-            {isEditing && educationFields.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeEducation(index)}
-                className="text-red-600 hover:text-red-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {isEditing && (
+                <>
+                  {/* Move Up Button */}
+                  <button
+                    type="button"
+                    onClick={() => moveEducationUp(index)}
+                    disabled={index === 0}
+                    className={`p-1 rounded ${
+                      index === 0
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                    }`}
+                    title="Move up"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  
+                  {/* Move Down Button */}
+                  <button
+                    type="button"
+                    onClick={() => moveEducationDown(index)}
+                    disabled={index === educationFields.length - 1}
+                    className={`p-1 rounded ${
+                      index === educationFields.length - 1
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                    }`}
+                    title="Move down"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  
+                  {/* Delete Button */}
+                  {educationFields.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeEducation(index)}
+                      className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                      title="Remove"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1513,12 +1574,23 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
                       <div>
                         <h3 className="text-sm font-medium text-gray-900">{cert.name}</h3>
                         <p className="text-xs text-purple-600">{cert.issuer}</p>
+                        {cert.description && (
+                          <p className="text-xs text-gray-700 mt-1">{cert.description}</p>
+                        )}
                       </div>
                       <div className="text-right text-xs text-gray-600">
                         {cert.dateIssued && <p>{cert.dateIssued}</p>}
                         {cert.expirationDate && <p>Expires: {cert.expirationDate}</p>}
+                        {cert.credentialId && <p>ID: {cert.credentialId}</p>}
                       </div>
                     </div>
+                    {cert.credentialUrl && (
+                      <div className="mt-1">
+                        <a href={cert.credentialUrl} className="text-xs text-purple-600 hover:text-purple-700">
+                          View Credential
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

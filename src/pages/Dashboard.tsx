@@ -73,15 +73,13 @@ import PipelinesPage from './admin/PipelinesPage'; // Import PipelinesPage
 import EmailSequencesPage from './admin/EmailSequencesPage'; // Import EmailSequencesPage
 import HiringTeamsPage from './admin/HiringTeamsPage'; // Import HiringTeamsPage
 import HiringTeamDetailPage from './admin/HiringTeamDetailPage'; // Import HiringTeamDetailPage
-import HiringTeamMembersPage from './admin/HiringTeamMembersPage'; // Import HiringTeamMembersPage
 import CandidateProfilesPage from '../recruitment/candidates/pages/CandidateProfilesPage'; // Import CandidateProfilesPage
 import { ClientManagementPage, ClientDetailPage, CreateDepartmentPage } from './clients'; // Import ClientManagementPage, ClientDetailPage, and CreateDepartmentPage
 import JobBoardConfigPage from './admin/JobBoardConfigPage'; // Import JobBoardConfigPage
 import AnalyticsPage from './admin/AnalyticsPage'; // Import AnalyticsPage
 import SystemSettingsPage from './admin/SystemSettingsPage'; // Import SystemSettingsPage
 import SupportDashboardPage from './admin/SupportDashboardPage'; // Import SupportDashboardPage
-import { CompanyDetailPage } from '../pages/dashboard/CompanyDetailPage'; // Import CompanyDetailPage
-import CompanyManagementRouter from '../components/CompanyManagementRouter'; // Import CompanyManagementRouter
+import { CompanyDetailPage, CompanyManagementRouter } from './companies'; // Import Company pages
 
 // Job Board Pages
 import OrganizationJobBoardsPage from '../recruitment/organizations/pages/OrganizationJobBoardsPage';
@@ -509,21 +507,19 @@ const Dashboard: React.FC = () => {
               } />
               
               <Route path="hiring-teams" element={
-                <RoutePermissionGuard>
-                  <HiringTeamsPage />
-                </RoutePermissionGuard>
+                <Navigate to="/dashboard/admin/companies" replace />
               } />
               
               <Route path="hiring-teams/:teamId" element={
-                <RoutePermissionGuard>
-                  <HiringTeamDetailPage />
-                </RoutePermissionGuard>
+                <Navigate to="/dashboard/admin/companies" replace />
               } />
               
               <Route path="hiring-teams/:teamId/members" element={
-                <RoutePermissionGuard>
-                  <HiringTeamMembersPage />
-                </RoutePermissionGuard>
+                <Navigate to="/dashboard/admin/companies" replace />
+              } />
+              
+              <Route path="companies/:companyId/hiring-teams/:teamId/members" element={
+                <Navigate to="../" relative="path" replace />
               } />
               
 
@@ -567,6 +563,12 @@ const Dashboard: React.FC = () => {
               <Route path="companies/:companyId" element={
                 <RoutePermissionGuard>
                   <CompanyDetailPage />
+                </RoutePermissionGuard>
+              } />
+              
+              <Route path="companies/:companyId/hiring-teams/:teamId" element={
+                <RoutePermissionGuard>
+                  <HiringTeamDetailPage />
                 </RoutePermissionGuard>
               } />
               

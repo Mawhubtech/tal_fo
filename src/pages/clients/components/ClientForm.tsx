@@ -33,7 +33,6 @@ interface FormErrors {
   email?: string;
   phone?: string;
   status?: string;
-  employees?: string;
   description?: string;
 }
 
@@ -64,7 +63,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
         industry: client.industry || '',
         size: client.size || 'Small (1-50 employees)',
         location: client.location || '',
-        website: client.website || '',
+        website: client.website ? client.website.replace(/^https?:\/\//, '') : '',
         email: client.email || '',
         phone: client.phone || '',
         status: client.status || 'active',
@@ -96,11 +95,14 @@ const ClientForm: React.FC<ClientFormProps> = ({
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
     
-    if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
-      newErrors.website = 'Website must start with http:// or https://';
+    // Website validation - check for valid domain format
+    if (formData.website && formData.website.trim()) {
+      const domain = formData.website.trim();
+      // Basic domain validation: allows subdomains, requires at least one dot and valid TLD
+      if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(domain)) {
+        newErrors.website = 'Please enter a valid domain name (e.g., company.com)';
+      }
     }
-
-    if (formData.employees < 0) newErrors.employees = 'Employees must be 0 or greater';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -115,10 +117,17 @@ const ClientForm: React.FC<ClientFormProps> = ({
     try {
       let savedClient: Client;
       
+      // Prepare the data for submission
+      const submitData = {
+        ...formData,
+        // Automatically prepend https:// to website if provided
+        website: formData.website.trim() ? `https://${formData.website.trim()}` : ''
+      };
+      
       if (mode === 'edit' && client) {
-        savedClient = await clientApi.update(client.id, formData);
+        savedClient = await clientApi.update(client.id, submitData);
       } else {
-        savedClient = await clientApi.create(formData);
+        savedClient = await clientApi.create(submitData);
       }
       
       onSave(savedClient);
@@ -270,15 +279,18 @@ const ClientForm: React.FC<ClientFormProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Website
               </label>
-              <input
-                type="url"
-                value={formData.website}
-                onChange={(e) => handleInputChange('website', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                  errors.website ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="https://company.com"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-gray-500 text-sm">https://</span>
+                <input
+                  type="text"
+                  value={formData.website}
+                  onChange={(e) => handleInputChange('website', e.target.value)}
+                  className={`w-full pl-20 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.website ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="company.com"
+                />
+              </div>
               {errors.website && <p className="text-red-500 text-sm mt-1">{errors.website}</p>}
             </div>
 
@@ -296,22 +308,6 @@ const ClientForm: React.FC<ClientFormProps> = ({
                 <option value="inactive">Inactive</option>
                 <option value="suspended">Suspended</option>
               </select>
-            </div>            {/* Employees */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Number of Employees
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={formData.employees}
-                onChange={(e) => handleInputChange('employees', parseInt(e.target.value) || 0)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                  errors.employees ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="0"
-              />
-              {errors.employees && <p className="text-red-500 text-sm mt-1">{errors.employees}</p>}
             </div>
           </div>
 

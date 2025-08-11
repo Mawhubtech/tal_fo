@@ -109,10 +109,14 @@ const ClientManagementPage: React.FC = () => {
         
         let response;
         if (isSuperAdmin) {
-          // Super-admin sees all clients
+          // Super-admin sees all clients in the system
           response = await clientService.getAllClients();
         } else {
-          // Regular users see only their assigned clients
+          // Company owners, admins, and regular users see clients they have access to
+          // This includes:
+          // - Company owners: all clients their company created or has access to
+          // - HR agency admins: all clients their agency manages
+          // - Regular users: clients assigned through hiring teams or individual assignments
           response = await clientService.getCurrentUserClients();
         }
         

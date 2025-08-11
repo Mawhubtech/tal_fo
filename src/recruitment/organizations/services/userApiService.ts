@@ -5,6 +5,9 @@ export interface AssignableUser {
   firstName: string;
   lastName: string;
   email: string;
+  companyId?: string;
+  organizationId?: string;
+  department?: string;
 }
 
 export interface UserClient {
@@ -50,8 +53,23 @@ export interface BulkAssignmentResult {
 export const userApiService = {
   // Get users who can be assigned tasks
   getAssignableUsers: async (): Promise<AssignableUser[]> => {
-    const response = await apiClient.get('/users/assignable');
-    return response.data.users;
+    try {
+      const response = await apiClient.get('/users/assignable');
+      console.log('Assignable users API response:', response.data);
+      
+      // Handle different possible response structures
+      if (response.data.users) {
+        return response.data.users;
+      } else if (Array.isArray(response.data)) {
+        return response.data;
+      } else {
+        console.warn('Unexpected assignable users response structure:', response.data);
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching assignable users:', error);
+      throw error;
+    }
   },
 
   // Get current user's accessible clients/organizations

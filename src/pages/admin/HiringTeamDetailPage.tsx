@@ -4,15 +4,18 @@ import {
   ArrowLeft, Edit, Users, Settings, Archive, Trash2,
   Globe, Lock, Building, Crown, CheckCircle, Clock,
   AlertCircle, Share, Copy, Download, Activity,
-  FileText, Calendar, MapPin, Mail, Phone, Briefcase, ChevronRight, X
+  FileText, Calendar, MapPin, Mail, Phone, Briefcase, ChevronRight, X, Building2
 } from 'lucide-react';
-import { useHiringTeam, useUpdateHiringTeam, useDeleteHiringTeam } from '../../hooks/useHiringTeam';
+import { useHiringTeam, useUpdateHiringTeam, useDeleteHiringTeam, useTeamClients } from '../../hooks/useHiringTeam';
 import { useJobsAssignedToTeam } from '../../hooks/useJobAssignment';
 import { useOrganization } from '../../hooks/useOrganizations';
 import { useUserClients } from '../../hooks/useUser';
+import { useCompany } from '../../hooks/useCompany';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 import JobAssignmentModal from '../../components/JobAssignmentModal';
+import { ClientManagementModal } from '../../components/company/ClientManagementModal';
+import { MemberManagementModal } from '../../components/company/MemberManagementModal';
 
 // Types for the edit form
 type TeamFormData = {
@@ -27,10 +30,12 @@ type TeamFormData = {
 };
 
 const HiringTeamDetailPage: React.FC = () => {
-  const { teamId, organizationId } = useParams<{ teamId: string; organizationId?: string }>();
+  const { teamId, companyId, organizationId } = useParams<{ teamId: string; companyId: string; organizationId?: string }>();
   const navigate = useNavigate();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [jobAssignmentModalOpen, setJobAssignmentModalOpen] = useState(false);
+  const [clientManagementModalOpen, setClientManagementModalOpen] = useState(false);
+  const [memberManagementModalOpen, setMemberManagementModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Form data for editing
@@ -46,7 +51,9 @@ const HiringTeamDetailPage: React.FC = () => {
 
   const { data: team, isLoading: teamLoading, error: teamError } = useHiringTeam(teamId || '');
   const { data: assignedJobs = [], isLoading: jobsLoading } = useJobsAssignedToTeam(teamId || '');
+  const { data: teamClients = [], isLoading: clientsLoading } = useTeamClients(teamId || '');
   const { data: organization } = useOrganization(organizationId || '');
+  const { data: company } = useCompany(companyId || '');
   const { data: userClients = [], isLoading: loadingClients } = useUserClients();
   const updateTeamMutation = useUpdateHiringTeam();
   const deleteTeamMutation = useDeleteHiringTeam();
@@ -104,11 +111,11 @@ const HiringTeamDetailPage: React.FC = () => {
     try {
       await deleteTeamMutation.mutateAsync(team.id);
       toast.success('Team deleted successfully!');
-      // Navigate back to the appropriate hiring teams page
-      if (organizationId) {
-        navigate(`/dashboard/admin/organizations/${organizationId}/hiring-teams`);
+      // Navigate back to the company page
+      if (companyId) {
+        navigate(`/dashboard/admin/companies/${companyId}`);
       } else {
-        navigate(`/dashboard/admin/hiring-teams`);
+        navigate(`/dashboard/admin/companies`);
       }
     } catch (err) {
       console.error('Error deleting team:', err);
@@ -171,11 +178,11 @@ const HiringTeamDetailPage: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">Team Not Found</h3>
           <p className="text-gray-600 mb-6">The hiring team you're looking for doesn't exist or has been deleted.</p>
           <Link
-            to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams` : `/dashboard/admin/hiring-teams`}
+            to={companyId ? `/dashboard/admin/companies/${companyId}` : `/dashboard/admin/companies`}
             className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back to Teams</span>
+            <span>Back to {companyId ? 'Company' : 'Companies'}</span>
           </Link>
         </div>
       </div>
@@ -190,22 +197,24 @@ const HiringTeamDetailPage: React.FC = () => {
           {/* Breadcrumb Navigation */}
           <div className="flex items-center mb-4">
             <Link
-              to={`/dashboard/admin/hiring-teams`}
+              to={`/dashboard/admin/companies`}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
-              Hiring Teams
+              Companies
             </Link>
-            {organizationId && organization && (
+            {companyId && company && (
               <>
                 <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
                 <Link
-                  to={`/dashboard/admin/organizations/${organizationId}`}
+                  to={`/dashboard/admin/companies/${companyId}`}
                   className="text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {organization.name}
+                  {company.company.name}
                 </Link>
               </>
             )}
+            <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+            <span className="text-gray-500">Hiring Teams</span>
             <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
             <span className="text-gray-900 font-medium">{team?.name || 'Team Details'}</span>
           </div>
@@ -213,11 +222,11 @@ const HiringTeamDetailPage: React.FC = () => {
           {/* Back Button */}
           <div className="flex items-center mb-4">
             <Link
-              to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams` : `/dashboard/admin/hiring-teams`}
+              to={companyId ? `/dashboard/admin/companies/${companyId}` : `/dashboard/admin/companies`}
               className="inline-flex items-center text-gray-500 hover:text-gray-700 transition-colors mr-4"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Teams
+              Back to {companyId && company ? company.company.name : 'Companies'}
             </Link>
           </div>
 
@@ -263,31 +272,6 @@ const HiringTeamDetailPage: React.FC = () => {
                       <span>Created {new Date(team.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  
-                  {/* Organizations */}
-                  {team.organizations && team.organizations.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex items-center space-x-1 text-sm text-gray-500 mb-2">
-                        <Building className="h-4 w-4" />
-                        <span>Organizations:</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {team.organizations.map((org) => (
-                          <span 
-                            key={org.id}
-                            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                            title={org.industry ? `${org.name} (${org.industry})` : org.name}
-                          >
-                            <Building className="h-3 w-3 mr-1" />
-                            {org.name}
-                            {org.industry && (
-                              <span className="ml-1 text-xs opacity-75">({org.industry})</span>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -338,13 +322,13 @@ const HiringTeamDetailPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
-                <Link
-                  to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams/${teamId}/members` : `/dashboard/admin/hiring-teams/${teamId}/members`}
+                <button
+                  onClick={() => setMemberManagementModalOpen(true)}
                   className="inline-flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
                 >
                   <Users className="h-4 w-4" />
                   <span>Manage Members</span>
-                </Link>
+                </button>
               </div>
               
               {team.members && team.members.length > 0 ? (
@@ -375,13 +359,13 @@ const HiringTeamDetailPage: React.FC = () => {
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Members Yet</h3>
                   <p className="text-gray-600 mb-4">This team doesn't have any members assigned.</p>
-                  <Link
-                    to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams/${teamId}/members` : `/dashboard/admin/hiring-teams/${teamId}/members`}
+                  <button
+                    onClick={() => setMemberManagementModalOpen(true)}
                     className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                   >
                     <Users className="h-4 w-4" />
                     <span>Add Members</span>
-                  </Link>
+                  </button>
                 </div>
               )}
             </div>
@@ -451,38 +435,66 @@ const HiringTeamDetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Organizations */}
-            {team.organizations && team.organizations.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900">Associated Organizations</h2>
-                  <span className="text-sm text-gray-500">{team.organizations.length} organization{team.organizations.length !== 1 ? 's' : ''}</span>
+            {/* Assigned Organizations */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">Assigned Organizations</h2>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-gray-500">{teamClients.length} organization{teamClients.length !== 1 ? 's' : ''}</span>
+                  <button
+                    onClick={() => setClientManagementModalOpen(true)}
+                    className="inline-flex items-center space-x-1 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                  >
+                    <Building className="h-4 w-4" />
+                    <span>Manage</span>
+                  </button>
                 </div>
-                
+              </div>
+              
+              {clientsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                </div>
+              ) : teamClients.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {team.organizations.map((org) => (
-                    <div key={org.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  {teamClients.map((client) => (
+                    <div key={client.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                       <div className="flex items-start space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Building className="h-5 w-5 text-blue-600" />
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <Building2 className="h-5 w-5 text-purple-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-900 truncate">{org.name}</h3>
-                          {org.industry && (
-                            <p className="text-sm text-gray-500">{org.industry}</p>
+                          <h3 className="font-medium text-gray-900 truncate">{client.name}</h3>
+                          {client.industry && (
+                            <p className="text-sm text-gray-500">{client.industry}</p>
                           )}
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${
-                            org.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            client.status === 'active' ? 'bg-green-100 text-green-800' : 
+                            client.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-gray-100 text-gray-800'
                           }`}>
-                            {org.status}
+                            {client.status}
                           </span>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-8">
+                  <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Organizations Assigned</h3>
+                  <p className="text-gray-600 mb-4">This team doesn't have any organizations assigned yet.</p>
+                  <button
+                    onClick={() => setClientManagementModalOpen(true)}
+                    className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    <span>Assign Organizations</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Recent Activity */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -510,6 +522,10 @@ const HiringTeamDetailPage: React.FC = () => {
                   <span className="font-semibold">{assignedJobs.length}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-gray-600">Assigned Organizations</span>
+                  <span className="font-semibold">{teamClients.length}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-gray-600">Status</span>
                   <span className="font-semibold capitalize">{team.status}</span>
                 </div>
@@ -521,10 +537,6 @@ const HiringTeamDetailPage: React.FC = () => {
                   <span className="text-gray-600">Default Team</span>
                   <span className="font-semibold">{team.isDefault ? 'Yes' : 'No'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Organizations</span>
-                  <span className="font-semibold">{team.organizations?.length || 0}</span>
-                </div>
               </div>
             </div>
 
@@ -532,19 +544,26 @@ const HiringTeamDetailPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <Link
-                  to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams/${teamId}/members` : `/dashboard/admin/hiring-teams/${teamId}/members`}
+                <button
+                  onClick={() => setMemberManagementModalOpen(true)}
                   className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Users className="h-5 w-5 text-gray-500" />
                   <span>Manage Members</span>
-                </Link>
+                </button>
                 <button
                   onClick={() => setJobAssignmentModalOpen(true)}
                   className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Briefcase className="h-5 w-5 text-gray-500" />
                   <span>Manage Jobs</span>
+                </button>
+                <button
+                  onClick={() => setClientManagementModalOpen(true)}
+                  className="flex items-center space-x-3 w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Building className="h-5 w-5 text-gray-500" />
+                  <span>Manage Organizations</span>
                 </button>
                 <button
                   onClick={() => toast.info('Team settings feature coming soon!')}
@@ -760,6 +779,27 @@ const HiringTeamDetailPage: React.FC = () => {
             isOpen={jobAssignmentModalOpen}
             onClose={() => setJobAssignmentModalOpen(false)}
             team={team}
+          />
+        )}
+
+        {/* Client Management Modal */}
+        {team && (
+          <ClientManagementModal
+            isOpen={clientManagementModalOpen}
+            onClose={() => setClientManagementModalOpen(false)}
+            teamId={team.id}
+            teamName={team.name}
+          />
+        )}
+
+        {/* Member Management Modal */}
+        {team && companyId && (
+          <MemberManagementModal
+            isOpen={memberManagementModalOpen}
+            onClose={() => setMemberManagementModalOpen(false)}
+            teamId={team.id}
+            teamName={team.name}
+            companyId={companyId}
           />
         )}
 

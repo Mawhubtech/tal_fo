@@ -174,8 +174,11 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages, references, customFields } = userData;
 
   // Helper function to parse and normalize dates for sorting
-  const parseDate = (dateStr: string | undefined): Date => {
-    if (!dateStr) return new Date(0); // Very old date for missing dates
+  const parseDate = (dateValue: string | number | undefined): Date => {
+    if (!dateValue) return new Date(0); // Very old date for missing dates
+    
+    // Convert to string if it's a number
+    const dateStr = String(dateValue);
     
     // Handle "Present" or similar current indicators
     if (dateStr.toLowerCase().includes('present') || dateStr.toLowerCase().includes('current')) {

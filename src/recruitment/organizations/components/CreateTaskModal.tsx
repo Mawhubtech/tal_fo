@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, User, Flag, Folder, Search } from 'lucide-react';
+import { X, Calendar, User, Flag, Folder, Search, Tag, Users } from 'lucide-react';
 import { useCreateTask, useUpdateTask } from '../../../hooks/useTasks';
-import { useAssignableUsers } from '../../../hooks/useUsers';
+import { useCompanyUsers } from '../../../hooks/useUsers';
 import { CreateTaskData, UpdateTaskData, Task } from '../services/taskApiService';
 import { jobApplicationApiService } from '../../../services/jobApplicationApiService';
+import MultiUserSelect from '../../../components/MultiUserSelect';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -32,11 +33,16 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     dueDate: '',
     priority: 'Medium',
     type: 'Review',
+    category: 'Recruitment',
+    entityType: 'job',
+    entityId: jobId,
+    entityName: '',
     jobId,
     assignedTo: '',
     candidateId: prefilledCandidateId || '',
     candidateName: prefilledCandidateName || '',
-    status: 'Pending',
+    status: 'Pending', // Only used for edit mode
+    tags: [],
     metadata: {}
   });
   const [error, setError] = useState<string | null>(null);
@@ -45,11 +51,24 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [userSearch, setUserSearch] = useState('');
   const [showCandidateDropdown, setShowCandidateDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [newTag, setNewTag] = useState('');
+  
+  // Multiple assignees state
+  const [assignmentMode, setAssignmentMode] = useState<'single' | 'multiple'>('single');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   
   // Use React Query hooks
   const createTaskMutation = useCreateTask();
   const updateTaskMutation = useUpdateTask();
-  const { data: assignableUsers = [], isLoading: usersLoading } = useAssignableUsers();
+  const { data: assignableUsers = [], isLoading: usersLoading } = useCompanyUsers();
+
+  // Debug: Log assignable users
+  useEffect(() => {
+    if (assignableUsers.length > 0) {
+      console.log('Available assignable users:', assignableUsers.length);
+      console.log('Sample users:', assignableUsers.slice(0, 3));
+    }
+  }, [assignableUsers]);
 
   // Filter candidates based on search
   const filteredCandidates = candidates.filter(candidate =>
@@ -101,13 +120,27 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           dueDate: formatDateForInput(editTask.dueDate),
           priority: editTask.priority,
           type: editTask.type,
+          category: editTask.category || 'Recruitment',
+          entityType: editTask.entityType || 'job',
+          entityId: editTask.entityId || editTask.jobId || '',
+          entityName: editTask.entityName || '',
           jobId: editTask.jobId,
           assignedTo: editTask.assignedTo || '',
           candidateId: editTask.candidateId || '',
           candidateName: editTask.candidateName || '',
           status: editTask.status,
+          tags: editTask.tags || [],
           metadata: editTask.metadata || {}
         });
+        
+        // Set assignment mode and selected users based on task data
+        if (editTask.hasMultipleAssignees && editTask.assignments && editTask.assignments.length > 0) {
+          setAssignmentMode('multiple');
+          setSelectedUserIds(editTask.assignments.map(a => a.userId));
+        } else {
+          setAssignmentMode('single');
+          setSelectedUserIds([]);
+        }
       } else {
         // Reset form when modal opens for create mode
         setFormData({
@@ -116,18 +149,28 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           dueDate: '',
           priority: 'Medium',
           type: 'Review',
+          category: 'Recruitment',
+          entityType: 'job',
+          entityId: jobId,
+          entityName: '',
           jobId,
           assignedTo: '',
           candidateId: prefilledCandidateId || '',
           candidateName: prefilledCandidateName || '',
-          status: 'Pending',
+          status: 'Pending', // Only used for edit mode
+          tags: [],
           metadata: {}
         });
+        
+        // Reset assignment mode for create mode
+        setAssignmentMode('single');
+        setSelectedUserIds([]);
       }
       
       setError(null);
       setCandidateSearch('');
       setUserSearch('');
+      setNewTag('');
       setShowCandidateDropdown(false);
       setShowUserDropdown(false);
     }
@@ -180,34 +223,50 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           dueDate: formData.dueDate || undefined,
           priority: formData.priority,
           type: formData.type,
+          category: formData.category,
+          entityType: formData.entityType,
+          entityId: formData.entityId || undefined,
+          entityName: formData.entityName || undefined,
           status: formData.status as any,
-          assignedTo: formData.assignedTo || null,
-          candidateId: formData.candidateId || null,
-          candidateName: formData.candidateName || null,
+          assignedTo: assignmentMode === 'single' ? (formData.assignedTo || undefined) : undefined,
+          assignedToUsers: assignmentMode === 'multiple' ? selectedUserIds : undefined,
+          candidateId: formData.candidateId || undefined,
+          candidateName: formData.candidateName || undefined,
+          tags: formData.tags,
           metadata: formData.metadata
         };
         
         await updateTaskMutation.mutateAsync({ taskId: editTask.id, taskData: updateData });
       } else {
-        // Handle create mode
-        const submitData = { ...formData };
+        // Handle create mode - prepare data without status field
+        const createData: CreateTaskData = {
+          title: formData.title,
+          description: formData.description || undefined,
+          dueDate: formData.dueDate || undefined,
+          priority: formData.priority,
+          type: formData.type,
+          category: formData.category,
+          entityType: formData.entityType,
+          entityId: formData.entityId || undefined,
+          entityName: formData.entityName || undefined,
+          jobId: formData.jobId || undefined,
+          assignedTo: assignmentMode === 'single' ? (formData.assignedTo || undefined) : undefined,
+          assignedToUsers: assignmentMode === 'multiple' ? selectedUserIds : undefined,
+          candidateId: formData.candidateId || undefined,
+          candidateName: formData.candidateName || undefined,
+          tags: formData.tags,
+          metadata: formData.metadata
+        };
         
-        // Convert empty string to null for optional fields
-        if (formData.assignedTo === '') {
-          submitData.assignedTo = null;
-        }
+        // Clean up undefined/empty values
+        Object.keys(createData).forEach(key => {
+          const value = (createData as any)[key];
+          if (value === '' || value === undefined) {
+            delete (createData as any)[key];
+          }
+        });
 
-        // Handle candidateId - convert empty strings to null
-        if (submitData.candidateId === '') {
-          submitData.candidateId = null;
-        }
-
-        // Handle candidateName - convert empty strings to null
-        if (submitData.candidateName === '') {
-          submitData.candidateName = null;
-        }
-
-        await createTaskMutation.mutateAsync(submitData);
+        await createTaskMutation.mutateAsync(createData);
       }
       
       onTaskCreated();
@@ -294,14 +353,29 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               >
+                <option value="General">General</option>
                 <option value="Review">Review</option>
                 <option value="Schedule">Schedule</option>
                 <option value="Interview">Interview</option>
                 <option value="Follow-up">Follow-up</option>
-                <option value="Offer">Offer</option>
-                <option value="Document">Document</option>
                 <option value="Assessment">Assessment</option>
                 <option value="Reference Check">Reference Check</option>
+                <option value="Offer">Offer</option>
+                <option value="Document">Document</option>
+                <option value="Research">Research</option>
+                <option value="Meeting">Meeting</option>
+                <option value="Call">Call</option>
+                <option value="Email">Email</option>
+                <option value="Reminder">Reminder</option>
+                <option value="Candidate Search">Candidate Search</option>
+                <option value="Outreach">Outreach</option>
+                <option value="Profile Review">Profile Review</option>
+                <option value="Client Meeting">Client Meeting</option>
+                <option value="Proposal">Proposal</option>
+                <option value="Contract Review">Contract Review</option>
+                <option value="Admin">Admin</option>
+                <option value="Personal">Personal</option>
+                <option value="Training">Training</option>
               </select>
             </div>
 
@@ -318,8 +392,33 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
                 <option value="High">High</option>
+                <option value="Urgent">Urgent</option>
               </select>
             </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Folder className="w-4 h-4 inline mr-1" />
+              Category
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="Recruitment">Recruitment</option>
+              <option value="Sourcing">Sourcing</option>
+              <option value="Client Management">Client Management</option>
+              <option value="Business Development">Business Development</option>
+              <option value="Personal">Personal</option>
+              <option value="Admin">Admin</option>
+              <option value="Team Management">Team Management</option>
+              <option value="Outreach">Outreach</option>
+              <option value="Marketing">Marketing</option>
+              <option value="General">General</option>
+            </select>
           </div>
 
           {/* Status field - only show in edit mode */}
@@ -338,6 +437,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
+                <option value="On Hold">On Hold</option>
               </select>
             </div>
           )}
@@ -421,71 +521,209 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           </div>
 
-          {/* Row 3: Assigned To */}
-          <div className="relative dropdown-container">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <User className="w-4 h-4 inline mr-1" />
-              Assigned To
-            </label>
-            <div className="relative">
-              <div
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent cursor-pointer bg-white flex items-center justify-between"
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-              >
-                <span className={formData.assignedTo ? 'text-gray-900' : 'text-gray-500'}>
-                  {getSelectedUserName()}
-                </span>
-                <Search className="w-4 h-4 text-gray-400" />
+          {/* Row 3: Assignment Mode and Assigned Users */}
+          <div className="space-y-4">
+            {/* Assignment Mode Toggle */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Users className="w-4 h-4 inline mr-1" />
+                Assignment Mode
+              </label>
+              <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssignmentMode('single');
+                    setSelectedUserIds([]);
+                  }}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
+                    assignmentMode === 'single' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  Single Assignee
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssignmentMode('multiple');
+                    setFormData(prev => ({ ...prev, assignedTo: '' }));
+                  }}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
+                    assignmentMode === 'multiple' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  Multiple Assignees
+                </button>
               </div>
-              
-              {showUserDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                  <div className="p-2">
-                    <input
-                      type="text"
-                      placeholder="Search users..."
-                      value={userSearch}
-                      onChange={(e) => setUserSearch(e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-                      autoFocus
-                    />
+            </div>
+
+            {/* Single Assignment */}
+            {assignmentMode === 'single' && (
+              <div className="relative dropdown-container">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4 inline mr-1" />
+                  Assigned To
+                </label>
+                <div className="relative">
+                  <div
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent cursor-pointer bg-white flex items-center justify-between"
+                    onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  >
+                    <span className={formData.assignedTo ? 'text-gray-900' : 'text-gray-500'}>
+                      {getSelectedUserName()}
+                    </span>
+                    <Search className="w-4 h-4 text-gray-400" />
                   </div>
-                  <div className="max-h-40 overflow-y-auto">
-                    <div
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, assignedTo: '' }));
-                        setShowUserDropdown(false);
-                        setUserSearch('');
-                      }}
-                    >
-                      Select assignee (optional)
+                  
+                  {showUserDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                      <div className="p-2">
+                        <input
+                          type="text"
+                          placeholder="Search team members..."
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-40 overflow-y-auto">
+                        <div
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, assignedTo: '' }));
+                            setShowUserDropdown(false);
+                            setUserSearch('');
+                          }}
+                        >
+                          Select assignee (optional)
+                        </div>
+                        {filteredUsers.map(user => (
+                          <div
+                            key={user.id}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, assignedTo: user.id }));
+                              setShowUserDropdown(false);
+                              setUserSearch('');
+                            }}
+                          >
+                            {user.firstName} {user.lastName} ({user.email})
+                          </div>
+                        ))}
+                        {filteredUsers.length === 0 && userSearch && (
+                          <div className="px-3 py-2 text-gray-500 text-sm">
+                            No team members found
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {filteredUsers.map(user => (
-                      <div
-                        key={user.id}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                  )}
+                </div>
+                {usersLoading && (
+                  <p className="text-sm text-gray-500 mt-1">Loading team members...</p>
+                )}
+              </div>
+            )}
+
+            {/* Multiple Assignments */}
+            {assignmentMode === 'multiple' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Users className="w-4 h-4 inline mr-1" />
+                  Assigned Users
+                </label>
+                <MultiUserSelect
+                  users={assignableUsers}
+                  selectedUserIds={selectedUserIds}
+                  onSelectionChange={setSelectedUserIds}
+                  placeholder="Select team members..."
+                  isLoading={usersLoading}
+                />
+                {usersLoading && (
+                  <p className="text-sm text-gray-500 mt-1">Loading team members...</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Tag className="w-4 h-4 inline mr-1" />
+              Tags
+            </label>
+            <div className="space-y-2">
+              {/* Existing tags */}
+              {formData.tags && formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
+                    >
+                      {tag}
+                      <button
+                        type="button"
                         onClick={() => {
-                          setFormData(prev => ({ ...prev, assignedTo: user.id }));
-                          setShowUserDropdown(false);
-                          setUserSearch('');
+                          setFormData(prev => ({
+                            ...prev,
+                            tags: prev.tags?.filter((_, i) => i !== index) || []
+                          }));
                         }}
+                        className="ml-1 text-purple-500 hover:text-purple-700"
                       >
-                        {user.firstName} {user.lastName} ({user.email})
-                      </div>
-                    ))}
-                    {filteredUsers.length === 0 && userSearch && (
-                      <div className="px-3 py-2 text-gray-500 text-sm">
-                        No users found
-                      </div>
-                    )}
-                  </div>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
                 </div>
               )}
+              
+              {/* Add new tag */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newTag.trim() && !formData.tags?.includes(newTag.trim())) {
+                        setFormData(prev => ({
+                          ...prev,
+                          tags: [...(prev.tags || []), newTag.trim()]
+                        }));
+                        setNewTag('');
+                      }
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Add a tag and press Enter"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newTag.trim() && !formData.tags?.includes(newTag.trim())) {
+                      setFormData(prev => ({
+                        ...prev,
+                        tags: [...(prev.tags || []), newTag.trim()]
+                      }));
+                      setNewTag('');
+                    }
+                  }}
+                  className="px-3 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors"
+                >
+                  Add
+                </button>
+              </div>
             </div>
-            {usersLoading && (
-              <p className="text-sm text-gray-500 mt-1">Loading users...</p>
-            )}
           </div>
 
           {/* Actions */}

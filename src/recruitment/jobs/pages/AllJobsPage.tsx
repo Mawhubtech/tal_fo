@@ -20,6 +20,7 @@ import {
 import { useJobs, useDeleteJob } from '../../../hooks/useJobs';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyAssignment } from '../../../hooks/useUserAssignment';
+import { useUserTeamMemberships } from '../../../hooks/useHiringTeam';
 import type { JobFilters } from '../../../services/jobApiService';
 import type { Job } from '../../data/types';
 
@@ -40,6 +41,9 @@ const AllJobsPage: React.FC = () => {
 
   // Get user's organization assignment for navigation purposes
   const { data: userAssignment, isLoading: assignmentLoading } = useMyAssignment();
+  
+  // Get user's hiring team memberships to check if they have access through team membership
+  const { data: userTeamMemberships, isLoading: teamMembershipsLoading } = useUserTeamMemberships(user?.id || '');
 
   // Determine user type for UI purposes
   const userRoleNames = user?.roles?.map(role => role.name.toLowerCase()) || [];
@@ -50,9 +54,15 @@ const AllJobsPage: React.FC = () => {
     role === 'internal-admin' ||
     role === 'external-hr' ||
     role === 'freelance-hr' ||
-    role === 'admin' ||
-    role === 'user'
+    role === 'hr-agency-admin' ||
+    role === 'hr-agency-associate' ||
+    role === 'hr-agency-director' ||
+    role === 'hr-agency-specialist' ||
+    role === 'admin'
   );
+  
+  // Check if user has access through hiring team membership
+  const hasHiringTeamAccess = userTeamMemberships && userTeamMemberships.length > 0;
 
   // Use the main jobs hook - filtering is now done in the backend
   const { 
@@ -100,7 +110,7 @@ const AllJobsPage: React.FC = () => {
 
   // Handler functions for CRUD operations
   const handleEditJob = (job: Job) => {
-    if (hasAssignmentRole && userAssignment?.organizationId) {
+    if ((hasAssignmentRole || hasHiringTeamAccess) && userAssignment?.organizationId) {
       // For users with client assignments, use their default organization and department
       const departmentId = userAssignment.departmentId || 'default-dept';
       navigate(`/dashboard/organizations/${userAssignment.organizationId}/departments/${departmentId}/create-job?edit=${job.id}`);
@@ -113,27 +123,29 @@ const AllJobsPage: React.FC = () => {
   };
 
   const handleCreateJob = () => {
-    // Prevent users with no assignment from creating jobs
-    if (hasAssignmentRole && !userAssignment?.organizationId) {
-      return;
+    // Check if user has any form of access
+    const hasAccess = isSuperAdmin || hasHiringTeamAccess || (hasAssignmentRole && userAssignment?.organizationId);
+    
+    if (!hasAccess) {
+      return; // Prevent users with no access from creating jobs
     }
     
-    if (hasAssignmentRole && userAssignment?.organizationId) {
+    if ((hasAssignmentRole || hasHiringTeamAccess) && userAssignment?.organizationId) {
       // For users with client assignments, go directly to job creation within their assigned organization
       navigate(`/dashboard/organizations/${userAssignment.organizationId}/create-job`);
     } else {
-      // For super-admins, navigate to organizations page to choose client
+      // For super-admins or users with hiring team access but no assignment, navigate to organizations page
       navigate('/dashboard/organizations');
     }
   };
 
   const handleJobClick = (job: Job) => {
-    if (hasAssignmentRole && userAssignment?.organizationId) {
+    if ((hasAssignmentRole || hasHiringTeamAccess) && userAssignment?.organizationId) {
       // For users with client assignments, use their organization and the job's department
       const departmentId = job.departmentId || userAssignment.departmentId || 'default-dept';
       navigate(`/dashboard/organizations/${userAssignment.organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
     } else {
-      // For super-admins, use the job's organization and department
+      // For super-admins or users with hiring team access, use the job's organization and department
       const organizationId = job.organizationId || 'default-org';
       const departmentId = job.departmentId || 'default-dept';
       navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
@@ -230,7 +242,7 @@ const AllJobsPage: React.FC = () => {
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
-  if (loading || assignmentLoading) {
+  if (loading || assignmentLoading || teamMembershipsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex items-center space-x-2">
@@ -266,21 +278,21 @@ const AllJobsPage: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {isSuperAdmin ? 'All Jobs' : (hasAssignmentRole ? 'My Client Jobs' : 'All Jobs')}
+              {isSuperAdmin ? 'All Jobs' : ((hasAssignmentRole || hasHiringTeamAccess) ? 'My Jobs' : 'All Jobs')}
             </h1>
             <p className="text-gray-600">
               {isSuperAdmin 
                 ? 'Manage all job openings across the platform (Super Admin)'
-                : (hasAssignmentRole 
-                    ? 'Manage job openings for your assigned client organization'
+                : ((hasAssignmentRole || hasHiringTeamAccess)
+                    ? 'Manage job openings for your assigned client organization or hiring teams'
                     : 'Manage all job openings across your clients')}
             </p>
           </div>
           <button
             onClick={handleCreateJob}
-            disabled={hasAssignmentRole && !userAssignment?.organizationId}
+            disabled={!isSuperAdmin && !hasHiringTeamAccess && !(hasAssignmentRole && userAssignment?.organizationId)}
             className={`px-4 py-2 rounded-lg flex items-center space-x-2 border ${
-              hasAssignmentRole && !userAssignment?.organizationId
+              !isSuperAdmin && !hasHiringTeamAccess && !(hasAssignmentRole && userAssignment?.organizationId)
                 ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed' 
                 : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
             }`}
@@ -369,12 +381,12 @@ const AllJobsPage: React.FC = () => {
         {jobs.length === 0 ? (
           <div className="p-12 text-center">
             <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            {hasAssignmentRole && !userAssignment?.organizationId ? (
-              // User with no assignment
+            {!isSuperAdmin && !hasHiringTeamAccess && !(hasAssignmentRole && userAssignment?.organizationId) ? (
+              // User with no access
               <>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Client Assignment</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Access</h3>
                 <p className="text-gray-600 mb-4">
-                  You haven't been assigned to a client organization yet. Please contact your administrator to get assigned to a client organization before you can view and manage jobs.
+                  You haven't been assigned to a client organization or added to any hiring teams yet. Please contact your administrator to get access to jobs.
                 </p>
               </>
             ) : (

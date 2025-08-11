@@ -17,6 +17,7 @@ import {
   useUserSearch 
 } from '../../hooks/useHiringTeam';
 import { useOrganization } from '../../hooks/useOrganizations';
+import { useCompany } from '../../hooks/useCompany';
 import type { 
   HiringTeamMember, 
   CreateHiringTeamMemberData, 
@@ -92,7 +93,7 @@ const getPermissionSummary = (member: HiringTeamMember) => {
 };
 
 const HiringTeamMembersPage: React.FC = () => {
-  const { organizationId, teamId } = useParams<{ organizationId: string; teamId: string }>();
+  const { organizationId, teamId, companyId } = useParams<{ organizationId: string; teamId: string; companyId: string }>();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -120,6 +121,7 @@ const HiringTeamMembersPage: React.FC = () => {
 
   // API hooks
   const { data: organization } = useOrganization(organizationId || '');
+  const { data: company } = useCompany(companyId || '');
   const { data: team, isLoading: teamLoading } = useHiringTeam(teamId || '');
   const { data: members = [], isLoading: membersLoading, error, refetch: refetchMembers } = useTeamMembers(teamId || '');
   const addMemberMutation = useAddTeamMember();
@@ -312,10 +314,10 @@ const HiringTeamMembersPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Team Not Found</h2>
           <p className="text-gray-600 mb-4">The hiring team you're looking for doesn't exist.</p>
           <button
-            onClick={() => navigate(organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams` : `/dashboard/admin/hiring-teams`)}
+            onClick={() => navigate(companyId ? `/dashboard/admin/companies/${companyId}` : `/dashboard/admin/companies`)}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
           >
-            Back to Teams
+            Back to {companyId ? 'Company' : 'Companies'}
           </button>
         </div>
       </div>
@@ -329,25 +331,25 @@ const HiringTeamMembersPage: React.FC = () => {
         <div className="mb-8">
           <div className="flex items-center mb-2">
             <Link
-              to={`/dashboard/admin/hiring-teams`}
+              to={`/dashboard/admin/companies`}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
-              Hiring Teams
+              Companies
             </Link>
-            {organizationId && organization && (
+            {companyId && company && (
               <>
                 <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
                 <Link
-                  to={`/dashboard/admin/organizations/${organizationId}`}
+                  to={`/dashboard/admin/companies/${companyId}`}
                   className="text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {organization.name}
+                  {company.company.name}
                 </Link>
               </>
             )}
             <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
             <Link
-              to={organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams/${teamId}` : `/dashboard/admin/hiring-teams/${teamId}`}
+              to={companyId ? `/dashboard/admin/companies/${companyId}/hiring-teams/${teamId}` : `/dashboard/admin/companies`}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               {team.name}
@@ -359,11 +361,11 @@ const HiringTeamMembersPage: React.FC = () => {
             <div>
               <div className="flex items-center space-x-3 mb-2">
                 <button
-                  onClick={() => navigate(organizationId ? `/dashboard/admin/organizations/${organizationId}/hiring-teams` : `/dashboard/admin/hiring-teams`)}
+                  onClick={() => navigate(companyId ? `/dashboard/admin/companies/${companyId}/hiring-teams/${teamId}` : `/dashboard/admin/companies`)}
                   className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
                 >
                   <ArrowLeft className="h-5 w-5 mr-1" />
-                  Back to Teams
+                  Back to Team Details
                 </button>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center">
