@@ -61,10 +61,30 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
   // Combine external moving candidates with internal tracking
   const allMovingCandidates = new Set([...externalMovingCandidates, ...pendingMoves]);
 
-  // Update optimistic candidates when prop candidates change, but preserve pending moves
+  // Clear optimistic state when the actual data reflects the changes
   useEffect(() => {
-    // Component updated - tracking for potential future debugging
-  }, [candidates, pendingMoves, movingCandidates]);
+    // Check if any candidates that are being moved optimistically 
+    // now have their actual stage matching the target stage
+    const updatedMovingCandidates = new Map(movingCandidates);
+    const updatedPendingMoves = new Set(pendingMoves);
+    let hasChanges = false;
+
+    movingCandidates.forEach((moveInfo, candidateId) => {
+      const candidate = candidates.find(c => c.id === candidateId);
+      if (candidate && candidate.stage === moveInfo.targetStage) {
+        // The candidate's actual stage now matches the target stage
+        // Clear the optimistic state
+        updatedMovingCandidates.delete(candidateId);
+        updatedPendingMoves.delete(candidateId);
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges) {
+      setMovingCandidates(updatedMovingCandidates);
+      setPendingMoves(updatedPendingMoves);
+    }
+  }, [candidates, movingCandidates, pendingMoves]);
 
   // Get stages from pipeline, sorted by order
   const stages = pipeline?.stages
@@ -175,11 +195,14 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
             await onCandidateStageChange(candidateId, newStage);
           }
           
-          // Clear states after successful move
+          // Set a fallback timeout to clear optimistic state if data doesn't update
           setTimeout(() => {
             setMovingCandidates(prev => {
               const newMap = new Map(prev);
-              newMap.delete(candidateId);
+              if (newMap.has(candidateId)) {
+                console.log('Fallback: clearing optimistic state for candidate', candidateId);
+                newMap.delete(candidateId);
+              }
               return newMap;
             });
             setPendingMoves(prev => {
@@ -187,7 +210,7 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
               newSet.delete(candidateId);
               return newSet;
             });
-          }, 500); // Longer delay to ensure server updates are reflected
+          }, 3000); // Fallback timeout - should not normally be needed
         } catch (error) {
           // Revert to original position on error
           setMovingCandidates(prev => {

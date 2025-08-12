@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Mail, Phone, Star, GripVertical, Trash2 } from 'lucide-react';
+import { Calendar, Mail, Phone, GripVertical, Trash2 } from 'lucide-react';
 
 // Sourcing-specific candidate interface
 interface SourcingCandidate {
@@ -45,44 +45,6 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
     }
     
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-  };
-
-  // Render star rating with half-star support
-  const renderStarRating = (rating: number, color = 'yellow', size = 'sm') => {
-    const starSize = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
-    const starColor = color === 'yellow' ? 'text-yellow-400' : 'text-purple-400';
-    
-    // Ensure rating is a valid number
-    const validRating = typeof rating === 'number' && !isNaN(rating) ? Math.max(0, Math.min(5, rating)) : 0;
-    
-    return (
-      <div className="flex items-center space-x-0.5">
-        {[1, 2, 3, 4, 5].map((star) => {
-          const isFilled = star <= Math.floor(validRating);
-          const isHalf = star === Math.floor(validRating) + 1 && validRating % 1 >= 0.5;
-          
-          return (
-            <div key={star} className={`relative ${starSize}`}>
-              {/* Background (empty) star */}
-              <Star className={`${starSize} text-gray-300 absolute`} />
-              
-              {/* Filled or half-filled star */}
-              {(isFilled || isHalf) && (
-                <div 
-                  className="absolute overflow-hidden"
-                  style={{ 
-                    width: isHalf ? '50%' : '100%',
-                    height: '100%'
-                  }}
-                >
-                  <Star className={`${starSize} ${starColor} fill-current`} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
   };
 
   const {
@@ -189,16 +151,6 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
                     {candidate.phone}
                   </div>
                 )}
-                
-                {/* Sourcing-specific: Show ratings */}
-                <div className="mt-1 flex items-center gap-2 text-xs">
-                  <div className="flex items-center gap-1">
-                    {renderStarRating(typeof candidate.score === 'number' ? candidate.score : 0, 'purple', 'sm')}
-                    <span className="text-gray-600">
-                      {typeof candidate.score === 'number' && candidate.score > 0 ? candidate.score.toFixed(1) : 'No rating'}
-                    </span>
-                  </div>
-                </div>
                 
                 {/* Sourcing-specific: Show source */}
                 <div className="mt-1">

@@ -175,7 +175,7 @@ export const useMoveSourcingProspectStage = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: MoveSourcingProspectStageDto }) =>
+    mutationFn: ({ id, data, projectId }: { id: string; data: MoveSourcingProspectStageDto; projectId?: string }) =>
       sourcingApiService.moveProspectToStage(id, data),
     onSuccess: (_, variables) => {
       // Invalidate and refetch relevant queries
@@ -185,6 +185,11 @@ export const useMoveSourcingProspectStage = () => {
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.conversionRates] });
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospectsByStage] });
       queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.prospectsByPipeline] });
+      
+      // Also invalidate project prospects if projectId is provided
+      if (variables.projectId) {
+        queryClient.invalidateQueries({ queryKey: [SOURCING_QUERY_KEYS.projectProspects, variables.projectId] });
+      }
     },
   });
 };

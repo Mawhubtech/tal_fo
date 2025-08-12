@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Plus, LayoutGrid, List, X, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSourcingProspects, useProjectProspects, useSourcingDefaultPipeline, useMoveSourcingProspectStage, useDeleteSourcingProspect } from '../../hooks/useSourcingProspects';
+import { useProject } from '../../hooks/useSourcingProjects';
 import { useCandidate } from '../../hooks/useCandidates';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { SourcingKanbanView } from '../components/pipeline/SourcingKanbanView';
@@ -289,6 +290,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
   }, [queryParams]);
   
   const { data: defaultPipeline, isLoading: pipelineLoading } = useSourcingDefaultPipeline();
+  const { data: project, isLoading: projectLoading } = useProject(projectId || '', !!projectId);
   const { data: selectedCandidateData, isLoading: candidateLoading } = useCandidate(selectedCandidateId || '');
   
   // Mutations
@@ -296,7 +298,16 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
   const deleteProspectMutation = useDeleteSourcingProspect();
 
   const prospects = sourcingData?.prospects || [];
-  const activePipeline = defaultPipeline;
+  
+  // Determine the active pipeline:
+  // 1. If we have a project with a pipeline, use the project's pipeline
+  // 2. If we have prospects, use the first prospect's pipeline (fallback)
+  // 3. Otherwise, fall back to the default pipeline
+  const activePipeline = (project?.pipeline) 
+    ? project.pipeline
+    : (prospects.length > 0 && prospects[0].pipeline 
+        ? prospects[0].pipeline 
+        : defaultPipeline);
 
   // Debug prospects data
   useEffect(() => {
@@ -304,9 +315,15 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
       sourcingData,
       prospects: prospects.length,
       isLoading: prospectsLoading,
-      error: prospectsError
+      error: prospectsError,
+      projectId,
+      project: project ? { id: project.id, name: project.name, pipelineId: project.pipelineId } : null,
+      projectPipeline: project?.pipeline ? { id: project.pipeline.id, name: project.pipeline.name } : null,
+      activePipeline: activePipeline ? { id: activePipeline.id, name: activePipeline.name } : null,
+      defaultPipeline: defaultPipeline ? { id: defaultPipeline.id, name: defaultPipeline.name } : null,
+      firstProspectPipeline: prospects.length > 0 && prospects[0].pipeline ? { id: prospects[0].pipeline.id, name: prospects[0].pipeline.name } : null
     });
-  }, [sourcingData, prospects.length, prospectsLoading, prospectsError]);
+  }, [sourcingData, prospects.length, prospectsLoading, prospectsError, activePipeline, defaultPipeline, project, projectId]);
 
   // Transform prospects to match sourcing candidate interface
   const transformProspectToSourcingCandidate = (prospect: SourcingProspect): SourcingCandidate => {
@@ -533,16 +550,68 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
   };
 
   const handleCandidateStageChange = async (candidateId: string, newStageName: string) => {
-    const stage = activePipeline?.stages?.find(s => s.name === newStageName);
-    if (!stage) {
-      console.error('Stage not found:', newStageName);
+    // Find the prospect to get its pipeline information
+    const prospect = prospects.find(p => p.id === candidateId);
+    if (!prospect) {
+      console.error('Prospect not found:', candidateId);
       return;
     }
+
+    console.log('Moving prospect:', {
+      prospectId: candidateId,
+      prospectPipelineId: prospect.pipelineId,
+      prospectCurrentStageId: prospect.currentStageId,
+      newStageName,
+      prospectPipeline: prospect.pipeline,
+      defaultPipeline: activePipeline
+    });
+
+    // Use the prospect's pipeline if available, otherwise fall back to default pipeline
+    const prospectPipeline = prospect.pipeline || activePipeline;
+    
+    if (!prospectPipeline) {
+      console.error('No pipeline available for prospect or as default');
+      return;
+    }
+
+    const stage = prospectPipeline?.stages?.find(s => s.name === newStageName);
+    
+    if (!stage) {
+      console.error('Stage not found in prospect pipeline:', {
+        newStageName,
+        pipeline: prospectPipeline,
+        availableStages: prospectPipeline?.stages?.map(s => s.name)
+      });
+      
+      // If the stage is not found in prospect's pipeline, but we have a default pipeline,
+      // try to find it there and update the prospect's pipeline
+      if (activePipeline && prospectPipeline !== activePipeline) {
+        const defaultStage = activePipeline.stages?.find(s => s.name === newStageName);
+        if (defaultStage) {
+          console.log('Found stage in default pipeline, using that instead');
+          try {
+            await moveProspectMutation.mutateAsync({
+              id: candidateId,
+              data: { stageId: defaultStage.id },
+              projectId // Pass projectId for cache invalidation
+            });
+            return;
+          } catch (error) {
+            console.error('Failed to move prospect with default pipeline stage:', error);
+            return;
+          }
+        }
+      }
+      return;
+    }
+
+    console.log('Found stage:', stage);
 
     try {
       await moveProspectMutation.mutateAsync({
         id: candidateId,
-        data: { stageId: stage.id }
+        data: { stageId: stage.id },
+        projectId // Pass projectId for cache invalidation
       });
     } catch (error) {
       console.error('Failed to move prospect:', error);
@@ -558,7 +627,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
   };
 
   // Show loading state
-  if (prospectsLoading || pipelineLoading || isFiltering) {
+  if (prospectsLoading || pipelineLoading || projectLoading || isFiltering) {
     return (
       <div className="w-full p-6">
         <div className="flex items-center justify-center h-64">
