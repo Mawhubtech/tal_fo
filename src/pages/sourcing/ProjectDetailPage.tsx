@@ -1,5 +1,5 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Edit, 
@@ -16,19 +16,44 @@ import {
   Pause,
   Play,
   CheckCircle,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
-import { useProject, useUpdateProject } from '../../hooks/useSourcingProjects';
+import { useProject, useUpdateProject, useDeleteProject } from '../../hooks/useSourcingProjects';
 import { useProjectSearches } from '../../hooks/useSourcingSearches';
 import { useProjectSequences } from '../../hooks/useSourcingSequences';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ProjectDetailPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const { data: project, isLoading, error } = useProject(projectId!);
   const { data: searches = [] } = useProjectSearches(projectId!);
   const { data: sequences = [] } = useProjectSequences(projectId!);
   const updateProjectMutation = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
+  
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -64,6 +89,14 @@ const ProjectDetailPage: React.FC = () => {
     updateProjectMutation.mutate({
       id: project.id,
       data: { status: 'archived' }
+    });
+  };
+
+  const handleDelete = () => {
+    deleteProjectMutation.mutate(project.id, {
+      onSuccess: () => {
+        navigate('/dashboard/sourcing/projects');
+      }
     });
   };
 
@@ -149,10 +182,30 @@ const ProjectDetailPage: React.FC = () => {
               Edit
             </Link>
             
-            <div className="relative">
-              <button className="inline-flex items-center px-3 py-2 text-purple-700 bg-purple-50 border border-purple-300 rounded-lg hover:bg-purple-100">
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="inline-flex items-center px-3 py-2 text-purple-700 bg-purple-50 border border-purple-300 rounded-lg hover:bg-purple-100"
+              >
                 <MoreVertical className="w-4 h-4" />
               </button>
+              
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        setShowDeleteModal(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Project
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -300,6 +353,18 @@ const ProjectDetailPage: React.FC = () => {
           })}
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${project.name}"? This action cannot be undone and will permanently remove all associated data including searches, prospects, and analytics.`}
+        confirmText="Delete Project"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

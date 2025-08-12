@@ -1,5 +1,8 @@
 import apiClient from '../lib/api';
 
+// Seniority levels enum
+export type SeniorityLevel = 'entry' | 'mid' | 'senior' | 'lead' | 'executive';
+
 // Project Types
 export interface SourcingProject {
   id: string;
@@ -9,6 +12,11 @@ export interface SourcingProject {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   visibility: 'private' | 'team' | 'public';
   requirements?: {
+    // New structure
+    jobTitle?: string;
+    experience?: SeniorityLevel;
+    location?: string[];
+    // Legacy support
     positions?: number;
     targetHires?: number;
     deadline?: string;
@@ -18,8 +26,12 @@ export interface SourcingProject {
       currency?: string;
     };
     skills?: string[];
-    experience?: string;
-    location?: string[];
+    experienceLevel?: string; // Legacy field
+    locations?: string[]; // Legacy field
+    // Middle East specific fields
+    visaSponsorship?: boolean;
+    arabicRequired?: boolean;
+    expatriatePosition?: boolean;
   };
   targets?: {
     totalProspects?: number;

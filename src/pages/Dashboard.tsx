@@ -23,7 +23,6 @@ import {
 import SourcingProjectsPage from './sourcing/SourcingProjectsPage';
 import ProjectDetailPage from './sourcing/ProjectDetailPage';
 import CreateProjectPage from './sourcing/CreateProjectPage';
-import EditProjectPage from './sourcing/EditProjectPage';
 import CreateSearchPage from './sourcing/CreateSearchPage';
 // Project section pages
 import CreateSequencePage from './sourcing/CreateSequencePage';
@@ -175,7 +174,7 @@ const Dashboard: React.FC = () => {
             
             <Route path="sourcing/projects/:projectId/edit" element={
               <RoutePermissionGuard>
-                <EditProjectPage />
+                <CreateProjectPage />
               </RoutePermissionGuard>
             } />
             

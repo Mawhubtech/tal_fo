@@ -56,12 +56,13 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-blue-100 text-blue-800';
-      case 'low': return 'bg-gray-100 text-gray-800';
+  const getPriorityColor = (seniority: string) => {
+    switch (seniority) {
+      case 'executive': return 'bg-red-100 text-red-800';
+      case 'lead': return 'bg-orange-100 text-orange-800';
+      case 'senior': return 'bg-blue-100 text-blue-800';
+      case 'mid': return 'bg-green-100 text-green-800';
+      case 'entry': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -99,9 +100,16 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
               {getStatusIcon(project.status)}
               <span className="ml-1 capitalize">{project.status}</span>
             </span>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
-              <span className="capitalize">{project.priority}</span>
-            </span>
+            {project.requirements?.experience && (
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(project.requirements.experience)}`}>
+                <span className="capitalize">{project.requirements.experience} Level</span>
+              </span>
+            )}
+            {project.metadata?.jobTitle && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                <span>{project.metadata.jobTitle}</span>
+              </span>
+            )}
             <div className="flex items-center space-x-1">
               <button
                 onClick={handleEdit}
@@ -206,17 +214,25 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
 const SourcingProjectsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  const [seniorityFilter, setSeniorityFilter] = useState('');
   
   const { data: projectsData, isLoading, error } = useProjects({
     search: searchTerm || undefined,
     status: statusFilter || undefined,
-    priority: priorityFilter || undefined,
+    // Note: We'll need to filter by seniority on the frontend since the API doesn't support it yet
     includeCollaborations: true,
   });
 
   const projects = projectsData?.projects || [];
   const total = projectsData?.total || 0;
+
+  // Client-side filtering for seniority since API doesn't support it yet
+  const filteredProjects = projects.filter(project => {
+    if (seniorityFilter && project.requirements?.experience !== seniorityFilter) {
+      return false;
+    }
+    return true;
+  });
 
   if (isLoading) {
     return (
@@ -287,15 +303,16 @@ const SourcingProjectsPage: React.FC = () => {
           </select>
           
           <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            value={seniorityFilter}
+            onChange={(e) => setSeniorityFilter(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value="">All Priorities</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
+            <option value="">All Seniority Levels</option>
+            <option value="entry">Entry Level</option>
+            <option value="mid">Mid Level</option>
+            <option value="senior">Senior Level</option>
+            <option value="lead">Lead/Principal</option>
+            <option value="executive">Executive</option>
           </select>
           
           <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -308,7 +325,7 @@ const SourcingProjectsPage: React.FC = () => {
       {/* Results Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="text-sm text-gray-600">
-          Showing {projects.length} of {total} projects
+          Showing {filteredProjects.length} of {total} projects
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">Sort by:</span>
@@ -316,13 +333,13 @@ const SourcingProjectsPage: React.FC = () => {
             <option>Latest</option>
             <option>Name</option>
             <option>Status</option>
-            <option>Priority</option>
+            <option>Seniority</option>
           </select>
         </div>
       </div>
 
       {/* Projects Grid */}
-      {projects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <div className="text-center py-12">
           <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
@@ -339,7 +356,7 @@ const SourcingProjectsPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
