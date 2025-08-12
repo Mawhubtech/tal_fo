@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Eye } from 'lucide-react';
 import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../hooks/useSearch';
@@ -27,6 +27,8 @@ const GlobalSearchResultsPage: React.FC = () => {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [fromQuickSearch, setFromQuickSearch] = useState(false);
   const [shortlistingCandidates, setShortlistingCandidates] = useState<{ [key: string]: boolean }>({});
+  // Track active shortlist calls to prevent duplicates (use ref to avoid React state delays)
+  const activeShortlistCallsRef = useRef<Set<string>>(new Set());
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
@@ -85,6 +87,13 @@ const GlobalSearchResultsPage: React.FC = () => {
       navigate('/dashboard/search');
     }
   }, [location.state, navigate]);
+
+  // Cleanup active shortlist calls on unmount
+  useEffect(() => {
+    return () => {
+      activeShortlistCallsRef.current.clear();
+    };
+  }, []);
 
   const fetchResults = async (filters: SearchFilters, query?: string, mode?: 'database' | 'external' | 'combined') => {
     setIsLoading(true);
@@ -175,6 +184,27 @@ const GlobalSearchResultsPage: React.FC = () => {
 
   // Auto-shortlist a candidate to a specific project (used after project creation)
   const handleAutoShortlist = async (candidate: any, projectId: string) => {
+    const callKey = `${candidate.id}-${projectId}`;
+    
+    // Prevent duplicate calls for the same candidate-project combination
+    if (activeShortlistCallsRef.current.has(callKey)) {
+      console.log('🚫 AUTO-SHORTLIST BLOCKED: Duplicate call detected for', callKey);
+      return;
+    }
+    
+    console.log('🔄 AUTO-SHORTLIST START:', {
+      candidateId: candidate.id,
+      candidateName: candidate.fullName || candidate.candidateName,
+      projectId,
+      callKey,
+      searchMode,
+      coreSignalId: candidate.coreSignalId,
+      source: candidate.source
+    });
+    
+    // Mark this call as active
+    activeShortlistCallsRef.current.add(callKey);
+    
     try {
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: true }));
 
@@ -184,6 +214,7 @@ const GlobalSearchResultsPage: React.FC = () => {
 
       // Step 1: If external source candidate, save to database first
       if (isExternalSourceCandidate && (candidate.coreSignalId || candidate.id)) {
+        console.log('💾 AUTO-SHORTLIST: Saving external candidate to database...');
         try {
           const coreSignalId = candidate.coreSignalId || candidate.id;
           const shortlistResult = await shortlistExternalMutation.mutateAsync({
@@ -191,6 +222,8 @@ const GlobalSearchResultsPage: React.FC = () => {
             candidateData: candidate,
             createdBy: user?.id || ''
           });
+
+          console.log('💾 AUTO-SHORTLIST: External candidate save result:', shortlistResult);
 
           // Extract candidate ID regardless of success status (for existing candidates)
           candidateIdForProspects = shortlistResult.candidateId || shortlistResult.existingCandidateId || candidate.id;
@@ -227,12 +260,20 @@ const GlobalSearchResultsPage: React.FC = () => {
       }
 
       // Step 2: Add candidate to prospects
+      console.log('📋 AUTO-SHORTLIST: Adding candidate to project prospects...', {
+        projectId,
+        candidateIdForProspects,
+        searchId: undefined
+      });
+      
       try {
-        await addProspectsToProjectMutation.mutateAsync({
+        const prospectResult = await addProspectsToProjectMutation.mutateAsync({
           projectId: projectId,
           candidateIds: [candidateIdForProspects],
           searchId: undefined, // No search ID for auto-shortlisting from project creation
         });
+        
+        console.log('📋 AUTO-SHORTLIST: Project prospect addition result:', prospectResult);
 
         addToast({
           type: 'success',
@@ -240,11 +281,14 @@ const GlobalSearchResultsPage: React.FC = () => {
           message: `${candidate.fullName || candidate.candidateName || 'Candidate'} has been ${isExternalSourceCandidate ? 'saved to your database and ' : ''}added to your project!`
         });
         
+        console.log('✅ AUTO-SHORTLIST: Successfully completed for candidate:', candidate.id);
+        
         // Close the project modal if it was open
         setShowProjectModal(false);
         setSelectedCandidate(null);
         
       } catch (prospectError: any) {
+        console.error('❌ AUTO-SHORTLIST: Error adding candidate to prospects:', prospectError);
         // Handle duplicate shortlisting specifically
         if (prospectError?.response?.status === 409 || prospectError?.message?.includes('already exist as prospects')) {
           addToast({
@@ -266,7 +310,7 @@ const GlobalSearchResultsPage: React.FC = () => {
       }
       
     } catch (error) {
-      console.error('Error auto-shortlisting candidate:', error);
+      console.error('❌ AUTO-SHORTLIST: General error during auto-shortlist:', error);
       addToast({
         type: 'error',
         title: 'Shortlisting Failed',
@@ -274,6 +318,8 @@ const GlobalSearchResultsPage: React.FC = () => {
       });
     } finally {
       setShortlistingCandidates(prev => ({ ...prev, [candidate.id]: false }));
+      // Remove the call from active calls
+      activeShortlistCallsRef.current.delete(callKey);
     }
   };
 
@@ -298,6 +344,27 @@ const GlobalSearchResultsPage: React.FC = () => {
 
   const handleProjectSelected = async (projectId: string) => {
     if (!selectedCandidate) return;
+    
+    const callKey = `${selectedCandidate.id}-${projectId}`;
+    
+    // Prevent duplicate calls for the same candidate-project combination
+    if (activeShortlistCallsRef.current.has(callKey)) {
+      console.log('🚫 MANUAL-SHORTLIST BLOCKED: Duplicate call detected for', callKey);
+      return;
+    }
+
+    console.log('🔄 MANUAL-SHORTLIST START:', {
+      candidateId: selectedCandidate.id,
+      candidateName: selectedCandidate.fullName || selectedCandidate.candidateName,
+      projectId,
+      callKey,
+      searchMode,
+      coreSignalId: selectedCandidate.coreSignalId,
+      source: selectedCandidate.source
+    });
+
+    // Mark this call as active
+    activeShortlistCallsRef.current.add(callKey);
 
     try {
       setShortlistingCandidates(prev => ({ ...prev, [selectedCandidate.id]: true }));
@@ -308,6 +375,7 @@ const GlobalSearchResultsPage: React.FC = () => {
 
       // Step 1: If external source candidate, save to database first
       if (isExternalSourceCandidate && (selectedCandidate.coreSignalId || selectedCandidate.id)) {
+        console.log('💾 MANUAL-SHORTLIST: Saving external candidate to database...');
         try {
           const coreSignalId = selectedCandidate.coreSignalId || selectedCandidate.id;
           const shortlistResult = await shortlistExternalMutation.mutateAsync({
@@ -315,6 +383,8 @@ const GlobalSearchResultsPage: React.FC = () => {
             candidateData: selectedCandidate,
             createdBy: user?.id || ''
           });
+
+          console.log('💾 MANUAL-SHORTLIST: External candidate save result:', shortlistResult);
 
           // Extract candidate ID regardless of success status (for existing candidates)
           candidateIdForProspects = shortlistResult.candidateId || shortlistResult.existingCandidateId || selectedCandidate.id;
@@ -351,12 +421,20 @@ const GlobalSearchResultsPage: React.FC = () => {
       }
 
       // Step 2: Add candidate to the selected project
+      console.log('📋 MANUAL-SHORTLIST: Adding candidate to project prospects...', {
+        projectId,
+        candidateIdForProspects,
+        searchId: undefined
+      });
+      
       try {
-        await addProspectsToProjectMutation.mutateAsync({
+        const prospectResult = await addProspectsToProjectMutation.mutateAsync({
           projectId,
           candidateIds: [candidateIdForProspects],
           searchId: undefined // No search ID for global search
         });
+        
+        console.log('📋 MANUAL-SHORTLIST: Project prospect addition result:', prospectResult);
 
         addToast({
           type: 'success',
@@ -364,10 +442,13 @@ const GlobalSearchResultsPage: React.FC = () => {
           message: `${selectedCandidate.fullName || 'Candidate'} has been ${isExternalSourceCandidate ? 'saved to your database and ' : ''}added to the project successfully.`
         });
 
+        console.log('✅ MANUAL-SHORTLIST: Successfully completed for candidate:', selectedCandidate.id);
+
         setShowProjectModal(false);
         setSelectedCandidate(null);
         
       } catch (prospectError: any) {
+        console.error('❌ MANUAL-SHORTLIST: Error adding candidate to prospects:', prospectError);
         // Handle duplicate shortlisting specifically
         if (prospectError?.response?.status === 409 || prospectError?.message?.includes('already exist as prospects')) {
           addToast({
@@ -391,6 +472,8 @@ const GlobalSearchResultsPage: React.FC = () => {
       }
     } finally {
       setShortlistingCandidates(prev => ({ ...prev, [selectedCandidate.id]: false }));
+      // Remove the call from active calls
+      activeShortlistCallsRef.current.delete(callKey);
     }
   };
 
