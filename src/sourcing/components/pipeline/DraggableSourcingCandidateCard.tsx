@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Calendar, Mail, Phone, Star, GripVertical, Trash2 } from 'lucide-react';
 
@@ -95,6 +96,17 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
     id: candidate.id,
   });
 
+  // Make each card also a drop target for the stage
+  const { setNodeRef: setDropNodeRef, isOver } = useDroppable({
+    id: `${candidate.stage}-card-${candidate.id}`,
+  });
+
+  // Combine both refs
+  const setRefs = (node: HTMLElement | null) => {
+    setNodeRef(node);
+    setDropNodeRef(node);
+  };
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -102,7 +114,7 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
 
   return (
     <div 
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
       className={`bg-white border border-gray-200 rounded-lg p-2 sm:p-3 mb-1 sm:mb-2 transition-all duration-200 ${
         isBeingDragged || isDragging
@@ -110,153 +122,107 @@ export const DraggableSourcingCandidateCard: React.FC<DraggableSourcingCandidate
           : 'hover:shadow-md cursor-pointer'
       } ${
         isPending 
-          ? 'opacity-75 pointer-events-none relative overflow-hidden' 
+          ? 'opacity-75 pointer-events-none relative overflow-hidden border-blue-300 bg-blue-50' 
+          : ''
+      } ${
+        isOver
+          ? 'ring-2 ring-purple-400 ring-opacity-30 bg-purple-50 border-purple-300'
           : ''
       }`}
+      onClick={onClick}
+      {...attributes}
+      {...listeners}
     >
-      {/* Pending indicator */}
+      {/* Pending indicator with loading animation */}
       {isPending && (
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-50 animate-pulse" />
+        <>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100 to-transparent opacity-60 animate-pulse" />
+          <div className="absolute top-2 right-2 w-3 h-3">
+            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </>
       )}
       
-      <div className="flex items-start gap-1 sm:gap-2">
+      <div className="flex items-start gap-2">
         {/* Drag Handle */}
         <div 
           {...attributes}
           {...listeners}
           className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing flex-shrink-0 mt-1"
         >
-          <GripVertical className="w-3 h-3 sm:w-4 sm:h-4" />
+          <GripVertical className="w-3 h-3" />
         </div>
 
-        {/* Card Content */}
+        {/* Card Content - Simplified layout */}
         <div className="flex-1 min-w-0">
-          {/* Candidate Info */}
-          <div className="flex items-center mb-1 sm:mb-2 gap-1 sm:gap-2">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
-              {candidate.avatar ? (
-                <img 
-                  src={candidate.avatar} 
-                  alt={candidate.name} 
-                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover" 
-                />
-              ) : (
-                <span className="text-purple-600 font-medium text-xs">
-                  {getInitials(candidate.name)}
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent card drag from interfering
-                  onClick?.();
-                }}
-                className="text-xs sm:text-sm font-medium text-gray-900 truncate hover:text-purple-600 hover:underline cursor-pointer transition-colors text-left block w-full"
-                title="Click to view full profile"
-              >
-                {candidate.name}
-              </button>
-            </div>
-          </div>
-
-          {/* Dual Rating Display */}
-          <div className="mb-1 sm:mb-2 space-y-0.5 sm:space-y-1">
-            {/* Candidate Rating - Always show for consistency */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Candidate:</span>
-              <div className="flex items-center">
-                {candidate.candidateRating !== undefined && 
-                 candidate.candidateRating !== null && 
-                 typeof candidate.candidateRating === 'number' && 
-                 candidate.candidateRating >= 0 ? (
-                  <>
-                    {renderStarRating(candidate.candidateRating, 'yellow', 'sm')}
-                    <span className="ml-1 text-xs text-gray-600">{candidate.candidateRating.toFixed(1)}</span>
-                  </>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
+                {candidate.avatar ? (
+                  <img 
+                    src={candidate.avatar} 
+                    alt={candidate.name} 
+                    className="w-6 h-6 rounded-full object-cover" 
+                  />
                 ) : (
-                  <>
-                    {renderStarRating(0, 'yellow', 'sm')}
-                    <span className="ml-1 text-xs text-gray-500">No rating</span>
-                  </>
+                  <span className="text-purple-600 font-medium text-xs">
+                    {getInitials(candidate.name)}
+                  </span>
                 )}
               </div>
-            </div>
-            
-            {/* Prospect Rating */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Pipeline:</span>
-              <div className="flex items-center">
-                {renderStarRating(typeof candidate.score === 'number' ? candidate.score : 0, 'purple', 'sm')}
-                <span className="ml-1 text-xs text-gray-600">
-                  {typeof candidate.score === 'number' && candidate.score > 0 ? candidate.score.toFixed(1) : 'No rating'}
-                </span>
+              <div className="min-w-0 flex-1">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClick?.();
+                  }}
+                  className="text-sm font-medium text-gray-900 truncate hover:text-purple-600 hover:underline cursor-pointer transition-colors text-left block w-full"
+                  title={`${candidate.name} - ${candidate.email} - ${candidate.phone || 'No phone'}`}
+                >
+                  {candidate.name}
+                </button>
+                <div className="text-xs text-gray-500 truncate">
+                  {candidate.email}
+                </div>
+                {candidate.phone && (
+                  <div className="text-xs text-gray-500 truncate">
+                    {candidate.phone}
+                  </div>
+                )}
+                
+                {/* Sourcing-specific: Show ratings */}
+                <div className="mt-1 flex items-center gap-2 text-xs">
+                  <div className="flex items-center gap-1">
+                    {renderStarRating(typeof candidate.score === 'number' ? candidate.score : 0, 'purple', 'sm')}
+                    <span className="text-gray-600">
+                      {typeof candidate.score === 'number' && candidate.score > 0 ? candidate.score.toFixed(1) : 'No rating'}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Sourcing-specific: Show source */}
+                <div className="mt-1">
+                  <span className="inline-flex items-center px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded-full text-xs">
+                    {candidate.source}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          
-          {/* Contact Info - Show only on larger screens or condensed format */}
-          <div className="text-xs text-gray-500 mb-1 sm:mb-2 space-y-0.5 sm:space-y-1">
-            <div className="flex items-center gap-1">
-              <Mail className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
-              <span className="truncate flex-1">{candidate.email}</span>
-            </div>
-            {candidate.phone && (
-              <div className="hidden sm:flex items-center gap-1">
-                <Phone className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{candidate.phone}</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Tags */}
-          <div className="flex flex-wrap gap-0.5 sm:gap-1 mb-1 sm:mb-2">
-            {candidate.tags.slice(0, 2).map((tag, index) => (
-              <span
-                key={index}
-                className="px-1 sm:px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded truncate max-w-[60px] sm:max-w-[80px]"
-                title={tag}
+            {/* Remove Button */}
+            {onRemove && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove();
+                }}
+                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors flex-shrink-0"
+                title="Remove prospect from pipeline"
               >
-                {tag}
-              </span>
-            ))}
-            {candidate.tags.length > 2 && (
-              <span 
-                className="px-1 sm:px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
-                title={candidate.tags.slice(2).join(', ')}
-              >
-                +{candidate.tags.length - 2}
-              </span>
+                <Trash2 className="w-3 h-3" />
+              </button>
             )}
-          </div>
-          
-          {/* Applied Date - Hide on very small screens */}
-          <div className="hidden sm:flex items-center text-xs text-gray-400 mb-1 sm:mb-2 gap-1">
-            <Calendar className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">Added {new Date(candidate.appliedDate).toLocaleDateString()}</span>
-          </div>
-          
-          {/* Source */}
-          <div className="text-xs">
-            <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-600 rounded-full">
-              {candidate.source}
-            </span>
           </div>
         </div>
-
-        {/* Remove Button */}
-        {onRemove && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent card click
-              onRemove();
-            }}
-            className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-0.5 sm:p-1 rounded transition-colors flex-shrink-0 self-start"
-            title="Remove prospect from pipeline"
-          >
-            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-          </button>
-        )}
       </div>
     </div>
   );

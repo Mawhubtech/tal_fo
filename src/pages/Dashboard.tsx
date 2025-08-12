@@ -10,8 +10,6 @@ import CalendarPage from './CalendarPage'; // Import the Calendar page
 // Sourcing imports
 import { Search, SearchResults } from '../sourcing';
 import UnifiedContactsPage from '../sourcing/contacts/pages/UnifiedContactsPage'; // Import UnifiedContactsPage
-import GlobalSearchPage from './GlobalSearchPage'; // Import Global Search Page
-import GlobalSearchResultsPage from './GlobalSearchResultsPage'; // Import Global Search Results Page
 // Outreach imports
 import SequencesPage from './outreach/SequencesPage'; // Import SequencesPage
 import { 
@@ -153,19 +151,6 @@ const Dashboard: React.FC = () => {
             <Route path="calendar" element={
               <RoutePermissionGuard>
                 <CalendarPage />
-              </RoutePermissionGuard>
-            } />
-            
-            {/* Global Search Routes */}
-            <Route path="search" element={
-              <RoutePermissionGuard>
-                <GlobalSearchPage />
-              </RoutePermissionGuard>
-            } />
-            
-            <Route path="search-results" element={
-              <RoutePermissionGuard>
-                <GlobalSearchResultsPage />
               </RoutePermissionGuard>
             } />
             

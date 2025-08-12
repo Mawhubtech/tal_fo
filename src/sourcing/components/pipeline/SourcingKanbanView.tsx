@@ -10,6 +10,7 @@ import {
   closestCorners,
   DragOverEvent,
 } from '@dnd-kit/core';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Pipeline } from '../../../services/pipelineService';
 import { SourcingDraggableStageColumn } from './SourcingDraggableStageColumn';
 import { DraggableSourcingCandidateCard } from './DraggableSourcingCandidateCard';
@@ -36,6 +37,7 @@ interface SourcingKanbanViewProps {
   onCandidateClick?: (candidate: SourcingCandidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
   onCandidateRemove?: (candidate: SourcingCandidate) => void;
+  movingCandidates?: Set<string>;
 }
 
 export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
@@ -43,13 +45,21 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
   pipeline,
   onCandidateClick,
   onCandidateStageChange,
-  onCandidateRemove
+  onCandidateRemove,
+  movingCandidates: externalMovingCandidates = new Set()
 }) => {
   const [activeCandidate, setActiveCandidate] = useState<SourcingCandidate | null>(null);
   // Track pending moves for visual feedback and prevent flickering
   const [pendingMoves, setPendingMoves] = useState<Set<string>>(new Set());
   // Track candidates that are currently being moved (with loading state)
   const [movingCandidates, setMovingCandidates] = useState<Map<string, { originalStage: string; targetStage: string }>>(new Map());
+  // Track global expand/collapse state
+  const [expandAll, setExpandAll] = useState<boolean>(false);
+  // Track individual column expansion states
+  const [columnExpansion, setColumnExpansion] = useState<Map<string, boolean>>(new Map());
+
+  // Combine external moving candidates with internal tracking
+  const allMovingCandidates = new Set([...externalMovingCandidates, ...pendingMoves]);
 
   // Update optimistic candidates when prop candidates change, but preserve pending moves
   useEffect(() => {
@@ -62,6 +72,34 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
     ?.sort((a, b) => a.order - b.order)
     ?.map(stage => stage.name) || [];
 
+  // Handle expand/collapse all
+  const handleExpandCollapseAll = () => {
+    const newExpandAll = !expandAll;
+    setExpandAll(newExpandAll);
+    
+    // Update all column states
+    const newColumnExpansion = new Map();
+    stages.forEach(stage => {
+      newColumnExpansion.set(stage, newExpandAll);
+    });
+    setColumnExpansion(newColumnExpansion);
+  };
+
+  // Handle individual column expansion
+  const handleColumnExpansion = (stage: string, isExpanded: boolean) => {
+    setColumnExpansion(prev => new Map(prev.set(stage, isExpanded)));
+    
+    // Update global state based on individual column states
+    const allExpanded = stages.every(s => columnExpansion.get(s) === true || (s === stage && isExpanded));
+    const allCollapsed = stages.every(s => columnExpansion.get(s) === false || (s === stage && !isExpanded));
+    
+    if (allExpanded) {
+      setExpandAll(true);
+    } else if (allCollapsed) {
+      setExpandAll(false);
+    }
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -71,7 +109,7 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
   );
 
   const getCandidatesByStage = (stage: string) => {
-    return candidates.filter(candidate => {
+    const stageCandidates = candidates.filter(candidate => {
       // If candidate is being moved, show it in the target stage
       const movingInfo = movingCandidates.get(candidate.id);
       if (movingInfo) {
@@ -79,6 +117,8 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
       }
       return candidate.stage === stage;
     });
+    
+    return stageCandidates;
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -98,7 +138,23 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
     if (!over) return;
 
     const candidateId = active.id as string;
-    const newStage = over.id as string;
+    let newStage = over.id as string;
+
+    // Handle header drop zones (remove the -header suffix)
+    if (newStage.includes('-header')) {
+      newStage = newStage.replace('-header', '');
+    }
+
+    // Handle content drop zones (remove the -content suffix)
+    if (newStage.includes('-content')) {
+      newStage = newStage.replace('-content', '');
+    }
+
+    // Handle card drop zones (extract stage from card drop target)
+    if (newStage.includes('-card-')) {
+      const stagePart = newStage.split('-card-')[0];
+      newStage = stagePart;
+    }
 
     // Check if we're dropping over a stage column
     if (stages.includes(newStage)) {
@@ -159,11 +215,32 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col lg:flex-row gap-4 mb-6 min-h-[calc(100vh-400px)]">
+      {/* Expand/Collapse All Toggle */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={handleExpandCollapseAll}
+          className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-2"
+        >
+          {expandAll ? (
+            <>
+              <ChevronDown className="w-4 h-4" />
+              Collapse All
+            </>
+          ) : (
+            <>
+              <ChevronRight className="w-4 h-4" />
+              Expand All
+            </>
+          )}
+        </button>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-2 mb-6 min-h-[calc(100vh-400px)]">
         {/* Mobile & Tablet: Stack columns vertically */}
-        <div className="lg:hidden space-y-1 sm:space-y-2 md:space-y-4">
+        <div className="lg:hidden space-y-2">
           {stages.map((stage) => {
             const stageCandidates = getCandidatesByStage(stage);
+            const isExpanded = columnExpansion.get(stage) ?? false;
             return (
               <SourcingDraggableStageColumn
                 key={stage}
@@ -172,18 +249,20 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
                 pipeline={pipeline}
                 onCandidateClick={onCandidateClick}
                 onCandidateRemove={onCandidateRemove}
-                pendingMoves={pendingMoves}
+                pendingMoves={allMovingCandidates}
                 movingCandidates={movingCandidates}
+                isExpanded={isExpanded}
+                onExpansionChange={(expanded) => handleColumnExpansion(stage, expanded)}
               />
             );
           })}
         </div>
         
-        {/* Desktop: Responsive grid layout */}
-        <div className={`hidden lg:${stages.length <= 5 ? 'grid' : 'flex overflow-x-auto'} gap-1 sm:gap-2 md:gap-3 w-full pb-4`} 
-             style={stages.length <= 5 ? { gridTemplateColumns: `repeat(${stages.length}, minmax(140px, 1fr))` } : undefined}>
+        {/* Desktop: Horizontal scrollable layout */}
+        <div className="hidden lg:flex gap-2 overflow-x-auto w-full pb-4 items-start">
           {stages.map((stage) => {
             const stageCandidates = getCandidatesByStage(stage);
+            const isExpanded = columnExpansion.get(stage) ?? false;
             return (
               <SourcingDraggableStageColumn
                 key={stage}
@@ -192,8 +271,10 @@ export const SourcingKanbanView: React.FC<SourcingKanbanViewProps> = ({
                 pipeline={pipeline}
                 onCandidateClick={onCandidateClick}
                 onCandidateRemove={onCandidateRemove}
-                pendingMoves={pendingMoves}
+                pendingMoves={allMovingCandidates}
                 movingCandidates={movingCandidates}
+                isExpanded={isExpanded}
+                onExpansionChange={(expanded) => handleColumnExpansion(stage, expanded)}
               />
             );
           })}
