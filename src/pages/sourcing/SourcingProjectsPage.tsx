@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -12,14 +12,40 @@ import {
   AlertCircle,
   CheckCircle,
   Pause,
-  Archive
+  Archive,
+  Edit,
+  Trash2
 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProjects } from '../../hooks/useSourcingProjects';
-import { SourcingProject } from '../../services/sourcingProjectApiService';
+import { SourcingProject, sourcingProjectApiService } from '../../services/sourcingProjectApiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import QuickSearch from '../../components/QuickSearch';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: (projectId: string) => sourcingProjectApiService.deleteProject(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sourcing-projects'] });
+    },
+    onError: (error) => {
+      console.error('Failed to delete project:', error);
+      // You might want to add a toast notification here
+    }
+  });
+
+  const handleEdit = () => {
+    navigate(`/dashboard/sourcing/projects/${project.id}/edit`);
+  };
+
+  const handleDelete = () => {
+    deleteProjectMutation.mutate(project.id);
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -76,6 +102,22 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
               <span className="capitalize">{project.priority}</span>
             </span>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={handleEdit}
+                className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                title="Edit project"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                title="Delete project"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -146,6 +188,17 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${project.name}"? This action cannot be undone and will remove all associated data including prospects, searches, and sequences.`}
+        confirmText="Delete Project"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };
