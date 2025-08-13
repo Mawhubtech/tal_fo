@@ -56,7 +56,7 @@ export interface PositionResponse {
 
 // Position API Service
 export class PositionApiService {
-  private readonly baseUrl = '/api/v1/positions';
+  private readonly baseUrl = '/positions';
 
   // Get all positions with optional filtering
   async getPositions(params?: PositionQueryParams): Promise<PositionResponse> {
@@ -66,13 +66,13 @@ export class PositionApiService {
 
   // Get positions by client ID
   async getPositionsByClient(clientId: string, params?: Omit<PositionQueryParams, 'clientId'>): Promise<Position[]> {
-    const response = await apiClient.get(`/api/v1/clients/${clientId}/positions`, { params });
+    const response = await apiClient.get(`/clients/${clientId}/positions`, { params });
     return response.data;
   }
 
   // Get positions by department ID
   async getPositionsByDepartment(departmentId: string, params?: Omit<PositionQueryParams, 'departmentId'>): Promise<Position[]> {
-    const response = await apiClient.get(`/api/v1/departments/${departmentId}/positions`, { params });
+    const response = await apiClient.get(`/departments/${departmentId}/positions`, { params });
     return response.data;
   }
 
@@ -101,7 +101,7 @@ export class PositionApiService {
 
   // Get position hierarchy (with parent and children)
   async getPositionHierarchy(clientId: string): Promise<Position[]> {
-    const response = await apiClient.get(`/api/v1/clients/${clientId}/positions/hierarchy`);
+    const response = await apiClient.get(`/clients/${clientId}/positions/hierarchy`);
     return response.data;
   }
 
@@ -120,27 +120,27 @@ export class PositionApiService {
   // Get organization chart data for a client
   async getOrganizationChart(clientId: string, departmentId?: string): Promise<Position[]> {
     const params = departmentId ? { departmentId } : {};
-    const response = await apiClient.get(`/api/v1/clients/${clientId}/organization-chart`, { params });
+    const response = await apiClient.get(`/clients/${clientId}/positions/organization-chart`, { params });
     return response.data;
   }
 
   // Bulk create positions (useful for importing org charts)
   async bulkCreatePositions(clientId: string, positions: CreatePositionDto[]): Promise<Position[]> {
-    const response = await apiClient.post(`/api/v1/clients/${clientId}/positions/bulk`, { positions });
+    const response = await apiClient.post(`/clients/${clientId}/positions/bulk`, { positions });
     return response.data;
   }
 
   // Validate position hierarchy (check for circular references)
   async validateHierarchy(clientId: string, positionId?: string, newParentId?: string): Promise<{ valid: boolean; error?: string }> {
     const params = { positionId, newParentId };
-    const response = await apiClient.get(`/api/v1/clients/${clientId}/positions/validate-hierarchy`, { params });
+    const response = await apiClient.get(`/clients/${clientId}/positions/validate-hierarchy`, { params });
     return response.data;
   }
 
   // Get positions that can be parents for a given position (excludes circular references)
   async getAvailableParents(clientId: string, positionId?: string): Promise<Position[]> {
-    const params = positionId ? { excludePosition: positionId } : {};
-    const response = await apiClient.get(`/api/v1/clients/${clientId}/positions/available-parents`, { params });
+    const params = positionId ? { excludeId: positionId } : {};
+    const response = await apiClient.get(`/clients/${clientId}/positions/available-parents`, { params });
     return response.data;
   }
 
@@ -160,7 +160,7 @@ export class PositionApiService {
       positionCount: number;
     }>;
   }> {
-    const response = await apiClient.get(`/api/v1/clients/${clientId}/organization-stats`);
+    const response = await apiClient.get(`/clients/${clientId}/positions/stats`);
     return response.data;
   }
 }

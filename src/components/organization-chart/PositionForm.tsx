@@ -110,6 +110,9 @@ const PositionForm: React.FC<PositionFormProps> = ({
       const selectedDept = departments.find(dept => dept.id === value);
       if (selectedDept) {
         setFormData(prev => ({ ...prev, department: selectedDept.name }));
+      } else if (value === '') {
+        // Clear department name when no department is selected
+        setFormData(prev => ({ ...prev, department: '' }));
       }
     }
 
@@ -128,8 +131,10 @@ const PositionForm: React.FC<PositionFormProps> = ({
       newErrors.title = 'Position title is required';
     }
 
-    if (!formData.departmentId) {
-      newErrors.departmentId = 'Department is required';
+    // Department is not required - can be left empty for executive positions
+    // If department is selected, validate it exists
+    if (formData.departmentId && !departments.find(dept => dept.id === formData.departmentId)) {
+      newErrors.departmentId = 'Please select a valid department';
     }
 
     if (formData.email && !isValidEmail(formData.email)) {
@@ -169,7 +174,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
         employeeName: formData.employeeName.trim() || undefined,
         email: formData.email.trim() || undefined,
         phone: formData.phone.trim() || undefined,
-        department: formData.department,
+        department: formData.department || 'Executive', // Default to Executive if no department
         departmentId: formData.departmentId || undefined,
         parentId: formData.parentId || undefined,
         level: formData.level
@@ -273,7 +278,8 @@ const PositionForm: React.FC<PositionFormProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Building2 className="w-4 h-4 inline mr-1" />
-              Department *
+              Department
+              <span className="text-gray-400 ml-1">(optional)</span>
             </label>
             <select
               value={formData.departmentId}
@@ -282,7 +288,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
                 errors.departmentId ? 'border-red-300' : 'border-gray-300'
               }`}
             >
-              <option value="">Select a department</option>
+              <option value="">No specific department (Executive level)</option>
               {departments.map(dept => (
                 <option key={dept.id} value={dept.id}>
                   {dept.name}
@@ -292,6 +298,9 @@ const PositionForm: React.FC<PositionFormProps> = ({
             {errors.departmentId && (
               <p className="mt-1 text-sm text-red-600">{errors.departmentId}</p>
             )}
+            <p className="mt-1 text-xs text-gray-500">
+              💡 Leave empty for executive positions like CEO, or select a specific department for other roles
+            </p>
           </div>
 
           {/* Parent Position */}

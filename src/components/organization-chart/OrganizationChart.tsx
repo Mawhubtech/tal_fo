@@ -64,7 +64,8 @@ const PositionCard: React.FC<{
   onDelete?: () => void;
   onToggleExpand?: () => void;
   readOnly?: boolean;
-}> = ({ position, onAddChild, onEdit, onDelete, onToggleExpand, readOnly }) => {
+  isExpanded?: boolean;
+}> = ({ position, onAddChild, onEdit, onDelete, onToggleExpand, readOnly, isExpanded = false }) => {
   const [showActions, setShowActions] = useState(false);
   const hasChildren = position.children && position.children.length > 0;
   const backgroundColor = stringToColor(position.department);
@@ -163,7 +164,7 @@ const PositionCard: React.FC<{
             }}
             className="w-full mt-2 pt-2 border-t border-gray-100 flex items-center justify-center text-xs text-gray-500 hover:text-gray-700 transition-colors"
           >
-            {position.isExpanded ? (
+            {isExpanded ? (
               <>
                 <ChevronDown className="w-3 h-3 mr-1" />
                 Hide {position.children?.length} subordinate{position.children?.length !== 1 ? 's' : ''}
@@ -191,6 +192,7 @@ const TreeNode: React.FC<{
   readOnly?: boolean;
   isLast?: boolean;
   level?: number;
+  expandedNodes?: Set<string>;
 }> = ({ 
   position, 
   onAddPosition, 
@@ -199,10 +201,11 @@ const TreeNode: React.FC<{
   onToggleExpand, 
   readOnly,
   isLast = false,
-  level = 0
+  level = 0,
+  expandedNodes = new Set()
 }) => {
   const hasChildren = position.children && position.children.length > 0;
-  const showChildren = hasChildren && position.isExpanded;
+  const showChildren = hasChildren && expandedNodes.has(position.id);
 
   return (
     <div className="relative">
@@ -215,6 +218,7 @@ const TreeNode: React.FC<{
           onDelete={() => onDeletePosition?.(position.id)}
           onToggleExpand={() => onToggleExpand?.(position.id)}
           readOnly={readOnly}
+          isExpanded={expandedNodes.has(position.id)}
         />
 
         {/* Children */}
@@ -256,6 +260,7 @@ const TreeNode: React.FC<{
                       readOnly={readOnly}
                       isLast={index === position.children!.length - 1}
                       level={level + 1}
+                      expandedNodes={expandedNodes}
                     />
                   </div>
                 </div>
@@ -281,43 +286,15 @@ const OrganizationChart: React.FC<OrganizationChartProps> = ({
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // Filter positions by department if specified
-  const filteredPositions = departmentFilter 
-    ? positions.filter(pos => pos.departmentId === departmentFilter)
-    : positions;
-
-  // Build tree structure
-  const buildTree = (positions: Position[]): Position[] => {
-    const positionMap = new Map<string, Position>();
-    const rootPositions: Position[] = [];
-
-    // Create map of all positions with expanded state
-    positions.forEach(pos => {
-      positionMap.set(pos.id, {
-        ...pos,
-        children: [],
-        isExpanded: expandedNodes.has(pos.id)
-      });
-    });
-
-    // Build parent-child relationships
-    positions.forEach(pos => {
-      const position = positionMap.get(pos.id)!;
-      if (pos.parentId && positionMap.has(pos.parentId)) {
-        const parent = positionMap.get(pos.parentId)!;
-        parent.children!.push(position);
-      } else {
-        rootPositions.push(position);
-      }
-    });
-
-    return rootPositions;
-  };
+  // Since the API already returns hierarchical data, we don't need to build the tree
+  // We just use the positions as they are (they already have children populated)
+  const treeData = positions;
 
   const handleToggleExpand = (positionId: string) => {
     setExpandedNodes(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(positionId)) {
+      const wasExpanded = newSet.has(positionId);
+      if (wasExpanded) {
         newSet.delete(positionId);
       } else {
         newSet.add(positionId);
@@ -326,15 +303,26 @@ const OrganizationChart: React.FC<OrganizationChartProps> = ({
     });
   };
 
-  const treeData = buildTree(filteredPositions);
-
-  // Auto-expand root nodes on initial load
+  // Auto-expand nodes with children on initial load
   useEffect(() => {
-    const rootNodes = treeData.map(node => node.id);
-    setExpandedNodes(new Set(rootNodes));
-  }, [positions.length]);
+    if (treeData.length > 0) {
+      const nodesToExpand = new Set<string>();
+      
+      const expandNodesWithChildren = (nodes: Position[]) => {
+        nodes.forEach(node => {
+          if (node.children && node.children.length > 0) {
+            nodesToExpand.add(node.id);
+            expandNodesWithChildren(node.children);
+          }
+        });
+      };
+      
+      expandNodesWithChildren(treeData);
+      setExpandedNodes(nodesToExpand);
+    }
+  }, [positions]);
 
-  if (filteredPositions.length === 0) {
+  if (treeData.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="p-4 bg-gray-100 rounded-lg inline-block mb-4">
@@ -368,7 +356,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = ({
             {departmentFilter ? 'Department' : 'Organization'} Chart
           </h3>
           <p className="text-sm text-gray-500">
-            {filteredPositions.length} position{filteredPositions.length !== 1 ? 's' : ''} 
+            {treeData.length} position{treeData.length !== 1 ? 's' : ''} 
             {departmentFilter ? ' in this department' : ` at ${clientName}`}
           </p>
           {departmentFilter && (
@@ -408,6 +396,7 @@ const OrganizationChart: React.FC<OrganizationChartProps> = ({
                 onToggleExpand={handleToggleExpand}
                 readOnly={readOnly}
                 isLast={index === treeData.length - 1}
+                expandedNodes={expandedNodes}
               />
             </div>
           ))}

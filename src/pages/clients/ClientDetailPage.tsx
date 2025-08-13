@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Building, Globe, Mail, Phone, MapPin, Users, Briefcase,
   Calendar, TrendingUp, Edit3, Settings, Trash2, MoreVertical,
-  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle, Building2
+  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle, Building2, Plus
 } from 'lucide-react';
 import { clientApi } from '../../services/api';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -17,12 +17,8 @@ import { DepartmentApiService } from '../../recruitment/organizations/services/d
 import type { Department } from '../../recruitment/organizations/services/departmentApiService';
 import { 
   OrganizationChart, 
-  OrganizationChartDemo, 
   PositionForm, 
-  DeletePositionDialog,
-  demoOrganizationData, 
-  demoDepartments, 
-  getDepartmentStats 
+  DeletePositionDialog
 } from '../../components/organization-chart';
 import { useOrganizationChart, useCreatePosition, useUpdatePosition, useDeletePosition } from '../../hooks/usePositions';
 import type { Position } from '../../services/positionApiService';
@@ -99,12 +95,27 @@ const ClientDetailPage: React.FC = () => {
     organizationDepartmentFilter || undefined
   );
   
-  // Use demo data if API is not available or returns empty
-  const finalOrganizationPositions = organizationPositions.length > 0 || !positionsError 
-    ? organizationPositions 
-    : demoOrganizationData.filter(pos => 
-        !organizationDepartmentFilter || pos.departmentId === organizationDepartmentFilter
-      );
+  // Use actual organization positions from API
+  const finalOrganizationPositions = organizationPositions || [];
+  
+  // Flatten the hierarchical positions into a flat array for the position form
+  const getAllPositionsFlat = (positions: Position[]): Position[] => {
+    const flatPositions: Position[] = [];
+    
+    const flattenRecursive = (positionList: Position[]) => {
+      positionList.forEach(position => {
+        flatPositions.push(position);
+        if (position.children && position.children.length > 0) {
+          flattenRecursive(position.children);
+        }
+      });
+    };
+    
+    flattenRecursive(positions);
+    return flatPositions;
+  };
+  
+  const allPositionsFlat = getAllPositionsFlat(finalOrganizationPositions);
   
   const createPositionMutation = useCreatePosition();
   const updatePositionMutation = useUpdatePosition();
@@ -306,6 +317,15 @@ const ClientDetailPage: React.FC = () => {
       setPositionToDelete(null);
     } finally {
       setDeletePositionLoading(false);
+    }
+  };
+
+  // Handle initiate delete position (opens confirmation dialog)
+  const handleInitiateDeletePosition = (positionId: string) => {
+    const position = finalOrganizationPositions.find(pos => pos.id === positionId);
+    if (position) {
+      setPositionToDelete(position);
+      setShowDeletePositionDialog(true);
     }
   };
 
@@ -801,7 +821,7 @@ const ClientDetailPage: React.FC = () => {
 
           {activeTab === 'organization' && (
             <div>
-              {/* Organization Chart Demo */}
+              {/* Organization Chart Information */}
               <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -811,19 +831,93 @@ const ClientDetailPage: React.FC = () => {
                   </div>
                   <div className="ml-3">
                     <h4 className="text-sm font-semibold text-blue-900 mb-1">
-                      Interactive Organization Chart Demo
+                      Organization Chart
                     </h4>
                     <p className="text-sm text-blue-800">
-                      This is a comprehensive demo showing the relationship between full organization charts and department-specific views for <strong>{client.name}</strong>. 
-                      Use the controls below to explore different perspectives of the organizational structure.
+                      View and manage the organizational structure for <strong>{client.name}</strong>. 
+                      Use the controls below to explore different departments and add, edit, or remove positions.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Embedded Demo Component */}
+              {/* Organization Chart */}
               <div className="bg-white rounded-lg border shadow-sm">
-                <OrganizationChartDemo />
+                <div className="border-b border-gray-200 p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">Organization Chart</h2>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {positionsLoading ? 'Loading...' : 
+                          `${finalOrganizationPositions.length} positions${organizationDepartmentFilter ? ' in filtered department' : ''}`
+                        }
+                      </p>
+                    </div>
+                    {!isInternalUserRole && (
+                      <button
+                        onClick={() => handleAddPosition()}
+                        className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Position
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Department Filter */}
+                  {departments.length > 0 && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Filter by Department
+                      </label>
+                      <select
+                        value={organizationDepartmentFilter}
+                        onChange={(e) => setOrganizationDepartmentFilter(e.target.value)}
+                        className="w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="">All Departments</option>
+                        {departments.map(dept => (
+                          <option key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {positionsError && (
+                  <div className="p-6">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex">
+                        <XCircle className="w-5 h-5 text-red-400 mr-2 mt-0.5" />
+                        <div>
+                          <h3 className="text-sm font-medium text-red-800">Error Loading Organization Chart</h3>
+                          <p className="text-sm text-red-700 mt-1">
+                            {positionsError?.message || 'Failed to load organization data from the server.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {positionsLoading ? (
+                  <div className="p-12 text-center">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <p className="mt-2 text-gray-500">Loading organization chart...</p>
+                  </div>
+                ) : (
+                  <OrganizationChart
+                    positions={finalOrganizationPositions}
+                    onAddPosition={handleAddPosition}
+                    onEditPosition={handleEditPosition}
+                    onDeletePosition={handleInitiateDeletePosition}
+                    readOnly={isInternalUserRole}
+                    clientName={client?.name}
+                    departmentFilter={organizationDepartmentFilter}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -840,12 +934,12 @@ const ClientDetailPage: React.FC = () => {
           parentPosition={parentPosition}
           clientId={client.id}
           clientName={client.name}
-          departments={departments.length > 0 ? departments.map(dept => ({
+          departments={departments.map(dept => ({
             id: dept.id,
             name: dept.name,
-            color: dept.color
-          })) : demoDepartments}
-          allPositions={finalOrganizationPositions}
+            color: dept.color || '#8B5CF6'
+          }))}
+          allPositions={allPositionsFlat}
           mode={editingPosition ? 'edit' : 'create'}
         />
       )}
