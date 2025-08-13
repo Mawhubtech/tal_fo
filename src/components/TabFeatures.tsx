@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, LineChart, Users, ClipboardList } from 'lucide-react';
+import { Search, LineChart, Users, ClipboardList, Mail } from 'lucide-react';
 
 interface TabInfo {
   id: string;
@@ -48,27 +48,37 @@ const tabContentData: TabContentItem[] = [
     title: 'Discover & Understand Top Talent with AI',
     description: 'Leverage PeopleGPT for semantic natural language searches and dive deep with AI-driven resume analysis. Uncover ideal candidates and understand their potential faster than ever.',
     content: (
-      <div className="bg-white rounded-lg shadow-xl p-6 sm:p-8">
-        <div className="grid md:grid-cols-2 gap-6 items-start">
-          <div>
-            <h4 className="text-lg font-semibold text-purple-700 mb-2">Semantic Search</h4>
-            <p className="text-sm text-gray-600 mb-3">Find talent by describing your ideal candidate in plain English. No complex booleans needed.</p>
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+      <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8">
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-purple-100 rounded-xl">
+                <Search className="w-5 h-5 text-purple-600" />
+              </div>
+              <h4 className="text-xl font-bold text-purple-700">Semantic Search</h4>
+            </div>
+            <p className="text-gray-600 mb-4">Find talent by describing your ideal candidate in plain English.</p>
+            <div className="bg-white rounded-xl p-4 border border-purple-200 shadow-sm">
               <p className="text-sm leading-relaxed">
-                "Find a <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">senior product manager</span> in <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded mx-1">London</span> with experience in <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded mx-1">fintech and B2B SaaS</span>, who has worked at <span className="bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded mx-1">scale-ups</span>."
+                "Find a <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-lg font-medium">senior product manager</span> in <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-medium mx-1">London</span> with experience in <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg font-medium mx-1">fintech and B2B SaaS</span>"
               </p>
             </div>
           </div>
-          <div>
-            <h4 className="text-lg font-semibold text-purple-700 mb-2">AI Resume Analysis</h4>
-            <p className="text-sm text-gray-600 mb-3">Our AI goes beyond keywords to understand skills, experience, and potential from resumes.</p>
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-100 rounded-xl">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <h4 className="text-xl font-bold text-blue-700">AI Resume Analysis</h4>
+            </div>
+            <p className="text-gray-600 mb-4">AI-powered insights beyond keywords to understand potential.</p>
+            <div className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
               <div className="flex items-center gap-3">
-                <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=80&h=80&fit=crop&crop=faces" alt="Resume snippet" className="w-12 h-12 rounded-full object-cover"/>
+                <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=80&h=80&fit=crop&crop=faces" alt="Profile" className="w-12 h-12 rounded-full object-cover"/>
                 <div>
-                  <p className="font-medium text-slate-800">John Doe - Analyzed Profile</p>
-                  <p className="text-xs text-slate-500">Top Skills: Python, AWS, Project Management</p>
-                  <p className="text-xs text-green-600">Potential Match Score: 85%</p>
+                  <p className="font-semibold text-gray-900">John Doe</p>
+                  <p className="text-sm text-gray-500">Python, AWS, Leadership</p>
+                  <p className="text-sm text-green-600 font-medium">Match Score: 85%</p>
                 </div>
               </div>
             </div>
@@ -82,37 +92,47 @@ const tabContentData: TabContentItem[] = [
     title: 'Engage Candidates & Build Your Pipeline',
     description: 'Automate personalized email sequences that resonate. Manage all candidate interactions, track progress, and nurture your talent pipeline with our integrated CRM.',
     content: (
-      <div className="bg-white rounded-lg shadow-xl p-6 sm:p-8">
-        <div className="grid md:grid-cols-2 gap-6 items-start">
-          <div>
-            <h4 className="text-lg font-semibold text-purple-700 mb-2">Smart Email Sequencing</h4>
-            <p className="text-sm text-gray-600 mb-3">Craft and automate personalized email campaigns that get responses.</p>
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-2">
-              <p className="text-xs text-slate-500">Sequence: "Senior Engineer Outreach - Q3"</p>
-              <div className="p-2 bg-white rounded border border-slate-300">
-                <p className="text-sm font-medium">Step 1: Initial Contact (Day 1)</p>
-                <p className="text-xs text-slate-600 mt-1">"Hi {'{CandidateName}'}, saw your work on {'{Project}'}..."</p>
+      <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8">
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-green-100 rounded-xl">
+                <Mail className="w-5 h-5 text-green-600" />
               </div>
-              <div className="p-2 bg-white rounded border border-slate-300">
-                <p className="text-sm font-medium">Step 2: Follow-up (Day 3)</p>
-                <p className="text-xs text-slate-600 mt-1">"Just checking in on my previous email..."</p>
+              <h4 className="text-xl font-bold text-green-700">Smart Email Sequencing</h4>
+            </div>
+            <p className="text-gray-600 mb-4">Automate personalized campaigns that get responses.</p>
+            <div className="bg-white rounded-xl p-4 border border-green-200 shadow-sm space-y-2">
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm font-medium text-green-800">Step 1: Initial Contact</p>
+                <p className="text-xs text-green-600 mt-1">"Hi John, saw your work on..."</p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm font-medium text-green-800">Step 2: Follow-up</p>
+                <p className="text-xs text-green-600 mt-1">"Just checking in..."</p>
               </div>
             </div>
           </div>
-          <div>
-            <h4 className="text-lg font-semibold text-purple-700 mb-2">Integrated Candidate CRM</h4>
-            <p className="text-sm text-gray-600 mb-3">Manage your talent pipeline and communications in one central hub.</p>
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 bg-white rounded border">
-                  <p className="font-medium text-sm">Jane Smith</p><span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Contacted</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-white rounded border">
-                  <p className="font-medium text-sm">Robert Brown</p><span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Screening</span>
-                </div>
-                 <div className="flex justify-between items-center p-2 bg-white rounded border">
-                  <p className="font-medium text-sm">Alice Green</p><span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Interview Scheduled</span>
-                </div>
+          <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-orange-100 rounded-xl">
+                <Users className="w-5 h-5 text-orange-600" />
+              </div>
+              <h4 className="text-xl font-bold text-orange-700">Candidate Pipeline</h4>
+            </div>
+            <p className="text-gray-600 mb-4">Manage all interactions in one central hub.</p>
+            <div className="bg-white rounded-xl p-4 border border-orange-200 shadow-sm space-y-2">
+              <div className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
+                <p className="font-medium text-sm">Jane Smith</p>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Contacted</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
+                <p className="font-medium text-sm">Robert Brown</p>
+                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Screening</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
+                <p className="font-medium text-sm">Alice Green</p>
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Interview</span>
               </div>
             </div>
           </div>
@@ -189,13 +209,13 @@ const TabFeatures: React.FC = () => {
   const activeContent = tabContentData.find(content => content.id === activeTabId) || tabContentData[0];
 
   return (
-    <section className="relative overflow-hidden bg-slate-50 py-16 sm:py-24 min-h-[100vh]">{/* Added min-h-[100vh] for testing, adjust as needed */}
+    <section className="relative overflow-hidden bg-white py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            How Tal Supercharges Your Recruitment
+        <div className="text-center mb-20">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            How TAL Supercharges Your Recruitment
           </h2>
-          <p className="mt-4 text-lg leading-8 text-slate-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Explore our core features designed to help you find, engage, and hire top talent efficiently.
           </p>
         </div>
@@ -203,9 +223,8 @@ const TabFeatures: React.FC = () => {
         <div className="md:flex md:gap-8 lg:gap-12">
           {/* Sidebar Navigation */}
           {!isMobile && (
-            <nav className="md:w-1/3 lg:w-1/4 md:sticky md:top-28 self-start mb-10 md:mb-0" style={{ maxHeight: 'calc(100vh - 7rem)', top: '7rem' }}>
-              {/* Adjust md:top-XX and style.top based on actual sticky header height */}
-              <ul className="space-y-2">
+            <nav className="md:w-1/3 lg:w-1/4 md:sticky md:top-28 self-start mb-10 md:mb-0">
+              <ul className="space-y-3">
                 {tabsData.map((tab) => (
                   <li key={tab.id}>
                     <button
@@ -213,17 +232,19 @@ const TabFeatures: React.FC = () => {
                         setActiveTabId(tab.id);
                       }}
                       className={`
-                        w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-150 ease-in-out
-                        focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500
+                        w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200 ease-in-out
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 border
                         ${
                           activeTabId === tab.id
-                            ? 'bg-purple-100 text-purple-700 shadow-sm'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            ? 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border-purple-200 shadow-sm'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-gray-100 hover:border-gray-200'
                         }
                       `}
                     >
-                      <tab.icon className={`w-5 h-5 flex-shrink-0 ${activeTabId === tab.id ? 'text-purple-600' : 'text-slate-400'}`} />
-                      <span className="font-medium text-sm sm:text-base">{tab.fullLabel}</span>
+                      <div className={`p-2 rounded-xl ${activeTabId === tab.id ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-gray-100'}`}>
+                        <tab.icon className={`w-5 h-5 ${activeTabId === tab.id ? 'text-purple-600' : 'text-gray-500'}`} />
+                      </div>
+                      <span className="font-semibold text-base">{tab.fullLabel}</span>
                     </button>
                   </li>
                 ))}
@@ -232,15 +253,9 @@ const TabFeatures: React.FC = () => {
           )}
 
           {/* Content Area */}
-          <main className={`md:w-2/3 lg:w-3/4 ${isMobile ? 'w-full' : ''} relative min-h-[60vh]`}>
-            <div>
-              <div className="max-w-4xl mx-auto text-center mb-8">
-                <h3 className="text-2xl sm:text-3xl font-bold text-slate-800">{activeContent.title}</h3>
-                <p className="mt-3 text-base sm:text-lg text-slate-600">{activeContent.description}</p>
-              </div>
-              <div className="max-w-5xl mx-auto">
-                {activeContent.content}
-              </div>
+          <main className={`md:w-2/3 lg:w-3/4 ${isMobile ? 'w-full' : ''} relative`}>
+            <div className="max-w-5xl mx-auto">
+              {activeContent.content}
             </div>
           </main>
         </div>

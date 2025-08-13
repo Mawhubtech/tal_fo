@@ -64,7 +64,7 @@ const Integrations: React.FC = () => {
     },
     {
       title: "Technical profile data",
-      description: "View Github, Stack Overflow, and research data within TalGPT.",
+      description: "View Github, Stack Overflow, and research data within TAL.",
       icon: Users,
       preview: (
         <div className="flex items-start gap-3">
@@ -113,40 +113,59 @@ const Integrations: React.FC = () => {
   ];
 
   return (
-    <section className="relative overflow-hidden py-24">
+    <section className="relative overflow-hidden pt-32 pb-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-2xl font-bold mb-8">Integrated with 30+ data sources</h2>
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-8 items-center justify-center">
-            <img src="https://www.google.com/favicon.ico" className="w-8 h-8" alt="Google" />
-            <img src="https://www.linkedin.com/favicon.ico" className="w-8 h-8" alt="LinkedIn" />
-            <img src="https://www.github.com/favicon.ico" className="w-8 h-8" alt="GitHub" />
-            <img src="https://www.stackoverflow.com/favicon.ico" className="w-8 h-8" alt="Stack Overflow" />
-            <img src="https://www.slack.com/favicon.ico" className="w-8 h-8" alt="Slack" />
-            <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico" className="w-8 h-8" alt="Gmail" />
-            <img src="https://www.microsoft.com/favicon.ico" className="w-8 h-8" alt="Microsoft" />
-            <img src="https://www.aws.amazon.com/favicon.ico" className="w-8 h-8" alt="AWS" />
-            <img src="https://www.atlassian.com/favicon.ico" className="w-8 h-8" alt="Atlassian" />
-            <img src="https://www.salesforce.com/favicon.ico" className="w-8 h-8" alt="Salesforce" />
+        {/* Header Section */}
+        <div className="text-center mb-20">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            Seamlessly Connected
+          </h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12">
+            TAL integrates with 30+ data sources and platforms to give you the most comprehensive talent intelligence available.
+          </p>
+          
+          {/* Logo Grid */}
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+            <div className="grid grid-cols-5 md:grid-cols-10 gap-6 items-center justify-center opacity-60 hover:opacity-100 transition-opacity duration-300">
+              <img src="https://www.google.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="Google" />
+              <img src="https://www.linkedin.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="LinkedIn" />
+              <img src="https://www.github.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="GitHub" />
+              <img src="https://www.stackoverflow.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="Stack Overflow" />
+              <img src="https://www.slack.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="Slack" />
+              <img src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="Gmail" />
+              <img src="https://www.microsoft.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="Microsoft" />
+              <img src="https://www.aws.amazon.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="AWS" />
+              <img src="https://www.atlassian.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="Atlassian" />
+              <img src="https://www.salesforce.com/favicon.ico" className="w-8 h-8 mx-auto grayscale hover:grayscale-0 transition-all duration-200" alt="Salesforce" />
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Feature Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {cards.map((card, index) => (
             <div 
               key={index}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+              className="group relative bg-white rounded-3xl shadow-sm border border-gray-100 p-8 hover:shadow-xl hover:border-gray-200 transition-all duration-300"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <card.icon className="w-5 h-5 text-gray-700" />
+              {/* Card Header */}
+              <div className="flex items-start gap-4 mb-8">
+                <div className="flex-shrink-0 p-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                  <card.icon className="w-6 h-6 text-purple-600" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{card.title}</h3>
-                  <p className="text-gray-600">{card.description}</p>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{card.title}</h3>
+                  <p className="text-gray-600 text-lg leading-relaxed">{card.description}</p>
                 </div>
               </div>
-              <div className="mt-6">{card.preview}</div>
+              
+              {/* Card Preview */}
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                {card.preview}
+              </div>
+              
+              {/* Hover Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
             </div>
           ))}
         </div>

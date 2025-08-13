@@ -54,15 +54,15 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-    <header className="sticky top-0 z-50 w-full transition-all duration-300 border-b border-black bg-white/90 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full transition-all duration-300 bg-white/95 backdrop-blur-md shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center">
+            <Link to="/" className="flex items-center group">
               {/* Text logo using ROMA font */}
               <span 
-                className="text-3xl md:text-4xl font-bold text-black"
+                className="text-3xl md:text-4xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors duration-200"
                 style={{ fontFamily: 'ROMA, serif' }}
               >
                 TAL
