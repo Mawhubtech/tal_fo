@@ -254,3 +254,38 @@ export const useValidateHierarchy = (clientId: string, positionId?: string, newP
     staleTime: 0, // Always fresh for validation
   });
 };
+
+// Download template for bulk import
+export const useDownloadTemplate = () => {
+  return useMutation({
+    mutationFn: async (clientId: string) => {
+      const blob = await positionApiService.downloadTemplate(clientId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'organization-chart-template.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    },
+  });
+};
+
+// Upload template for bulk import
+export const useUploadTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ clientId, file }: { clientId: string; file: File }) =>
+      positionApiService.uploadTemplate(clientId, file),
+    onSuccess: (_, { clientId }) => {
+      // Invalidate and refetch position-related queries
+      queryClient.invalidateQueries({ queryKey: positionKeys.all });
+      queryClient.invalidateQueries({ queryKey: positionKeys.byClient(clientId) });
+      queryClient.invalidateQueries({ queryKey: positionKeys.organizationChart(clientId) });
+    },
+  });
+};

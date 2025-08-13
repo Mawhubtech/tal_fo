@@ -20,7 +20,7 @@ import {
   PositionForm, 
   DeletePositionDialog
 } from '../../components/organization-chart';
-import { useOrganizationChart, useCreatePosition, useUpdatePosition, useDeletePosition } from '../../hooks/usePositions';
+import { useOrganizationChart, useCreatePosition, useUpdatePosition, useDeletePosition, useDownloadTemplate, useUploadTemplate } from '../../hooks/usePositions';
 import type { Position } from '../../services/positionApiService';
 
 // Utility function to generate consistent colors based on string
@@ -87,6 +87,10 @@ const ClientDetailPage: React.FC = () => {
   const [deletePositionLoading, setDeletePositionLoading] = useState(false);
   const [organizationDepartmentFilter, setOrganizationDepartmentFilter] = useState<string>('');
   
+  // Bulk import states
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ success: boolean; positions: Position[]; errors?: string[] } | null>(null);
+  
   const departmentApiService = new DepartmentApiService();
   
   // Position hooks
@@ -120,6 +124,8 @@ const ClientDetailPage: React.FC = () => {
   const createPositionMutation = useCreatePosition();
   const updatePositionMutation = useUpdatePosition();
   const deletePositionMutation = useDeletePosition();
+  const downloadTemplateMutation = useDownloadTemplate();
+  const uploadTemplateMutation = useUploadTemplate();
   
   // Load client data
   useEffect(() => {
@@ -332,6 +338,43 @@ const ClientDetailPage: React.FC = () => {
   // Handle department filter change for organization chart
   const handleDepartmentFilterChange = (departmentId: string) => {
     setOrganizationDepartmentFilter(departmentId);
+  };
+
+  // Handle download template
+  const handleDownloadTemplate = async () => {
+    if (!client) return;
+    
+    try {
+      await downloadTemplateMutation.mutateAsync(client.id);
+    } catch (error) {
+      console.error('Error downloading template:', error);
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (file: File) => {
+    if (!client) return;
+
+    try {
+      const result = await uploadTemplateMutation.mutateAsync({
+        clientId: client.id,
+        file
+      });
+      
+      setUploadResult(result);
+      setShowBulkImport(false);
+      
+      if (result.success) {
+        refetchPositions();
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setUploadResult({
+        success: false,
+        positions: [],
+        errors: ['Failed to upload file. Please try again.']
+      });
+    }
   };
   
   // Helper functions
@@ -854,13 +897,64 @@ const ClientDetailPage: React.FC = () => {
                       </p>
                     </div>
                     {!isInternalUserRole && (
-                      <button
-                        onClick={() => handleAddPosition()}
-                        className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Position
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAddPosition()}
+                          className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Position
+                        </button>
+                        
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowBulkImport(!showBulkImport)}
+                            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Bulk Import
+                          </button>
+
+                          {showBulkImport && (
+                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                              <div className="p-4">
+                                <h4 className="font-medium text-gray-900 mb-3">Bulk Import Organization Chart</h4>
+                                <div className="space-y-3">
+                                  <button
+                                    onClick={handleDownloadTemplate}
+                                    disabled={downloadTemplateMutation.isPending}
+                                    className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                  >
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    {downloadTemplateMutation.isPending ? 'Downloading...' : 'Download Template'}
+                                  </button>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      Upload Completed Template
+                                    </label>
+                                    <input
+                                      type="file"
+                                      accept=".xlsx,.xls"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          handleFileUpload(file);
+                                        }
+                                      }}
+                                      className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                   
@@ -1009,6 +1103,64 @@ const ClientDetailPage: React.FC = () => {
           }}
           loading={deleteDepartmentLoading}
         />
+      )}
+
+      {/* Bulk Import Result Modal */}
+      {uploadResult && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                {uploadResult.success ? (
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                )}
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {uploadResult.success ? 'Import Successful!' : 'Import Failed'}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="mt-2">
+                {uploadResult.success ? (
+                  <p className="text-sm text-gray-500">
+                    Successfully imported {uploadResult.positions.length} position(s) to the organization chart.
+                  </p>
+                ) : (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">
+                      The following errors occurred during import:
+                    </p>
+                    <ul className="text-sm text-red-600 space-y-1 max-h-32 overflow-y-auto">
+                      {uploadResult.errors?.map((error, index) => (
+                        <li key={index}>• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setUploadResult(null)}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

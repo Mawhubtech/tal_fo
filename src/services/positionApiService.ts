@@ -163,6 +163,27 @@ export class PositionApiService {
     const response = await apiClient.get(`/clients/${clientId}/positions/stats`);
     return response.data;
   }
+
+  // Download Excel template for bulk import
+  async downloadTemplate(clientId: string): Promise<Blob> {
+    const response = await apiClient.get(`/clients/${clientId}/positions/template/download`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  }
+
+  // Upload Excel file for bulk import
+  async uploadTemplate(clientId: string, file: File): Promise<{ success: boolean; positions: Position[]; errors?: string[] }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post(`/clients/${clientId}/positions/template/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
 }
 
 // Default export for convenience
