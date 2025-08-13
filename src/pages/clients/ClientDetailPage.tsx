@@ -6,6 +6,7 @@ import {
   Clock, ExternalLink, Activity, Target, CheckCircle, XCircle, Building2, Plus
 } from 'lucide-react';
 import { clientApi } from '../../services/api';
+import { clientApiService } from '../../services/clientApiService';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isInternalUser } from '../../utils/userUtils';
 import type { Client } from './data/clientService';
@@ -77,6 +78,13 @@ const ClientDetailPage: React.FC = () => {
   const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
   const [showDeleteDepartmentDialog, setShowDeleteDepartmentDialog] = useState(false);
   const [deleteDepartmentLoading, setDeleteDepartmentLoading] = useState(false);
+  
+  // Organization stats state for dynamic job counts
+  const [organizationStats, setOrganizationStats] = useState<{
+    totalJobs: number;
+    activeDepartments: number;
+    totalEmployees: number;
+  } | null>(null);
   
   // Organization chart states
   const [showPositionForm, setShowPositionForm] = useState(false);
@@ -152,23 +160,44 @@ const ClientDetailPage: React.FC = () => {
 
   // Load departments for this client
   useEffect(() => {
-    const loadDepartments = async () => {
+    const loadOrganizationData = async () => {
       if (!clientId) return;
 
       try {
         setDepartmentsLoading(true);
-        const departmentsData = await departmentApiService.getDepartmentsByClient(clientId);
-        setDepartments(departmentsData);
+        // Use the organization detail page data endpoint which has correct job counts
+        const organizationData = await clientApiService.getOrganizationDetailPageData(clientId);
+        
+        // Set the organization stats for the cards
+        setOrganizationStats(organizationData.stats);
+        
+        // Map the data to match the Department interface
+        const mappedDepartments: Department[] = organizationData.departments.map(dept => ({
+          ...dept,
+          managerEmail: '', // Default value as it's not in the API response
+          isActive: true,   // Default value as it's not in the API response
+          clientId: clientId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }));
+        setDepartments(mappedDepartments);
       } catch (err: any) {
-        console.error('Error loading departments:', err);
-        // Don't show error for departments as it's not critical for the page
+        console.error('Error loading organization data:', err);
+        // Fallback to departments API if the new endpoint fails
+        try {
+          const departmentsData = await departmentApiService.getDepartmentsByClient(clientId);
+          setDepartments(departmentsData);
+        } catch (fallbackErr: any) {
+          console.error('Error loading departments:', fallbackErr);
+          // Don't show error for departments as it's not critical for the page
+        }
       } finally {
         setDepartmentsLoading(false);
       }
     };
 
     if (client) {
-      loadDepartments();
+    loadOrganizationData();
     }
   }, [clientId, client]);
 
@@ -609,7 +638,9 @@ const ClientDetailPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Open Jobs</p>
-              <p className="text-2xl font-bold text-green-600">{client.openJobs}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {organizationStats?.totalJobs ?? client?.openJobs ?? 0}
+              </p>
               <p className="text-sm text-gray-500">Active positions</p>
             </div>
             <div className="p-2 bg-green-100 rounded-lg">
@@ -830,14 +861,10 @@ const ClientDetailPage: React.FC = () => {
                         <p className="text-sm text-gray-600 mb-3 line-clamp-2">{dept.description}</p>
                       )}
                       
-                      <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                      <div className="grid grid-cols-1 gap-4 pt-3 border-t border-gray-100">
                         <div className="text-center">
                           <p className="text-lg font-bold text-gray-900">{dept.activeJobs || 0}</p>
-                          <p className="text-xs text-gray-500">Active Jobs</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-gray-900">{dept.totalEmployees}</p>
-                          <p className="text-xs text-gray-500">Employees</p>
+                          <p className="text-xs text-gray-500">Published Jobs</p>
                         </div>
                       </div>
                     </div>

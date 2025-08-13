@@ -143,4 +143,35 @@ export class ClientApiService {
     const response = await apiClient.patch(`${this.basePath}/${id}/metrics`, metrics);
     return response.data;
   }
+
+  // Get organization detail page data with correct job counts
+  async getOrganizationDetailPageData(id: string): Promise<{
+    organization: Client & {
+      departmentCount: number;
+      activeJobs: number;
+    };
+    departments: Array<{
+      id: string;
+      name: string;
+      description: string;
+      manager: string;
+      activeJobs: number;
+      totalJobs: number;
+      totalEmployees: number;
+      color: string;
+      icon: string;
+    }>;
+    jobs: any[];
+    stats: {
+      totalJobs: number;
+      activeDepartments: number;
+      totalEmployees: number;
+    };
+  }> {
+    const response = await apiClient.get(`${this.basePath}/${id}/detail-page-data`);
+    return response.data;
+  }
 }
+
+// Export an instance for direct use
+export const clientApiService = new ClientApiService();
