@@ -10,10 +10,11 @@ import {
 } from 'lucide-react';
 import FilterDialog from '../../../components/FilterDialog';
 import BooleanSearchDialog from '../components/BooleanSearchDialog';
+import { EnhancedSearchInput } from '../../../components/EnhancedSearchInput';
 import JobDescriptionDialog from '../../../recruitment/components/JobDescriptionDialog';
 import AIEnhancementModal from '../../../components/AIEnhancementModal';
 import { useAIQuery } from '../../../hooks/ai';
-import { extractKeywords, convertKeywordsToFilters } from '../../../services/searchService';
+import { extractKeywords, convertKeywordsToFilters, extractEnhancedKeywords, convertEnhancedKeywordsToFilters, searchEnhanced } from '../../../services/searchService';
 import type { SearchFilters } from '../../../services/searchService';
 import { useCreateSearch } from '../../../hooks/useSourcingSearches';
 import { useToast } from '../../../contexts/ToastContext';
@@ -23,7 +24,9 @@ export interface SearchRef {
   clearSearch: () => void;
 }
 
-const Search = forwardRef<SearchRef>((props, ref) => {  
+interface SearchProps {}
+
+const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {  
   const navigate = useNavigate();
   const location = useLocation();
   const { projectId } = useParams<{ projectId: string }>();
@@ -141,7 +144,9 @@ const Search = forwardRef<SearchRef>((props, ref) => {
       });
       throw error;
     }
-  };  // Main function for AI keyword extraction and direct search
+  };
+  
+  // Main function for AI keyword extraction and direct search
   const handleAISearch = async () => {
     if (!searchQuery.trim()) return;
 
@@ -163,7 +168,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
         state: {
           query: searchQuery,
           filters: filters,
-          searchId: createdSearch.id,
+          searchId: (createdSearch as any).id,
           searchMode: searchMode
         }
       });
@@ -189,7 +194,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
         state: {
           query: searchQuery,
           filters: filters,
-          searchId: createdSearch.id,
+          searchId: (createdSearch as any).id,
           searchMode: searchMode
         }
       });
@@ -202,7 +207,9 @@ const Search = forwardRef<SearchRef>((props, ref) => {
         message: 'Failed to process search. Please try again.'
       });
     }
-  };  // Handle filter application from dialog - navigate directly to search
+  };
+  
+  // Handle filter application from dialog - navigate directly to search
   const handleApplyFilters = async (filters: SearchFilters) => {
     setIsSearching(true);
     try {
@@ -214,7 +221,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
         state: {
           query: searchQuery,
           filters: filters,
-          searchId: createdSearch.id,
+          searchId: (createdSearch as any).id,
           searchMode: searchMode
         }
       });
@@ -241,7 +248,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
         state: {
           query: query,
           filters: filters,
-          searchId: createdSearch.id,
+          searchId: (createdSearch as any).id,
           searchMode: searchMode
         }
       });
@@ -269,7 +276,7 @@ const Search = forwardRef<SearchRef>((props, ref) => {
         state: {
           query: query,
           filters: filters,
-          searchId: createdSearch.id,
+          searchId: (createdSearch as any).id,
           searchMode: searchMode
         }
       });
@@ -281,6 +288,47 @@ const Search = forwardRef<SearchRef>((props, ref) => {
         title: 'Search Failed',
         message: 'Failed to process job description search. Please try again.'
       });
+    }
+  };
+
+  // Enhanced AI search with priority classification
+  const handleEnhancedSearch = async (query: string) => {
+    if (!query.trim()) return;
+
+    setIsSearching(true);
+    try {
+      // First, extract enhanced keywords with priority classification
+      const enhancedKeywords = await extractEnhancedKeywords(query);
+      
+      // Convert enhanced keywords to filters
+      const enhancedFilters = await convertEnhancedKeywordsToFilters(enhancedKeywords);
+      
+      // Create search record with enhanced data
+      const createdSearch = await createSearchRecord(query, enhancedFilters, 'ai_assisted');
+      
+      // Navigate to search results with enhanced data
+      navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
+        state: {
+          query,
+          filters: enhancedFilters,
+          searchId: (createdSearch as any).id,
+          searchMode,
+          isEnhanced: true,
+          criticalRequirements: enhancedKeywords.criticalRequirements,
+          preferredCriteria: enhancedKeywords.preferredCriteria,
+          contextualHints: enhancedKeywords.contextualHints
+        }
+      });
+    } catch (error) {
+      console.error('Error with enhanced search:', error);
+      setIsSearching(false);
+      addToast({
+        type: 'error',
+        title: 'Enhanced Search Failed',
+        message: 'Falling back to standard search...'
+      });
+      // Fallback to regular search
+      await handleAISearch();
     }
   };
 
@@ -334,49 +382,14 @@ const Search = forwardRef<SearchRef>((props, ref) => {
               <h2 className="text-lg font-medium text-gray-700">Who are you looking for?</h2>
             </div>
             
-            <div className="relative">
-              <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3 border border-gray-200 hover:border-purple-300 transition-colors">
-                <SearchIcon className="w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Software Engineers with 5+ yrs of experience at fintech companies..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && searchQuery.trim() && !isSearching) {
-                      handleAISearch();
-                    }
-                  }}
-                />
-                {searchQuery.trim() && (
-                  <button 
-                    onClick={() => {
-                      setSearchQuery('');
-                      aiQuery.reset();
-                    }}
-                    className="text-gray-400 hover:text-gray-600 p-1 rounded-md transition-colors"
-                    title="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-                {searchQuery.trim() && !aiQuery.loading && (
-                  <button 
-                    onClick={enhanceSearchWithAI}
-                    className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-2 rounded-md transition-colors"
-                    title="Enhance with AI"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                  </button>
-                )}
-                {aiQuery.loading && (
-                  <div className="p-2">
-                    <div className="w-4 h-4 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <EnhancedSearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSearch={() => handleEnhancedSearch(searchQuery)}
+              onEnhancedSearch={enhanceSearchWithAI}
+              isSearching={isSearching}
+              placeholder="Software Engineers with 5+ yrs of experience at fintech companies..."
+            />
           </div>
 
           {/* Search Mode Selection - Hidden for now, defaults to external search */}

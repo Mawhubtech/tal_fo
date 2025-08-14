@@ -250,6 +250,60 @@ class SearchService {
   }
 
   /**
+   * Enhanced keyword extraction with priority classification
+   */
+  async extractEnhancedKeywords(searchText: string): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseURL}/extract-keywords-enhanced`, {
+        searchText
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error extracting enhanced keywords:', error);
+      // Fallback to regular keyword extraction
+      return this.extractKeywords(searchText);
+    }
+  }
+
+  /**
+   * Convert enhanced keywords to must/should filters
+   */
+  async convertEnhancedKeywordsToFilters(keywords: any): Promise<any> {
+    try {
+      const response = await apiClient.post(`${this.baseURL}/convert-keywords-enhanced`, keywords);
+      return response.data;
+    } catch (error) {
+      console.error('Error converting enhanced keywords to filters:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced AI search with must vs should logic
+   */
+  async searchEnhanced(searchText: string, includeExternal: boolean = true, pagination?: PaginationOptions): Promise<SearchResponse> {
+    try {
+      const response = await apiClient.post<SearchResponse>(`${this.baseURL}/search-enhanced`, {
+        searchText,
+        includeExternal
+      }, {
+        params: {
+          page: pagination?.page || 1,
+          limit: pagination?.limit || 20
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Enhanced search failed:', error);
+      // Fallback to combined search
+      const fallbackKeywords = await this.extractKeywords(searchText);
+      const fallbackFilters = await this.convertKeywordsToFilters(fallbackKeywords);
+      return this.searchCandidatesCombined(fallbackFilters, searchText, pagination, includeExternal);
+    }
+  }
+
+  /**
    * Get candidate by ID (using existing candidate service)
    */
   async getCandidateById(id: string): Promise<Candidate | undefined> {
@@ -302,6 +356,9 @@ export const searchService = new SearchService();
 // Export convenience functions for easier imports
 export const extractKeywords = (searchText: string) => searchService.extractKeywords(searchText);
 export const convertKeywordsToFilters = (keywords: ExtractedKeywords) => searchService.convertKeywordsToFilters(keywords);
+export const extractEnhancedKeywords = (searchText: string) => searchService.extractEnhancedKeywords(searchText);
+export const convertEnhancedKeywordsToFilters = (keywords: any) => searchService.convertEnhancedKeywordsToFilters(keywords);
+export const searchEnhanced = (searchText: string, includeExternal?: boolean, pagination?: PaginationOptions) => searchService.searchEnhanced(searchText, includeExternal, pagination);
 export const searchUsers = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchUsers(filters, searchText, pagination);
 export const searchCandidates = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidates(filters, searchText, pagination);
 export const getAllCandidates = () => searchService.getAllUsers();
