@@ -438,11 +438,8 @@ const CreateJobPage: React.FC = () => {
         type: 'recruitment' as const
       };
       
-      console.log('Frontend: Submitting pipeline data:', recruitmentPipelineData);
-      
       if (editingPipeline) {
         // Update existing pipeline
-        console.log('Frontend: Updating existing pipeline:', editingPipeline.id);
         await updatePipeline(editingPipeline.id, recruitmentPipelineData);
         // If we're editing the currently selected pipeline, keep it selected
         if (selectedPipelineId === editingPipeline.id) {
@@ -450,7 +447,6 @@ const CreateJobPage: React.FC = () => {
         }
       } else {
         // Create new pipeline
-        console.log('Frontend: Creating new pipeline');
         await createPipeline(recruitmentPipelineData);
       }
       
