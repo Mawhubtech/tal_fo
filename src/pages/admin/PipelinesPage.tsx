@@ -33,6 +33,23 @@ const PipelinesPage: React.FC = () => {
     clearError,
   } = usePipelines();
 
+  // Debug logging for admin page
+  React.useEffect(() => {
+    console.log('Admin PipelinesPage - pipelines loaded:', {
+      totalPipelines: pipelines.length,
+      defaultPipelines: pipelines.filter(p => p.isDefault),
+      recruitmentPipelines: pipelines.filter(p => p.type === 'recruitment'),
+      allPipelines: pipelines.map(p => ({ 
+        id: p.id, 
+        name: p.name, 
+        isDefault: p.isDefault, 
+        type: p.type, 
+        visibility: p.visibility,
+        status: p.status
+      }))
+    });
+  }, [pipelines]);
+
   const {
     showCreateModal,
     selectedPipeline,
@@ -56,6 +73,23 @@ const PipelinesPage: React.FC = () => {
     filteredPipelines,
     hasActiveFilters,
   } = usePipelineFilters(pipelines);
+
+  // Debug logging for filtered pipelines
+  React.useEffect(() => {
+    console.log('Admin PipelinesPage - filtered pipelines:', {
+      originalCount: pipelines.length,
+      filteredCount: filteredPipelines.length,
+      filters: { searchTerm, visibilityFilter, statusFilter, typeFilter },
+      filteredPipelines: filteredPipelines.map(p => ({ 
+        id: p.id, 
+        name: p.name, 
+        isDefault: p.isDefault, 
+        type: p.type, 
+        visibility: p.visibility,
+        status: p.status
+      }))
+    });
+  }, [filteredPipelines, pipelines.length, searchTerm, visibilityFilter, statusFilter, typeFilter]);
 
   const {
     actionMenuOpen,

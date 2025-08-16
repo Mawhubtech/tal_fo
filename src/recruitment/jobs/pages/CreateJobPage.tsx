@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles, Globe, Lock, ExternalLink } from 'lucide-react';
+import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles, Globe, Lock, ExternalLink, Edit } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
 import { useOrganization, useOrganizationDepartments } from '../../../hooks/useOrganizations';
@@ -7,6 +7,7 @@ import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useHiringTeams } from '../../../hooks/useHiringTeam';
 import { usePipelines } from '../../../hooks/usePipelines';
 import { usePipelineModal } from '../../../hooks/usePipelineModal';
+import { useAuth } from '../../../hooks/useAuth';
 import { jobApiService } from '../../../services/jobApiService';
 import type { CreateJobData, JobPublishingOptions } from '../../../services/jobApiService';
 import type { Department } from '../../organizations/services/organizationApiService';
@@ -29,6 +30,8 @@ const CreateJobPage: React.FC = () => {
   const isEditMode = !!editJobId;
   
   // Use hooks for data fetching
+  const { user } = useAuth();
+  
   const {
     data: organization,
     isLoading: organizationLoading,
@@ -102,13 +105,23 @@ const CreateJobPage: React.FC = () => {
   }>>([]);
 
   // Pipeline creation functionality
-  const { createPipeline } = usePipelines();
+  const { createPipeline, updatePipeline } = usePipelines();
   const {
     showCreateModal: showPipelineModal,
     openCreateModal: openPipelineModal,
+    openEditModal: openPipelineEditModal,
     closeModal: closePipelineModal,
     modalLoading: pipelineModalLoading,
+    selectedPipeline: editingPipeline,
   } = usePipelineModal();
+
+  // Helper function to determine if a pipeline can be edited
+  const canEditPipeline = (pipeline: Pipeline): boolean => {
+    if (!user) return false;
+    // User can edit pipelines they created (private and organization)
+    // Public pipelines created by others (system templates) are not editable
+    return pipeline.createdBy.id === user.id;
+  };
 
   // Calculate loading states
   const loading = organizationLoading || departmentsLoading || pipelinesLoading || hiringTeamsLoading || (isEditMode && jobLoading);
@@ -417,28 +430,44 @@ const CreateJobPage: React.FC = () => {
   };
 
   // Pipeline creation handler
-  const handleCreatePipeline = async (data: CreatePipelineDto) => {
+  const handlePipelineSubmit = async (data: CreatePipelineDto) => {
     try {
-      // Ensure we're creating a recruitment pipeline
+      // Ensure we're working with a recruitment pipeline
       const recruitmentPipelineData = {
         ...data,
         type: 'recruitment' as const
       };
       
-      await createPipeline(recruitmentPipelineData);
-      // Refetch active pipelines to include the newly created one
+      console.log('Frontend: Submitting pipeline data:', recruitmentPipelineData);
+      
+      if (editingPipeline) {
+        // Update existing pipeline
+        console.log('Frontend: Updating existing pipeline:', editingPipeline.id);
+        await updatePipeline(editingPipeline.id, recruitmentPipelineData);
+        // If we're editing the currently selected pipeline, keep it selected
+        if (selectedPipelineId === editingPipeline.id) {
+          // Pipeline will be updated in the list automatically after refetch
+        }
+      } else {
+        // Create new pipeline
+        console.log('Frontend: Creating new pipeline');
+        await createPipeline(recruitmentPipelineData);
+      }
+      
+      // Refetch active pipelines to include the changes
       await refetchActivePipelines();
       closePipelineModal();
       
-      // Find the newly created pipeline and set it as selected
-      // Since we can't get the exact ID from createPipeline, we'll refetch and find by name
-      const updatedPipelines = await refetchActivePipelines();
-      const newPipeline = updatedPipelines.data?.find(p => p.name === data.name && p.type === 'recruitment');
-      if (newPipeline) {
-        setSelectedPipelineId(newPipeline.id);
+      if (!editingPipeline) {
+        // For new pipelines, find and select the newly created one
+        const updatedPipelines = await refetchActivePipelines();
+        const newPipeline = updatedPipelines.data?.find(p => p.name === data.name && p.type === 'recruitment');
+        if (newPipeline) {
+          setSelectedPipelineId(newPipeline.id);
+        }
       }
     } catch (err) {
-      console.error('Error creating pipeline:', err);
+      console.error('Error with pipeline operation:', err);
       // Error handling is managed by the usePipelines hook
     }
   };
@@ -1050,21 +1079,41 @@ const CreateJobPage: React.FC = () => {
                     <span>Create Pipeline</span>
                   </button>
                 </div>
-                <select
-                  id="pipeline"
-                  value={selectedPipelineId}
-                  onChange={(e) => setSelectedPipelineId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
-                  disabled={pipelinesLoading}
-                  required
-                >
-                  <option value="">Select a recruitment pipeline *</option>
-                  {activePipelines.map((pipeline) => (
-                    <option key={pipeline.id} value={pipeline.id}>
-                      {pipeline.name} {pipeline.isDefault ? '(Default)' : ''}
-                    </option>
-                  ))}
-                </select>
+                
+                {/* Pipeline Selection Dropdown */}
+                <div className="relative">
+                  <select
+                    id="pipeline"
+                    value={selectedPipelineId}
+                    onChange={(e) => setSelectedPipelineId(e.target.value)}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                    disabled={pipelinesLoading}
+                    required
+                  >
+                    <option value="">Select a recruitment pipeline *</option>
+                    {activePipelines.map((pipeline) => (
+                      <option key={pipeline.id} value={pipeline.id}>
+                        {pipeline.name} {pipeline.isDefault ? '(Default)' : ''} {!canEditPipeline(pipeline) ? '(System Template)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {/* Edit Pipeline Button */}
+                  {selectedPipelineId && (() => {
+                    const selectedPipeline = activePipelines.find(p => p.id === selectedPipelineId);
+                    return selectedPipeline && canEditPipeline(selectedPipeline) ? (
+                      <button
+                        type="button"
+                        onClick={() => openPipelineEditModal(selectedPipeline)}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-purple-600 transition-colors rounded-md hover:bg-purple-50"
+                        title="Edit pipeline"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    ) : null;
+                  })()}
+                </div>
+                
                 {pipelinesLoading && (
                   <p className="text-xs text-gray-500 mt-1">Loading pipelines...</p>
                 )}
@@ -1072,12 +1121,85 @@ const CreateJobPage: React.FC = () => {
                   <p className="text-xs text-red-500 mt-1">No active recruitment pipelines found. Please create a recruitment pipeline first before creating jobs.</p>
                 )}
                 
+                {/* Available Pipelines List (for easier editing) */}
+                {!pipelinesLoading && activePipelines.length > 0 && (
+                  <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs font-medium text-gray-600 mb-2">Available Pipelines:</p>
+                    <div className="space-y-1">
+                      {activePipelines.map((pipeline) => (
+                        <div
+                          key={pipeline.id}
+                          className={`flex items-center justify-between p-2 rounded-md transition-colors ${
+                            selectedPipelineId === pipeline.id ? 'bg-purple-100 border border-purple-200' : 'bg-white hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPipelineId(pipeline.id)}
+                              className="text-left flex-1"
+                            >
+                              <span className="text-sm font-medium text-gray-700">
+                                {pipeline.name}
+                              </span>
+                              <div className="flex items-center space-x-2 mt-1">
+                                {pipeline.isDefault && (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Default</span>
+                                )}
+                                {canEditPipeline(pipeline) ? (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Editable</span>
+                                ) : (
+                                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">System Template</span>
+                                )}
+                                <span className="text-xs text-gray-500">{pipeline.stages.length} stages</span>
+                              </div>
+                            </button>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            {selectedPipelineId === pipeline.id && (
+                              <span className="text-purple-600 text-sm">✓</span>
+                            )}
+                            {canEditPipeline(pipeline) && (
+                              <button
+                                type="button"
+                                onClick={() => openPipelineEditModal(pipeline)}
+                                className="p-1 text-gray-400 hover:text-purple-600 transition-colors rounded hover:bg-purple-50"
+                                title="Edit pipeline"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 {/* Show selected pipeline stages */}
                 {selectedPipelineId && (() => {
                   const selectedPipeline = activePipelines.find(p => p.id === selectedPipelineId);
                   return selectedPipeline ? (
-                    <div className="mt-3 bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Pipeline Stages:</p>
+                    <div className="mt-3 bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-medium text-gray-700">
+                          Pipeline: {selectedPipeline.name}
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          {canEditPipeline(selectedPipeline) ? (
+                            <button
+                              type="button"
+                              onClick={() => openPipelineEditModal(selectedPipeline)}
+                              className="flex items-center space-x-1 px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                            >
+                              <Edit className="h-3 w-3" />
+                              <span>Edit</span>
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-500 font-medium">🔒 System Template</span>
+                          )}
+                        </div>
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {selectedPipeline.stages
                           .sort((a, b) => a.order - b.order)
@@ -1483,7 +1605,8 @@ const CreateJobPage: React.FC = () => {
       <PipelineModal
         isOpen={showPipelineModal}
         onClose={closePipelineModal}
-        onSubmit={handleCreatePipeline}
+        onSubmit={handlePipelineSubmit}
+        pipeline={editingPipeline}
         isLoading={pipelineModalLoading}
       />
     </div>
