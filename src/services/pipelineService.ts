@@ -188,4 +188,30 @@ export const pipelineService = {
     const data = await handleResponse(response);
     return data.pipeline || data; // Handle both response formats
   },
+
+  async getPipelineUsage(id: string): Promise<{
+    activeJobs: number;
+    totalJobs: number;
+    activeApplications: number;
+    totalApplications: number;
+    stageUsage: { stageName: string; stageId: string; applicationCount: number }[];
+  }> {
+    const response = await fetch(`${config.apiBaseUrl}/pipelines/${id}/usage`, {
+      headers: getAuthHeaders(),
+    });
+    
+    const data = await handleResponse(response);
+    return data.usage;
+  },
+
+  async createPipelineCopy(id: string, name?: string): Promise<Pipeline> {
+    const response = await fetch(`${config.apiBaseUrl}/pipelines/${id}/copy`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ name }),
+    });
+    
+    const data = await handleResponse(response);
+    return data.pipeline;
+  },
 };

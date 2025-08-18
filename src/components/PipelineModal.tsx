@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, AlertCircle } from 'lucide-react';
 import { Pipeline, CreatePipelineDto, PipelineStage } from '../services/pipelineService';
 
 interface PipelineModalProps {
@@ -8,6 +8,8 @@ interface PipelineModalProps {
   onSubmit: (data: CreatePipelineDto) => Promise<void>;
   pipeline?: Pipeline | null;
   isLoading?: boolean;
+  error?: string | null;
+  onClearError?: () => void;
 }
 
 interface StageFormData {
@@ -51,6 +53,8 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
   onSubmit,
   pipeline,
   isLoading = false,
+  error = null,
+  onClearError,
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -138,6 +142,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
     const submitData: CreatePipelineDto = {
       ...formData,
       stages: sortedStages.map(stage => ({
+        ...(stage.id && { id: stage.id }), // Include ID for existing stages
         name: stage.name,
         description: stage.description,
         type: stage.type,
@@ -221,6 +226,11 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
   };
 
   const updateStage = (index: number, field: keyof StageFormData, value: any) => {
+    // Clear error when user starts modifying stages
+    if (onClearError) {
+      onClearError();
+    }
+    
     const newStages = [...stages];
     newStages[index] = { ...newStages[index], [field]: value };
     
@@ -262,6 +272,36 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
               <X className="w-6 h-6" />
             </button>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-5 w-5 text-red-400" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    Pipeline Update Error
+                  </h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    {error}
+                  </div>
+                  {onClearError && (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={onClearError}
+                        className="text-sm text-red-600 hover:text-red-800 underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">

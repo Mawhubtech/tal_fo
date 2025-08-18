@@ -8,6 +8,7 @@ import { useHiringTeams } from '../../../hooks/useHiringTeam';
 import { usePipelines } from '../../../hooks/usePipelines';
 import { usePipelineModal } from '../../../hooks/usePipelineModal';
 import { useAuth } from '../../../hooks/useAuth';
+import { pipelineService } from '../../../services/pipelineService';
 import { jobApiService } from '../../../services/jobApiService';
 import type { CreateJobData, JobPublishingOptions } from '../../../services/jobApiService';
 import type { Department } from '../../organizations/services/organizationApiService';
@@ -16,6 +17,7 @@ import AIJobGeneratorDialog from '../components/AIJobGeneratorDialog';
 import JobPublishingModal from '../components/JobPublishingModal';
 import PublishingSettingsCard from '../components/PublishingSettingsCard';
 import PipelineModal from '../../../components/PipelineModal';
+import PipelineUsageWarningModal from '../../../components/PipelineUsageWarningModal';
 
 const CreateJobPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ 
@@ -104,6 +106,14 @@ const CreateJobPage: React.FC = () => {
     icon?: string;
   }>>([]);
 
+  // Pipeline usage warning state
+  const [showUsageWarning, setShowUsageWarning] = useState(false);
+  const [pendingEditPipeline, setPendingEditPipeline] = useState<Pipeline | null>(null);
+  const [pipelineUsage, setPipelineUsage] = useState<any>(null);
+
+  // Pipeline error state
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
+
   // Pipeline creation functionality
   const { createPipeline, updatePipeline } = usePipelines();
   const {
@@ -112,6 +122,7 @@ const CreateJobPage: React.FC = () => {
     openEditModal: openPipelineEditModal,
     closeModal: closePipelineModal,
     modalLoading: pipelineModalLoading,
+    setModalLoading,
     selectedPipeline: editingPipeline,
   } = usePipelineModal();
 
@@ -121,6 +132,84 @@ const CreateJobPage: React.FC = () => {
     // User can edit pipelines they created (private and organization)
     // Public pipelines created by others (system templates) are not editable
     return pipeline.createdBy.id === user.id;
+  };
+
+  // Handle pipeline editing with usage validation
+  const handleEditPipeline = async (pipeline: Pipeline) => {
+    if (!canEditPipeline(pipeline)) {
+      return;
+    }
+
+    try {
+      // Check if pipeline is being used
+      const usage = await pipelineService.getPipelineUsage(pipeline.id);
+      
+      if (usage.activeJobs > 0 || usage.activeApplications > 0) {
+        // Show warning modal
+        setPendingEditPipeline(pipeline);
+        setPipelineUsage(usage);
+        setShowUsageWarning(true);
+      } else {
+        // Safe to edit directly
+        openPipelineEditModal(pipeline);
+      }
+    } catch (error) {
+      console.error('Error checking pipeline usage:', error);
+      // If check fails, allow editing but user should be aware
+      openPipelineEditModal(pipeline);
+    }
+  };
+
+  // Handle creating a copy of the pipeline
+  const handleCreatePipelineCopy = async () => {
+    if (!pendingEditPipeline) return;
+
+    try {
+      const copyName = `${pendingEditPipeline.name} (Copy)`;
+      const copiedPipeline = await pipelineService.createPipelineCopy(pendingEditPipeline.id, copyName);
+      
+      // Refresh pipelines list
+      await refetchActivePipelines();
+      
+      // Close warning modal and open edit modal for the copy
+      setShowUsageWarning(false);
+      setPendingEditPipeline(null);
+      setPipelineUsage(null);
+      
+      // Select and edit the new copy
+      setSelectedPipelineId(copiedPipeline.id);
+      openPipelineEditModal(copiedPipeline);
+    } catch (error) {
+      console.error('Error creating pipeline copy:', error);
+    }
+  };
+
+  // Handle proceeding with editing the original pipeline
+  const handleProceedWithOriginalEdit = () => {
+    if (!pendingEditPipeline) return;
+
+    setShowUsageWarning(false);
+    openPipelineEditModal(pendingEditPipeline);
+    setPendingEditPipeline(null);
+    setPipelineUsage(null);
+  };
+
+  // Handle closing usage warning modal
+  const handleCloseUsageWarning = () => {
+    setShowUsageWarning(false);
+    setPendingEditPipeline(null);
+    setPipelineUsage(null);
+  };
+
+  // Handle clearing pipeline error
+  const handleClearPipelineError = () => {
+    setPipelineError(null);
+  };
+
+  // Handle closing pipeline modal with error cleanup
+  const handleClosePipelineModal = () => {
+    setPipelineError(null); // Clear error when modal closes
+    closePipelineModal();
   };
 
   // Calculate loading states
@@ -432,6 +521,9 @@ const CreateJobPage: React.FC = () => {
   // Pipeline creation handler
   const handlePipelineSubmit = async (data: CreatePipelineDto) => {
     try {
+      setModalLoading(true);
+      setPipelineError(null); // Clear any previous errors
+      
       // Ensure we're working with a recruitment pipeline
       const recruitmentPipelineData = {
         ...data,
@@ -439,20 +531,22 @@ const CreateJobPage: React.FC = () => {
       };
       
       if (editingPipeline) {
-        // Update existing pipeline
-        await updatePipeline(editingPipeline.id, recruitmentPipelineData);
+        // Update existing pipeline - call service directly to get better error info
+        await pipelineService.updatePipeline(editingPipeline.id, recruitmentPipelineData);
         // If we're editing the currently selected pipeline, keep it selected
         if (selectedPipelineId === editingPipeline.id) {
           // Pipeline will be updated in the list automatically after refetch
         }
       } else {
-        // Create new pipeline
-        await createPipeline(recruitmentPipelineData);
+        // Create new pipeline - call service directly to get better error info
+        await pipelineService.createPipeline(recruitmentPipelineData);
       }
       
       // Refetch active pipelines to include the changes
       await refetchActivePipelines();
-      closePipelineModal();
+      
+      // Only close modal on success
+      handleClosePipelineModal();
       
       if (!editingPipeline) {
         // For new pipelines, find and select the newly created one
@@ -462,9 +556,27 @@ const CreateJobPage: React.FC = () => {
           setSelectedPipelineId(newPipeline.id);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error with pipeline operation:', err);
-      // Error handling is managed by the usePipelines hook
+      
+      // Extract meaningful error message
+      let errorMessage = 'An unexpected error occurred while updating the pipeline.';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+        
+        // If it's a stage validation error, add the suggestion
+        if (err.response.data.code === 'STAGE_HAS_APPLICATIONS' && err.response.data.suggestion) {
+          errorMessage += ' ' + err.response.data.suggestion;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setPipelineError(errorMessage);
+      // Don't close the modal on error - let user see the error and try again
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -1100,7 +1212,7 @@ const CreateJobPage: React.FC = () => {
                     return selectedPipeline && canEditPipeline(selectedPipeline) ? (
                       <button
                         type="button"
-                        onClick={() => openPipelineEditModal(selectedPipeline)}
+                        onClick={() => handleEditPipeline(selectedPipeline)}
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-purple-600 transition-colors rounded-md hover:bg-purple-50"
                         title="Edit pipeline"
                       >
@@ -1158,7 +1270,7 @@ const CreateJobPage: React.FC = () => {
                             {canEditPipeline(pipeline) && (
                               <button
                                 type="button"
-                                onClick={() => openPipelineEditModal(pipeline)}
+                                onClick={() => handleEditPipeline(pipeline)}
                                 className="p-1 text-gray-400 hover:text-purple-600 transition-colors rounded hover:bg-purple-50"
                                 title="Edit pipeline"
                               >
@@ -1185,7 +1297,7 @@ const CreateJobPage: React.FC = () => {
                           {canEditPipeline(selectedPipeline) ? (
                             <button
                               type="button"
-                              onClick={() => openPipelineEditModal(selectedPipeline)}
+                              onClick={() => handleEditPipeline(selectedPipeline)}
                               className="flex items-center space-x-1 px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
                             >
                               <Edit className="h-3 w-3" />
@@ -1600,11 +1712,25 @@ const CreateJobPage: React.FC = () => {
       {/* Pipeline Creation Dialog */}
       <PipelineModal
         isOpen={showPipelineModal}
-        onClose={closePipelineModal}
+        onClose={handleClosePipelineModal}
         onSubmit={handlePipelineSubmit}
         pipeline={editingPipeline}
         isLoading={pipelineModalLoading}
+        error={pipelineError}
+        onClearError={handleClearPipelineError}
       />
+
+      {/* Pipeline Usage Warning Modal */}
+      {showUsageWarning && pendingEditPipeline && pipelineUsage && (
+        <PipelineUsageWarningModal
+          isOpen={showUsageWarning}
+          onClose={handleCloseUsageWarning}
+          onCreateCopy={handleCreatePipelineCopy}
+          onProceedAnyway={handleProceedWithOriginalEdit}
+          pipelineName={pendingEditPipeline.name}
+          usage={pipelineUsage}
+        />
+      )}
     </div>
   );
 };
