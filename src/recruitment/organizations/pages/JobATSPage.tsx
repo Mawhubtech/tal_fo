@@ -1365,6 +1365,9 @@ const JobATSPage: React.FC = () => {
 		  </div>          <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
 			<InterviewsTab 
 			  jobId={jobId!}
+			  jobTitle={job.title}
+			  jobDescription={job.description}
+			  jobRequirements={job.requirements || []}
 			  onInterviewClick={(interview) => {
 				// Handle interview click if needed
 			  }}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, MapPin, Video, Phone, Plus, Trash2, Users } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Video, Phone, Plus, Trash2, Users, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import {
   InterviewType,
@@ -8,6 +8,7 @@ import {
   ParticipantRole,
   CreateInterviewRequest,
 } from '../../../../../types/interview.types';
+import { InterviewTemplate } from '../../../../../types/interviewTemplate.types';
 import { useCreateInterview } from '../../../../../hooks/useInterviews';
 import { jobApplicationApiService } from '../../../../../services/jobApplicationApiService';
 
@@ -16,6 +17,7 @@ interface ScheduleInterviewFormProps {
   onClose: () => void;
   onSuccess: (interview: any) => void;
   selectedCandidateId?: string;
+  selectedTemplate?: InterviewTemplate | null;
   hiringTeamMembers?: Array<{
     id: string;
     name: string;
@@ -75,6 +77,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
   onClose,
   onSuccess,
   selectedCandidateId,
+  selectedTemplate,
   hiringTeamMembers = [],
 }) => {
   const [formData, setFormData] = useState<Omit<CreateInterviewRequest, 'participants'> & { participants: ManualParticipant[] }>({
@@ -117,6 +120,47 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
       }
     }
   }, [selectedCandidateId, jobApplications]);
+
+  // Initialize form with template data if provided
+  useEffect(() => {
+    if (selectedTemplate) {
+      setFormData(prev => ({
+        ...prev,
+        type: selectedTemplate.interviewType as InterviewType,
+        durationMinutes: selectedTemplate.duration,
+        preparationNotes: selectedTemplate.preparationNotes || '',
+        agenda: createAgendaFromTemplate(selectedTemplate),
+      }));
+    }
+  }, [selectedTemplate]);
+
+  const createAgendaFromTemplate = (template: InterviewTemplate): string => {
+    let agenda = '';
+    
+    if (template.instructions) {
+      agenda += `Interview Instructions:\n${template.instructions}\n\n`;
+    }
+    
+    if (template.questions && template.questions.length > 0) {
+      agenda += 'Interview Questions:\n';
+      template.questions.forEach((question, index) => {
+        agenda += `${index + 1}. [${question.timeLimit}min] ${question.question}\n`;
+        if (question.expectedAnswer) {
+          agenda += `   Expected: ${question.expectedAnswer}\n`;
+        }
+        agenda += '\n';
+      });
+    }
+    
+    if (template.evaluationCriteria && template.evaluationCriteria.length > 0) {
+      agenda += 'Evaluation Criteria:\n';
+      template.evaluationCriteria.forEach((criterion, index) => {
+        agenda += `${index + 1}. ${criterion}\n`;
+      });
+    }
+    
+    return agenda.trim();
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -269,6 +313,31 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
           {errors.general && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3">
               <p className="text-sm text-red-600">{errors.general}</p>
+            </div>
+          )}
+
+          {/* Template Information */}
+          {selectedTemplate && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <FileText className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-medium text-purple-900">Using Template: {selectedTemplate.name}</h3>
+              </div>
+              <p className="text-sm text-purple-700 mb-3">{selectedTemplate.description}</p>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="font-medium text-purple-800">Type:</span>
+                  <span className="text-purple-700 ml-1">{selectedTemplate.interviewType}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-purple-800">Duration:</span>
+                  <span className="text-purple-700 ml-1">{selectedTemplate.duration} minutes</span>
+                </div>
+                <div>
+                  <span className="font-medium text-purple-800">Questions:</span>
+                  <span className="text-purple-700 ml-1">{selectedTemplate.questions.length}</span>
+                </div>
+              </div>
             </div>
           )}
 

@@ -6,15 +6,20 @@ import { useStageMovement } from '../../../../../hooks/useStageMovement';
 import { useJobApplicationsByJob } from '../../../../../hooks/useJobApplications';
 import { usePipeline } from '../../../../../hooks/usePipelines';
 import type { Interview, InterviewFilters, InterviewStatus } from '../../../../../types/interview.types';
+import type { InterviewTemplate } from '../../../../../types/interviewTemplate.types';
 import { InterviewsListView } from './InterviewsListView';
 import { InterviewsCalendarView } from './InterviewsCalendarView';
 import { ScheduleInterviewForm } from './ScheduleInterviewForm';
 import { InterviewFiltersPanel } from './InterviewFiltersPanel';
 import { InterviewDetailModal } from './InterviewDetailModal';
+import { InterviewTemplatesPanel } from './templates/InterviewTemplatesPanel';
 import { toast } from '../../../../../components/ToastContainer';
 
 interface InterviewsTabProps {
   jobId?: string;
+  jobTitle?: string;
+  jobDescription?: string; 
+  jobRequirements?: string[];
   onInterviewClick?: (interview: Interview) => void;
   onNewInterview?: () => void;
   selectedCandidateId?: string;
@@ -31,6 +36,9 @@ interface InterviewsTabProps {
 
 export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   jobId,
+  jobTitle = '',
+  jobDescription = '',
+  jobRequirements = [],
   onInterviewClick,
   onNewInterview,
   selectedCandidateId,
@@ -44,6 +52,8 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showTemplatesPanel, setShowTemplatesPanel] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<InterviewTemplate | null>(null);
 
   // Calendar sync integration
   const calendarSync = useInterviewCalendarSync();
@@ -239,6 +249,13 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
     return advancingInterviewTypes.includes(interview.type);
   };
 
+  const handleTemplateSelect = (template: InterviewTemplate) => {
+    setSelectedTemplate(template);
+    setShowTemplatesPanel(false);
+    setShowScheduleForm(true);
+    toast.success('Template Selected', `Using "${template.name}" template for the interview.`);
+  };
+
   const handleSendEmail = async (interview: Interview, emailType: string, recipients: string[], subject: string, body: string) => {
     try {
       // This would be implemented with actual email service
@@ -306,6 +323,17 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Interview Templates Panel */}
+      {showTemplatesPanel && (
+        <InterviewTemplatesPanel
+          jobId={jobId}
+          jobTitle={jobTitle}
+          jobDescription={jobDescription}
+          jobRequirements={jobRequirements}
+          onTemplateSelect={handleTemplateSelect}
+        />
+      )}
+
       {/* Interview Actions */}
       <div className="bg-white p-4 rounded-lg shadow-sm border flex justify-between items-center">
         <div className="flex space-x-3">
@@ -315,6 +343,15 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
           >
             <Plus className="w-4 h-4 mr-2" />
             Schedule Interview
+          </button>
+          <button 
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 flex items-center"
+            onClick={() => setShowTemplatesPanel(!showTemplatesPanel)}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {showTemplatesPanel ? 'Hide Templates' : 'Interview Templates'}
           </button>
           <button 
             className={`px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center ${
@@ -424,11 +461,16 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
           {jobId ? (
             <ScheduleInterviewForm
               jobId={jobId}
-              onClose={() => setShowScheduleForm(false)}
+              onClose={() => {
+                setShowScheduleForm(false);
+                setSelectedTemplate(null);
+              }}
               selectedCandidateId={selectedCandidateId}
+              selectedTemplate={selectedTemplate}
               hiringTeamMembers={hiringTeamMembers}
               onSuccess={() => {
                 setShowScheduleForm(false);
+                setSelectedTemplate(null);
                 // No need to call refetch() - query invalidation handles this automatically
               }}
             />
