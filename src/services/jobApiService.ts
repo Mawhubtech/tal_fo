@@ -149,6 +149,16 @@ class JobApiService {
     }
   }
 
+  async switchPipeline(id: string, pipelineId: string): Promise<Job> {
+    try {
+      const response = await apiClient.patch(`/jobs/${id}/pipeline`, { pipelineId });
+      return response.data;
+    } catch (error) {
+      console.error('Error switching pipeline:', error);
+      throw error;
+    }
+  }
+
   async deleteJob(id: string): Promise<void> {
     try {
       await apiClient.delete(`/jobs/${id}`);

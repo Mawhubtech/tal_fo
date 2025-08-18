@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { 
-  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle, RefreshCw, Eye, MessageSquare, Mail
+  ArrowLeft, Briefcase, Users, CheckCircle, BarChart3, Calendar, Plus, AlertCircle, RefreshCw, Eye, MessageSquare, Mail, Settings, Edit, X
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useJobATSPageData } from '../../../hooks/useOrganizations';
-import { useJob } from '../../../hooks/useJobs';
+import { useJob, useUpdateJob, useSwitchPipeline } from '../../../hooks/useJobs';
 import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
-import { usePipeline } from '../../../hooks/usePipelines';
+import { usePipeline, usePipelines } from '../../../hooks/usePipelines';
 import { useDefaultPipeline } from '../../../hooks/useDefaultPipeline';
+import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useJobApplicationsByJob, useUpdateJobApplication, useDeleteJobApplication } from '../../../hooks/useJobApplications';
 import { useCandidate } from '../../../hooks/useCandidates';
 import { useStageMovement } from '../../../hooks/useStageMovement';
@@ -16,12 +17,15 @@ import { useOptimisticStageMovement } from '../../../hooks/useOptimisticStageMov
 import { useTaskStats } from '../../../hooks/useTasks';
 import { useInterviews } from '../../../hooks/useInterviews';
 import { useJobReport } from '../../../hooks/useReports';
+import { usePipelineModal } from '../../../hooks/usePipelineModal';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
 import { StageChangeReason } from '../../../types/stageMovement.types';
 import { useHiringTeam, useTeamMembers } from '../../../hooks/useHiringTeam';
 import type { Job as JobType } from '../../data/types';
 import type { JobApplication } from '../../../services/jobApplicationApiService';
+import type { Pipeline, CreatePipelineDto } from '../../../services/pipelineService';
+import { pipelineService } from '../../../services/pipelineService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
 import AddCandidateModal from '../components/AddCandidateModal';
 import ConfirmationDialog from '../../../components/ConfirmationDialog';
@@ -29,6 +33,8 @@ import ToastContainer, { toast } from '../../../components/ToastContainer';
 import ProfileSidePanel, { type UserStructuredData, type PanelState } from '../../../components/ProfileSidePanel';
 import JobPreviewModal from '../../../components/modals/JobPreviewModal';
 import CollaborativeSidePanel, { type CollaborativePanelState, type TeamMember } from '../../../components/CollaborativeSidePanel';
+import PipelineModal from '../../../components/PipelineModal';
+import PipelineUsageWarningModal from '../../../components/PipelineUsageWarningModal';
 import { useJobComments, useCreateComment, useUpdateComment, useDeleteComment, useAddReaction, useRemoveReaction } from '../../../hooks/useJobComments';
 
 const JobATSPage: React.FC = () => {
@@ -52,6 +58,29 @@ const JobATSPage: React.FC = () => {
   
   // State for the collaborative side panel
   const [collaborativePanelState, setCollaborativePanelState] = useState<CollaborativePanelState>('closed');
+  
+  // Pipeline management state
+  const [showPipelineSelector, setShowPipelineSelector] = useState(false);
+  const [showUsageWarning, setShowUsageWarning] = useState(false);
+  const [pendingEditPipeline, setPendingEditPipeline] = useState<Pipeline | null>(null);
+  const [pipelineUsage, setPipelineUsage] = useState<any>(null);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
+  
+  // Pipeline hooks
+  const { createPipeline, updatePipeline } = usePipelines();
+  const { 
+    data: activePipelines = [], 
+    refetch: refetchActivePipelines 
+  } = useActivePipelines('recruitment');
+  const {
+    showCreateModal: showPipelineModal,
+    openCreateModal: openPipelineModal,
+    openEditModal: openPipelineEditModal,
+    closeModal: closePipelineModal,
+    modalLoading: pipelineModalLoading,
+    setModalLoading,
+    selectedPipeline: editingPipeline,
+  } = usePipelineModal();
   
   // Determine if current user is external and use appropriate hook
   const isExternal = isExternalUser(user);
@@ -200,6 +229,200 @@ const JobATSPage: React.FC = () => {
   // Add missing variables for backward compatibility
   const defaultPipelineLoading = false;
   const isCreatingDefault = false;
+  
+  // Import the useSwitchPipeline hook
+  const { mutateAsync: switchPipeline, isPending: switchPipelineLoading } = useSwitchPipeline();
+
+  // Handle pipeline assignment to job
+  const handleAssignPipeline = async (pipeline: Pipeline) => {
+    if (!job?.id) return;
+
+    try {
+      // Check if the job already has applications in different stages
+      if (effectivePipeline && effectivePipeline.id !== pipeline.id) {
+        // Check if there are applications in any stage
+        const applications = jobApplicationsData?.applications || [];
+        const hasActiveApplications = applications.length > 0;
+        
+        if (hasActiveApplications) {
+          // Show warning about moving applications
+          toast.error('Cannot change pipeline: Job has active applications in various stages');
+          return;
+        }
+      }
+
+      // Update the job with the new pipeline using the new endpoint
+      await switchPipeline({
+        id: job.id,
+        pipelineId: pipeline.id
+      });
+
+      // Explicitly invalidate all queries to ensure UI updates immediately
+      await invalidateAllQueries();
+
+      setShowPipelineSelector(false);
+      toast.success(`Pipeline changed to "${pipeline.name}"`);
+    } catch (error) {
+      console.error('Error assigning pipeline:', error);
+      const errorMessage = (error as any)?.response?.data?.message || 'Failed to change pipeline';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Helper function to get job applications count for a stage
+  const getStageApplicationsCount = (stageName: string): number => {
+    if (!effectivePipeline?.stages) return 0;
+    
+    const stage = effectivePipeline.stages.find(s => s.name === stageName);
+    return stage?.applications?.length || 0;
+  };
+
+  // Check if pipeline can be changed (no applications in various stages)
+  const canChangePipeline = (): boolean => {
+    if (!effectivePipeline?.stages) return true;
+    
+    const totalApplications = effectivePipeline.stages.reduce((total, stage) => {
+      return total + (stage.applications?.length || 0);
+    }, 0);
+    
+    return totalApplications === 0;
+  };
+  const canEditPipeline = (pipeline: Pipeline): boolean => {
+    if (!user || !pipeline || !pipeline.createdBy) return false;
+    // User can edit pipelines they created (private and organization)
+    // Public pipelines created by others (system templates) are not editable
+    return pipeline.createdBy.id === user.id;
+  };
+
+  // Handle pipeline editing with usage validation
+  const handleEditPipeline = async (pipeline: Pipeline) => {
+    if (!canEditPipeline(pipeline)) {
+      return;
+    }
+
+    try {
+      // Check if pipeline is being used
+      const usage = await pipelineService.getPipelineUsage(pipeline.id);
+      
+      if (usage.activeJobs > 0 || usage.activeApplications > 0) {
+        // Show warning modal
+        setPendingEditPipeline(pipeline);
+        setPipelineUsage(usage);
+        setShowUsageWarning(true);
+      } else {
+        // Safe to edit directly
+        openPipelineEditModal(pipeline);
+      }
+    } catch (error) {
+      console.error('Error checking pipeline usage:', error);
+      // If check fails, allow editing but user should be aware
+      openPipelineEditModal(pipeline);
+    }
+  };
+
+  // Handle creating a copy of the pipeline
+  const handleCreatePipelineCopy = async () => {
+    if (!pendingEditPipeline) return;
+
+    try {
+      const copyName = `${pendingEditPipeline.name} (Copy)`;
+      const copiedPipeline = await pipelineService.createPipelineCopy(pendingEditPipeline.id, copyName);
+      
+      // Refresh pipelines list
+      await refetchActivePipelines();
+      
+      // Close warning modal and open edit modal for the copy
+      setShowUsageWarning(false);
+      setPendingEditPipeline(null);
+      setPipelineUsage(null);
+      
+      // Open edit modal for the new copy
+      openPipelineEditModal(copiedPipeline);
+    } catch (error) {
+      console.error('Error creating pipeline copy:', error);
+      toast.error('Failed to create pipeline copy');
+    }
+  };
+
+  // Handle proceeding with editing the original pipeline
+  const handleProceedWithOriginalEdit = () => {
+    if (!pendingEditPipeline) return;
+
+    setShowUsageWarning(false);
+    openPipelineEditModal(pendingEditPipeline);
+    setPendingEditPipeline(null);
+    setPipelineUsage(null);
+  };
+
+  // Handle closing usage warning modal
+  const handleCloseUsageWarning = () => {
+    setShowUsageWarning(false);
+    setPendingEditPipeline(null);
+    setPipelineUsage(null);
+  };
+
+  // Handle clearing pipeline error
+  const handleClearPipelineError = () => {
+    setPipelineError(null);
+  };
+
+  // Handle closing pipeline modal with error cleanup
+  const handleClosePipelineModal = () => {
+    setPipelineError(null);
+    closePipelineModal();
+  };
+
+  // Pipeline creation/update handler
+  const handlePipelineSubmit = async (data: CreatePipelineDto) => {
+    try {
+      setModalLoading(true);
+      setPipelineError(null);
+      
+      // Ensure we're working with a recruitment pipeline
+      const recruitmentPipelineData = {
+        ...data,
+        type: 'recruitment' as const
+      };
+      
+      if (editingPipeline) {
+        // Update existing pipeline
+        await updatePipeline(editingPipeline.id, recruitmentPipelineData);
+      } else {
+        // Create new pipeline
+        await createPipeline(recruitmentPipelineData);
+      }
+      
+      // Refetch active pipelines to include the changes
+      await refetchActivePipelines();
+      
+      // Close modal on success
+      handleClosePipelineModal();
+      
+      toast.success(editingPipeline ? 'Pipeline updated successfully' : 'Pipeline created successfully');
+      
+    } catch (err: any) {
+      console.error('Error with pipeline operation:', err);
+      
+      // Extract meaningful error message
+      let errorMessage = 'An unexpected error occurred while updating the pipeline.';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+        
+        // If it's a stage validation error, add the suggestion
+        if (err.response.data.code === 'STAGE_HAS_APPLICATIONS' && err.response.data.suggestion) {
+          errorMessage += ' ' + err.response.data.suggestion;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setPipelineError(errorMessage);
+      // Don't close the modal on error - let user see the error and try again
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   // Helper function to map backend stage to frontend stage
   const mapStageToFrontend = (backendStage: string) => {
@@ -911,6 +1134,23 @@ const JobATSPage: React.FC = () => {
 		View Job
 	  </button>
 	  
+	  {/* Manage Pipeline button */}
+	  {!isExternal && effectivePipeline && (
+		<button 
+		  onClick={() => setShowPipelineSelector(true)}
+		  className={`bg-white text-purple-600 border border-purple-600 hover:bg-purple-50 px-4 py-2 rounded-md flex items-center transition-colors ${
+			!canChangePipeline() ? 'opacity-75' : ''
+		  }`}
+		  title={!canChangePipeline() 
+			? "Pipeline management limited - job has active applications" 
+			: "Manage pipeline for this job"
+		  }
+		>
+		  <Settings className="w-4 h-4 mr-2" />
+		  {!canChangePipeline() ? 'Pipeline (In Use)' : 'Manage Pipeline'}
+		</button>
+	  )}
+	  
 	  {/* Email Sequences button */}
 	  <Link
 		to={isExternal 
@@ -976,6 +1216,18 @@ const JobATSPage: React.FC = () => {
 			  <p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
 			  <p className="text-sm text-gray-500">Total Candidates</p>
 			</div>
+			
+			{/* Pipeline Management Button - Only show for internal users */}
+			{!isExternal && effectivePipeline && (
+			  <button
+				onClick={() => setShowPipelineSelector(true)}
+				className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 p-2 rounded-lg transition-colors"
+				title="Manage pipeline"
+			  >
+				<Settings className="w-5 h-5" />
+			  </button>
+			)}
+			
 			<button
 			  onClick={() => setShowJobPreviewModal(true)}
 			  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
@@ -1272,6 +1524,178 @@ const JobATSPage: React.FC = () => {
 		  isOpen={showJobPreviewModal}
 		  onClose={() => setShowJobPreviewModal(false)}
 		  job={job}
+		/>
+	  )}
+
+	  {/* Pipeline Selector Modal */}
+	  {showPipelineSelector && (
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+		  <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+			<div className="p-6">
+			  {/* Header */}
+			  <div className="flex items-center justify-between mb-6">
+				<div>
+				  <h3 className="text-lg font-semibold text-gray-900">Manage Pipeline</h3>
+				  <p className="text-sm text-gray-600">Select, edit, or create a new recruitment pipeline</p>
+				</div>
+				<button
+				  onClick={() => setShowPipelineSelector(false)}
+				  className="text-gray-400 hover:text-gray-600 transition-colors"
+				>
+				  <X className="w-6 h-6" />
+				</button>
+			  </div>
+
+			  {/* Current Pipeline */}
+			  {effectivePipeline && (
+				<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+				  <h4 className="font-medium text-blue-900 mb-2">Current Pipeline</h4>
+				  <div className="flex items-center justify-between">
+					<div>
+					  <p className="font-medium text-blue-800">{effectivePipeline.name}</p>
+					  <p className="text-sm text-blue-600">{effectivePipeline.stages?.length || 0} stages</p>
+					</div>
+					{effectivePipeline && effectivePipeline.createdBy && canEditPipeline(effectivePipeline as Pipeline) && (
+					  <button
+						onClick={() => {
+						  setShowPipelineSelector(false);
+						  handleEditPipeline(effectivePipeline as Pipeline);
+						}}
+						className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+					  >
+						<Edit className="h-3 w-3" />
+						<span>Edit</span>
+					  </button>
+					)}
+				  </div>
+				</div>
+			  )}
+
+			  {/* Available Pipelines */}
+			  <div className="mb-6">
+				<div className="flex items-center justify-between mb-3">
+				  <h4 className="font-medium text-gray-900">Available Pipelines</h4>
+				  <button
+					onClick={() => {
+					  setShowPipelineSelector(false);
+					  openPipelineModal();
+					}}
+					className="flex items-center space-x-1 px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+				  >
+					<Plus className="h-4 w-4" />
+					<span>Create New</span>
+				  </button>
+				</div>
+				
+				<div className="space-y-2 max-h-60 overflow-y-auto">
+				  {activePipelines.map((pipeline) => {
+					// Calculate candidates for this specific pipeline (only if it's the current one)
+					const candidates = effectivePipeline?.id === pipeline.id 
+					  ? (jobApplicationsData?.applications || [])
+					  : [];
+					
+					return (
+					  <div
+						key={pipeline.id}
+						className={`flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors ${
+						  effectivePipeline?.id === pipeline.id ? 'border-purple-500 bg-purple-50' : 'border-gray-200'
+						}`}
+					  >
+						<div className="flex-1">
+						  <div className="flex items-center space-x-2">
+							<span className="font-medium text-gray-900">{pipeline.name}</span>
+							{pipeline.isDefault && (
+							  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Default</span>
+							)}
+							{effectivePipeline?.id === pipeline.id && (
+							  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Current</span>
+							)}
+						  </div>
+						  <p className="text-sm text-gray-500">{pipeline.stages?.length || 0} stages</p>
+						</div>
+					  
+					  <div className="flex items-center space-x-2">
+						{effectivePipeline?.id !== pipeline.id && (
+						  <button
+							onClick={async () => {
+							  await handleAssignPipeline(pipeline);
+							}}
+							className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+							disabled={candidates.length > 0 || switchPipelineLoading}
+							title={candidates.length > 0 ? "Cannot change pipeline when candidates are in various stages" : "Switch to this pipeline"}
+						  >
+							{switchPipelineLoading ? 'Switching...' : candidates.length > 0 ? 'In Use' : 'Select'}
+						  </button>
+						)}
+						{canEditPipeline(pipeline) && (
+						  <button
+							onClick={() => {
+							  setShowPipelineSelector(false);
+							  handleEditPipeline(pipeline);
+							}}
+							className="p-1 text-gray-400 hover:text-purple-600 transition-colors rounded hover:bg-purple-50"
+							title="Edit pipeline"
+						  >
+							<Edit className="h-4 w-4" />
+						  </button>
+						)}
+					  </div>
+					</div>
+				  );
+				})}
+				</div>
+			  </div>
+
+			  {/* Warning for candidates in stages */}
+			  {candidates.length > 0 && (
+				<div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+				  <div className="flex items-center">
+					<AlertCircle className="h-5 w-5 text-amber-600 mr-3" />
+					<div>
+					  <h5 className="font-medium text-amber-800">Pipeline Change Restricted</h5>
+					  <p className="text-sm text-amber-700">
+						Cannot change pipeline while {candidates.length} candidate{candidates.length !== 1 ? 's are' : ' is'} in various stages. 
+						To change pipelines, you would need to move all candidates out of the current pipeline first.
+					  </p>
+					</div>
+				  </div>
+				</div>
+			  )}
+
+			  {/* Action Buttons */}
+			  <div className="flex justify-end gap-3 mt-6">
+				<button
+				  onClick={() => setShowPipelineSelector(false)}
+				  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+				>
+				  Close
+				</button>
+			  </div>
+			</div>
+		  </div>
+		</div>
+	  )}
+
+	  {/* Pipeline Creation/Edit Modal */}
+	  <PipelineModal
+		isOpen={showPipelineModal}
+		onClose={handleClosePipelineModal}
+		onSubmit={handlePipelineSubmit}
+		pipeline={editingPipeline}
+		isLoading={pipelineModalLoading}
+		error={pipelineError}
+		onClearError={handleClearPipelineError}
+	  />
+
+	  {/* Pipeline Usage Warning Modal */}
+	  {showUsageWarning && pendingEditPipeline && pipelineUsage && (
+		<PipelineUsageWarningModal
+		  isOpen={showUsageWarning}
+		  onClose={handleCloseUsageWarning}
+		  onCreateCopy={handleCreatePipelineCopy}
+		  onProceedAnyway={handleProceedWithOriginalEdit}
+		  pipelineName={pendingEditPipeline.name}
+		  usage={pipelineUsage}
 		/>
 	  )}
 

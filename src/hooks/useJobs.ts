@@ -116,6 +116,45 @@ export function useUpdateJob() {
   });
 }
 
+export function useSwitchPipeline() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, pipelineId }: { id: string; pipelineId: string }) => 
+      jobApiService.switchPipeline(id, pipelineId),
+    onSuccess: (data, variables) => {
+      // Update the specific job in cache
+      queryClient.setQueryData(jobKeys.detail(variables.id), data);
+      
+      // Invalidate all JobATSPage data queries for this job
+      queryClient.invalidateQueries({ queryKey: ['jobATSPageData'] });
+      
+      // Invalidate other job-related queries
+      queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: jobKeys.details() });
+      queryClient.invalidateQueries({ queryKey: jobKeys.stats() });
+      
+      // Invalidate pipeline-related queries
+      queryClient.invalidateQueries({ queryKey: ['pipeline'] });
+      queryClient.invalidateQueries({ queryKey: ['defaultPipeline'] });
+      
+      // Invalidate job applications and candidates data
+      queryClient.invalidateQueries({ queryKey: ['jobApplications', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+      
+      // Invalidate organization and department data if available
+      if (data.organizationId) {
+        queryClient.invalidateQueries({ queryKey: jobKeys.byOrganization(data.organizationId) });
+        queryClient.invalidateQueries({ queryKey: ['organization', data.organizationId] });
+      }
+      if (data.departmentId) {
+        queryClient.invalidateQueries({ queryKey: jobKeys.byDepartment(data.departmentId) });
+        queryClient.invalidateQueries({ queryKey: ['department', data.departmentId] });
+      }
+    },
+  });
+}
+
 export function useDeleteJob() {
   const queryClient = useQueryClient();
   
