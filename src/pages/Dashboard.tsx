@@ -61,6 +61,10 @@ import { ResourcesPage } from './resources';
 import ContactSupportPage from './ContactSupportPage';
 import TasksPage from './TasksPage'; // Import TasksPage
 
+// Global Search Pages
+import GlobalSearchPage from './GlobalSearchPage';
+import GlobalSearchResultsPage from './GlobalSearchResultsPage';
+
 // Admin Pages
 import AdminLayout from '../layouts/AdminLayout'; // Import AdminLayout
 import AdminOverviewPage from './admin/AdminOverviewPage'; // Import AdminOverviewPage
@@ -150,6 +154,19 @@ const Dashboard: React.FC = () => {
             <Route path="calendar" element={
               <RoutePermissionGuard>
                 <CalendarPage />
+              </RoutePermissionGuard>
+            } />
+            
+            {/* Global Search Routes */}
+            <Route path="search" element={
+              <RoutePermissionGuard>
+                <GlobalSearchPage />
+              </RoutePermissionGuard>
+            } />
+            
+            <Route path="search-results" element={
+              <RoutePermissionGuard>
+                <GlobalSearchResultsPage />
               </RoutePermissionGuard>
             } />
             

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Eye } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Eye, Plus, Loader2 } from 'lucide-react';
 import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../hooks/useSearch';
 import { useAddProspectsToProject } from '../hooks/useSourcingProjects';
 import { useShortlistExternalCandidate } from '../hooks/useShortlistExternal';
 import { useAuthContext } from '../contexts/AuthContext';
 import type { SearchFilters } from '../services/searchService';
+import { searchEnhanced } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProjectSelectionModal from '../components/ProjectSelectionModal';
@@ -26,7 +27,18 @@ const GlobalSearchResultsPage: React.FC = () => {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [fromQuickSearch, setFromQuickSearch] = useState(false);
+  const [isEnhanced, setIsEnhanced] = useState(false);
+  const [criticalRequirements, setCriticalRequirements] = useState<any>(null);
+  const [preferredCriteria, setPreferredCriteria] = useState<any>(null);
+  const [contextualHints, setContextualHints] = useState<any>(null);
   const [shortlistingCandidates, setShortlistingCandidates] = useState<{ [key: string]: boolean }>({});
+  
+  // Pagination state
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
+  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   // Track active shortlist calls to prevent duplicates (use ref to avoid React state delays)
   const activeShortlistCallsRef = useRef<Set<string>>(new Set());
   
@@ -47,6 +59,8 @@ const GlobalSearchResultsPage: React.FC = () => {
 
   // Handle state from search page
   useEffect(() => {
+    console.log('GlobalSearchResults: Loading with state:', location.state);
+    
     if (location.state) {
       const { 
         query, 
@@ -54,6 +68,10 @@ const GlobalSearchResultsPage: React.FC = () => {
         searchMode: stateSearchMode, 
         isGlobalSearch, 
         fromQuickSearch,
+        isEnhanced,
+        criticalRequirements,
+        preferredCriteria,
+        contextualHints,
         newProjectId,
         candidateToShortlist,
         shouldAutoShortlist
@@ -63,9 +81,19 @@ const GlobalSearchResultsPage: React.FC = () => {
       setFilters(filters || {});
       setSearchMode(stateSearchMode || 'external');
       setFromQuickSearch(!!fromQuickSearch);
+      setIsEnhanced(!!isEnhanced);
+      setCriticalRequirements(criticalRequirements || null);
+      setPreferredCriteria(preferredCriteria || null);
+      setContextualHints(contextualHints || null);
       
       if (isGlobalSearch && query) {
-        fetchResults(filters || {}, query, stateSearchMode || 'external');
+        console.log('GlobalSearchResults: Executing search for:', query);
+        // Reset pagination state for new search
+        setCurrentCursor(undefined);
+        setNextCursor(undefined);
+        setHasNextPage(false);
+        setCurrentPage(1);
+        fetchResults(filters || {}, query, stateSearchMode || 'external', !!isEnhanced, undefined, true);
       }
       
       // Handle auto-shortlisting after project creation
@@ -83,6 +111,7 @@ const GlobalSearchResultsPage: React.FC = () => {
         }, 1000); // Small delay to ensure UI state is ready
       }
     } else {
+      console.log('GlobalSearchResults: No state found, redirecting to search');
       // Navigate back to global search if no state
       navigate('/dashboard/search');
     }
@@ -95,46 +124,122 @@ const GlobalSearchResultsPage: React.FC = () => {
     };
   }, []);
 
-  const fetchResults = async (filters: SearchFilters, query?: string, mode?: 'database' | 'external' | 'combined') => {
-    setIsLoading(true);
+  const fetchResults = async (
+    filters: SearchFilters, 
+    query?: string, 
+    mode?: 'database' | 'external' | 'combined', 
+    useEnhanced?: boolean,
+    cursor?: string,
+    resetResults?: boolean
+  ) => {
+    console.log('GlobalSearchResults: Fetching results for:', { query, mode, enhanced: useEnhanced, cursor, reset: resetResults });
+    
+    if (resetResults) {
+      setIsLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+    
     try {
-      const searchParams = {
-        filters,
-        searchText: query,
-        pagination: { page: 1, limit: 10 }
-      };
-      
       const searchMode = mode || 'database';
       let searchResults: any;
       
-      // Execute search based on mode
-      if (searchMode === 'external') {
-        searchResults = await executeExternalSourceSearch(searchParams);
-      } else if (searchMode === 'combined') {
-        searchResults = await executeCombinedSearch(searchParams, true);
-      } else {
-        searchResults = await executeSearch(searchParams);
+      // For external or combined search, try enhanced search first if available
+      if (useEnhanced && (searchMode === 'external' || searchMode === 'combined') && query) {
+        try {
+          console.log('GlobalSearchResults: Using enhanced search...');
+          searchResults = await searchEnhanced(query, searchMode === 'external' || searchMode === 'combined', { page: 1, limit: 10 });
+        } catch (enhancedError) {
+          console.warn('GlobalSearchResults: Enhanced search failed, using fallback:', enhancedError);
+          // Fallback to standard search methods
+          useEnhanced = false;
+        }
+      }
+      
+      // If enhanced search wasn't used or failed, use standard search methods
+      if (!useEnhanced || !searchResults) {
+        console.log('GlobalSearchResults: Using standard search...');
+        const searchParams = {
+          filters,
+          searchText: query,
+          pagination: { page: 1, limit: 10 },
+          after: cursor
+        };
+        
+        // Execute search based on mode
+        if (searchMode === 'external') {
+          searchResults = await executeExternalSourceSearch(searchParams);
+        } else if (searchMode === 'combined') {
+          searchResults = await executeCombinedSearch(searchParams, true);
+        } else {
+          searchResults = await executeSearch(searchParams);
+        }
       }
       
       // Handle the response structure from backend
       let newResults: any[] = [];
-      if (searchResults && typeof searchResults === 'object' && 'results' in searchResults) {
-        newResults = (searchResults as any).results || [];
+      if (searchResults && typeof searchResults === 'object') {
+        if ('results' in searchResults) {
+          newResults = (searchResults as any).results || [];
+        } else if ('candidates' in searchResults) {
+          newResults = (searchResults as any).candidates || [];
+        } else if (Array.isArray(searchResults)) {
+          newResults = searchResults;
+        }
       } else if (Array.isArray(searchResults)) {
         newResults = searchResults;
       }
 
-      setResults(newResults);
+      // Handle pagination metadata for external sources
+      if (searchResults && searchResults.externalPagination) {
+        setNextCursor(searchResults.externalPagination.nextCursor);
+        setHasNextPage(searchResults.externalPagination.hasNextPage);
+      } else {
+        setNextCursor(undefined);
+        setHasNextPage(false);
+      }
+
+      if (resetResults) {
+        // For new search, replace all results
+        console.log('GlobalSearchResults: Setting new results:', newResults.length);
+        setResults(newResults);
+        setCurrentPage(1);
+      } else {
+        // For pagination, append new results but avoid duplicates
+        setResults(prev => {
+          const existingIds = new Set(prev.map(r => r.candidate?.id || r.id).filter(Boolean));
+          const uniqueNewResults = newResults.filter(r => {
+            const id = r.candidate?.id || r.id;
+            return id && !existingIds.has(id);
+          });
+          console.log(`GlobalSearchResults: Appending ${uniqueNewResults.length} new results (${newResults.length - uniqueNewResults.length} duplicates filtered)`);
+          return [...prev, ...uniqueNewResults];
+        });
+        setCurrentPage(prev => prev + 1);
+      }
+
+      setCurrentCursor(cursor);
     } catch (error) {
-      console.error('Error fetching search results:', error);
+      console.error('GlobalSearchResults: Search failed:', error);
       addToast({
         type: 'error',
         title: 'Search Failed',
         message: 'Failed to fetch search results. Please try again.'
       });
-      setResults([]);
+      if (resetResults) {
+        setResults([]);
+      }
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Handle pagination - load more results
+  const handleNextPage = () => {
+    if (hasNextPage && nextCursor && !isLoadingMore) {
+      console.log('GlobalSearchResults: Loading next page with cursor:', nextCursor);
+      fetchResults(filters, searchQuery, searchMode, isEnhanced, nextCursor, false);
     }
   };
 
@@ -506,7 +611,8 @@ const GlobalSearchResultsPage: React.FC = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Global Search Results</h1>
               <p className="text-gray-600">
-                Found {results.length} candidates for "{searchQuery}"
+                Showing {results.length} candidates for "{searchQuery}"
+                {hasNextPage && <span className="text-purple-600"> • More results available</span>}
               </p>
             </div>
           </div>
@@ -624,6 +730,29 @@ const GlobalSearchResultsPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              
+              {/* Load More Button */}
+              {hasNextPage && (
+                <div className="flex justify-center py-8 border-t border-gray-200">
+                  <button
+                    onClick={handleNextPage}
+                    disabled={isLoadingMore}
+                    className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" />
+                        Load More Results
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -14,7 +14,7 @@ import BooleanSearchDialog from '../sourcing/search/components/BooleanSearchDial
 import JobDescriptionDialog from '../recruitment/components/JobDescriptionDialog';
 import AIEnhancementModal from '../components/AIEnhancementModal';
 import { useAIQuery } from '../hooks/ai';
-import { extractKeywords, convertKeywordsToFilters } from '../services/searchService';
+import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters } from '../services/searchService';
 import type { SearchFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
 import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../hooks/useSearch';
@@ -95,23 +95,50 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
 
     setIsSearching(true);
     try {
-      // Extract keywords using AI
-      const keywords = await extractKeywords(searchQuery);
+      // First try enhanced search with priority classification
+      let keywords, filters;
       
-      // Convert to filters
-      const filters = await convertKeywordsToFilters(keywords);
-      
-      console.log("AI extracted filters:", filters);
-      
-      // Navigate to global search results
-      navigate('/dashboard/search-results', {
-        state: {
-          query: searchQuery,
-          filters: filters,
-          searchMode: searchMode,
-          isGlobalSearch: true
-        }
-      });
+      try {
+        // Extract enhanced keywords with priority classification
+        keywords = await extractEnhancedKeywords(searchQuery);
+        
+        // Convert enhanced keywords to filters with must/should logic
+        filters = await convertEnhancedKeywordsToFilters(keywords);
+        
+        console.log("AI extracted enhanced filters:", filters);
+        
+        // Navigate to global search results with enhanced data
+        navigate('/dashboard/search-results', {
+          state: {
+            query: searchQuery,
+            filters: filters,
+            searchMode: searchMode,
+            isGlobalSearch: true,
+            isEnhanced: true,
+            criticalRequirements: keywords.criticalRequirements,
+            preferredCriteria: keywords.preferredCriteria,
+            contextualHints: keywords.contextualHints
+          }
+        });
+      } catch (enhancedError) {
+        console.warn('Enhanced search failed, falling back to standard search:', enhancedError);
+        
+        // Fallback to regular keyword extraction
+        keywords = await extractKeywords(searchQuery);
+        filters = await convertKeywordsToFilters(keywords);
+        
+        console.log("AI extracted filters (fallback):", filters);
+        
+        // Navigate to global search results with standard data
+        navigate('/dashboard/search-results', {
+          state: {
+            query: searchQuery,
+            filters: filters,
+            searchMode: searchMode,
+            isGlobalSearch: true
+          }
+        });
+      }
     } catch (error) {
       console.error('Error in AI search:', error);
       setIsSearching(false);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Sparkles, Filter, FileText, ToggleRight } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
-import { extractKeywords, convertKeywordsToFilters } from '../services/searchService';
+import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters } from '../services/searchService';
 
 interface QuickSearchProps {
   onSearchClick?: () => void;
@@ -16,6 +16,8 @@ const QuickSearch: React.FC<QuickSearchProps> = ({ onSearchClick, className = ''
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async () => {
+    console.log('QuickSearch: Starting search with query:', searchQuery);
+    
     if (!searchQuery.trim()) {
       addToast({
         type: 'info',
@@ -28,28 +30,58 @@ const QuickSearch: React.FC<QuickSearchProps> = ({ onSearchClick, className = ''
     setIsSearching(true);
     
     try {
-      // Extract keywords using AI and convert to filters
-      const keywords = await extractKeywords(searchQuery);
-      const filters = await convertKeywordsToFilters(keywords);
+      // First try enhanced search with priority classification
+      let keywords, filters;
       
-      console.log("AI extracted filters for quick search:", filters);
-      
-      // Navigate directly to global search results
-      navigate('/dashboard/search-results', {
-        state: {
-          query: searchQuery,
-          filters: filters,
-          searchMode: 'external', // Default to external search for quick search
-          isGlobalSearch: true,
-          fromQuickSearch: true
-        }
-      });
+      try {
+        // Extract enhanced keywords with priority classification
+        keywords = await extractEnhancedKeywords(searchQuery);
+        
+        // Convert enhanced keywords to filters with must/should logic
+        filters = await convertEnhancedKeywordsToFilters(keywords);
+        
+        console.log("QuickSearch: Using enhanced search with filters:", filters);
+        
+        // Navigate to global search results with enhanced data
+        navigate('/dashboard/search-results', {
+          state: {
+            query: searchQuery,
+            filters: filters,
+            searchMode: 'external', // Default to external search for quick search
+            isGlobalSearch: true,
+            fromQuickSearch: true,
+            isEnhanced: true,
+            criticalRequirements: keywords.criticalRequirements,
+            preferredCriteria: keywords.preferredCriteria,
+            contextualHints: keywords.contextualHints
+          }
+        });
+      } catch (enhancedError) {
+        console.warn('QuickSearch: Enhanced search failed, using fallback:', enhancedError);
+        
+        // Fallback to regular keyword extraction
+        keywords = await extractKeywords(searchQuery);
+        filters = await convertKeywordsToFilters(keywords);
+        
+        console.log("QuickSearch: Using fallback search with filters:", filters);
+        
+        // Navigate to global search results with standard data
+        navigate('/dashboard/search-results', {
+          state: {
+            query: searchQuery,
+            filters: filters,
+            searchMode: 'external',
+            isGlobalSearch: true,
+            fromQuickSearch: true
+          }
+        });
+      }
       
       if (onSearchClick) {
         onSearchClick();
       }
     } catch (error) {
-      console.error('Error in quick search:', error);
+      console.error('QuickSearch: Search failed:', error);
       addToast({
         type: 'error',
         title: 'Search Failed',
@@ -149,7 +181,7 @@ const QuickSearch: React.FC<QuickSearchProps> = ({ onSearchClick, className = ''
       <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
         <p className="text-sm text-purple-700">
           <Sparkles className="w-4 h-4 inline mr-1" />
-          Search instantly across external talent databases. Results will appear immediately, and you'll be prompted to create a project when shortlisting candidates.
+          Search instantly with AI-enhanced filters across external talent databases. Results will appear immediately, and you'll be prompted to create a project when shortlisting candidates.
         </p>
       </div>
     </div>
