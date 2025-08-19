@@ -51,8 +51,11 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
 
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [aiGenerationStep, setAiGenerationStep] = useState<AIGenerationStep>({ step: 'input' });
+  const [aiRetryCount, setAiRetryCount] = useState(0);
+  const maxRetries = 2;
   const [aiInput, setAiInput] = useState({
     difficulty: 'mid' as 'entry' | 'mid' | 'senior' | 'lead',
+    questionCount: Math.floor((30) / 5), // Default based on 30 min interview
     focusAreas: '',
     additionalInstructions: ''
   });
@@ -130,14 +133,50 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
     }));
   };
 
+  const retryAIGeneration = () => {
+    if (aiRetryCount < maxRetries) {
+      setAiRetryCount(prev => prev + 1);
+      setAiGenerationStep({ step: 'input' });
+      generateAITemplate();
+    }
+  };
+
   const generateAITemplate = async () => {
     setAiGenerationStep({ step: 'generating', progress: 0, message: 'Analyzing job requirements...' });
+    
+    // Reset retry count if this is a fresh start (not a retry)
+    if (aiGenerationStep.step === 'input') {
+      setAiRetryCount(0);
+    }
 
     try {
       // Prepare the AI prompt
       const focusAreas = (aiInput.focusAreas || '').split(',').map(area => area.trim()).filter(Boolean);
+      
+      // Calculate time distribution based on duration and requested questions
+      const totalDuration = template.duration || 30;
+      const requestedQuestions = aiInput.questionCount || Math.floor(totalDuration / 5);
+      const timePerQuestion = Math.floor((totalDuration - 5) / requestedQuestions); // Reserve 5 mins for intro/outro
+      const minTimePerQuestion = Math.max(timePerQuestion, 2); // Minimum 2 minutes per question
+      
+      // Parse additional instructions for specific requirements
+      const hasQuestionsPerFocusArea = aiInput.additionalInstructions?.toLowerCase().includes('questions per focus area');
+      const questionsPerFocusAreaMatch = aiInput.additionalInstructions?.match(/(\d+)\s+questions?\s+per\s+focus\s+area/i);
+      const questionsPerFocusArea = questionsPerFocusAreaMatch ? parseInt(questionsPerFocusAreaMatch[1]) : null;
+      
+      let calculatedQuestionCount = requestedQuestions;
+      if (hasQuestionsPerFocusArea && questionsPerFocusArea && focusAreas.length > 0) {
+        calculatedQuestionCount = focusAreas.length * questionsPerFocusArea;
+      }
 
-      const systemPrompt = `You are an expert HR professional and interview designer. Create a comprehensive screening interview template that helps evaluate candidates effectively. Focus on practical, insightful questions that reveal candidate fit and capabilities.`;
+      const systemPrompt = `You are an expert HR professional and interview designer. Create a comprehensive screening interview template that helps evaluate candidates effectively. Focus on practical, insightful questions that reveal candidate fit and capabilities. 
+
+CRITICAL REQUIREMENTS:
+1. MUST generate EXACTLY ${calculatedQuestionCount} questions - this is mandatory
+2. Time allocation: Each question should take approximately ${minTimePerQuestion} minutes
+3. Total interview time must not exceed ${totalDuration} minutes
+4. Questions MUST be directly relevant to the specified focus areas
+5. Follow all additional instructions precisely`;
 
       const prompt = `Create a ${template.interviewType} interview template for the following position:
 
@@ -145,18 +184,32 @@ Job Title: ${jobTitle}
 Job Description: ${jobDescription}
 Job Requirements: ${Array.isArray(jobRequirements) ? jobRequirements.join(', ') : (jobRequirements || 'Not specified')}
 Experience Level: ${aiInput.difficulty}
-Interview Duration: ${template.duration} minutes
-${focusAreas.length > 0 ? `Focus Areas: ${focusAreas.join(', ')}` : ''}
-${aiInput.additionalInstructions ? `Additional Instructions: ${aiInput.additionalInstructions}` : ''}Create a structured interview template with:
-1. A descriptive name and overview
-2. Clear interview instructions for the interviewer
-3. ${Math.floor((template.duration || 30) / 5)} thoughtful questions that assess key competencies
-4. Each question should include type, category, expected time, and difficulty
-5. Preparation notes for the interviewer
-6. Evaluation criteria for consistent assessment
-7. Mix different question types: technical, behavioral, situational as appropriate
+Interview Duration: ${totalDuration} minutes
+Target Number of Questions: ${calculatedQuestionCount}
+Time per Question: Approximately ${minTimePerQuestion} minutes each
+${focusAreas.length > 0 ? `Focus Areas (MUST address ALL): ${focusAreas.join(', ')}` : ''}
+${aiInput.additionalInstructions ? `IMPORTANT Additional Instructions: ${aiInput.additionalInstructions}` : ''}
 
-Make it professional, practical, and tailored to this specific role.`;
+REQUIREMENTS:
+1. Generate EXACTLY ${calculatedQuestionCount} questions (no more, no less)
+2. Each question must take approximately ${minTimePerQuestion} minutes to answer
+3. ${focusAreas.length > 0 ? `Distribute questions across ALL focus areas: ${focusAreas.join(', ')}` : 'Cover key competencies for the role'}
+4. ${hasQuestionsPerFocusArea && questionsPerFocusArea ? `Generate ${questionsPerFocusArea} questions for EACH focus area` : ''}
+5. Ensure total time allocation does not exceed ${totalDuration} minutes
+6. Questions must be relevant to the ${template.interviewType} interview type
+7. Mix question types appropriately: technical, behavioral, situational
+8. Each question must have clear scoring criteria
+
+Template Structure Required:
+- Descriptive name and overview
+- Clear interviewer instructions including time management
+- EXACTLY ${calculatedQuestionCount} well-crafted questions
+- Each question with: type, category, time limit, difficulty, expected answer guidance, scoring criteria
+- Preparation notes for the interviewer
+- Overall evaluation criteria
+- Time management guidance to stay within ${totalDuration} minutes
+
+Make it professional, practical, and perfectly tailored to this specific role and requirements.`;
 
       setAiGenerationStep({ step: 'generating', progress: 30, message: 'Generating interview questions...' });
 
@@ -168,64 +221,126 @@ Make it professional, practical, and tailored to this specific role.`;
           properties: {
             name: { type: 'string', description: 'Template name' },
             description: { type: 'string', description: 'Template description' },
-            instructions: { type: 'string', description: 'Instructions for interviewer' },
+            instructions: { 
+              type: 'string', 
+              description: 'Instructions for interviewer including time management guidance' 
+            },
             questions: {
               type: 'array',
+              minItems: calculatedQuestionCount,
+              maxItems: calculatedQuestionCount,
+              description: `MUST contain exactly ${calculatedQuestionCount} questions`,
               items: {
                 type: 'object',
                 properties: {
-                  question: { type: 'string' },
+                  question: { type: 'string', description: 'The interview question' },
                   type: { 
                     type: 'string', 
-                    enum: ['technical', 'behavioral', 'cultural', 'situational', 'general'] 
+                    enum: ['technical', 'behavioral', 'cultural', 'situational', 'general'],
+                    description: 'Type of question'
                   },
-                  category: { type: 'string' },
+                  category: { 
+                    type: 'string', 
+                    description: 'Category/focus area this question addresses'
+                  },
                   difficulty: { 
                     type: 'string', 
-                    enum: ['easy', 'medium', 'hard'] 
+                    enum: ['easy', 'medium', 'hard'],
+                    description: 'Question difficulty level'
                   },
-                  timeLimit: { type: 'number', description: 'Time in minutes' },
-                  expectedAnswer: { type: 'string', description: 'Optional guidance on good answers' },
+                  timeLimit: { 
+                    type: 'number', 
+                    minimum: 2,
+                    maximum: Math.max(minTimePerQuestion + 2, 8),
+                    description: `Time allocated for this question in minutes (recommended: ${minTimePerQuestion})` 
+                  },
+                  expectedAnswer: { 
+                    type: 'string', 
+                    description: 'Guidance on what constitutes a good answer' 
+                  },
                   scoringCriteria: { 
                     type: 'array', 
                     items: { type: 'string' },
-                    description: 'Criteria for scoring this question'
+                    minItems: 3,
+                    maxItems: 5,
+                    description: '3-5 specific criteria for evaluating this question'
                   }
                 },
-                required: ['question', 'type', 'category', 'difficulty', 'timeLimit']
+                required: ['question', 'type', 'category', 'difficulty', 'timeLimit', 'expectedAnswer', 'scoringCriteria']
               }
             },
-            preparationNotes: { type: 'string', description: 'Notes to help interviewer prepare' },
+            preparationNotes: { 
+              type: 'string', 
+              description: 'Detailed preparation notes for the interviewer including time management tips' 
+            },
             evaluationCriteria: {
               type: 'array',
               items: { type: 'string' },
-              description: 'Overall criteria for evaluating candidate'
+              minItems: 4,
+              maxItems: 8,
+              description: 'Overall criteria for evaluating the candidate'
             }
           },
           required: ['name', 'description', 'questions', 'instructions', 'preparationNotes', 'evaluationCriteria']
         },
         model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
-        max_tokens: 3000,
-        temperature: 0.7
+        max_tokens: 4000, // Increased token limit for more questions
+        temperature: 0.6 // Slightly reduced for more consistent output
       });
 
       setAiGenerationStep({ step: 'generating', progress: 80, message: 'Finalizing template...' });
 
       if (response.data) {
         const aiData = response.data;
+        
+        // Validate that we got the right number of questions
+        const receivedQuestions = aiData.questions || [];
+        if (receivedQuestions.length !== calculatedQuestionCount) {
+          console.warn(`AI generated ${receivedQuestions.length} questions but ${calculatedQuestionCount} were requested`);
+          
+          // Pad with placeholder questions if too few, or trim if too many
+          while (receivedQuestions.length < calculatedQuestionCount) {
+            receivedQuestions.push({
+              question: `Additional question ${receivedQuestions.length + 1} - Please edit this question`,
+              type: 'general',
+              category: 'General',
+              difficulty: 'medium',
+              timeLimit: minTimePerQuestion,
+              expectedAnswer: 'Please provide expected answer guidance',
+              scoringCriteria: ['Clear response', 'Relevant content', 'Professional communication']
+            });
+          }
+          
+          if (receivedQuestions.length > calculatedQuestionCount) {
+            receivedQuestions.splice(calculatedQuestionCount);
+          }
+        }
+        
+        // Validate time allocation
+        const totalQuestionTime = receivedQuestions.reduce((sum: number, q: any) => sum + (q.timeLimit || 0), 0);
+        if (totalQuestionTime > totalDuration - 5) { // Reserve 5 mins for intro/outro
+          console.warn(`Total question time (${totalQuestionTime}min) exceeds available time (${totalDuration - 5}min)`);
+          // Adjust time limits proportionally
+          const adjustment = (totalDuration - 5) / totalQuestionTime;
+          receivedQuestions.forEach((q: any) => {
+            q.timeLimit = Math.max(2, Math.floor(q.timeLimit * adjustment));
+          });
+        }
+        
         setTemplate(prev => ({
           ...prev,
           name: aiData.name || `${jobTitle} - ${template.interviewType}`,
           description: aiData.description || '',
           instructions: aiData.instructions || '',
-          questions: (aiData.questions || []).map((q: any) => ({
+          questions: receivedQuestions.map((q: any, index: number) => ({
             question: q.question,
             type: q.type,
             category: q.category,
             difficulty: q.difficulty,
             timeLimit: q.timeLimit,
-            expectedAnswer: q.expectedAnswer,
-            scoringCriteria: q.scoringCriteria
+            expectedAnswer: q.expectedAnswer || '',
+            scoringCriteria: q.scoringCriteria || [],
+            order: index + 1
           })),
           preparationNotes: aiData.preparationNotes || '',
           evaluationCriteria: aiData.evaluationCriteria || []
@@ -234,7 +349,8 @@ Make it professional, practical, and tailored to this specific role.`;
         setAiGenerationStep({ step: 'review', progress: 100, message: 'Template generated successfully!' });
         setShowAIGenerator(false);
         
-        toast.success('AI Template Generated', 'Review and customize the generated template before saving.');
+        toast.success('AI Template Generated', 
+          `Generated ${receivedQuestions.length} questions for ${totalDuration}-minute interview. Review and customize as needed.`);
       } else {
         throw new Error('No data received from AI service');
       }
@@ -243,9 +359,24 @@ Make it professional, practical, and tailored to this specific role.`;
       console.error('AI generation error:', error);
       setAiGenerationStep({ 
         step: 'error', 
-        message: 'Failed to generate template. Please try again or create manually.' 
+        message: 'Failed to generate template. Please check your requirements and try again.' 
       });
-      toast.error('Generation Failed', 'Failed to generate AI template. Please try again.');
+      
+      // Provide specific error messages based on common issues
+      let errorMessage = 'Failed to generate template. ';
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage += 'The AI service timed out. Try reducing the number of questions or complexity.';
+        } else if (error.message.includes('rate limit')) {
+          errorMessage += 'Too many requests. Please wait a moment and try again.';
+        } else if (error.message.includes('validation')) {
+          errorMessage += 'Please check your focus areas and additional instructions.';
+        } else {
+          errorMessage += 'Please try again with simpler requirements.';
+        }
+      }
+      
+      toast.error('AI Generation Error', errorMessage);
     }
   };
 
@@ -261,10 +392,13 @@ Make it professional, practical, and tailored to this specific role.`;
     }
 
     try {
-      const questionsWithOrder = template.questions.map((q, index) => ({
-        ...q,
-        order: index + 1
-      }));
+      const questionsWithOrder = template.questions.map((q, index) => {
+        const { id, ...questionWithoutId } = q as any;
+        return {
+          ...questionWithoutId,
+          order: index + 1
+        };
+      });
 
       const templateData: CreateInterviewTemplateRequest = {
         name: template.name,
@@ -350,7 +484,28 @@ Make it professional, practical, and tailored to this specific role.`;
               
               {aiGenerationStep.step === 'input' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Interview Duration</label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          min="15"
+                          max="180"
+                          step="15"
+                          value={template.duration || 30}
+                          onChange={(e) => {
+                            const duration = parseInt(e.target.value) || 30;
+                            setTemplate(prev => ({ ...prev, duration }));
+                            // Auto-adjust question count based on duration
+                            const suggestedQuestions = Math.floor(duration / 5);
+                            setAiInput(prev => ({ ...prev, questionCount: suggestedQuestions }));
+                          }}
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                        <span className="text-sm text-gray-500">min</span>
+                      </div>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Experience Level</label>
                       <select
@@ -363,6 +518,20 @@ Make it professional, practical, and tailored to this specific role.`;
                         <option value="senior">Senior Level</option>
                         <option value="lead">Lead/Principal</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Number of Questions</label>
+                      <input
+                        type="number"
+                        min="3"
+                        max="20"
+                        value={aiInput.questionCount}
+                        onChange={(e) => setAiInput(prev => ({ ...prev, questionCount: parseInt(e.target.value) || 5 }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        ~{Math.floor((template.duration || 30) / (aiInput.questionCount || 5))} min per question
+                      </p>
                     </div>
                   </div>
                   
@@ -387,6 +556,40 @@ Make it professional, practical, and tailored to this specific role.`;
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
+
+                  {/* Generation Preview */}
+                  {aiInput.questionCount && template.duration && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-purple-800 mb-2">Generation Preview</h4>
+                      <div className="text-sm text-purple-700 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Interview Duration:</span>
+                          <span className="font-medium">{template.duration} minutes</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Questions to Generate:</span>
+                          <span className="font-medium">{aiInput.questionCount} questions</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Time per Question:</span>
+                          <span className="font-medium">~{Math.floor((template.duration - 5) / aiInput.questionCount)} minutes</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Experience Level:</span>
+                          <span className="font-medium capitalize">{aiInput.difficulty}</span>
+                        </div>
+                        {aiInput.focusAreas && (
+                          <div className="flex justify-between">
+                            <span>Focus Areas:</span>
+                            <span className="font-medium">{aiInput.focusAreas.split(',').length} areas</span>
+                          </div>
+                        )}
+                        <div className="text-xs text-purple-600 mt-2 pt-2 border-t border-purple-200">
+                          ⏱️ 5 minutes reserved for introduction and wrap-up
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="flex space-x-3">
                     <button
@@ -426,13 +629,26 @@ Make it professional, practical, and tailored to this specific role.`;
                 <div className="text-center py-8">
                   <div className="text-red-600 mb-4">
                     <p>{aiGenerationStep.message}</p>
+                    {aiRetryCount > 0 && (
+                      <p className="text-sm mt-2">Attempt {aiRetryCount + 1} of {maxRetries + 1}</p>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setAiGenerationStep({ step: 'input' })}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Try Again
-                  </button>
+                  <div className="space-x-3">
+                    <button
+                      onClick={() => setAiGenerationStep({ step: 'input' })}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      Modify Requirements
+                    </button>
+                    {aiRetryCount < maxRetries && (
+                      <button
+                        onClick={retryAIGeneration}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Retry Generation
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
