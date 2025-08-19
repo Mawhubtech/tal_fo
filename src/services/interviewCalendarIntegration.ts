@@ -30,17 +30,61 @@ export class InterviewCalendarIntegration {
     
     const title = `${interview.type} Interview - ${candidateName} (${jobTitle})`;
     
-    // Build description
+    // Build description with length constraint (max 2000 characters for calendar API)
     const descriptionParts = [
       `Type: ${interview.type}`,
       `Mode: ${interview.mode}`,
       `Stage: ${interview.stage}`,
     ];
     
-    if (interview.agenda) descriptionParts.push(`Agenda: ${interview.agenda}`);
-    if (interview.notes) descriptionParts.push(`Notes: ${interview.notes}`);
-    if (interview.location) descriptionParts.push(`Location: ${interview.location}`);
-    if (interview.meetingLink) descriptionParts.push(`Meeting Link: ${interview.meetingLink}`);
+    // Calculate remaining space for agenda and other fields
+    const baseDescription = descriptionParts.join('\n');
+    const MAX_DESCRIPTION_LENGTH = 2000;
+    let remainingSpace = MAX_DESCRIPTION_LENGTH - baseDescription.length;
+    
+    // Add other fields first as they're typically shorter
+    if (interview.location) {
+      const locationText = `\nLocation: ${interview.location}`;
+      if (remainingSpace > locationText.length) {
+        descriptionParts.push(`Location: ${interview.location}`);
+        remainingSpace -= locationText.length;
+      }
+    }
+    
+    if (interview.meetingLink) {
+      const linkText = `\nMeeting Link: ${interview.meetingLink}`;
+      if (remainingSpace > linkText.length) {
+        descriptionParts.push(`Meeting Link: ${interview.meetingLink}`);
+        remainingSpace -= linkText.length;
+      }
+    }
+    
+    // Add notes if there's space
+    if (interview.notes) {
+      const notesText = `\nNotes: ${interview.notes}`;
+      if (remainingSpace > notesText.length) {
+        descriptionParts.push(`Notes: ${interview.notes}`);
+        remainingSpace -= notesText.length;
+      } else if (remainingSpace > 20) { // Minimum space for truncated notes
+        const truncatedNotes = interview.notes.substring(0, remainingSpace - 15) + '...';
+        descriptionParts.push(`Notes: ${truncatedNotes}`);
+        remainingSpace = 0;
+      }
+    }
+    
+    // Add agenda last as it's often the longest field
+    if (interview.agenda && remainingSpace > 20) {
+      const agendaPrefix = '\nAgenda: ';
+      const availableForAgenda = remainingSpace - agendaPrefix.length;
+      
+      if (interview.agenda.length <= availableForAgenda) {
+        descriptionParts.push(`Agenda: ${interview.agenda}`);
+      } else {
+        // Truncate agenda to fit within character limit
+        const truncatedAgenda = interview.agenda.substring(0, availableForAgenda - 3) + '...';
+        descriptionParts.push(`Agenda: ${truncatedAgenda}`);
+      }
+    }
     
     const description = descriptionParts.join('\n');
     

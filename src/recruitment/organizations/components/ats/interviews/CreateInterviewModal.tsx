@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Users, MapPin, Video, Phone, User } from 'lucide-react';
+import { X, Calendar, Clock, Users, MapPin, Video, Phone, User, FileText } from 'lucide-react';
 import { useCreateInterview } from '../../../../../hooks/useInterviews';
+import { useInterviewTemplates } from '../../../../../hooks/useInterviewTemplates';
 import type { 
   CreateInterviewRequest, 
   InterviewType, 
@@ -9,11 +10,13 @@ import type {
   ParticipantRole,
   CreateInterviewParticipant 
 } from '../../../../../types/interview.types';
+import type { InterviewTemplate } from '../../../../../types/interviewTemplate.types';
 
 interface CreateInterviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   jobApplicationId?: string;
+  jobId?: string;
   onSuccess: () => void;
 }
 
@@ -58,10 +61,12 @@ export const CreateInterviewModal: React.FC<CreateInterviewModalProps> = ({
   isOpen,
   onClose,
   jobApplicationId,
+  jobId,
   onSuccess,
 }) => {
   const [formData, setFormData] = useState<Partial<CreateInterviewRequest>>({
     jobApplicationId: jobApplicationId || '',
+    templateId: '',
     type: 'Phone Screen' as InterviewType,
     mode: 'Video Call' as InterviewMode,
     stage: 'Initial Screening' as InterviewStage,
@@ -78,12 +83,20 @@ export const CreateInterviewModal: React.FC<CreateInterviewModalProps> = ({
   });
 
   const createInterviewMutation = useCreateInterview();
+  
+  // Fetch templates for this job
+  const { data: templatesResponse } = useInterviewTemplates({ 
+    jobId: jobId || undefined
+  });
+  
+  const availableTemplates = Array.isArray(templatesResponse) ? templatesResponse : templatesResponse?.templates || [];
 
   useEffect(() => {
     if (isOpen) {
       // Reset form when modal opens
       setFormData({
         jobApplicationId: jobApplicationId || '',
+        templateId: '',
         type: 'Phone Screen' as InterviewType,
         mode: 'Video Call' as InterviewMode,
         stage: 'Initial Screening' as InterviewStage,
@@ -163,6 +176,44 @@ export const CreateInterviewModal: React.FC<CreateInterviewModalProps> = ({
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 required
               />
+            </div>
+          )}
+
+          {/* Interview Template Selection */}
+          {availableTemplates.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Interview Template (Optional)
+              </label>
+              <select
+                value={formData.templateId || ''}
+                onChange={(e) => {
+                  const templateId = e.target.value;
+                  const selectedTemplate = availableTemplates.find(t => t.id === templateId);
+                  
+                  handleInputChange('templateId', templateId || undefined);
+                  
+                  // Auto-populate fields based on template
+                  if (selectedTemplate) {
+                    handleInputChange('type', selectedTemplate.interviewType);
+                    handleInputChange('durationMinutes', selectedTemplate.duration);
+                  }
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">No template - Create custom interview</option>
+                {availableTemplates.map(template => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} ({template.interviewType} • {template.duration}min • {template.questions.length} questions)
+                  </option>
+                ))}
+              </select>
+              {formData.templateId && (
+                <p className="text-sm text-gray-600 mt-1">
+                  <FileText className="w-4 h-4 inline mr-1" />
+                  Using template will pre-populate interview type and duration
+                </p>
+              )}
             </div>
           )}
 

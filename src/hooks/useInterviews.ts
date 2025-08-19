@@ -210,6 +210,34 @@ export const useCancelInterview = () => {
 };
 
 /**
+ * Hook for deleting interviews
+ */
+export const useDeleteInterview = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => InterviewService.deleteInterview(id),
+    onSuccess: async (_, interviewId) => {
+      // Remove the interview from cache
+      queryClient.removeQueries({ queryKey: INTERVIEW_QUERY_KEYS.detail(interviewId) });
+      
+      // Invalidate lists to reflect changes
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.upcoming() });
+      
+      // Remove corresponding calendar event
+      try {
+        await InterviewCalendarIntegration.deleteCalendarEventForInterview(interviewId);
+        queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
+      } catch (error) {
+        console.warn('Failed to delete calendar event for interview:', error);
+      }
+    },
+  });
+};
+
+/**
  * Hook for starting interviews
  */
 export const useStartInterview = () => {

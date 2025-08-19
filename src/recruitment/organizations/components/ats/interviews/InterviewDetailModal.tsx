@@ -4,14 +4,17 @@ import 'react-quill/dist/quill.snow.css';
 import { 
   X, Calendar, Clock, MapPin, Video, Phone, Users, User, ExternalLink, 
   Mail, MessageSquare, FileText, Star, Edit, Save, XCircle, CheckCircle,
-  AlertCircle, Send, Plus, Minus, Settings
+  AlertCircle, Send, Plus, Minus, Settings, Play, Trash2
 } from 'lucide-react';
 import type { Interview, InterviewFeedback } from '../../../../../types/interview.types';
-import { useUpdateInterview } from '../../../../../hooks/useInterviews';
+import type { InterviewTemplate } from '../../../../../types/interviewTemplate.types';
+import { useUpdateInterview, useDeleteInterview } from '../../../../../hooks/useInterviews';
 import { useEmailService } from '../../../../../hooks/useEmailService';
 import { useEmailTemplates, type EmailTemplate } from '../../../../../hooks/useEmailManagement';
+import { useInterviewTemplates } from '../../../../../hooks/useInterviewTemplates';
 import { toast } from '../../../../../components/ToastContainer';
 import { EditInterviewForm } from './EditInterviewForm';
+import { InterviewConductSidepanel } from './InterviewConductSidepanel';
 
 interface InterviewDetailModalProps {
   interview: Interview | null;
@@ -34,6 +37,9 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Interview>>({});
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showConductPanel, setShowConductPanel] = useState(false);
+  const [interviewTemplate, setInterviewTemplate] = useState<InterviewTemplate | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [notes, setNotes] = useState('');
   const [emailForm, setEmailForm] = useState({
     type: '', // Will be set when templates load
@@ -45,6 +51,10 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
 
   // Use the mutation hook for automatic query invalidation
   const updateInterviewMutation = useUpdateInterview();
+  const deleteInterviewMutation = useDeleteInterview();
+  
+  // Fetch interview templates to check if this interview has an associated template
+  const { data: templates } = useInterviewTemplates();
   
   // Use email service for Gmail integration - only when email tab is active
   const { 
@@ -108,6 +118,21 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
       });
       setNotes(interview.notes || '');
       
+      // Try to find associated interview template
+      if (interview.template) {
+        setInterviewTemplate(interview.template);
+      } else if (templates?.templates && interview.jobApplication?.jobId) {
+        // Fallback: try to find templates for this job if not directly associated
+        const jobTemplates = templates.templates.filter(t => t.jobId === interview.jobApplication.jobId);
+        if (jobTemplates.length > 0) {
+          // Find template that matches interview type, or use the first one
+          const matchingTemplate = jobTemplates.find(t => 
+            t.interviewType.toLowerCase() === interview.type?.toLowerCase()
+          ) || jobTemplates[0];
+          setInterviewTemplate(matchingTemplate);
+        }
+      }
+      
       // Set default email recipients
       const recipients = [interview.jobApplication?.candidate?.email || ''];
       interview.participants?.forEach(p => {
@@ -135,7 +160,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
         }
       }
     }
-  }, [interview, interview?.updatedAt, emailTemplates]); // Add emailTemplates to dependency
+  }, [interview, interview?.updatedAt, emailTemplates, templates]); // Add emailTemplates and templates to dependency
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -213,6 +238,20 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     } catch (error) {
       console.error('Failed to send email:', error);
       toast.error('Email Failed', 'Failed to send email. Please check your email configuration.');
+    }
+  };
+
+  const handleDeleteInterview = async () => {
+    if (!interview) return;
+    
+    try {
+      await deleteInterviewMutation.mutateAsync(interview.id);
+      setShowDeleteConfirm(false);
+      onClose(); // Close the modal after successful deletion
+      toast.success('Interview Deleted', 'Interview has been deleted successfully.');
+    } catch (error) {
+      console.error('Failed to delete interview:', error);
+      toast.error('Delete Failed', 'Failed to delete interview. Please try again.');
     }
   };
 
@@ -354,7 +393,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
       
-      <div className="absolute right-0 top-0 h-full w-full max-w-4xl bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto">
+      <div className="absolute inset-0 bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto">
         {/* Header */}
         <div className="bg-purple-600 text-white p-6 sticky top-0 z-10">
           <div className="flex items-center justify-between">
@@ -392,6 +431,16 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
             </div>
             
             <div className="flex items-center space-x-2">
+              {(interview.status === 'Scheduled' || interview.status === 'In Progress') && (
+                <button
+                  onClick={() => setShowConductPanel(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Conduct Interview
+                </button>
+              )}
+              
               <button
                 onClick={() => setShowEditForm(true)}
                 className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors flex items-center"
@@ -399,6 +448,17 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Interview
               </button>
+              
+              {/* Only show delete button for scheduled interviews */}
+              {interview.status === 'Scheduled' && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -429,13 +489,13 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-8">
           {activeTab === 'details' && (
-            <div className="space-y-6">
+            <div className="max-w-7xl mx-auto space-y-6">
               {/* Basic Information */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Interview Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                     <p className="text-gray-900">{interview.type}</p>
@@ -476,7 +536,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
               </div>
 
               {/* Participants */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Participants</h3>
                 <div className="space-y-3">
                   {interview.participants?.map((participant, index) => {
@@ -514,6 +574,28 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* Interview Content in Two Columns */}
+              {(interview.agenda || interview.preparationNotes) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {interview.agenda && (
+                    <div className="bg-purple-50 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold mb-4">Interview Agenda</h3>
+                      <div className="text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto bg-white rounded-lg p-4 border">
+                        {interview.agenda}
+                      </div>
+                    </div>
+                  )}
+                  {interview.preparationNotes && (
+                    <div className="bg-yellow-50 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold mb-4">Preparation Notes</h3>
+                      <div className="text-gray-700 whitespace-pre-wrap bg-white rounded-lg p-4 border">
+                        {interview.preparationNotes}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1066,6 +1148,80 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
             // No need for manual refetch - query invalidation handles this automatically
           }}
         />
+      )}
+
+      {/* Interview Conduct Sidepanel */}
+      {showConductPanel && interview && (
+        <InterviewConductSidepanel
+          interview={interview}
+          template={interviewTemplate}
+          isOpen={showConductPanel}
+          onClose={() => setShowConductPanel(false)}
+          onSaveProgress={async (progress) => {
+            // Save interview progress to backend
+            console.log('Saving interview progress:', progress);
+            // You can implement this API call later
+          }}
+          onSubmitEvaluation={async (evaluation) => {
+            // Submit interview evaluation to backend
+            console.log('Submitting interview evaluation:', evaluation);
+            // You can implement this API call later
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-full">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Interview</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete this interview with{' '}
+                <span className="font-medium">{interview?.jobApplication?.candidate?.fullName}</span>?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                All interview data, participants, and related information will be permanently deleted.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={deleteInterviewMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteInterview}
+                disabled={deleteInterviewMutation.isPending}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center disabled:opacity-50"
+              >
+                {deleteInterviewMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Interview
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

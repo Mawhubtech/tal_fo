@@ -10,6 +10,7 @@ import {
 } from '../../../../../types/interview.types';
 import { InterviewTemplate } from '../../../../../types/interviewTemplate.types';
 import { useCreateInterview } from '../../../../../hooks/useInterviews';
+import { useInterviewTemplates } from '../../../../../hooks/useInterviewTemplates';
 import { jobApplicationApiService } from '../../../../../services/jobApplicationApiService';
 
 interface ScheduleInterviewFormProps {
@@ -93,6 +94,14 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showHiringTeamDropdown, setShowHiringTeamDropdown] = useState(true);
+  const [internalSelectedTemplate, setInternalSelectedTemplate] = useState<InterviewTemplate | null>(selectedTemplate || null);
+
+  // Fetch templates for this job
+  const { data: templatesData } = useInterviewTemplates({ 
+    jobId: jobId 
+  });
+  
+  const availableTemplates = Array.isArray(templatesData) ? templatesData : templatesData?.templates || [];
 
   // Fetch job applications for this job
   const { data: jobApplicationsData, isLoading: loadingApplications } = useQuery({
@@ -123,16 +132,17 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
 
   // Initialize form with template data if provided
   useEffect(() => {
-    if (selectedTemplate) {
+    const templateToUse = internalSelectedTemplate || selectedTemplate;
+    if (templateToUse) {
       setFormData(prev => ({
         ...prev,
-        type: selectedTemplate.interviewType as InterviewType,
-        durationMinutes: selectedTemplate.duration,
-        preparationNotes: selectedTemplate.preparationNotes || '',
-        agenda: createAgendaFromTemplate(selectedTemplate),
+        type: templateToUse.interviewType as InterviewType,
+        durationMinutes: templateToUse.duration,
+        preparationNotes: templateToUse.preparationNotes || '',
+        agenda: createAgendaFromTemplate(templateToUse),
       }));
     }
-  }, [selectedTemplate]);
+  }, [internalSelectedTemplate, selectedTemplate]);
 
   const createAgendaFromTemplate = (template: InterviewTemplate): string => {
     let agenda = '';
@@ -260,8 +270,10 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
     e.preventDefault();
     if (validateForm()) {
       // Transform manual participants to API format
+      const templateToUse = internalSelectedTemplate || selectedTemplate;
       const apiFormData: CreateInterviewRequest = {
         ...formData,
+        templateId: templateToUse?.id,
         participants: formData.participants.map(p => ({
           name: p.name,
           email: p.email,
@@ -317,25 +329,25 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
           )}
 
           {/* Template Information */}
-          {selectedTemplate && (
+          {(internalSelectedTemplate || selectedTemplate) && (
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-2">
                 <FileText className="w-5 h-5 text-purple-600" />
-                <h3 className="text-lg font-medium text-purple-900">Using Template: {selectedTemplate.name}</h3>
+                <h3 className="text-lg font-medium text-purple-900">Using Template: {(internalSelectedTemplate || selectedTemplate)?.name}</h3>
               </div>
-              <p className="text-sm text-purple-700 mb-3">{selectedTemplate.description}</p>
+              <p className="text-sm text-purple-700 mb-3">{(internalSelectedTemplate || selectedTemplate)?.description}</p>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="font-medium text-purple-800">Type:</span>
-                  <span className="text-purple-700 ml-1">{selectedTemplate.interviewType}</span>
+                  <span className="text-purple-700 ml-1">{(internalSelectedTemplate || selectedTemplate)?.interviewType}</span>
                 </div>
                 <div>
                   <span className="font-medium text-purple-800">Duration:</span>
-                  <span className="text-purple-700 ml-1">{selectedTemplate.duration} minutes</span>
+                  <span className="text-purple-700 ml-1">{(internalSelectedTemplate || selectedTemplate)?.duration} minutes</span>
                 </div>
                 <div>
                   <span className="font-medium text-purple-800">Questions:</span>
-                  <span className="text-purple-700 ml-1">{selectedTemplate.questions.length}</span>
+                  <span className="text-purple-700 ml-1">{(internalSelectedTemplate || selectedTemplate)?.questions.length}</span>
                 </div>
               </div>
             </div>
@@ -366,6 +378,49 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
               )}
             </div>
 
+            {/* Template Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Interview Template (Optional)
+              </label>
+              <select
+                value={internalSelectedTemplate?.id || ''}
+                onChange={(e) => {
+                  const templateId = e.target.value;
+                  const template = availableTemplates.find(t => t.id === templateId);
+                  setInternalSelectedTemplate(template || null);
+                  
+                  // Auto-populate fields based on template
+                  if (template) {
+                    setFormData(prev => ({
+                      ...prev,
+                      type: template.interviewType as InterviewType,
+                      durationMinutes: template.duration,
+                      preparationNotes: template.preparationNotes || '',
+                      agenda: createAgendaFromTemplate(template),
+                    }));
+                  }
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="">No template - Create custom interview</option>
+                {availableTemplates.map(template => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} ({template.interviewType} • {template.duration}min • {template.questions.length} questions)
+                  </option>
+                ))}
+              </select>
+              {internalSelectedTemplate && (
+                <p className="text-sm text-gray-600 mt-1">
+                  <FileText className="w-4 h-4 inline mr-1" />
+                  Using template will auto-populate interview details
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Interview Type and Mode */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Interview Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -50,6 +50,14 @@ export class InterviewService {
   }
 
   /**
+   * Delete an interview
+   */
+  static async deleteInterview(id: string): Promise<{ message: string }> {
+    const response = await apiClient.delete(`${this.BASE_PATH}/${id}`);
+    return response.data;
+  }
+
+  /**
    * Reschedule an interview
    */
   static async rescheduleInterview(

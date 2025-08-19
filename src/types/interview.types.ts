@@ -1,3 +1,5 @@
+import { InterviewTemplate } from './interviewTemplate.types';
+
 // Interview Types for Frontend
 export interface User {
   id: string;
@@ -192,6 +194,8 @@ export interface Interview {
   jobApplication: JobApplication;
   scheduledBy: string;
   scheduler: User;
+  templateId?: string;
+  template?: InterviewTemplate; // Now properly typed
   type: InterviewType;
   mode: InterviewMode;
   status: InterviewStatus;
@@ -232,6 +236,7 @@ export interface CreateInterviewParticipant {
 
 export interface CreateInterviewRequest {
   jobApplicationId: string;
+  templateId?: string;
   type: InterviewType;
   mode: InterviewMode;
   stage: InterviewStage;
