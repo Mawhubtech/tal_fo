@@ -5,7 +5,7 @@ import {
   User, Calendar, MapPin, Video, Phone, Users, Flag, Plus
 } from 'lucide-react';
 import { Interview, InterviewFeedback, InterviewStatus } from '../../../../../types/interview.types';
-import { InterviewTemplate, InterviewQuestion } from '../../../../../types/interviewTemplate.types';
+import { InterviewTemplate, InterviewQuestion, QuestionFormat } from '../../../../../types/interviewTemplate.types';
 import { useUpdateInterview } from '../../../../../hooks/useInterviews';
 import { toast } from '../../../../../components/ToastContainer';
 
@@ -623,6 +623,15 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
                             <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
                               {currentQuestion.type}
                             </span>
+                            {currentQuestion.format && (
+                              <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded">
+                                {currentQuestion.format === QuestionFormat.YES_NO_WITH_JUSTIFICATION ? 'Yes/No + Justification' :
+                                 currentQuestion.format === QuestionFormat.RATING_WITH_JUSTIFICATION ? 'Rating + Justification' :
+                                 currentQuestion.format === QuestionFormat.SHORT_DESCRIPTION ? 'Short Description' :
+                                 currentQuestion.format === QuestionFormat.LONG_DESCRIPTION ? 'Long Description' :
+                                 'Unknown Format'}
+                              </span>
+                            )}
                             <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded">
                               {currentQuestion.category}
                             </span>
@@ -638,6 +647,50 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
                           <h3 className="text-xl font-semibold text-gray-900 mb-3">
                             {currentQuestion.question}
                           </h3>
+
+                          {/* Format-specific guidance */}
+                          {currentQuestion.format === QuestionFormat.YES_NO_WITH_JUSTIFICATION && (
+                            <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 mb-3">
+                              <h4 className="text-sm font-medium text-pink-900 mb-1">Response Format</h4>
+                              <p className="text-sm text-pink-800">
+                                Expecting a Yes/No answer{currentQuestion.requiresJustification && ' followed by justification'}
+                              </p>
+                            </div>
+                          )}
+
+                          {currentQuestion.format === QuestionFormat.RATING_WITH_JUSTIFICATION && currentQuestion.ratingScale && (
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-3">
+                              <h4 className="text-sm font-medium text-indigo-900 mb-1">Response Format</h4>
+                              <p className="text-sm text-indigo-800">
+                                Rating scale: {currentQuestion.ratingScale.min} - {currentQuestion.ratingScale.max}
+                                {currentQuestion.ratingScale.labels && Object.keys(currentQuestion.ratingScale.labels).length > 0 && (
+                                  <span className="block mt-1">
+                                    ({Object.entries(currentQuestion.ratingScale.labels).map(([key, value]) => `${key}: ${value}`).join(', ')})
+                                  </span>
+                                )}
+                                {currentQuestion.requiresJustification && (
+                                  <span className="block mt-1 font-medium">Justification required</span>
+                                )}
+                              </p>
+                            </div>
+                          )}
+
+                          {(currentQuestion.format === QuestionFormat.SHORT_DESCRIPTION || currentQuestion.format === QuestionFormat.LONG_DESCRIPTION) && currentQuestion.maxCharacters && (
+                            <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 mb-3">
+                              <h4 className="text-sm font-medium text-cyan-900 mb-1">Response Format</h4>
+                              <p className="text-sm text-cyan-800">
+                                {currentQuestion.format === QuestionFormat.SHORT_DESCRIPTION ? 'Brief' : 'Detailed'} description 
+                                (max {currentQuestion.maxCharacters} characters)
+                              </p>
+                            </div>
+                          )}
+
+                          {currentQuestion.section && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+                              <h4 className="text-sm font-medium text-gray-900 mb-1">Section</h4>
+                              <p className="text-sm text-gray-700">{currentQuestion.section}</p>
+                            </div>
+                          )}
                           
                           {currentQuestion.expectedAnswer && (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">

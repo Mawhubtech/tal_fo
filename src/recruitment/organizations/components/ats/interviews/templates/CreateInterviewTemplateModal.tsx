@@ -3,7 +3,7 @@ import {
   X, Plus, Trash2, Edit2, Copy, Sparkles, Clock, FileText, 
   Users, Save, ArrowUp, ChevronUp, ChevronDown 
 } from 'lucide-react';
-import { InterviewTemplate, InterviewQuestion, CreateInterviewTemplateRequest } from '../../../../../../types/interviewTemplate.types';
+import { InterviewTemplate, InterviewQuestion, CreateInterviewTemplateRequest, QuestionFormat } from '../../../../../../types/interviewTemplate.types';
 import { useCreateInterviewTemplate, useGenerateAIInterviewTemplate, useUpdateInterviewTemplate } from '../../../../../../hooks/useInterviewTemplates';
 import { aiService } from '../../../../../../services/aiService';
 import { toast } from '../../../../../../components/ToastContainer';
@@ -64,7 +64,14 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
     difficulty: 'mid' as 'entry' | 'mid' | 'senior' | 'lead',
     questionCount: Math.floor((30) / 5), // Default based on 30 min interview
     focusAreas: '',
-    additionalInstructions: ''
+    additionalInstructions: '',
+    formatStrategy: 'balanced' as 'balanced' | 'rating_focused' | 'description_focused' | 'quick_assessment' | 'custom',
+    customFormatDistribution: {
+      yes_no_with_justification: 15,
+      rating_with_justification: 35,
+      short_description: 30,
+      long_description: 20
+    }
   });
 
   const createTemplateMutation = useCreateInterviewTemplate();
@@ -109,9 +116,13 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
     const newQuestion: Omit<InterviewQuestion, 'id' | 'order'> = {
       question: '',
       type: 'general',
+      format: QuestionFormat.SHORT_DESCRIPTION, // Default to short description
       category: 'General',
+      section: '',
       difficulty: 'medium',
-      timeLimit: 5
+      timeLimit: 5,
+      requiresJustification: false,
+      maxCharacters: 500
     };
 
     setTemplate(prev => ({
@@ -123,9 +134,45 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
   const handleUpdateQuestion = (index: number, updates: Partial<InterviewQuestion>) => {
     setTemplate(prev => ({
       ...prev,
-      questions: prev.questions?.map((q, i) => 
-        i === index ? { ...q, ...updates } : q
-      ) || []
+      questions: prev.questions?.map((q, i) => {
+        if (i === index) {
+          const updatedQuestion = { ...q, ...updates };
+          
+          // Auto-set requiresJustification based on format when format is being updated
+          if (updates.format) {
+            const autoRequiresJustification = 
+              updates.format === QuestionFormat.YES_NO_WITH_JUSTIFICATION ||
+              updates.format === QuestionFormat.RATING_WITH_JUSTIFICATION;
+            
+            updatedQuestion.requiresJustification = autoRequiresJustification;
+            
+            // Also set appropriate defaults for rating scale if it's a rating question
+            if (updates.format === QuestionFormat.RATING_WITH_JUSTIFICATION && !updatedQuestion.ratingScale) {
+              updatedQuestion.ratingScale = {
+                min: 1,
+                max: 5,
+                labels: {
+                  1: 'Poor',
+                  2: 'Fair',
+                  3: 'Good',
+                  4: 'Very Good',
+                  5: 'Excellent'
+                }
+              };
+            }
+            
+            // Set appropriate character limits for description questions
+            if (updates.format === QuestionFormat.SHORT_DESCRIPTION && !updatedQuestion.maxCharacters) {
+              updatedQuestion.maxCharacters = 500;
+            } else if (updates.format === QuestionFormat.LONG_DESCRIPTION && !updatedQuestion.maxCharacters) {
+              updatedQuestion.maxCharacters = 1500;
+            }
+          }
+          
+          return updatedQuestion;
+        }
+        return q;
+      }) || []
     }));
   };
 
@@ -239,19 +286,84 @@ REQUIREMENTS:
 4. ${hasQuestionsPerFocusArea && questionsPerFocusArea ? `Generate ${questionsPerFocusArea} questions for EACH focus area` : ''}
 5. Ensure total time allocation does not exceed ${totalDuration} minutes
 6. Questions must be relevant to the ${template.interviewType} interview type
-7. Mix question types appropriately: technical, behavioral, situational
-8. Each question must have clear scoring criteria
+7. Mix question types appropriately: technical, behavioral, situational, cultural
+
+8. **QUESTION FORMAT STRATEGY**: ${aiInput.formatStrategy === 'custom' ? 
+  `Use this CUSTOM format distribution:
+   - yes_no_with_justification: ${aiInput.customFormatDistribution.yes_no_with_justification}%
+   - rating_with_justification: ${aiInput.customFormatDistribution.rating_with_justification}%
+   - short_description: ${aiInput.customFormatDistribution.short_description}%
+   - long_description: ${aiInput.customFormatDistribution.long_description}%` :
+  aiInput.formatStrategy === 'rating_focused' ? 
+  `Use RATING-FOCUSED distribution for skill assessments:
+   - rating_with_justification: 60% (comprehensive skill evaluations)
+   - short_description: 25% (quick explanations and examples)
+   - yes_no_with_justification: 10% (experience confirmations)
+   - long_description: 5% (detailed scenarios when needed)` :
+  aiInput.formatStrategy === 'description_focused' ?
+  `Use DESCRIPTION-FOCUSED distribution for comprehensive evaluation:
+   - long_description: 50% (detailed scenarios and experiences)
+   - short_description: 30% (concise explanations and summaries)
+   - rating_with_justification: 15% (key skill assessments)
+   - yes_no_with_justification: 5% (clear confirmations)` :
+  aiInput.formatStrategy === 'quick_assessment' ?
+  `Use QUICK ASSESSMENT distribution for efficient evaluation:
+   - short_description: 45% (concise answers and examples)
+   - yes_no_with_justification: 30% (rapid capability checks)
+   - rating_with_justification: 20% (key skill ratings)
+   - long_description: 5% (critical detailed responses only)` :
+  `Use BALANCED format distribution for optimal evaluation:
+   ${template.interviewType === 'Technical' ? `
+   - rating_with_justification: 40% (technical skill assessments with 1-5 scales)
+   - long_description: 30% (complex problem-solving explanations)  
+   - short_description: 20% (quick technical concept explanations)
+   - yes_no_with_justification: 10% (binary technical knowledge checks)` : 
+   template.interviewType === 'Behavioral' ? `
+   - long_description: 50% (detailed behavioral scenarios and experiences)
+   - rating_with_justification: 30% (soft skill self-assessments with 1-5 scales)
+   - short_description: 15% (quick value and preference explanations)
+   - yes_no_with_justification: 5% (clear preference confirmations)` :
+   template.interviewType === 'Culture Fit' ? `
+   - short_description: 40% (values, preferences, and cultural alignment)
+   - rating_with_justification: 35% (cultural value assessments with 1-5 scales)
+   - yes_no_with_justification: 20% (clear cultural fit indicators)
+   - long_description: 5% (deep cultural scenario responses)` :
+   `
+   - rating_with_justification: 35% (skill and experience assessments)
+   - short_description: 30% (concise explanations and examples)
+   - long_description: 25% (detailed scenarios and experiences)
+   - yes_no_with_justification: 10% (clear capability confirmations)`}}`}
+
+   **Format Application Guidelines:**
+
+9. **SECTION ORGANIZATION**: Group questions into 3-4 logical sections based on:
+   ${template.interviewType === 'Technical' ? '["Core Technical Skills", "Problem Solving & Architecture", "Tools & Technologies", "Team & Communication"]' :
+   template.interviewType === 'Behavioral' ? '["Leadership & Initiative", "Problem Solving & Decision Making", "Team Collaboration", "Adaptability & Growth"]' :
+   template.interviewType === 'Culture Fit' ? '["Values & Motivation", "Work Style & Preferences", "Team Dynamics", "Growth & Development"]' :
+   '["Experience & Background", "Skills & Competencies", "Problem Solving", "Team & Communication"]'}
+
+10. **FORMAT-SPECIFIC REQUIREMENTS**:
+    - **rating_with_justification**: Use 1-5 scales with meaningful labels (e.g., 1: Beginner, 3: Competent, 5: Expert). ALWAYS set requiresJustification=true.
+    - **yes_no_with_justification**: Binary questions requiring explanation of reasoning. ALWAYS set requiresJustification=true.
+    - **short_description**: 300-600 characters for concise but complete answers. Set requiresJustification=false.
+    - **long_description**: 1200-2000 characters for comprehensive explanations. Set requiresJustification=false.
+    - **CRITICAL**: Questions with "_with_justification" formats MUST have requiresJustification=true
+    - **All formats**: Include detailed scoring criteria specific to the format
+
+11. Each question must have clear, format-appropriate scoring criteria
 
 Template Structure Required:
-- Descriptive name and overview
-- Clear interviewer instructions including time management
-- EXACTLY ${calculatedQuestionCount} well-crafted questions
-- Each question with: type, category, time limit, difficulty, expected answer guidance, scoring criteria
-- Preparation notes for the interviewer
-- Overall evaluation criteria
-- Time management guidance to stay within ${totalDuration} minutes
+- Descriptive name reflecting the role and interview type
+- Comprehensive overview explaining the interview approach
+- Clear interviewer instructions with timing and format guidance
+- EXACTLY ${calculatedQuestionCount} strategically formatted questions across ${template.interviewType === 'Technical' ? '3-4' : '3-4'} sections
+- Each question with: type, format, category, section, time limit, difficulty, expected answer guidance, scoring criteria
+- Format-specific configurations (rating scales, character limits, justification requirements)
+- Detailed preparation notes for effective interview conduct
+- Overall evaluation criteria aligned with question formats
+- Time management strategy to optimize the ${totalDuration}-minute interview
 
-Make it professional, practical, and perfectly tailored to this specific role and requirements.`;
+Create a professional, comprehensive template that leverages the mixed question formats to provide deep candidate insights while maintaining interview flow and efficiency.`;
 
       setAiGenerationStep({ step: 'generating', progress: 30, message: 'Generating interview questions...' });
 
@@ -281,9 +393,18 @@ Make it professional, practical, and perfectly tailored to this specific role an
                     enum: ['technical', 'behavioral', 'cultural', 'situational', 'general'],
                     description: 'Type of question'
                   },
+                  format: {
+                    type: 'string',
+                    enum: ['yes_no_with_justification', 'rating_with_justification', 'short_description', 'long_description'],
+                    description: 'Question format - mix different formats for variety'
+                  },
                   category: { 
                     type: 'string', 
                     description: 'Category/focus area this question addresses'
+                  },
+                  section: {
+                    type: 'string',
+                    description: 'Optional section grouping for the question'
                   },
                   difficulty: { 
                     type: 'string', 
@@ -306,9 +427,31 @@ Make it professional, practical, and perfectly tailored to this specific role an
                     minItems: 3,
                     maxItems: 5,
                     description: '3-5 specific criteria for evaluating this question'
+                  },
+                  ratingScale: {
+                    type: 'object',
+                    description: 'For rating questions only - define min/max and optional labels',
+                    properties: {
+                      min: { type: 'number', minimum: 1, maximum: 1 },
+                      max: { type: 'number', minimum: 3, maximum: 10 },
+                      labels: {
+                        type: 'object',
+                        description: 'Optional labels for specific rating values'
+                      }
+                    }
+                  },
+                  requiresJustification: {
+                    type: 'boolean',
+                    description: 'REQUIRED: true for yes_no_with_justification and rating_with_justification formats, false for description formats'
+                  },
+                  maxCharacters: {
+                    type: 'number',
+                    minimum: 50,
+                    maximum: 5000,
+                    description: 'For description questions - character limit'
                   }
                 },
-                required: ['question', 'type', 'category', 'difficulty', 'timeLimit', 'expectedAnswer', 'scoringCriteria']
+                required: ['question', 'type', 'format', 'category', 'difficulty', 'timeLimit', 'expectedAnswer', 'scoringCriteria']
               }
             },
             preparationNotes: { 
@@ -345,11 +488,13 @@ Make it professional, practical, and perfectly tailored to this specific role an
             receivedQuestions.push({
               question: `Additional question ${receivedQuestions.length + 1} - Please edit this question`,
               type: 'general',
+              format: 'short_description',
               category: 'General',
               difficulty: 'medium',
               timeLimit: minTimePerQuestion,
               expectedAnswer: 'Please provide expected answer guidance',
-              scoringCriteria: ['Clear response', 'Relevant content', 'Professional communication']
+              scoringCriteria: ['Clear response', 'Relevant content', 'Professional communication'],
+              maxCharacters: 500
             });
           }
           
@@ -374,16 +519,30 @@ Make it professional, practical, and perfectly tailored to this specific role an
           name: aiData.name || `${jobTitle} - ${template.interviewType}`,
           description: aiData.description || '',
           instructions: aiData.instructions || '',
-          questions: receivedQuestions.map((q: any, index: number) => ({
-            question: q.question,
-            type: q.type,
-            category: q.category,
-            difficulty: q.difficulty,
-            timeLimit: q.timeLimit,
-            expectedAnswer: q.expectedAnswer || '',
-            scoringCriteria: q.scoringCriteria || [],
-            order: index + 1
-          })),
+          questions: receivedQuestions.map((q: any, index: number) => {
+            const questionFormat = q.format || QuestionFormat.SHORT_DESCRIPTION;
+            
+            // Automatically set requiresJustification based on format
+            const autoRequiresJustification = 
+              questionFormat === QuestionFormat.YES_NO_WITH_JUSTIFICATION ||
+              questionFormat === QuestionFormat.RATING_WITH_JUSTIFICATION;
+            
+            return {
+              question: q.question,
+              type: q.type,
+              format: questionFormat,
+              category: q.category,
+              section: q.section,
+              difficulty: q.difficulty,
+              timeLimit: q.timeLimit,
+              expectedAnswer: q.expectedAnswer || '',
+              scoringCriteria: q.scoringCriteria || [],
+              ratingScale: q.ratingScale,
+              requiresJustification: autoRequiresJustification || q.requiresJustification || false,
+              maxCharacters: q.maxCharacters,
+              order: index + 1
+            };
+          }),
           preparationNotes: aiData.preparationNotes || '',
           evaluationCriteria: aiData.evaluationCriteria || []
         }));
@@ -545,9 +704,10 @@ Make it professional, practical, and perfectly tailored to this specific role an
 
         {/* AI Generator Panel */}
         {showAIGenerator && (
-          <div className="border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50 p-4">
-            <div className="max-w-2xl">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">AI Template Generator</h3>
+          <div className="border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50 max-h-80 overflow-y-auto">
+            <div className="p-4">
+              <div className="max-w-2xl">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">AI Template Generator</h3>
               
               {aiGenerationStep.step === 'input' && (
                 <div className="space-y-4">
@@ -624,6 +784,160 @@ Make it professional, practical, and perfectly tailored to this specific role an
                     />
                   </div>
 
+                  {/* Format Strategy Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Question Format Strategy</label>
+                    <select
+                      value={aiInput.formatStrategy}
+                      onChange={(e) => setAiInput(prev => ({ 
+                        ...prev, 
+                        formatStrategy: e.target.value as any 
+                      }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="balanced">Balanced Mix (Recommended)</option>
+                      <option value="rating_focused">Rating Focused - Skill Assessments</option>
+                      <option value="description_focused">Description Focused - Comprehensive</option>
+                      <option value="quick_assessment">Quick Assessment - Efficient</option>
+                      <option value="custom">Custom Distribution</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {aiInput.formatStrategy === 'balanced' && 'Optimal mix of all question formats for comprehensive evaluation (35% rating, 30% short, 25% long, 10% yes/no)'}
+                      {aiInput.formatStrategy === 'rating_focused' && 'Emphasizes rating questions for quantitative skill assessment (60% rating, 25% short, 10% yes/no, 5% long)'}
+                      {aiInput.formatStrategy === 'description_focused' && 'Focuses on detailed explanations and scenarios (50% long, 30% short, 15% rating, 5% yes/no)'}
+                      {aiInput.formatStrategy === 'quick_assessment' && 'Optimized for shorter, efficient evaluations (45% short, 30% yes/no, 20% rating, 5% long)'}
+                      {aiInput.formatStrategy === 'custom' && 'Define your own format distribution percentages using the sliders below'}
+                    </p>
+                  </div>
+
+                  {/* Custom Format Distribution */}
+                  {aiInput.formatStrategy === 'custom' && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-blue-800 mb-3">Custom Format Distribution</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-blue-700 mb-1">Yes/No + Justification</label>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={aiInput.customFormatDistribution.yes_no_with_justification}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                const total = Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0) - aiInput.customFormatDistribution.yes_no_with_justification + value;
+                                if (total <= 100) {
+                                  setAiInput(prev => ({
+                                    ...prev,
+                                    customFormatDistribution: {
+                                      ...prev.customFormatDistribution,
+                                      yes_no_with_justification: value
+                                    }
+                                  }));
+                                }
+                              }}
+                              className="flex-1"
+                            />
+                            <span className="text-xs font-medium text-blue-800 w-8">{aiInput.customFormatDistribution.yes_no_with_justification}%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-blue-700 mb-1">Rating + Justification</label>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={aiInput.customFormatDistribution.rating_with_justification}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                const total = Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0) - aiInput.customFormatDistribution.rating_with_justification + value;
+                                if (total <= 100) {
+                                  setAiInput(prev => ({
+                                    ...prev,
+                                    customFormatDistribution: {
+                                      ...prev.customFormatDistribution,
+                                      rating_with_justification: value
+                                    }
+                                  }));
+                                }
+                              }}
+                              className="flex-1"
+                            />
+                            <span className="text-xs font-medium text-blue-800 w-8">{aiInput.customFormatDistribution.rating_with_justification}%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-blue-700 mb-1">Short Description</label>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={aiInput.customFormatDistribution.short_description}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                const total = Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0) - aiInput.customFormatDistribution.short_description + value;
+                                if (total <= 100) {
+                                  setAiInput(prev => ({
+                                    ...prev,
+                                    customFormatDistribution: {
+                                      ...prev.customFormatDistribution,
+                                      short_description: value
+                                    }
+                                  }));
+                                }
+                              }}
+                              className="flex-1"
+                            />
+                            <span className="text-xs font-medium text-blue-800 w-8">{aiInput.customFormatDistribution.short_description}%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-blue-700 mb-1">Long Description</label>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={aiInput.customFormatDistribution.long_description}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                const total = Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0) - aiInput.customFormatDistribution.long_description + value;
+                                if (total <= 100) {
+                                  setAiInput(prev => ({
+                                    ...prev,
+                                    customFormatDistribution: {
+                                      ...prev.customFormatDistribution,
+                                      long_description: value
+                                    }
+                                  }));
+                                }
+                              }}
+                              className="flex-1"
+                            />
+                            <span className="text-xs font-medium text-blue-800 w-8">{aiInput.customFormatDistribution.long_description}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-2 bg-white rounded border">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-blue-700">Total:</span>
+                          <span className={`font-medium ${
+                            Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0) === 100 
+                              ? 'text-green-600' 
+                              : 'text-red-600'
+                          }`}>
+                            {Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0)}%
+                          </span>
+                        </div>
+                        {Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0) !== 100 && (
+                          <p className="text-xs text-red-600 mt-1">Total must equal 100%</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Generation Preview */}
                   {aiInput.questionCount && template.duration && (
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -645,12 +959,44 @@ Make it professional, practical, and perfectly tailored to this specific role an
                           <span>Experience Level:</span>
                           <span className="font-medium capitalize">{aiInput.difficulty}</span>
                         </div>
+                        <div className="flex justify-between">
+                          <span>Format Strategy:</span>
+                          <span className="font-medium">
+                            {aiInput.formatStrategy === 'balanced' && 'Balanced Mix'}
+                            {aiInput.formatStrategy === 'rating_focused' && 'Rating Focused'}
+                            {aiInput.formatStrategy === 'description_focused' && 'Description Focused'}
+                            {aiInput.formatStrategy === 'quick_assessment' && 'Quick Assessment'}
+                            {aiInput.formatStrategy === 'custom' && 'Custom Distribution'}
+                          </span>
+                        </div>
                         {aiInput.focusAreas && (
                           <div className="flex justify-between">
                             <span>Focus Areas:</span>
                             <span className="font-medium">{aiInput.focusAreas.split(',').length} areas</span>
                           </div>
                         )}
+                        
+                        {/* Format Distribution Preview */}
+                        {aiInput.formatStrategy === 'custom' && Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0) === 100 && (
+                          <div className="mt-3 pt-2 border-t border-purple-200">
+                            <div className="text-xs text-purple-600 mb-2">Expected Format Distribution:</div>
+                            <div className="grid grid-cols-2 gap-1 text-xs">
+                              {aiInput.customFormatDistribution.yes_no_with_justification > 0 && (
+                                <div>Yes/No: {aiInput.customFormatDistribution.yes_no_with_justification}%</div>
+                              )}
+                              {aiInput.customFormatDistribution.rating_with_justification > 0 && (
+                                <div>Rating: {aiInput.customFormatDistribution.rating_with_justification}%</div>
+                              )}
+                              {aiInput.customFormatDistribution.short_description > 0 && (
+                                <div>Short: {aiInput.customFormatDistribution.short_description}%</div>
+                              )}
+                              {aiInput.customFormatDistribution.long_description > 0 && (
+                                <div>Long: {aiInput.customFormatDistribution.long_description}%</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="text-xs text-purple-600 mt-2 pt-2 border-t border-purple-200">
                           ⏱️ 5 minutes reserved for introduction and wrap-up
                         </div>
@@ -661,7 +1007,11 @@ Make it professional, practical, and perfectly tailored to this specific role an
                   <div className="flex space-x-3">
                     <button
                       onClick={generateAITemplate}
-                      disabled={generateAIMutation.isPending}
+                      disabled={
+                        generateAIMutation.isPending || 
+                        (aiInput.formatStrategy === 'custom' && 
+                         Object.values(aiInput.customFormatDistribution).reduce((sum, v) => sum + v, 0) !== 100)
+                      }
                       className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
                     >
                       <Sparkles className="w-4 h-4" />
@@ -718,6 +1068,7 @@ Make it professional, practical, and perfectly tailored to this specific role an
                   </div>
                 </div>
               )}
+              </div>
             </div>
           </div>
         )}
@@ -872,7 +1223,7 @@ Make it professional, practical, and perfectly tailored to this specific role an
                           />
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                             <select
@@ -885,6 +1236,20 @@ Make it professional, practical, and perfectly tailored to this specific role an
                               <option value="behavioral">Behavioral</option>
                               <option value="cultural">Cultural</option>
                               <option value="situational">Situational</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
+                            <select
+                              value={question.format}
+                              onChange={(e) => handleUpdateQuestion(index, { format: e.target.value as QuestionFormat })}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            >
+                              <option value={QuestionFormat.YES_NO_WITH_JUSTIFICATION}>Yes/No + Justification</option>
+                              <option value={QuestionFormat.RATING_WITH_JUSTIFICATION}>Rating + Justification</option>
+                              <option value={QuestionFormat.SHORT_DESCRIPTION}>Short Description</option>
+                              <option value={QuestionFormat.LONG_DESCRIPTION}>Long Description</option>
                             </select>
                           </div>
 
@@ -924,6 +1289,134 @@ Make it professional, practical, and perfectly tailored to this specific role an
                             />
                           </div>
                         </div>
+
+                        {/* Section Field */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Section (Optional)</label>
+                          <input
+                            type="text"
+                            value={question.section || ''}
+                            onChange={(e) => handleUpdateQuestion(index, { section: e.target.value })}
+                            placeholder="e.g., Technical Skills, Leadership Experience"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                        </div>
+
+                        {/* Format-specific fields */}
+                        {question.format === QuestionFormat.RATING_WITH_JUSTIFICATION && (
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <h4 className="text-sm font-medium text-blue-900 mb-3">Rating Scale Configuration</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-sm font-medium text-blue-700 mb-1">Min Rating</label>
+                                <input
+                                  type="number"
+                                  value={question.ratingScale?.min || 1}
+                                  onChange={(e) => handleUpdateQuestion(index, {
+                                    ratingScale: {
+                                      ...question.ratingScale,
+                                      min: parseInt(e.target.value) || 1,
+                                      max: question.ratingScale?.max || 5,
+                                      labels: question.ratingScale?.labels
+                                    }
+                                  })}
+                                  min="1"
+                                  max="10"
+                                  className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-blue-700 mb-1">Max Rating</label>
+                                <input
+                                  type="number"
+                                  value={question.ratingScale?.max || 5}
+                                  onChange={(e) => handleUpdateQuestion(index, {
+                                    ratingScale: {
+                                      ...question.ratingScale,
+                                      min: question.ratingScale?.min || 1,
+                                      max: parseInt(e.target.value) || 5,
+                                      labels: question.ratingScale?.labels
+                                    }
+                                  })}
+                                  min="2"
+                                  max="10"
+                                  className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+                            <div className="mt-3">
+                              <label className="block text-sm font-medium text-blue-700 mb-1">
+                                Scale Labels (Optional) - e.g., "1: Poor, 3: Average, 5: Excellent"
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="1: Poor, 3: Average, 5: Excellent"
+                                onChange={(e) => {
+                                  // Parse labels from string format "1: Poor, 3: Average, 5: Excellent"
+                                  const labelsString = e.target.value;
+                                  const labels: { [key: number]: string } = {};
+                                  if (labelsString) {
+                                    labelsString.split(',').forEach(pair => {
+                                      const [key, value] = pair.split(':').map(s => s.trim());
+                                      if (key && value && !isNaN(parseInt(key))) {
+                                        labels[parseInt(key)] = value;
+                                      }
+                                    });
+                                  }
+                                  handleUpdateQuestion(index, {
+                                    ratingScale: {
+                                      ...question.ratingScale,
+                                      min: question.ratingScale?.min || 1,
+                                      max: question.ratingScale?.max || 5,
+                                      labels: Object.keys(labels).length > 0 ? labels : undefined
+                                    }
+                                  });
+                                }}
+                                className="w-full border border-blue-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {(question.format === QuestionFormat.SHORT_DESCRIPTION || question.format === QuestionFormat.LONG_DESCRIPTION) && (
+                          <div className="bg-green-50 p-4 rounded-lg">
+                            <h4 className="text-sm font-medium text-green-900 mb-3">Character Limit</h4>
+                            <div>
+                              <label className="block text-sm font-medium text-green-700 mb-1">Maximum Characters</label>
+                              <input
+                                type="number"
+                                value={question.maxCharacters || (question.format === QuestionFormat.SHORT_DESCRIPTION ? 500 : 2000)}
+                                onChange={(e) => handleUpdateQuestion(index, { maxCharacters: parseInt(e.target.value) || 500 })}
+                                min="50"
+                                max="5000"
+                                className="w-full border border-green-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              />
+                              <p className="text-xs text-green-600 mt-1">
+                                Recommended: {question.format === QuestionFormat.SHORT_DESCRIPTION ? '200-500' : '1000-2000'} characters
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {(question.format === QuestionFormat.YES_NO_WITH_JUSTIFICATION || question.format === QuestionFormat.RATING_WITH_JUSTIFICATION) && (
+                          <div className="bg-yellow-50 p-4 rounded-lg">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`justification-${index}`}
+                                checked={true} // Always checked for these formats
+                                disabled={true} // Disable since it's required for these formats
+                                className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded opacity-75 cursor-not-allowed"
+                              />
+                              <label htmlFor={`justification-${index}`} className="text-sm font-medium text-yellow-900">
+                                Require justification for answer (required for this format)
+                              </label>
+                            </div>
+                            <p className="text-xs text-yellow-700 mt-1">
+                              Justification is mandatory for {question.format === QuestionFormat.YES_NO_WITH_JUSTIFICATION ? 'yes/no' : 'rating'} questions to understand reasoning.
+                            </p>
+                          </div>
+                        )}
 
                         {question.expectedAnswer !== undefined && (
                           <div>

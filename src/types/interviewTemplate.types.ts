@@ -1,14 +1,32 @@
 // Interview Template Types
+
+export enum QuestionFormat {
+  YES_NO_WITH_JUSTIFICATION = 'yes_no_with_justification',
+  RATING_WITH_JUSTIFICATION = 'rating_with_justification', 
+  SHORT_DESCRIPTION = 'short_description',
+  LONG_DESCRIPTION = 'long_description'
+}
+
 export interface InterviewQuestion {
   id: string;
   question: string;
   type: 'technical' | 'behavioral' | 'cultural' | 'situational' | 'general';
+  format: QuestionFormat; // New field for question format
   category: string;
+  section?: string; // New field for question sections
   expectedAnswer?: string;
   scoringCriteria?: string[];
   timeLimit?: number; // in minutes
   difficulty: 'easy' | 'medium' | 'hard';
   order: number;
+  // New fields for different question formats
+  ratingScale?: {
+    min: number;
+    max: number;
+    labels?: { [key: number]: string }; // e.g., { 1: "Poor", 5: "Excellent" }
+  };
+  requiresJustification?: boolean; // For yes/no and rating questions
+  maxCharacters?: number; // For description questions
 }
 
 export interface InterviewTemplate {

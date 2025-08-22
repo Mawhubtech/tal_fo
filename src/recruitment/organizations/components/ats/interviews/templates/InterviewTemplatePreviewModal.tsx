@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Clock, FileText, Users, Play, Copy, Star } from 'lucide-react';
-import { InterviewTemplate } from '../../../../../../types/interviewTemplate.types';
+import { InterviewTemplate, QuestionFormat } from '../../../../../../types/interviewTemplate.types';
 
 interface InterviewTemplatePreviewModalProps {
   isOpen: boolean;
@@ -33,6 +33,26 @@ export const InterviewTemplatePreviewModal: React.FC<InterviewTemplatePreviewMod
       case 'medium': return 'bg-yellow-100 text-yellow-800';
       case 'hard': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getQuestionFormatColor = (format: string) => {
+    switch (format) {
+      case QuestionFormat.YES_NO_WITH_JUSTIFICATION: return 'bg-pink-100 text-pink-800';
+      case QuestionFormat.RATING_WITH_JUSTIFICATION: return 'bg-indigo-100 text-indigo-800';
+      case QuestionFormat.SHORT_DESCRIPTION: return 'bg-cyan-100 text-cyan-800';
+      case QuestionFormat.LONG_DESCRIPTION: return 'bg-teal-100 text-teal-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getQuestionFormatLabel = (format: string) => {
+    switch (format) {
+      case QuestionFormat.YES_NO_WITH_JUSTIFICATION: return 'Yes/No + Justification';
+      case QuestionFormat.RATING_WITH_JUSTIFICATION: return 'Rating + Justification';
+      case QuestionFormat.SHORT_DESCRIPTION: return 'Short Description';
+      case QuestionFormat.LONG_DESCRIPTION: return 'Long Description';
+      default: return 'Unknown Format';
     }
   };
 
@@ -124,11 +144,16 @@ export const InterviewTemplatePreviewModal: React.FC<InterviewTemplatePreviewMod
                 {template.questions.map((question, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 flex-wrap">
                         <span className="text-sm font-medium text-gray-500">Q{index + 1}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getQuestionTypeColor(question.type)}`}>
                           {question.type}
                         </span>
+                        {question.format && (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getQuestionFormatColor(question.format)}`}>
+                            {getQuestionFormatLabel(question.format)}
+                          </span>
+                        )}
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
                           {question.difficulty}
                         </span>
@@ -144,6 +169,40 @@ export const InterviewTemplatePreviewModal: React.FC<InterviewTemplatePreviewMod
                         <p className="text-gray-900 font-medium">{question.question}</p>
                         {question.category && (
                           <p className="text-sm text-gray-500 mt-1">Category: {question.category}</p>
+                        )}
+                        {question.section && (
+                          <p className="text-sm text-gray-500 mt-1">Section: {question.section}</p>
+                        )}
+                        
+                        {/* Format-specific information */}
+                        {question.format === QuestionFormat.RATING_WITH_JUSTIFICATION && question.ratingScale && (
+                          <div className="mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded">
+                            <p className="text-xs font-medium text-indigo-800">
+                              Rating Scale: {question.ratingScale.min} - {question.ratingScale.max}
+                              {question.ratingScale.labels && Object.keys(question.ratingScale.labels).length > 0 && (
+                                <span className="ml-2">
+                                  ({Object.entries(question.ratingScale.labels).map(([key, value]) => `${key}: ${value}`).join(', ')})
+                                </span>
+                              )}
+                              {question.requiresJustification && <span className="text-indigo-600"> + Justification Required</span>}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {question.format === QuestionFormat.YES_NO_WITH_JUSTIFICATION && (
+                          <div className="mt-2 p-2 bg-pink-50 border border-pink-200 rounded">
+                            <p className="text-xs font-medium text-pink-800">
+                              Yes/No Response{question.requiresJustification && ' + Justification Required'}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {(question.format === QuestionFormat.SHORT_DESCRIPTION || question.format === QuestionFormat.LONG_DESCRIPTION) && question.maxCharacters && (
+                          <div className="mt-2 p-2 bg-cyan-50 border border-cyan-200 rounded">
+                            <p className="text-xs font-medium text-cyan-800">
+                              Character Limit: {question.maxCharacters} characters
+                            </p>
+                          </div>
                         )}
                       </div>
 
