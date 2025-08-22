@@ -334,3 +334,98 @@ export interface InterviewStats {
   today: number;
   thisWeek: number;
 }
+
+// Interview Progress and Response Types
+export enum QuestionFormat {
+  YES_NO_WITH_JUSTIFICATION = 'yes_no_with_justification',
+  RATING_WITH_JUSTIFICATION = 'rating_with_justification',
+  SHORT_DESCRIPTION = 'short_description',
+  LONG_DESCRIPTION = 'long_description',
+}
+
+export enum InterviewProgressStatus {
+  NOT_STARTED = 'not_started',
+  IN_PROGRESS = 'in_progress',
+  PAUSED = 'paused',
+  COMPLETED = 'completed',
+}
+
+export interface InterviewResponse {
+  id: string;
+  interviewId: string;
+  questionId: string;
+  questionText: string;
+  questionFormat: QuestionFormat;
+  answer: string;
+  justification?: string;
+  score?: number;
+  notes?: string;
+  timeSpentSeconds: number;
+  flagged: boolean;
+  questionOrder: number;
+  isCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InterviewProgress {
+  id: string;
+  interviewId: string;
+  templateId?: string;
+  template?: InterviewTemplate;
+  currentQuestionIndex: number;
+  totalQuestions: number;
+  startTime?: string;
+  endTime?: string;
+  totalTimeSpentSeconds: number;
+  lastActivityAt?: string;
+  status: InterviewProgressStatus;
+  completionPercentage: number;
+  questionsAnswered: number;
+  questionsFlagged: number;
+  autoSaveData?: any;
+  responses?: InterviewResponse[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateInterviewResponseRequest {
+  questionId: string;
+  questionText: string;
+  questionFormat: QuestionFormat;
+  answer: string;
+  justification?: string;
+  score?: number;
+  notes?: string;
+  timeSpentSeconds?: number;
+  flagged?: boolean;
+  questionOrder: number;
+  isCompleted?: boolean;
+}
+
+export interface UpdateInterviewResponseRequest {
+  answer?: string;
+  justification?: string;
+  score?: number;
+  notes?: string;
+  timeSpentSeconds?: number;
+  flagged?: boolean;
+  isCompleted?: boolean;
+}
+
+export interface SaveInterviewProgressRequest {
+  templateId?: string;
+  currentQuestionIndex: number;
+  responses: CreateInterviewResponseRequest[];
+  totalTimeSpentSeconds?: number;
+  status: InterviewProgressStatus;
+  autoSaveData?: any;
+}
+
+export interface InterviewStatsResponse {
+  progress: InterviewProgress | null;
+  totalResponses: number;
+  completedResponses: number;
+  flaggedResponses: number;
+  averageTimePerQuestion: number;
+}

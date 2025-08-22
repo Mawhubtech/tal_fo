@@ -12,6 +12,12 @@ import type {
   InterviewFilters,
   InterviewFeedback,
   InterviewParticipant,
+  InterviewProgress,
+  InterviewResponse,
+  SaveInterviewProgressRequest,
+  CreateInterviewResponseRequest,
+  UpdateInterviewResponseRequest,
+  InterviewStatsResponse,
 } from '../types/interview.types';
 
 export class InterviewService {
@@ -116,6 +122,84 @@ export class InterviewService {
       data
     );
     return response.data;
+  }
+
+  /**
+   * Get interview progress
+   */
+  static async getInterviewProgress(interviewId: string): Promise<InterviewProgress | null> {
+    try {
+      const response = await apiClient.get(`${this.BASE_PATH}/${interviewId}/progress`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Save interview progress
+   */
+  static async saveInterviewProgress(
+    interviewId: string,
+    progressData: SaveInterviewProgressRequest
+  ): Promise<InterviewProgress> {
+    const response = await apiClient.post(`${this.BASE_PATH}/${interviewId}/progress`, progressData);
+    return response.data;
+  }
+
+  /**
+   * Get interview responses
+   */
+  static async getInterviewResponses(interviewId: string): Promise<InterviewResponse[]> {
+    const response = await apiClient.get(`${this.BASE_PATH}/${interviewId}/responses`);
+    return response.data;
+  }
+
+  /**
+   * Create interview response
+   */
+  static async createInterviewResponse(
+    interviewId: string,
+    responseData: CreateInterviewResponseRequest
+  ): Promise<InterviewResponse> {
+    const response = await apiClient.post(`${this.BASE_PATH}/${interviewId}/responses`, responseData);
+    return response.data;
+  }
+
+  /**
+   * Update interview response
+   */
+  static async updateInterviewResponse(
+    responseId: string,
+    responseData: UpdateInterviewResponseRequest
+  ): Promise<InterviewResponse> {
+    const response = await apiClient.patch(`${this.BASE_PATH}/responses/${responseId}`, responseData);
+    return response.data;
+  }
+
+  /**
+   * Delete interview response
+   */
+  static async deleteInterviewResponse(responseId: string): Promise<void> {
+    await apiClient.delete(`${this.BASE_PATH}/responses/${responseId}`);
+  }
+
+  /**
+   * Get interview statistics for a specific interview
+   */
+  static async getInterviewStatsForInterview(interviewId: string): Promise<InterviewStatsResponse> {
+    const response = await apiClient.get(`${this.BASE_PATH}/${interviewId}/stats`);
+    return response.data;
+  }
+
+  /**
+   * Delete interview progress and responses
+   */
+  static async deleteInterviewProgress(interviewId: string): Promise<void> {
+    await apiClient.delete(`${this.BASE_PATH}/${interviewId}/progress`);
   }
 
   /**

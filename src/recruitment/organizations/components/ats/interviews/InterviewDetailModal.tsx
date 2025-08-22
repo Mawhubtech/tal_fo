@@ -6,9 +6,9 @@ import {
   Mail, MessageSquare, FileText, Star, Edit, Save, XCircle, CheckCircle,
   AlertCircle, Send, Plus, Minus, Settings, Play, Trash2
 } from 'lucide-react';
-import type { Interview, InterviewFeedback } from '../../../../../types/interview.types';
+import type { Interview, InterviewFeedback, SaveInterviewProgressRequest } from '../../../../../types/interview.types';
 import type { InterviewTemplate } from '../../../../../types/interviewTemplate.types';
-import { useUpdateInterview, useDeleteInterview } from '../../../../../hooks/useInterviews';
+import { useUpdateInterview, useDeleteInterview, useSaveInterviewProgress } from '../../../../../hooks/useInterviews';
 import { useEmailService } from '../../../../../hooks/useEmailService';
 import { useEmailTemplates, type EmailTemplate } from '../../../../../hooks/useEmailManagement';
 import { useInterviewTemplates } from '../../../../../hooks/useInterviewTemplates';
@@ -52,6 +52,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   // Use the mutation hook for automatic query invalidation
   const updateInterviewMutation = useUpdateInterview();
   const deleteInterviewMutation = useDeleteInterview();
+  const saveProgressMutation = useSaveInterviewProgress();
   
   // Fetch interview templates to check if this interview has an associated template
   const { data: templates } = useInterviewTemplates();
@@ -1158,9 +1159,39 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
           isOpen={showConductPanel}
           onClose={() => setShowConductPanel(false)}
           onSaveProgress={async (progress) => {
-            // Save interview progress to backend
-            console.log('Saving interview progress:', progress);
-            // You can implement this API call later
+            try {
+              // Convert the progress data to the API format
+              const saveData: SaveInterviewProgressRequest = {
+                templateId: progress.templateId,
+                currentQuestionIndex: progress.currentQuestionIndex,
+                responses: progress.responses.map((r, index) => ({
+                  questionId: r.questionId,
+                  questionText: 'Question text', // You may need to get this from template
+                  questionFormat: 'short_description' as any, // Default format
+                  answer: r.answer,
+                  notes: r.notes,
+                  timeSpentSeconds: r.timeSpent,
+                  flagged: r.flagged,
+                  questionOrder: index + 1,
+                  isCompleted: !!(r.answer && r.answer.trim()),
+                  score: r.score,
+                })),
+                totalTimeSpentSeconds: progress.totalTimeSpent,
+                status: progress.status as any,
+                autoSaveData: progress,
+              };
+
+              // Use the mutation to save progress
+              await saveProgressMutation.mutateAsync({
+                interviewId: interview.id,
+                progressData: saveData,
+              });
+
+              console.log('Interview progress saved successfully');
+            } catch (error) {
+              console.error('Failed to save interview progress:', error);
+              throw error;
+            }
           }}
           onSubmitEvaluation={async (evaluation) => {
             // Submit interview evaluation to backend

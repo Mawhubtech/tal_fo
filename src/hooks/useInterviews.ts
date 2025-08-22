@@ -15,6 +15,9 @@ import type {
   InterviewFilters,
   InterviewStatus,
   InterviewType,
+  SaveInterviewProgressRequest,
+  CreateInterviewResponseRequest,
+  UpdateInterviewResponseRequest,
 } from '../types/interview.types';
 
 // Query Keys
@@ -457,4 +460,146 @@ export const useInterviewDashboard = () => {
       todayInterviews.refetch();
     },
   };
+};
+
+// Interview Progress and Response Hooks
+
+/**
+ * Hook for fetching interview progress
+ */
+export const useInterviewProgress = (interviewId: string) => {
+  return useQuery({
+    queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'progress'],
+    queryFn: () => InterviewService.getInterviewProgress(interviewId),
+    enabled: !!interviewId,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+};
+
+/**
+ * Hook for saving interview progress
+ */
+export const useSaveInterviewProgress = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ interviewId, progressData }: { 
+      interviewId: string; 
+      progressData: SaveInterviewProgressRequest;
+    }) => InterviewService.saveInterviewProgress(interviewId, progressData),
+    onSuccess: (savedProgress, { interviewId }) => {
+      // Update progress cache
+      queryClient.setQueryData(
+        [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'progress'],
+        savedProgress
+      );
+      
+      // Invalidate related queries
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'responses'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'stats'] 
+      });
+    },
+  });
+};
+
+/**
+ * Hook for fetching interview responses
+ */
+export const useInterviewResponses = (interviewId: string) => {
+  return useQuery({
+    queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'responses'],
+    queryFn: () => InterviewService.getInterviewResponses(interviewId),
+    enabled: !!interviewId,
+    staleTime: 60 * 1000, // 1 minute
+  });
+};
+
+/**
+ * Hook for creating interview response
+ */
+export const useCreateInterviewResponse = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ interviewId, responseData }: { 
+      interviewId: string; 
+      responseData: CreateInterviewResponseRequest;
+    }) => InterviewService.createInterviewResponse(interviewId, responseData),
+    onSuccess: (newResponse, { interviewId }) => {
+      // Invalidate responses cache
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'responses'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'progress'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'stats'] 
+      });
+    },
+  });
+};
+
+/**
+ * Hook for updating interview response
+ */
+export const useUpdateInterviewResponse = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ responseId, responseData }: { 
+      responseId: string; 
+      responseData: UpdateInterviewResponseRequest;
+    }) => InterviewService.updateInterviewResponse(responseId, responseData),
+    onSuccess: (updatedResponse) => {
+      // Invalidate related queries - we need to get interview ID from response
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedResponse.interviewId), 'responses'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedResponse.interviewId), 'progress'] 
+      });
+    },
+  });
+};
+
+/**
+ * Hook for deleting interview response
+ */
+export const useDeleteInterviewResponse = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ responseId, interviewId }: { 
+      responseId: string; 
+      interviewId: string;
+    }) => InterviewService.deleteInterviewResponse(responseId),
+    onSuccess: (_, { interviewId }) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'responses'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'progress'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'stats'] 
+      });
+    },
+  });
+};
+
+/**
+ * Hook for fetching interview statistics
+ */
+export const useInterviewStatsForInterview = (interviewId: string) => {
+  return useQuery({
+    queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'stats'],
+    queryFn: () => InterviewService.getInterviewStatsForInterview(interviewId),
+    enabled: !!interviewId,
+    staleTime: 30 * 1000, // 30 seconds
+  });
 };
