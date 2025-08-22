@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, Plus, Trash2, Edit2, Copy, Sparkles, Clock, FileText, 
   Users, Save, ArrowUp, ChevronUp, ChevronDown 
 } from 'lucide-react';
 import { InterviewTemplate, InterviewQuestion, CreateInterviewTemplateRequest } from '../../../../../../types/interviewTemplate.types';
-import { useCreateInterviewTemplate, useGenerateAIInterviewTemplate } from '../../../../../../hooks/useInterviewTemplates';
+import { useCreateInterviewTemplate, useGenerateAIInterviewTemplate, useUpdateInterviewTemplate } from '../../../../../../hooks/useInterviewTemplates';
 import { aiService } from '../../../../../../services/aiService';
 import { toast } from '../../../../../../components/ToastContainer';
 
@@ -17,6 +17,10 @@ interface CreateInterviewTemplateModalProps {
   jobRequirements?: string[];
   organizationId?: string;
   onTemplateCreated?: (template: InterviewTemplate) => void;
+  // Edit mode props
+  editTemplate?: InterviewTemplate;
+  isEditMode?: boolean;
+  onTemplateUpdated?: (template: InterviewTemplate) => void;
 }
 
 interface AIGenerationStep {
@@ -33,7 +37,10 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
   jobDescription = '',
   jobRequirements = [],
   organizationId,
-  onTemplateCreated
+  onTemplateCreated,
+  editTemplate,
+  isEditMode = false,
+  onTemplateUpdated,
 }) => {
   const [template, setTemplate] = useState<Partial<CreateInterviewTemplateRequest>>({
     name: '',
@@ -61,7 +68,42 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
   });
 
   const createTemplateMutation = useCreateInterviewTemplate();
+  const updateTemplateMutation = useUpdateInterviewTemplate();
   const generateAIMutation = useGenerateAIInterviewTemplate();
+
+  // Initialize template state with edit data when in edit mode
+  useEffect(() => {
+    if (isEditMode && editTemplate) {
+      setTemplate({
+        name: editTemplate.name,
+        description: editTemplate.description,
+        interviewType: editTemplate.interviewType,
+        duration: editTemplate.duration,
+        questions: editTemplate.questions,
+        instructions: editTemplate.instructions,
+        preparationNotes: editTemplate.preparationNotes,
+        evaluationCriteria: editTemplate.evaluationCriteria,
+        isPublic: editTemplate.isPublic,
+        jobId: editTemplate.jobId || jobId,
+        organizationId: editTemplate.organizationId || organizationId
+      });
+    } else {
+      // Reset to default state when not in edit mode or when modal closes
+      setTemplate({
+        name: '',
+        description: '',
+        interviewType: 'Phone Screen',
+        duration: 30,
+        questions: [],
+        instructions: '',
+        preparationNotes: '',
+        evaluationCriteria: [],
+        isPublic: false,
+        jobId,
+        organizationId
+      });
+    }
+  }, [isEditMode, editTemplate, jobId, organizationId, isOpen]);
 
   const handleAddQuestion = () => {
     const newQuestion: Omit<InterviewQuestion, 'id' | 'order'> = {
@@ -400,28 +442,51 @@ Make it professional, practical, and perfectly tailored to this specific role an
         };
       });
 
-      const templateData: CreateInterviewTemplateRequest = {
-        name: template.name,
-        description: template.description || '',
-        interviewType: template.interviewType!,
-        duration: template.duration!,
-        questions: questionsWithOrder,
-        instructions: template.instructions,
-        preparationNotes: template.preparationNotes,
-        evaluationCriteria: template.evaluationCriteria?.filter(Boolean),
-        isPublic: template.isPublic,
-        jobId: template.jobId,
-        organizationId: template.organizationId
-      };
+      if (isEditMode && editTemplate) {
+        // Update existing template
+        const updateData = {
+          id: editTemplate.id,
+          name: template.name,
+          description: template.description || '',
+          interviewType: template.interviewType!,
+          duration: template.duration!,
+          questions: questionsWithOrder,
+          instructions: template.instructions,
+          preparationNotes: template.preparationNotes,
+          evaluationCriteria: template.evaluationCriteria?.filter(Boolean),
+          isPublic: template.isPublic,
+        };
 
-      const newTemplate = await createTemplateMutation.mutateAsync(templateData);
+        const updatedTemplate = await updateTemplateMutation.mutateAsync(updateData);
+        
+        toast.success('Template Updated', 'Interview template has been updated successfully.');
+        onTemplateUpdated?.(updatedTemplate);
+      } else {
+        // Create new template
+        const templateData: CreateInterviewTemplateRequest = {
+          name: template.name,
+          description: template.description || '',
+          interviewType: template.interviewType!,
+          duration: template.duration!,
+          questions: questionsWithOrder,
+          instructions: template.instructions,
+          preparationNotes: template.preparationNotes,
+          evaluationCriteria: template.evaluationCriteria?.filter(Boolean),
+          isPublic: template.isPublic,
+          jobId: template.jobId,
+          organizationId: template.organizationId
+        };
+
+        const newTemplate = await createTemplateMutation.mutateAsync(templateData);
+        
+        toast.success('Template Created', 'Interview template has been created successfully.');
+        onTemplateCreated?.(newTemplate);
+      }
       
-      toast.success('Template Created', 'Interview template has been created successfully.');
-      onTemplateCreated?.(newTemplate);
       onClose();
     } catch (error) {
-      console.error('Error creating template:', error);
-      toast.error('Creation Failed', 'Failed to create template. Please try again.');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} template:`, error);
+      toast.error(`${isEditMode ? 'Update' : 'Creation'} Failed`, `Failed to ${isEditMode ? 'update' : 'create'} template. Please try again.`);
     }
   };
 
@@ -456,7 +521,9 @@ Make it professional, practical, and perfectly tailored to this specific role an
               <FileText className="h-6 w-6 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Create Interview Template</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {isEditMode ? 'Edit Interview Template' : 'Create Interview Template'}
+              </h2>
               <p className="text-sm text-gray-500">Design a structured interview template</p>
             </div>
           </div>
@@ -943,12 +1010,19 @@ Make it professional, practical, and perfectly tailored to this specific role an
             </button>
             <button
               onClick={handleSave}
-              disabled={createTemplateMutation.isPending || !template.name?.trim() || !template.questions?.length}
+              disabled={
+                (isEditMode ? updateTemplateMutation.isPending : createTemplateMutation.isPending) || 
+                !template.name?.trim() || 
+                !template.questions?.length
+              }
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
               <span>
-                {createTemplateMutation.isPending ? 'Creating...' : 'Create Template'}
+                {isEditMode 
+                  ? (updateTemplateMutation.isPending ? 'Updating...' : 'Update Template')
+                  : (createTemplateMutation.isPending ? 'Creating...' : 'Create Template')
+                }
               </span>
             </button>
           </div>

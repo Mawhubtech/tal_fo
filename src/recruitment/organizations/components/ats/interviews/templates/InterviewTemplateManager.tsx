@@ -39,6 +39,7 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<InterviewTemplate | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<InterviewTemplate | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -92,6 +93,11 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
     setShowPreviewModal(true);
   };
 
+  const handleEditTemplate = (template: InterviewTemplate) => {
+    setEditingTemplate(template);
+    setShowCreateModal(true); // Use the create modal in edit mode
+  };
+
   const handleUseTemplate = async (template: InterviewTemplate) => {
     try {
       await markUsedMutation.mutateAsync(template.id);
@@ -131,8 +137,8 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
   };
 
   const canEditTemplate = (template: InterviewTemplate) => {
-    // Can edit if it's their template or if they have permission
-    return template.createdBy === 'current-user-id' && activeTab !== 'defaults';
+    // Allow all users to edit templates
+    return true;
   };
 
   const canDeleteTemplate = (template: InterviewTemplate) => {
@@ -308,6 +314,16 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
                       <Eye className="w-4 h-4" />
                     </button>
                     
+                    {canEditTemplate(template) && (
+                      <button
+                        onClick={() => handleEditTemplate(template)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit template"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    
                     <button
                       onClick={() => handleCloneTemplate(template)}
                       className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -370,18 +386,29 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
         )}
       </div>
 
-      {/* Create Template Modal */}
+      {/* Create/Edit Template Modal */}
       <CreateInterviewTemplateModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingTemplate(null);
+        }}
         jobId={jobId}
         jobTitle={jobTitle}
         jobDescription={jobDescription}
         jobRequirements={jobRequirements}
         organizationId={organizationId}
+        editTemplate={editingTemplate}
+        isEditMode={!!editingTemplate}
         onTemplateCreated={(template) => {
           setShowCreateModal(false);
+          setEditingTemplate(null);
           toast.success('Template Created', 'Your interview template has been created successfully.');
+        }}
+        onTemplateUpdated={(template) => {
+          setShowCreateModal(false);
+          setEditingTemplate(null);
+          toast.success('Template Updated', 'Your interview template has been updated successfully.');
         }}
       />
 
