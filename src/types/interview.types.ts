@@ -390,6 +390,7 @@ export interface InterviewProgress {
 }
 
 export interface CreateInterviewResponseRequest {
+  interviewId?: string; // Optional for individual creation (controller adds it), required for progress
   questionId: string;
   questionText: string;
   questionFormat: QuestionFormat;
@@ -414,6 +415,7 @@ export interface UpdateInterviewResponseRequest {
 }
 
 export interface SaveInterviewProgressRequest {
+  interviewId: string; // Required field
   templateId?: string;
   currentQuestionIndex: number;
   responses: CreateInterviewResponseRequest[];

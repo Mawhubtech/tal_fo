@@ -4,11 +4,12 @@ import 'react-quill/dist/quill.snow.css';
 import { 
   X, Calendar, Clock, MapPin, Video, Phone, Users, User, ExternalLink, 
   Mail, MessageSquare, FileText, Star, Edit, Save, XCircle, CheckCircle,
-  AlertCircle, Send, Plus, Minus, Settings, Play, Trash2
+  AlertCircle, Send, Plus, Minus, Settings, Play, Trash2, Flag
 } from 'lucide-react';
 import type { Interview, InterviewFeedback, SaveInterviewProgressRequest } from '../../../../../types/interview.types';
+import { InterviewStatus } from '../../../../../types/interview.types';
 import type { InterviewTemplate } from '../../../../../types/interviewTemplate.types';
-import { useUpdateInterview, useDeleteInterview, useSaveInterviewProgress } from '../../../../../hooks/useInterviews';
+import { useUpdateInterview, useDeleteInterview, useSaveInterviewProgress, useInterviewResponses, useInterviewProgress } from '../../../../../hooks/useInterviews';
 import { useEmailService } from '../../../../../hooks/useEmailService';
 import { useEmailTemplates, type EmailTemplate } from '../../../../../hooks/useEmailManagement';
 import { useInterviewTemplates } from '../../../../../hooks/useInterviewTemplates';
@@ -33,7 +34,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   onSendEmail,
   onAddFeedback
 }) => {
-  const [activeTab, setActiveTab] = useState<'details' | 'notes' | 'feedback' | 'email'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'notes' | 'feedback' | 'evaluation' | 'email'>('details');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Interview>>({});
   const [showEditForm, setShowEditForm] = useState(false);
@@ -53,6 +54,23 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   const updateInterviewMutation = useUpdateInterview();
   const deleteInterviewMutation = useDeleteInterview();
   const saveProgressMutation = useSaveInterviewProgress();
+  
+  // Fetch interview responses and progress for evaluation details
+  const { data: interviewResponses, isLoading: isLoadingResponses } = useInterviewResponses(interview?.id || '');
+  const { data: interviewProgress } = useInterviewProgress(interview?.id || '');
+  
+  // Debug: Log interview data for evaluation tab visibility
+  React.useEffect(() => {
+    if (interview) {
+      console.log('Interview Debug Info:', {
+        id: interview.id,
+        status: interview.status,
+        interviewResponsesCount: interviewResponses?.length || 0,
+        hasInterviewProgress: !!interviewProgress,
+        shouldShowEvaluationTab: interview?.status === 'Completed' && (interviewResponses?.length > 0 || interviewProgress)
+      });
+    }
+  }, [interview, interviewResponses, interviewProgress]);
   
   // Fetch interview templates to check if this interview has an associated template
   const { data: templates } = useInterviewTemplates();
@@ -191,6 +209,9 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     if (!interview) return;
     
     try {
+      // Log the form data to debug
+      console.log('Saving interview evaluation:', editForm);
+      
       await updateInterviewMutation.mutateAsync({
         id: interview.id,
         data: editForm as any
@@ -199,6 +220,10 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
       toast.success('Interview Updated', 'Interview evaluation has been saved successfully.');
     } catch (error) {
       console.error('Failed to update interview:', error);
+      // Log the full error response for debugging
+      if (error?.response?.data) {
+        console.error('Backend validation errors:', error.response.data);
+      }
       toast.error('Update Failed', 'Failed to save interview evaluation. Please try again.');
     }
   };
@@ -471,6 +496,9 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
               { id: 'details', label: 'Details', icon: Calendar },
               { id: 'notes', label: 'Notes', icon: FileText },
               { id: 'feedback', label: 'Feedback', icon: MessageSquare },
+              // Show evaluation tab for completed interviews or if we have response data
+              // Temporarily show for all interviews for testing
+              ...(interview ? [{ id: 'evaluation', label: 'Evaluation Details', icon: CheckCircle }] : []),
               { id: 'email', label: 'Email', icon: Mail }
             ].map(({ id, label, icon: Icon }) => (
               <button
@@ -667,7 +695,10 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900">Interview Evaluation</h3>
                   {!isEditing && (
                     <button
-                      onClick={() => setIsEditing(true)}
+                      onClick={() => {
+                        console.log('Enabling edit mode for interview:', interview?.id);
+                        setIsEditing(true);
+                      }}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center text-sm"
                     >
                       <Edit className="w-4 h-4 mr-2" />
@@ -843,6 +874,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                     <div className="flex space-x-3">
                       <button
                         onClick={() => {
+                          console.log('Cancel clicked');
                           setIsEditing(false);
                           // Reset form to original values
                           setEditForm({
@@ -860,9 +892,29 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                         Cancel
                       </button>
                       <button
-                        onClick={handleSave}
-                        disabled={updateInterviewMutation.isPending}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('🔥 BUTTON CLICKED!');
+                          console.log('Event:', e);
+                          console.log('updateInterviewMutation exists?', !!updateInterviewMutation);
+                          console.log('handleSave exists?', typeof handleSave);
+                          console.log('Current editForm:', editForm);
+                          console.log('Mutation pending:', updateInterviewMutation?.isPending);
+                          alert('Button clicked! Check console for details.');
+                          
+                          // Call handleSave with error handling
+                          try {
+                            handleSave();
+                          } catch (err) {
+                            console.error('Error calling handleSave:', err);
+                            alert('Error calling handleSave: ' + err.message);
+                          }
+                        }}
+                        disabled={updateInterviewMutation?.isPending}
                         className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ zIndex: 9999, position: 'relative' }}
                       >
                         {updateInterviewMutation.isPending ? (
                           <>
@@ -879,6 +931,254 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'evaluation' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">Interview Evaluation Details</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Detailed breakdown of questions and candidate responses
+                  </p>
+                </div>
+
+                {isLoadingResponses ? (
+                  <div className="px-6 py-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading evaluation details...</p>
+                  </div>
+                ) : interviewResponses && interviewResponses.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {/* Summary Statistics */}
+                    <div className="px-6 py-4 bg-gray-50">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">Interview Summary</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">{interviewResponses.length}</div>
+                          <div className="text-xs text-gray-600">Questions Answered</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">
+                            {interviewResponses.filter(r => r.score !== null && r.score !== undefined).length > 0 
+                              ? (interviewResponses.reduce((sum, r) => sum + (Number(r.score) || 0), 0) / interviewResponses.filter(r => r.score !== null && r.score !== undefined).length).toFixed(1)
+                              : 'N/A'
+                            }
+                          </div>
+                          <div className="text-xs text-gray-600">Average Score</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">
+                            {interviewProgress?.totalTimeSpentSeconds 
+                              ? `${Math.floor(interviewProgress.totalTimeSpentSeconds / 60)}:${(interviewProgress.totalTimeSpentSeconds % 60).toString().padStart(2, '0')}`
+                              : 'N/A'
+                            }
+                          </div>
+                          <div className="text-xs text-gray-600">Total Time</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-red-600">
+                            {interviewResponses.filter(r => r.flagged).length}
+                          </div>
+                          <div className="text-xs text-gray-600">Flagged Questions</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Question Details */}
+                    <div className="px-6 py-4">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-4">Question by Question Breakdown</h4>
+                      <div className="space-y-6">
+                        {interviewResponses.map((response, index) => (
+                          <div key={response.id || index} className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium">
+                                    Q{index + 1}
+                                  </span>
+                                  {response.flagged && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      <Flag className="w-3 h-3 mr-1" />
+                                      Flagged
+                                    </span>
+                                  )}
+                                  {(response.score !== null && response.score !== undefined) && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      <Star className="w-3 h-3 mr-1" />
+                                      Score: {Number(response.score).toFixed(1)}/5
+                                    </span>
+                                  )}
+                                  {response.timeSpentSeconds > 0 && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      <Clock className="w-3 h-3 mr-1" />
+                                      {Math.floor(response.timeSpentSeconds / 60)}:{(response.timeSpentSeconds % 60).toString().padStart(2, '0')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="p-4 space-y-4">
+                              {/* Question */}
+                              <div>
+                                <h5 className="text-sm font-medium text-gray-900 mb-2">Question</h5>
+                                <div className="text-sm text-gray-700 bg-gray-50 rounded-md p-3">
+                                  {response.questionText || `Question ID: ${response.questionId}`}
+                                  {response.questionFormat && (
+                                    <div className="mt-2">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        {response.questionFormat === 'yes_no_with_justification' ? 'Yes/No + Justification' :
+                                         response.questionFormat === 'rating_with_justification' ? 'Rating + Justification' :
+                                         response.questionFormat === 'short_description' ? 'Short Description' :
+                                         response.questionFormat === 'long_description' ? 'Long Description' :
+                                         response.questionFormat}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Candidate's Answer */}
+                              {(response.answer && response.answer.trim() !== '') && (
+                                <div>
+                                  <h5 className="text-sm font-medium text-gray-900 mb-2">Candidate's Answer</h5>
+                                  <div className="text-sm text-gray-700 bg-white border border-gray-200 rounded-md p-3">
+                                    {response.answer}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Score Section */}
+                              {(response.score !== null && response.score !== undefined) && (
+                                <div>
+                                  <h5 className="text-sm font-medium text-gray-900 mb-2">Score</h5>
+                                  <div className="flex items-center space-x-3">
+                                    <div className="flex items-center">
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                          key={star}
+                                          className={`w-5 h-5 ${
+                                            star <= Number(response.score)
+                                              ? 'text-yellow-400 fill-current'
+                                              : 'text-gray-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-lg font-semibold text-gray-900">
+                                      {Number(response.score).toFixed(1)} / 5.0
+                                    </span>
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                      Number(response.score) >= 4 ? 'bg-green-100 text-green-800' :
+                                      Number(response.score) >= 3 ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-red-100 text-red-800'
+                                    }`}>
+                                      {Number(response.score) >= 4 ? 'Excellent' :
+                                       Number(response.score) >= 3 ? 'Good' :
+                                       Number(response.score) >= 2 ? 'Fair' : 'Poor'}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Justification (for yes/no and rating questions) */}
+                              {response.justification && (
+                                <div>
+                                  <h5 className="text-sm font-medium text-gray-900 mb-2">Justification</h5>
+                                  <div className="text-sm text-gray-700 bg-blue-50 border border-blue-200 rounded-md p-3">
+                                    {response.justification}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Interviewer Notes */}
+                              {response.notes && (
+                                <div>
+                                  <h5 className="text-sm font-medium text-gray-900 mb-2">Interviewer Notes</h5>
+                                  <div className="text-sm text-gray-700 bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                                    {response.notes}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Overall Evaluation Summary */}
+                    {(interview.overallRating || interview.result || interview.recommendation || interview.nextSteps) && (
+                      <div className="px-6 py-4 bg-gray-50">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4">Overall Assessment</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {interview.overallRating && (
+                            <div>
+                              <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Overall Rating</label>
+                              <div className="mt-1 flex items-center">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`w-5 h-5 ${
+                                      star <= interview.overallRating
+                                        ? 'text-yellow-400 fill-current'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                                <span className="ml-2 text-sm text-gray-600">({interview.overallRating}/5)</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {interview.result && (
+                            <div>
+                              <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Result</label>
+                              <div className="mt-1">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  interview.result === 'Pass' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {interview.result}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {interview.recommendation && (
+                            <div className="md:col-span-2">
+                              <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Recommendation</label>
+                              <div className="mt-1 text-sm text-gray-900">{interview.recommendation}</div>
+                            </div>
+                          )}
+
+                          {interview.nextSteps && (
+                            <div className="md:col-span-2">
+                              <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Next Steps</label>
+                              <div className="mt-1 text-sm text-gray-700 bg-white border border-gray-200 rounded-md p-3">
+                                {interview.nextSteps}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="px-6 py-8 text-center">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Evaluation Details Available</h4>
+                    <p className="text-gray-600">
+                      {interview?.status === 'Completed' 
+                        ? 'This interview was completed but no detailed responses were recorded.'
+                        : 'Evaluation details will be available after the interview is completed with template responses.'
+                      }
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1162,6 +1462,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
             try {
               // Convert the progress data to the API format
               const saveData: SaveInterviewProgressRequest = {
+                interviewId: interview.id, // Add the required interviewId field
                 templateId: progress.templateId,
                 currentQuestionIndex: progress.currentQuestionIndex,
                 responses: progress.responses.map((r, index) => ({

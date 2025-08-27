@@ -4,9 +4,14 @@ import {
   ChevronLeft, ChevronRight, Save, FileText, AlertTriangle,
   User, Calendar, MapPin, Video, Phone, Users, Flag, Plus
 } from 'lucide-react';
-import { Interview, InterviewFeedback, InterviewStatus } from '../../../../../types/interview.types';
+import { 
+  InterviewStatus, 
+  InterviewType,
+  InterviewProgressStatus,
+  Interview 
+} from '../../../../../types/interview.types';
 import { InterviewTemplate, InterviewQuestion, QuestionFormat } from '../../../../../types/interviewTemplate.types';
-import { useUpdateInterview } from '../../../../../hooks/useInterviews';
+import { useUpdateInterview, useSaveInterviewProgress, useCreateInterviewResponse } from '../../../../../hooks/useInterviews';
 import { toast } from '../../../../../components/ToastContainer';
 
 interface InterviewConductSidepanelProps {
@@ -88,13 +93,30 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   const [activeTab, setActiveTab] = useState<'questions' | 'evaluation'>('questions');
 
   const updateInterviewMutation = useUpdateInterview();
+  const saveProgressMutation = useSaveInterviewProgress();
+  const createResponseMutation = useCreateInterviewResponse();
 
   const candidate = interview?.jobApplication?.candidate;
   const job = interview?.jobApplication?.job;
   const questions = template?.questions || [];
   const currentQuestion = questions[currentQuestionIndex];
 
-  // Debug: Log template and questions structure
+  // Helper function to generate consistent question IDs
+  const getQuestionId = (question: any, index: number) => {
+    // Use order if available, otherwise use index
+    const order = question.order || (index + 1);
+    return `question-${order}`;
+  };
+
+  // Helper function to find question by ID
+  const findQuestionById = (questionId: string) => {
+    return questions.find((q, index) => getQuestionId(q, index) === questionId);
+  };
+
+  // Helper function to find question index by ID
+  const findQuestionIndexById = (questionId: string) => {
+    return questions.findIndex((q, index) => getQuestionId(q, index) === questionId);
+  };
   console.log('Template:', template);
   console.log('Questions:', questions);
   console.log('Current question index:', currentQuestionIndex);
@@ -103,8 +125,8 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   // Initialize current response when question changes (but not when responses change)
   useEffect(() => {
     if (currentQuestion) {
-      // Use question ID if available, otherwise fall back to index
-      const questionIdentifier = currentQuestion.id || `question-${currentQuestionIndex}`;
+      // Use consistent question ID generation
+      const questionIdentifier = getQuestionId(currentQuestion, currentQuestionIndex);
       const existingResponse = responses.find(r => r.questionId === questionIdentifier);
       console.log('Question changed to:', questionIdentifier, 'Found existing response:', existingResponse);
       
@@ -178,7 +200,7 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   const saveCurrentResponse = () => {
     if (!currentQuestion) return;
 
-    const questionIdentifier = currentQuestion.id || `question-${currentQuestionIndex}`;
+    const questionIdentifier = getQuestionId(currentQuestion, currentQuestionIndex);
     const timeSpentOnQuestion = questionStartTime 
       ? Math.floor((new Date().getTime() - questionStartTime.getTime()) / 1000)
       : 0;
@@ -235,8 +257,8 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   const handleScoreChange = (score: number) => {
     if (!currentQuestion) return;
     
-    // Use question ID if available, otherwise fall back to index
-    const questionIdentifier = currentQuestion.id || `question-${currentQuestionIndex}`;
+    // Use consistent question ID generation
+    const questionIdentifier = getQuestionId(currentQuestion, currentQuestionIndex);
     
     console.log('Score change:', { 
       questionIdentifier, 
@@ -266,7 +288,7 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   const handleAnswerChange = (answer: string) => {
     if (!currentQuestion) return;
     
-    const questionIdentifier = currentQuestion.id || `question-${currentQuestionIndex}`;
+    const questionIdentifier = getQuestionId(currentQuestion, currentQuestionIndex);
     
     const updatedResponse = { 
       ...currentResponse, 
@@ -286,7 +308,7 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   const handleNotesChange = (notes: string) => {
     if (!currentQuestion) return;
     
-    const questionIdentifier = currentQuestion.id || `question-${currentQuestionIndex}`;
+    const questionIdentifier = getQuestionId(currentQuestion, currentQuestionIndex);
     
     const updatedResponse = { 
       ...currentResponse, 
@@ -306,7 +328,7 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   const toggleFlag = () => {
     if (!currentQuestion) return;
     
-    const questionIdentifier = currentQuestion.id || `question-${currentQuestionIndex}`;
+    const questionIdentifier = getQuestionId(currentQuestion, currentQuestionIndex);
     
     const updatedResponse = { 
       ...currentResponse, 
@@ -324,64 +346,242 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   };
 
   const saveProgress = async () => {
-    const progress: InterviewProgress = {
-      interviewId: interview.id,
+    const allResponses = [...responses, currentResponse];
+    
+    // Create responses for ALL questions, not just those with answers
+    const completeResponses = questions.map((question, index) => {
+      const questionId = getQuestionId(question, index);
+      const existingResponse = allResponses.find(r => r.questionId === questionId);
+      
+      return {
+        questionId,
+        answer: existingResponse?.answer || '',
+        score: existingResponse?.score || null,
+        notes: existingResponse?.notes || '',
+        timeSpent: existingResponse?.timeSpent || 0,
+        flagged: existingResponse?.flagged || false
+      };
+    });
+    
+    // Filter out responses that are completely empty (no answer, no score, no notes)
+    const finalResponses = completeResponses.filter(r => 
+      r.answer.trim() !== '' || r.score !== null || r.notes.trim() !== ''
+    );
+    
+    const progressData = {
+      interviewId: interview.id, // Add the required interviewId field
       templateId: template?.id,
       currentQuestionIndex,
-      responses: [...responses, currentResponse].filter(r => r.questionId),
-      startTime: startTime!,
-      totalTimeSpent,
-      status: interviewStatus
+      responses: finalResponses.map(r => {
+        const question = findQuestionById(r.questionId);
+        const questionIndex = findQuestionIndexById(r.questionId);
+        return {
+          interviewId: interview.id, // Required for each response in progress
+          questionId: r.questionId,
+          questionText: question?.question || '',
+          questionFormat: question?.format || QuestionFormat.SHORT_DESCRIPTION,
+          questionOrder: Math.max(1, question?.order || (questionIndex + 1)), // Ensure minimum 1
+          answer: r.answer,
+          justification: '', // QuestionResponse doesn't have justification
+          score: r.score || null,
+          notes: r.notes || '',
+          timeSpentSeconds: r.timeSpent || 0,
+          flagged: r.flagged || false,
+          isCompleted: false // This is just progress, not completed
+        };
+      }),
+      totalTimeSpentSeconds: totalTimeSpent,
+      status: InterviewProgressStatus.IN_PROGRESS
     };
 
     try {
-      await onSaveProgress?.(progress);
+      await saveProgressMutation.mutateAsync({
+        interviewId: interview.id,
+        progressData
+      });
       toast.success('Progress Saved', 'Interview progress has been saved successfully.');
     } catch (error) {
+      console.error('Error saving progress:', error);
       toast.error('Save Failed', 'Failed to save interview progress.');
     }
   };
 
   const submitEvaluation = async () => {
-    if (!startTime) return;
+    console.log('🔥 Submit Evaluation clicked!');
+    console.log('startTime:', startTime);
+    console.log('evaluation:', evaluation);
+    console.log('responses:', responses);
+    console.log('currentResponse:', currentResponse);
+    
+    if (!startTime) {
+      console.error('No start time found');
+      toast.error('Error', 'Interview must be started before submitting evaluation.');
+      return;
+    }
 
-    const finalResponses = [...responses, currentResponse].filter(r => r.questionId);
-    const averageScore = finalResponses.length > 0 
-      ? finalResponses.reduce((sum, r) => sum + (r.score || 0), 0) / finalResponses.length 
-      : 0;
-
-    const interviewEvaluation: InterviewEvaluation = {
-      interviewId: interview.id,
-      templateId: template?.id,
-      responses: finalResponses,
-      overallScore: evaluation.overallScore || averageScore,
-      overallNotes: evaluation.overallNotes,
-      recommendation: evaluation.recommendation,
-      strengths: evaluation.strengths.filter(Boolean),
-      weaknesses: evaluation.weaknesses.filter(Boolean),
-      nextSteps: evaluation.nextSteps,
-      completedAt: new Date()
-    };
+    // Combine all responses including the current one
+    const allResponses = [...responses, currentResponse];
+    
+    // Create responses for ALL questions, not just those with answers
+    const completeResponses = questions.map((question, index) => {
+      const questionId = getQuestionId(question, index);
+      const existingResponse = allResponses.find(r => r.questionId === questionId);
+      
+      return {
+        questionId,
+        answer: existingResponse?.answer || '',
+        score: existingResponse?.score || null,
+        notes: existingResponse?.notes || '',
+        timeSpent: existingResponse?.timeSpent || 0,
+        flagged: existingResponse?.flagged || false
+      };
+    });
+    
+    // Filter out responses that are completely empty (no answer, no score, no notes)
+    const finalResponses = completeResponses.filter(r => 
+      r.answer.trim() !== '' || r.score !== null || r.notes.trim() !== ''
+    );
+    
+    console.log('All questions count:', questions.length);
+    console.log('Complete responses count:', completeResponses.length);
+    console.log('Final responses (non-empty) count:', finalResponses.length);
+    console.log('finalResponses:', finalResponses);
 
     try {
-      await onSubmitEvaluation?.(interviewEvaluation);
-      
-      // Update interview status
+      // Step 1: Save all individual question responses
+      console.log('Saving individual question responses...');
+      for (const response of finalResponses) {
+        try {
+          // Find the question using our helper function
+          const question = findQuestionById(response.questionId);
+          const questionIndex = findQuestionIndexById(response.questionId);
+          if (!question) {
+            console.warn(`Question not found for response: ${response.questionId}`);
+            continue;
+          }
+
+          await createResponseMutation.mutateAsync({
+            interviewId: interview.id,
+            responseData: {
+              interviewId: interview.id, // Required for validation
+              questionId: response.questionId,
+              questionText: question.question,
+              questionFormat: question.format,
+              questionOrder: Math.max(1, question.order || (questionIndex + 1)), // Ensure minimum 1
+              answer: response.answer,
+              justification: '', // QuestionResponse doesn't have justification
+              score: response.score || null,
+              notes: response.notes || '',
+              timeSpentSeconds: response.timeSpent || 0,
+              flagged: response.flagged || false,
+              isCompleted: true
+            }
+          });
+          console.log(`Response saved for question ${response.questionId}`);
+        } catch (responseError) {
+          console.error(`Failed to save response for question ${response.questionId}:`, responseError);
+          // Continue with other responses even if one fails
+        }
+      }
+
+      // Step 2: Save interview progress
+      console.log('Saving interview progress...');
+      const progressData = {
+        interviewId: interview.id, // Add the required interviewId field
+        templateId: template?.id,
+        currentQuestionIndex: questions.length - 1, // Mark as completed
+        responses: finalResponses.map(r => {
+          const question = findQuestionById(r.questionId);
+          const questionIndex = findQuestionIndexById(r.questionId);
+          return {
+            interviewId: interview.id, // Required for each response in progress
+            questionId: r.questionId,
+            questionText: question?.question || '',
+            questionFormat: question?.format || QuestionFormat.SHORT_DESCRIPTION,
+            questionOrder: Math.max(1, question?.order || (questionIndex + 1)), // Ensure minimum 1
+            answer: r.answer,
+            justification: '', // QuestionResponse doesn't have justification
+            score: r.score || null,
+            notes: r.notes || '',
+            timeSpentSeconds: r.timeSpent || 0,
+            flagged: r.flagged || false,
+            isCompleted: true
+          };
+        }),
+        totalTimeSpentSeconds: totalTimeSpent,
+        status: InterviewProgressStatus.COMPLETED
+      };
+
+      await saveProgressMutation.mutateAsync({
+        interviewId: interview.id,
+        progressData
+      });
+      console.log('Interview progress saved successfully');
+
+      // Step 3: Update interview with overall evaluation results
+      console.log('Updating interview with evaluation results...');
+      const averageScore = finalResponses.length > 0 
+        ? finalResponses.reduce((sum, r) => sum + (r.score || 0), 0) / finalResponses.length 
+        : 0;
+
+      // Map recommendation to result
+      const resultMapping = {
+        'strong_hire': 'Pass',
+        'hire': 'Pass', 
+        'no_hire': 'Fail',
+        'strong_no_hire': 'Fail'
+      };
+
+      const interviewUpdateData = {
+        status: InterviewStatus.COMPLETED,
+        result: resultMapping[evaluation.recommendation] || 'Fail',
+        overallRating: evaluation.overallScore || Math.round(averageScore),
+        notes: [
+          evaluation.overallNotes,
+          evaluation.strengths.filter(Boolean).length > 0 ? `Strengths: ${evaluation.strengths.filter(Boolean).join(', ')}` : '',
+          evaluation.weaknesses.filter(Boolean).length > 0 ? `Areas for Improvement: ${evaluation.weaknesses.filter(Boolean).join(', ')}` : '',
+          evaluation.nextSteps ? `Next Steps: ${evaluation.nextSteps}` : ''
+        ].filter(Boolean).join('\n\n'),
+        recommendation: evaluation.recommendation,
+        nextSteps: evaluation.nextSteps
+      };
+
       await updateInterviewMutation.mutateAsync({
         id: interview.id,
-        data: { 
-          status: InterviewStatus.COMPLETED,
-          result: evaluation.recommendation === 'strong_hire' || evaluation.recommendation === 'hire' ? 'Pass' : 'Fail',
-          overallRating: evaluation.overallScore,
-          notes: evaluation.overallNotes,
-          nextSteps: evaluation.nextSteps
-        }
+        data: interviewUpdateData
       });
 
-      toast.success('Evaluation Submitted', 'Interview evaluation has been submitted successfully.');
+      console.log('Interview evaluation updated successfully');
+
+      // Step 4: Call the optional onSubmitEvaluation callback if provided
+      if (onSubmitEvaluation) {
+        const interviewEvaluation: InterviewEvaluation = {
+          interviewId: interview.id,
+          templateId: template?.id,
+          responses: finalResponses,
+          overallScore: evaluation.overallScore || averageScore,
+          overallNotes: evaluation.overallNotes,
+          recommendation: evaluation.recommendation,
+          strengths: evaluation.strengths.filter(Boolean),
+          weaknesses: evaluation.weaknesses.filter(Boolean),
+          nextSteps: evaluation.nextSteps,
+          completedAt: new Date()
+        };
+
+        try {
+          await onSubmitEvaluation(interviewEvaluation);
+          console.log('External onSubmitEvaluation completed successfully');
+        } catch (callbackError) {
+          console.warn('External onSubmitEvaluation failed, but interview data was saved:', callbackError);
+        }
+      }
+
+      toast.success('Evaluation Submitted', 'Interview evaluation has been submitted and saved successfully.');
       onClose();
     } catch (error) {
-      toast.error('Submission Failed', 'Failed to submit interview evaluation.');
+      console.error('Error submitting evaluation:', error);
+      console.error('Error details:', error?.response?.data);
+      toast.error('Submission Failed', 'Failed to submit interview evaluation. Please check console for details.');
     }
   };
 
@@ -548,7 +748,7 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Questions</h3>
                 <div className="space-y-2">
                   {questions.map((question, index) => {
-                    const questionIdentifier = question.id || `question-${index}`;
+                    const questionIdentifier = getQuestionId(question, index);
                     const response = responses.find(r => r.questionId === questionIdentifier);
                     return (
                       <button
@@ -1005,7 +1205,22 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
                     </button>
                     
                     <button
-                      onClick={submitEvaluation}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('🚀 Submit Evaluation button clicked!');
+                        console.log('Button event:', e);
+                        console.log('evaluation.overallScore:', evaluation.overallScore);
+                        console.log('evaluation.recommendation:', evaluation.recommendation);
+                        console.log('Button disabled?', !evaluation.overallScore || !evaluation.recommendation);
+                        
+                        if (!evaluation.overallScore || !evaluation.recommendation) {
+                          toast.warning('Missing Information', 'Please provide both an overall score and recommendation before submitting.');
+                          return;
+                        }
+                        
+                        submitEvaluation();
+                      }}
                       disabled={!evaluation.overallScore || !evaluation.recommendation}
                       className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                     >
