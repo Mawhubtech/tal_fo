@@ -256,13 +256,7 @@ export const DayInterviewsModal: React.FC<DayInterviewsModalProps> = ({
                             )}
                           </div>
 
-                          {/* Notes */}
-                          {interview.agenda && (
-                            <div className="mt-2 text-sm">
-                              <span className="font-medium text-gray-700">Agenda: </span>
-                              <span className="text-gray-600">{interview.agenda}</span>
-                            </div>
-                          )}
+                          {/* Removed agenda display as per user request */}
                         </div>
                       </div>
                     </div>

@@ -11,7 +11,7 @@ import {
   Interview 
 } from '../../../../../types/interview.types';
 import { InterviewTemplate, InterviewQuestion, QuestionFormat } from '../../../../../types/interviewTemplate.types';
-import { useUpdateInterview, useSaveInterviewProgress, useCreateInterviewResponse } from '../../../../../hooks/useInterviews';
+import { useUpdateInterview, useSaveInterviewProgress, useCreateInterviewResponse, useInterviewQueryInvalidation } from '../../../../../hooks/useInterviews';
 import { toast } from '../../../../../components/ToastContainer';
 
 interface InterviewConductSidepanelProps {
@@ -95,6 +95,7 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
   const updateInterviewMutation = useUpdateInterview();
   const saveProgressMutation = useSaveInterviewProgress();
   const createResponseMutation = useCreateInterviewResponse();
+  const { invalidateInterviewData } = useInterviewQueryInvalidation();
 
   const candidate = interview?.jobApplication?.candidate;
   const job = interview?.jobApplication?.job;
@@ -575,6 +576,9 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
           console.warn('External onSubmitEvaluation failed, but interview data was saved:', callbackError);
         }
       }
+
+      // Ensure all components refresh with the latest data
+      invalidateInterviewData(interview.id);
 
       toast.success('Evaluation Submitted', 'Interview evaluation has been submitted and saved successfully.');
       onClose();

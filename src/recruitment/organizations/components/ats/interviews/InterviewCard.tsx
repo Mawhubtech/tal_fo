@@ -262,13 +262,6 @@ export const InterviewCard: React.FC<InterviewCardProps> = ({
 
             {/* Notes and Additional Info */}
             <div className="space-y-2">
-              {interview.agenda && (
-                <div className="text-sm">
-                  <span className="font-medium text-gray-700">Agenda: </span>
-                  <span className="text-gray-600">{interview.agenda}</span>
-                </div>
-              )}
-              
               {interview.notes && (
                 <div className="text-sm">
                   <span className="font-medium text-gray-700">Notes: </span>

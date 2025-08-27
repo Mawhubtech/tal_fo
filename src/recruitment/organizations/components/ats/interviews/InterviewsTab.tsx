@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Filter, Users, Calendar, Clock, CheckCircle, RefreshCw } from 'lucide-react';
-import { useInterviews, useInterviewStats, useInterviewFilters, useUpdateInterview, useAddInterviewFeedback } from '../../../../../hooks/useInterviews';
+import { useInterviews, useInterviewStats, useInterviewFilters, useUpdateInterview, useAddInterviewFeedback, useInterviewQueryInvalidation } from '../../../../../hooks/useInterviews';
 import { useInterviewCalendarSync } from '../../../../../hooks/useInterviewCalendarSync';
 import { useStageMovement } from '../../../../../hooks/useStageMovement';
 import { useJobApplicationsByJob } from '../../../../../hooks/useJobApplications';
@@ -77,6 +77,7 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   const { data: stats } = useInterviewStats();
   const updateInterviewMutation = useUpdateInterview();
   const addFeedbackMutation = useAddInterviewFeedback();
+  const { invalidateAllInterviewQueries } = useInterviewQueryInvalidation();
   
   // Stage movement integration
   const stageMovement = useStageMovement();
@@ -311,7 +312,7 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
         <div className="text-center">
           <div className="text-red-500 mb-2">Error loading interviews</div>
           <button 
-            onClick={() => refetch()}
+            onClick={() => invalidateAllInterviewQueries()}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             Try Again
@@ -437,7 +438,7 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
               interviews={interviews}
               isLoading={isLoading}
               onInterviewClick={handleInterviewClick}
-              onRefresh={refetch}
+              onRefresh={invalidateAllInterviewQueries}
               totalCount={totalInterviews}
               showJobInfo={!jobId} // Show job info when not in job-specific context
               onUpdateInterviewStatus={handleUpdateInterviewStatus}

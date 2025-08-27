@@ -9,7 +9,7 @@ import {
 import type { Interview, InterviewFeedback, SaveInterviewProgressRequest } from '../../../../../types/interview.types';
 import { InterviewStatus } from '../../../../../types/interview.types';
 import type { InterviewTemplate } from '../../../../../types/interviewTemplate.types';
-import { useUpdateInterview, useDeleteInterview, useSaveInterviewProgress, useInterviewResponses, useInterviewProgress } from '../../../../../hooks/useInterviews';
+import { useUpdateInterview, useDeleteInterview, useSaveInterviewProgress, useInterviewResponses, useInterviewProgress, useInterviewQueryInvalidation } from '../../../../../hooks/useInterviews';
 import { useEmailService } from '../../../../../hooks/useEmailService';
 import { useEmailTemplates, type EmailTemplate } from '../../../../../hooks/useEmailManagement';
 import { useInterviewTemplates } from '../../../../../hooks/useInterviewTemplates';
@@ -54,6 +54,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   const updateInterviewMutation = useUpdateInterview();
   const deleteInterviewMutation = useDeleteInterview();
   const saveProgressMutation = useSaveInterviewProgress();
+  const { invalidateInterviewData } = useInterviewQueryInvalidation();
   
   // Fetch interview responses and progress for evaluation details
   const { data: interviewResponses, isLoading: isLoadingResponses } = useInterviewResponses(interview?.id || '');
@@ -216,6 +217,10 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
         id: interview.id,
         data: editForm as any
       });
+      
+      // Ensure all components refresh with the latest data
+      invalidateInterviewData(interview.id);
+      
       setIsEditing(false);
       toast.success('Interview Updated', 'Interview evaluation has been saved successfully.');
     } catch (error) {
@@ -631,7 +636,21 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
           {activeTab === 'notes' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4">Interview Notes</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Interview Notes</h3>
+                  {!isEditing && (
+                    <button
+                      onClick={() => {
+                        console.log('Enabling edit mode for notes:', interview?.id);
+                        setIsEditing(true);
+                      }}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center text-sm"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      {interview.notes ? 'Edit Notes' : 'Add Notes'}
+                    </button>
+                  )}
+                </div>
                 {isEditing ? (
                   <div className="space-y-4">
                     <div>
@@ -654,14 +673,51 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                         placeholder="What are the next steps for this candidate?"
                       />
                     </div>
+                    
+                    {/* Save/Cancel buttons for notes */}
+                    <div className="flex items-center space-x-3 pt-4">
+                      <button
+                        onClick={handleSave}
+                        disabled={updateInterviewMutation?.isPending}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {updateInterviewMutation?.isPending ? 'Saving...' : 'Save Notes'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditForm({
+                            status: interview.status,
+                            result: interview.result,
+                            overallRating: interview.overallRating,
+                            notes: interview.notes,
+                            recommendation: interview.recommendation,
+                            nextSteps: interview.nextSteps
+                          });
+                        }}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h4 className="font-medium text-gray-900 mb-2">Interview Notes</h4>
-                      <p className="text-gray-600 whitespace-pre-wrap">
-                        {interview.notes || 'No notes added yet.'}
-                      </p>
+                      {interview.notes ? (
+                        <p className="text-gray-600 whitespace-pre-wrap">
+                          {interview.notes}
+                        </p>
+                      ) : (
+                        <div className="text-center py-6">
+                          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                          <p className="text-gray-500 mb-3">No notes added yet</p>
+                          <p className="text-sm text-gray-400">Click "Add Notes" above to add your interview observations and feedback.</p>
+                        </div>
+                      )}
                     </div>
                     {interview.nextSteps && (
                       <div className="bg-blue-50 rounded-lg p-4">

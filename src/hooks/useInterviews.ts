@@ -139,6 +139,17 @@ export const useUpdateInterview = () => {
         updatedInterview
       );
       
+      // Invalidate all interview-specific queries to ensure consistency
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedInterview.id), 'responses'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedInterview.id), 'progress'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedInterview.id), 'stats'] 
+      });
+      
       // Invalidate lists to reflect changes
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
@@ -170,8 +181,16 @@ export const useRescheduleInterview = () => {
         INTERVIEW_QUERY_KEYS.detail(updatedInterview.id),
         updatedInterview
       );
+      
+      // Invalidate interview-specific queries to reflect schedule changes
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedInterview.id), 'progress'] 
+      });
+      
+      // Invalidate lists and schedule-related queries
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.upcoming() });
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
       
       // Update corresponding calendar event with new schedule
       try {
@@ -198,8 +217,19 @@ export const useCancelInterview = () => {
         INTERVIEW_QUERY_KEYS.detail(updatedInterview.id),
         updatedInterview
       );
+      
+      // Invalidate interview-specific queries to reflect cancellation
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedInterview.id), 'progress'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedInterview.id), 'responses'] 
+      });
+      
+      // Invalidate lists and schedule-related queries
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.upcoming() });
       
       // Update calendar event status to cancelled
       try {
@@ -253,7 +283,17 @@ export const useStartInterview = () => {
         INTERVIEW_QUERY_KEYS.detail(updatedInterview.id),
         updatedInterview
       );
+      
+      // Invalidate interview-specific queries to reflect started status
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedInterview.id), 'progress'] 
+      });
+      
+      // Invalidate lists to show updated status
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
+      
+      // Invalidate global stats to reflect status change
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
     },
   });
 };
@@ -289,6 +329,20 @@ export const useAddInterviewFeedback = () => {
     onSuccess: (_, { id }) => {
       // Refetch the interview to include new feedback
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.detail(id) });
+      
+      // Invalidate interview-specific queries that might show feedback
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(id), 'responses'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(id), 'progress'] 
+      });
+      
+      // Invalidate lists to show updated status/feedback
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
+      
+      // Invalidate global stats to reflect feedback changes
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
     },
   });
 };
@@ -310,7 +364,14 @@ export const useUpdateParticipantStatus = () => {
       data: UpdateParticipantStatusRequest;
     }) => InterviewService.updateParticipantStatus(interviewId, participantId, data),
     onSuccess: (_, { interviewId }) => {
+      // Invalidate the specific interview
       queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.detail(interviewId) });
+      
+      // Invalidate lists to show updated participant status
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.lists() });
+      
+      // Invalidate global stats if participant status affects overall metrics
+      queryClient.invalidateQueries({ queryKey: INTERVIEW_QUERY_KEYS.stats() });
     },
   });
 };
@@ -494,12 +555,27 @@ export const useSaveInterviewProgress = () => {
         savedProgress
       );
       
-      // Invalidate related queries
+      // Invalidate specific interview detail to refresh status/data
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.detail(interviewId) 
+      });
+      
+      // Invalidate related queries for the specific interview
       queryClient.invalidateQueries({ 
         queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'responses'] 
       });
       queryClient.invalidateQueries({ 
         queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'stats'] 
+      });
+      
+      // Invalidate interview lists to show updated progress/status
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.lists() 
+      });
+      
+      // Invalidate global stats to reflect progress changes
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.stats() 
       });
     },
   });
@@ -529,7 +605,12 @@ export const useCreateInterviewResponse = () => {
       responseData: CreateInterviewResponseRequest;
     }) => InterviewService.createInterviewResponse(interviewId, responseData),
     onSuccess: (newResponse, { interviewId }) => {
-      // Invalidate responses cache
+      // Invalidate specific interview detail to refresh status/data
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.detail(interviewId) 
+      });
+      
+      // Invalidate specific interview-related queries
       queryClient.invalidateQueries({ 
         queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'responses'] 
       });
@@ -538,6 +619,16 @@ export const useCreateInterviewResponse = () => {
       });
       queryClient.invalidateQueries({ 
         queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'stats'] 
+      });
+      
+      // Invalidate interview lists to show updated status
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.lists() 
+      });
+      
+      // Invalidate global stats to reflect new responses
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.stats() 
       });
     },
   });
@@ -555,12 +646,30 @@ export const useUpdateInterviewResponse = () => {
       responseData: UpdateInterviewResponseRequest;
     }) => InterviewService.updateInterviewResponse(responseId, responseData),
     onSuccess: (updatedResponse) => {
+      // Invalidate specific interview detail to refresh status/data
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.detail(updatedResponse.interviewId) 
+      });
+      
       // Invalidate related queries - we need to get interview ID from response
       queryClient.invalidateQueries({ 
         queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedResponse.interviewId), 'responses'] 
       });
       queryClient.invalidateQueries({ 
         queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedResponse.interviewId), 'progress'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [...INTERVIEW_QUERY_KEYS.detail(updatedResponse.interviewId), 'stats'] 
+      });
+      
+      // Invalidate interview lists to show updated status
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.lists() 
+      });
+      
+      // Invalidate global stats to reflect updated responses
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.stats() 
       });
     },
   });
@@ -578,6 +687,11 @@ export const useDeleteInterviewResponse = () => {
       interviewId: string;
     }) => InterviewService.deleteInterviewResponse(responseId),
     onSuccess: (_, { interviewId }) => {
+      // Invalidate specific interview detail to refresh status/data
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.detail(interviewId) 
+      });
+      
       // Invalidate related queries
       queryClient.invalidateQueries({ 
         queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'responses'] 
@@ -587,6 +701,16 @@ export const useDeleteInterviewResponse = () => {
       });
       queryClient.invalidateQueries({ 
         queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'stats'] 
+      });
+      
+      // Invalidate interview lists to show updated status
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.lists() 
+      });
+      
+      // Invalidate global stats to reflect deleted responses
+      queryClient.invalidateQueries({ 
+        queryKey: INTERVIEW_QUERY_KEYS.stats() 
       });
     },
   });
@@ -602,4 +726,62 @@ export const useInterviewStatsForInterview = (interviewId: string) => {
     enabled: !!interviewId,
     staleTime: 30 * 1000, // 30 seconds
   });
+};
+
+/**
+ * Utility hook for centralized query invalidation
+ * Use this to ensure comprehensive data refresh across all interview components
+ */
+export const useInterviewQueryInvalidation = () => {
+  const queryClient = useQueryClient();
+
+  const invalidateInterviewData = useCallback((interviewId: string) => {
+    // Invalidate the specific interview
+    queryClient.invalidateQueries({ 
+      queryKey: INTERVIEW_QUERY_KEYS.detail(interviewId) 
+    });
+    
+    // Invalidate all interview-specific sub-queries
+    queryClient.invalidateQueries({ 
+      queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'responses'] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'progress'] 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: [...INTERVIEW_QUERY_KEYS.detail(interviewId), 'stats'] 
+    });
+    
+    // Invalidate lists and global queries
+    queryClient.invalidateQueries({ 
+      queryKey: INTERVIEW_QUERY_KEYS.lists() 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: INTERVIEW_QUERY_KEYS.stats() 
+    });
+    queryClient.invalidateQueries({ 
+      queryKey: INTERVIEW_QUERY_KEYS.upcoming() 
+    });
+  }, [queryClient]);
+
+  const invalidateAllInterviewQueries = useCallback(() => {
+    // Invalidate all interview-related queries
+    queryClient.invalidateQueries({ 
+      queryKey: INTERVIEW_QUERY_KEYS.all 
+    });
+  }, [queryClient]);
+
+  const refreshInterviewData = useCallback((interviewId?: string) => {
+    if (interviewId) {
+      invalidateInterviewData(interviewId);
+    } else {
+      invalidateAllInterviewQueries();
+    }
+  }, [invalidateInterviewData, invalidateAllInterviewQueries]);
+
+  return {
+    invalidateInterviewData,
+    invalidateAllInterviewQueries,
+    refreshInterviewData,
+  };
 };
