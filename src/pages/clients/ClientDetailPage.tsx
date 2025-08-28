@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Building, Globe, Mail, Phone, MapPin, Users, Briefcase,
   Calendar, TrendingUp, Edit3, Settings, Trash2, MoreVertical,
-  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle, Building2, Plus
+  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle, Building2, Plus, FileText
 } from 'lucide-react';
 import { clientApi } from '../../services/api';
 import { clientApiService } from '../../services/clientApiService';
@@ -23,6 +23,13 @@ import {
 } from '../../components/organization-chart';
 import { useOrganizationChart, useCreatePosition, useUpdatePosition, useDeletePosition, useDownloadTemplate, useUploadTemplate } from '../../hooks/usePositions';
 import type { Position } from '../../services/positionApiService';
+import { InterviewTemplateManager } from '../../recruitment/organizations/components/ats/interviews/templates/InterviewTemplateManager';
+import { IntakeMeetingTemplateManager } from '../../recruitment/organizations/components/ats/interviews/templates/IntakeMeetingTemplateManager';
+import { IntakeMeetingTemplatePreviewModal } from '../../recruitment/organizations/components/ats/interviews/templates/IntakeMeetingTemplatePreviewModal';
+import { IntakeMeetingCalendar } from '../../recruitment/organizations/components/ats/interviews/templates/IntakeMeetingCalendar';
+import { useInterviewTemplates } from '../../hooks/useInterviewTemplates';
+import { useIntakeMeetingTemplates } from '../../hooks/useIntakeMeetingTemplates';
+import type { IntakeMeetingTemplate } from '../../types/intakeMeetingTemplate.types';
 
 // Utility function to generate consistent colors based on string
 const stringToColor = (str: string) => {
@@ -60,7 +67,7 @@ const ClientDetailPage: React.FC = () => {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts' | 'departments' | 'organization'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts' | 'departments' | 'organization' | 'interview-templates' | 'intake-meetings'>('overview');
   
   // Check if current user is internal (should not see edit/delete buttons)
   const isInternalUserRole = isInternalUser(currentUser);
@@ -99,6 +106,12 @@ const ClientDetailPage: React.FC = () => {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ success: boolean; positions: Position[]; errors?: string[] } | null>(null);
   
+  // Interview template states
+  const [showInterviewTemplateManager, setShowInterviewTemplateManager] = useState(false);
+  const [showIntakeMeetingTemplateManager, setShowIntakeMeetingTemplateManager] = useState(false);
+  const [showIntakeMeetingPreview, setShowIntakeMeetingPreview] = useState(false);
+  const [selectedIntakeMeetingTemplate, setSelectedIntakeMeetingTemplate] = useState<IntakeMeetingTemplate | null>(null);
+  
   const departmentApiService = new DepartmentApiService();
   
   // Position hooks
@@ -134,6 +147,16 @@ const ClientDetailPage: React.FC = () => {
   const deletePositionMutation = useDeletePosition();
   const downloadTemplateMutation = useDownloadTemplate();
   const uploadTemplateMutation = useUploadTemplate();
+  
+  // Interview templates data
+  const { data: interviewTemplatesArray, isLoading: templatesLoading } = useInterviewTemplates({
+    organizationId: clientId
+  });
+  
+  // Intake meeting templates data
+  const { data: intakeMeetingTemplatesArray, isLoading: intakeTemplatesLoading } = useIntakeMeetingTemplates({
+    organizationId: clientId
+  });
   
   // Load client data
   useEffect(() => {
@@ -204,7 +227,7 @@ const ClientDetailPage: React.FC = () => {
   // Handle tab query parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'activity', 'contracts', 'departments', 'organization'].includes(tabParam)) {
+    if (tabParam && ['overview', 'activity', 'contracts', 'departments', 'organization', 'interview-templates'].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -444,7 +467,9 @@ const ClientDetailPage: React.FC = () => {
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'contracts', label: 'Contracts', icon: Target },
     { id: 'departments', label: 'Departments', icon: Users },
-    { id: 'organization', label: 'Organization Chart', icon: Building2 }
+    { id: 'organization', label: 'Organization Chart', icon: Building2 },
+    { id: 'interview-templates', label: 'Templates', icon: FileText },
+    { id: 'intake-meetings', label: 'Intake Meetings', icon: Calendar }
   ];
 
   // Loading state
@@ -1042,8 +1067,318 @@ const ClientDetailPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'interview-templates' && (
+            <div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                      Templates
+                    </h4>
+                    <p className="text-sm text-blue-800">
+                      Create and manage interview templates for <strong>{client.name}</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interview Templates Management */}
+              <div className="bg-white rounded-lg border shadow-sm">
+                <div className="border-b border-gray-200 p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">Templates</h2>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {templatesLoading ? 'Loading...' : 
+                          `${interviewTemplatesArray?.length || 0} templates available`
+                        }
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowInterviewTemplateManager(true)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Manage Templates</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  {templatesLoading ? (
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
+                      <p className="text-gray-500">Loading interview templates...</p>
+                    </div>
+                  ) : interviewTemplatesArray && interviewTemplatesArray.length > 0 ? (
+                    <div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        {interviewTemplatesArray.map((template) => (
+                          <div
+                            key={template.id}
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <h3 className="font-medium text-gray-900 text-sm truncate flex-1 mr-2">
+                                {template.name}
+                              </h3>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                template.interviewType === 'Phone Screen' ? 'bg-blue-100 text-blue-800' :
+                                template.interviewType === 'Technical' ? 'bg-green-100 text-green-800' :
+                                template.interviewType === 'Behavioral' ? 'bg-purple-100 text-purple-800' :
+                                template.interviewType === 'Final' ? 'bg-orange-100 text-orange-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {template.interviewType}
+                              </span>
+                            </div>
+                            
+                            <p className="text-xs text-gray-500 mb-3 line-clamp-2">
+                              {template.description || 'No description provided'}
+                            </p>
+                            
+                            <div className="flex items-center justify-between text-xs text-gray-500">
+                              <span className="flex items-center">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {template.duration || 60} min
+                              </span>
+                              <span className="flex items-center">
+                                <Users className="w-3 h-3 mr-1" />
+                                {template.questions?.length || 0} questions
+                              </span>
+                            </div>
+
+                            {template.jobId && (
+                              <div className="mt-2 pt-2 border-t border-gray-100">
+                                <span className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded">
+                                  Job-specific
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="p-3 bg-gray-100 rounded-lg inline-block mb-4">
+                        <FileText className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Templates</h3>
+                      <p className="text-gray-500 mb-4">
+                        Create your first template to standardize your hiring process.
+                      </p>
+                      <button
+                        onClick={() => setShowInterviewTemplateManager(true)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 mx-auto"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Create Template</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'intake-meetings' && (
+            <div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                      Intake Meetings
+                    </h4>
+                    <p className="text-sm text-blue-800">
+                      Create and manage client intake meeting templates for <strong>{client.name}</strong>. Use these templates to gather requirements and generate job descriptions and interview templates.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Intake Meeting Calendar */}
+              <div className="mb-6">
+                <IntakeMeetingCalendar
+                  clientId={client.id}
+                  clientName={client.name}
+                  templates={intakeMeetingTemplatesArray || []}
+                />
+              </div>
+
+              {/* Intake Meeting Templates Management */}
+              <div className="bg-white rounded-lg border shadow-sm">
+                <div className="border-b border-gray-200 p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900">Intake Meeting Templates</h2>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {intakeTemplatesLoading ? 'Loading...' : 
+                          `${intakeMeetingTemplatesArray?.length || 0} templates available`
+                        }
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowIntakeMeetingTemplateManager(true)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Manage Templates</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  {intakeTemplatesLoading ? (
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
+                      <p className="text-gray-500">Loading intake meeting templates...</p>
+                    </div>
+                  ) : intakeMeetingTemplatesArray && intakeMeetingTemplatesArray.length > 0 ? (
+                    <div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        {intakeMeetingTemplatesArray.map((template) => (
+                          <div
+                            key={template.id}
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <h3 className="font-medium text-gray-900 text-sm truncate flex-1 mr-2">
+                                {template.name}
+                              </h3>
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Intake Meeting
+                              </span>
+                            </div>
+                            
+                            <p className="text-xs text-gray-500 mb-3 line-clamp-2">
+                              {template.description || 'No description provided'}
+                            </p>
+                            
+                            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                              <span className="flex items-center">
+                                <Clock className="w-3 h-3 mr-1" />
+                                60 min
+                              </span>
+                              <span className="flex items-center">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                {template.questions?.length || 0} questions
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div>
+                                {template.isDefault && (
+                                  <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                                    Default Template
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedIntakeMeetingTemplate(template);
+                                  setShowIntakeMeetingPreview(true);
+                                }}
+                                className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center"
+                              >
+                                <ExternalLink className="w-3 h-3 mr-1" />
+                                View
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="p-3 bg-gray-100 rounded-lg inline-block mb-4">
+                        <Calendar className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Intake Meeting Templates</h3>
+                      <p className="text-gray-500 mb-4">
+                        Create your first intake meeting template to gather client requirements systematically.
+                      </p>
+                      <button
+                        onClick={() => setShowIntakeMeetingTemplateManager(true)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2 mx-auto"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Create Template</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Interview Template Manager Modal */}
+      {showInterviewTemplateManager && client && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Template Manager</h2>
+                <p className="text-sm text-gray-500 mt-1">Manage templates for {client.name}</p>
+              </div>
+              <button
+                onClick={() => setShowInterviewTemplateManager(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <InterviewTemplateManager
+                organizationId={client.id}
+                jobTitle={`General Template for ${client.name}`}
+                jobDescription={`Organization-wide interview templates for ${client.name}. Industry: ${client.industry || 'Various'}.`}
+                jobRequirements={client.description ? [client.description] : []}
+                onClose={() => setShowInterviewTemplateManager(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Intake Meeting Template Manager Modal */}
+      {showIntakeMeetingTemplateManager && client && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Intake Meeting Template Manager</h2>
+                <p className="text-sm text-gray-500 mt-1">Manage intake meeting templates for {client.name}</p>
+              </div>
+              <button
+                onClick={() => setShowIntakeMeetingTemplateManager(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <IntakeMeetingTemplateManager
+                organizationId={client.id}
+                onClose={() => setShowIntakeMeetingTemplateManager(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Position Form Modal */}
       {showPositionForm && client && (
@@ -1188,6 +1523,18 @@ const ClientDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Intake Meeting Template Preview Modal */}
+      {showIntakeMeetingPreview && selectedIntakeMeetingTemplate && (
+        <IntakeMeetingTemplatePreviewModal
+          isOpen={showIntakeMeetingPreview}
+          template={selectedIntakeMeetingTemplate}
+          onClose={() => {
+            setShowIntakeMeetingPreview(false);
+            setSelectedIntakeMeetingTemplate(null);
+          }}
+        />
       )}
     </div>
   );

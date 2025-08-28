@@ -48,6 +48,13 @@ export interface EmailLogEntry {
   createdAt: Date;
 }
 
+export interface EmailSettings {
+  isGmailConnected: boolean;
+  gmailEmail?: string;
+  hasRequiredScopes: boolean;
+  lastConnected?: string;
+}
+
 export interface EmailHistoryResponse {
   emails: EmailLogEntry[];
   total: number;
@@ -162,6 +169,59 @@ class EmailApiService {
   async getEmailTemplates(category?: string) {
     const params = category ? { category } : {};
     const response = await apiClient.get(`${this.baseUrl}/templates`, { params });
+    return response.data;
+  }
+
+  /**
+   * Get Gmail connection settings
+   */
+  async getGmailSettings(): Promise<{
+    isGmailConnected: boolean;
+    gmailEmail?: string;
+    hasRequiredScopes: boolean;
+    lastConnected?: string;
+  }> {
+    const response = await apiClient.get('/email/settings');
+    return response.data;
+  }
+
+  /**
+   * Connect Gmail account
+   */
+  async connectGmail(): Promise<{ authUrl: string }> {
+    const response = await apiClient.post('/email/connect-gmail');
+    return response.data;
+  }
+
+  /**
+   * Reconnect Gmail account (forces re-authentication with all scopes)
+   */
+  async reconnectGmail(): Promise<{ authUrl: string }> {
+    const response = await apiClient.post('/email/reconnect-gmail');
+    return response.data;
+  }
+
+  /**
+   * Force reauthorization with updated scopes
+   */
+  async forceReauthorization(): Promise<{ authUrl: string }> {
+    const response = await apiClient.post('/email/force-reauthorization');
+    return response.data;
+  }
+
+  /**
+   * Get Gmail authorization URL for initial connection or reauthorization
+   */
+  async getGmailAuthUrl(): Promise<{ authUrl: string }> {
+    const response = await apiClient.post('/email/connect-gmail');
+    return response.data;
+  }
+
+  /**
+   * Disconnect Gmail account
+   */
+  async disconnectGmail(): Promise<{ message: string }> {
+    const response = await apiClient.delete('/email/disconnect-gmail');
     return response.data;
   }
 }

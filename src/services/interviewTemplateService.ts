@@ -15,7 +15,7 @@ export class InterviewTemplateService {
   /**
    * Get interview templates with filters
    */
-  static async getTemplates(filters?: InterviewTemplateFilters): Promise<InterviewTemplatesResponse> {
+  static async getTemplates(filters?: InterviewTemplateFilters): Promise<InterviewTemplate[]> {
     const response = await api.get(this.BASE_PATH, { params: filters });
     return response.data;
   }

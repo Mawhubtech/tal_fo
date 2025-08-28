@@ -158,6 +158,7 @@ export const InterviewTemplatesPanel: React.FC<InterviewTemplatesPanelProps> = (
         jobDescription={jobDescription}
         jobRequirements={jobRequirements}
         organizationId={organizationId}
+        startWithAI={true}
         onTemplateCreated={(template) => {
           setShowCreateModal(false);
           handleTemplateSelect(template);

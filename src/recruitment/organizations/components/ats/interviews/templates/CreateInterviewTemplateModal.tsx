@@ -21,6 +21,8 @@ interface CreateInterviewTemplateModalProps {
   editTemplate?: InterviewTemplate;
   isEditMode?: boolean;
   onTemplateUpdated?: (template: InterviewTemplate) => void;
+  // AI generation mode
+  startWithAI?: boolean;
 }
 
 interface AIGenerationStep {
@@ -41,6 +43,7 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
   editTemplate,
   isEditMode = false,
   onTemplateUpdated,
+  startWithAI = false,
 }) => {
   const [template, setTemplate] = useState<Partial<CreateInterviewTemplateRequest>>({
     name: '',
@@ -56,7 +59,7 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
     organizationId
   });
 
-  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(startWithAI);
   const [aiGenerationStep, setAiGenerationStep] = useState<AIGenerationStep>({ step: 'input' });
   const [aiRetryCount, setAiRetryCount] = useState(0);
   const maxRetries = 2;
@@ -161,11 +164,14 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
               };
             }
             
-            // Set appropriate character limits for description questions
+            // Set appropriate character limits for different question formats
             if (updates.format === QuestionFormat.SHORT_DESCRIPTION && !updatedQuestion.maxCharacters) {
               updatedQuestion.maxCharacters = 500;
             } else if (updates.format === QuestionFormat.LONG_DESCRIPTION && !updatedQuestion.maxCharacters) {
               updatedQuestion.maxCharacters = 1500;
+            } else if (autoRequiresJustification && !updatedQuestion.maxCharacters) {
+              // For questions that require justification, set a reasonable default
+              updatedQuestion.maxCharacters = 300;
             }
           }
           
@@ -539,7 +545,21 @@ Create a professional, comprehensive template that leverages the mixed question 
               scoringCriteria: q.scoringCriteria || [],
               ratingScale: q.ratingScale,
               requiresJustification: autoRequiresJustification || q.requiresJustification || false,
-              maxCharacters: q.maxCharacters,
+              maxCharacters: (() => {
+                // For questions that require justification, ensure maxCharacters is at least 100
+                if (autoRequiresJustification) {
+                  return Math.max(q.maxCharacters || 300, 100);
+                }
+                // For description formats, use the provided value or defaults
+                if (questionFormat === QuestionFormat.SHORT_DESCRIPTION) {
+                  return q.maxCharacters || 500;
+                }
+                if (questionFormat === QuestionFormat.LONG_DESCRIPTION) {
+                  return q.maxCharacters || 1500;
+                }
+                // For other formats, don't set maxCharacters
+                return undefined;
+              })(),
               order: index + 1
             };
           }),
@@ -595,8 +615,25 @@ Create a professional, comprehensive template that leverages the mixed question 
     try {
       const questionsWithOrder = template.questions.map((q, index) => {
         const { id, ...questionWithoutId } = q as any;
+        
+        // Ensure questions with justification have valid maxCharacters
+        const requiresJustification = q.format === QuestionFormat.YES_NO_WITH_JUSTIFICATION || 
+                                    q.format === QuestionFormat.RATING_WITH_JUSTIFICATION;
+        
+        let maxCharacters = q.maxCharacters;
+        
+        // Validate and fix maxCharacters for different question formats
+        if (requiresJustification && (!maxCharacters || maxCharacters < 1)) {
+          maxCharacters = 300; // Default for justification questions
+        } else if (q.format === QuestionFormat.SHORT_DESCRIPTION && (!maxCharacters || maxCharacters < 1)) {
+          maxCharacters = 500;
+        } else if (q.format === QuestionFormat.LONG_DESCRIPTION && (!maxCharacters || maxCharacters < 1)) {
+          maxCharacters = 1500;
+        }
+        
         return {
           ...questionWithoutId,
+          maxCharacters,
           order: index + 1
         };
       });

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   FileText, Plus, Edit2, Trash2, Copy, Clock, Users, Star, 
-  Search, Filter, ChevronDown, Eye, Play, BarChart3 
+  Search, Filter, ChevronDown, Eye, Play, BarChart3, Sparkles 
 } from 'lucide-react';
 import { InterviewTemplate } from '../../../../../../types/interviewTemplate.types';
 import { 
@@ -39,6 +39,7 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [startWithAI, setStartWithAI] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<InterviewTemplate | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<InterviewTemplate | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -48,10 +49,7 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
   
   const { data: orgTemplatesData, isLoading: orgLoading } = useInterviewTemplates({
     organizationId,
-    search: searchQuery,
-    interviewType: (selectedType as any) || undefined,
-    page: 1,
-    limit: 50
+    interviewType: (selectedType as any) || undefined
   });
 
   const { data: defaultTemplates, isLoading: defaultLoading } = useDefaultInterviewTemplates(selectedType || undefined);
@@ -66,7 +64,7 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
       case 'job':
         return jobTemplatesData || [];
       case 'organization':
-        return orgTemplatesData?.templates || [];
+        return orgTemplatesData || [];
       case 'defaults':
         return defaultTemplates || [];
       default:
@@ -95,7 +93,26 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
 
   const handleEditTemplate = (template: InterviewTemplate) => {
     setEditingTemplate(template);
+    setStartWithAI(false);
     setShowCreateModal(true); // Use the create modal in edit mode
+  };
+
+  const handleCreateWithAI = () => {
+    setEditingTemplate(null);
+    setStartWithAI(true);
+    setShowCreateModal(true);
+  };
+
+  const handleCreateNew = () => {
+    setEditingTemplate(null);
+    setStartWithAI(false);
+    setShowCreateModal(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setShowCreateModal(false);
+    setStartWithAI(false);
+    setEditingTemplate(null);
   };
 
   const handleUseTemplate = async (template: InterviewTemplate) => {
@@ -151,7 +168,7 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
       case 'job':
         return jobTemplatesData?.length || 0;
       case 'organization':
-        return orgTemplatesData?.total || 0;
+        return orgTemplatesData?.length || 0;
       case 'defaults':
         return defaultTemplates?.length || 0;
       default:
@@ -170,8 +187,15 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
           </div>
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+              onClick={handleCreateWithAI}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Generate with AI</span>
+            </button>
+            <button
+              onClick={handleCreateNew}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
               <span>Create New</span>
@@ -389,10 +413,7 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
       {/* Create/Edit Template Modal */}
       <CreateInterviewTemplateModal
         isOpen={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false);
-          setEditingTemplate(null);
-        }}
+        onClose={handleCloseCreateModal}
         jobId={jobId}
         jobTitle={jobTitle}
         jobDescription={jobDescription}
@@ -400,14 +421,13 @@ export const InterviewTemplateManager: React.FC<InterviewTemplateManagerProps> =
         organizationId={organizationId}
         editTemplate={editingTemplate}
         isEditMode={!!editingTemplate}
+        startWithAI={startWithAI}
         onTemplateCreated={(template) => {
-          setShowCreateModal(false);
-          setEditingTemplate(null);
+          handleCloseCreateModal();
           toast.success('Template Created', 'Your interview template has been created successfully.');
         }}
         onTemplateUpdated={(template) => {
-          setShowCreateModal(false);
-          setEditingTemplate(null);
+          handleCloseCreateModal();
           toast.success('Template Updated', 'Your interview template has been updated successfully.');
         }}
       />
