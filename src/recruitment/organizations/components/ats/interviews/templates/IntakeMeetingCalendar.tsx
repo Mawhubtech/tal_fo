@@ -21,7 +21,9 @@ import { IntakeMeetingSession } from '../../../../../../types/intakeMeetingTempl
 import { 
   useIntakeMeetingSessions, 
   useDeleteIntakeMeetingSession,
-  useSendIntakeMeetingInvitations
+  useSendIntakeMeetingInvitations,
+  useJobDescription,
+  useSaveJobDescription
 } from '../../../../../../hooks/useIntakeMeetingTemplates';
 import { CreateIntakeMeetingSessionModal } from './CreateIntakeMeetingSessionModal';
 import { IntakeMeetingConductor } from './IntakeMeetingConductor';
@@ -55,6 +57,21 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
   const [showJobViewer, setShowJobViewer] = useState(false);
   const [selectedSessionForJob, setSelectedSessionForJob] = useState<IntakeMeetingSession | null>(null);
   const [generatedJobDescription, setGeneratedJobDescription] = useState<GeneratedJobDescription | null>(null);
+
+  // Backend hooks for job description management
+  const saveJobDescriptionMutation = useSaveJobDescription();
+
+  // Helper function to check if a session has a job description
+  const hasJobDescription = (session: IntakeMeetingSession) => {
+    return session.jobDescription && Object.keys(session.jobDescription).length > 0;
+  };
+
+  // Handle errors for job description operations
+  const handleJobDescriptionError = (error: any, operation: string) => {
+    console.error(`Failed to ${operation} job description:`, error);
+    // You could add toast notifications here
+    alert(`Failed to ${operation} job description. Please try again.`);
+  };
 
   const handleDeleteSession = async (session: IntakeMeetingSession) => {
     if (window.confirm(`Are you sure you want to delete this intake meeting session for ${session.template.name}?`)) {
@@ -102,15 +119,52 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
     setShowJobGenerator(true);
   };
 
-  const handleJobDescriptionGenerated = (jobDescription: GeneratedJobDescription) => {
+  const handleJobDescriptionGenerated = async (jobDescription: GeneratedJobDescription) => {
     setGeneratedJobDescription(jobDescription);
+    
+    // Save to backend
+    if (selectedSessionForJob) {
+      try {
+        await saveJobDescriptionMutation.mutateAsync({
+          sessionId: selectedSessionForJob.id,
+          jobDescription
+        });
+        // Refresh sessions to get updated data
+        refetch();
+      } catch (error) {
+        handleJobDescriptionError(error, 'save');
+        return; // Don't proceed to viewer if save failed
+      }
+    }
+    
     setShowJobGenerator(false);
     setShowJobViewer(true);
   };
 
-  const handleSaveJobDescription = (updatedJobDescription: GeneratedJobDescription) => {
+  const handleViewJobDescription = (session: IntakeMeetingSession) => {
+    if (hasJobDescription(session)) {
+      setSelectedSessionForJob(session);
+      setGeneratedJobDescription(session.jobDescription as GeneratedJobDescription);
+      setShowJobViewer(true);
+    }
+  };
+
+  const handleSaveJobDescription = async (updatedJobDescription: GeneratedJobDescription) => {
     setGeneratedJobDescription(updatedJobDescription);
-    // Here you could save to a backend if needed
+    
+    // Save to backend
+    if (selectedSessionForJob) {
+      try {
+        await saveJobDescriptionMutation.mutateAsync({
+          sessionId: selectedSessionForJob.id,
+          jobDescription: updatedJobDescription
+        });
+        // Refresh sessions to get updated data
+        refetch();
+      } catch (error) {
+        handleJobDescriptionError(error, 'update');
+      }
+    }
   };
 
   const handleCreateJobFromDescription = (jobDescription: GeneratedJobDescription) => {
@@ -242,6 +296,12 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
                             {getStatusIcon(session.status)}
                             <span className="ml-1 capitalize">{session.status.replace('_', ' ')}</span>
                           </span>
+                          {hasJobDescription(session) && (
+                            <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium flex items-center">
+                              <Briefcase className="w-3 h-3 mr-1" />
+                              Job Description
+                            </span>
+                          )}
                         </div>
                         
                         <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
@@ -286,13 +346,25 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
                         )}
                         
                         {session.status === 'completed' && (
-                          <button
-                            onClick={() => handleGenerateJobDescription(session)}
-                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                            title="Generate job description"
-                          >
-                            <Sparkles className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleGenerateJobDescription(session)}
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                              title="Generate job description"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </button>
+                            
+                            {hasJobDescription(session) && (
+                              <button
+                                onClick={() => handleViewJobDescription(session)}
+                                className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                title="View job description"
+                              >
+                                <Briefcase className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
                         )}
                         
                         {session.status === 'draft' ? (
@@ -320,6 +392,17 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        
+                        {/* Show view job description button for any session that has a generated job description */}
+                        {hasJobDescription(session) && session.status !== 'completed' && (
+                          <button
+                            onClick={() => handleViewJobDescription(session)}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="View job description"
+                          >
+                            <Briefcase className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -448,6 +531,7 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
           onCreateJob={handleCreateJobFromDescription}
           clientName={clientName}
           isEditable={true}
+          isSaving={saveJobDescriptionMutation.isPending}
         />
       )}
     </div>

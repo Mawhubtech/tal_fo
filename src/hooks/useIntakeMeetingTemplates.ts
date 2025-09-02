@@ -223,3 +223,57 @@ export function useGenerateInterviewTemplate() {
       IntakeMeetingTemplateService.generateInterviewTemplate(sessionId, interviewType),
   });
 }
+
+/**
+ * Hook to get job description for a session
+ */
+export function useJobDescription(sessionId: string) {
+  return useQuery({
+    queryKey: [...intakeMeetingTemplateKeys.session(sessionId), 'jobDescription'],
+    queryFn: () => IntakeMeetingTemplateService.getJobDescription(sessionId),
+    enabled: !!sessionId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to save job description for a session
+ */
+export function useSaveJobDescription() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ sessionId, jobDescription }: { sessionId: string; jobDescription: any }) => 
+      IntakeMeetingTemplateService.saveJobDescription(sessionId, jobDescription),
+    onSuccess: (_, { sessionId }) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ 
+        queryKey: [...intakeMeetingTemplateKeys.session(sessionId), 'jobDescription'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: intakeMeetingTemplateKeys.session(sessionId) 
+      });
+    },
+  });
+}
+
+/**
+ * Hook to delete job description for a session
+ */
+export function useDeleteJobDescription() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (sessionId: string) => 
+      IntakeMeetingTemplateService.deleteJobDescription(sessionId),
+    onSuccess: (_, sessionId) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ 
+        queryKey: [...intakeMeetingTemplateKeys.session(sessionId), 'jobDescription'] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: intakeMeetingTemplateKeys.session(sessionId) 
+      });
+    },
+  });
+}

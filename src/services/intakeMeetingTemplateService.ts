@@ -150,4 +150,30 @@ export class IntakeMeetingTemplateService {
     });
     return response.data;
   }
+
+  /**
+   * Get job description for a session
+   */
+  static async getJobDescription(sessionId: string): Promise<any> {
+    const response = await api.get(`${this.SESSIONS_PATH}/${sessionId}/job-description`);
+    return response.data;
+  }
+
+  /**
+   * Save job description for a session
+   */
+  static async saveJobDescription(sessionId: string, jobDescription: any): Promise<IntakeMeetingSession> {
+    const response = await api.put(`${this.SESSIONS_PATH}/${sessionId}/job-description`, {
+      jobDescription
+    });
+    return response.data;
+  }
+
+  /**
+   * Delete job description for a session
+   */
+  static async deleteJobDescription(sessionId: string): Promise<{ message: string }> {
+    const response = await api.delete(`${this.SESSIONS_PATH}/${sessionId}/job-description`);
+    return response.data;
+  }
 }

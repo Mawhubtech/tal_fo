@@ -78,6 +78,7 @@ export interface IntakeMeetingSession {
   notes?: string;
   followUpActions?: string[];
   attendees?: string[];
+  jobDescription?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
 }
