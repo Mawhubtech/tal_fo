@@ -15,7 +15,8 @@ import {
   X,
   ExternalLink,
   Sparkles,
-  Briefcase
+  Briefcase,
+  Users
 } from 'lucide-react';
 import { IntakeMeetingSession } from '../../../../../../types/intakeMeetingTemplate.types';
 import { 
@@ -30,6 +31,7 @@ import { IntakeMeetingConductor } from './IntakeMeetingConductor';
 import { GmailReauthorizationModal } from '../../../../../../components/email/GmailReauthorizationModal';
 import AIJobDescriptionGenerator, { GeneratedJobDescription } from './AIJobDescriptionGenerator';
 import JobDescriptionViewer from './JobDescriptionViewer';
+import { CreateInterviewTemplateModal } from './CreateInterviewTemplateModal';
 
 interface IntakeMeetingCalendarProps {
   clientId: string;
@@ -57,6 +59,8 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
   const [showJobViewer, setShowJobViewer] = useState(false);
   const [selectedSessionForJob, setSelectedSessionForJob] = useState<IntakeMeetingSession | null>(null);
   const [generatedJobDescription, setGeneratedJobDescription] = useState<GeneratedJobDescription | null>(null);
+  const [showInterviewTemplateGenerator, setShowInterviewTemplateGenerator] = useState(false);
+  const [selectedSessionForTemplate, setSelectedSessionForTemplate] = useState<IntakeMeetingSession | null>(null);
 
   // Backend hooks for job description management
   const saveJobDescriptionMutation = useSaveJobDescription();
@@ -172,6 +176,77 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
     // This would need to be implemented based on your routing setup
     console.log('Creating job from description:', jobDescription);
     // Example: navigate('/jobs/create', { state: { jobDescription } });
+  };
+
+  const handleGenerateInterviewTemplate = (session: IntakeMeetingSession) => {
+    if (session.status !== 'completed') {
+      alert('Interview templates can only be generated from completed intake meetings.');
+      return;
+    }
+    
+    if (!session.responses || Object.keys(session.responses).length === 0) {
+      alert('This intake meeting has no responses to generate an interview template from.');
+      return;
+    }
+
+    setSelectedSessionForTemplate(session);
+    setShowInterviewTemplateGenerator(true);
+  };
+
+  const handleInterviewTemplateCreated = () => {
+    setShowInterviewTemplateGenerator(false);
+    setSelectedSessionForTemplate(null);
+    // Could add a toast notification here
+  };
+
+  // Helper function to extract job-related data from intake meeting responses
+  const extractJobDataFromIntakeMeeting = (session: IntakeMeetingSession) => {
+    const responses = session.responses || {};
+    
+    // Extract job title from common question patterns
+    const jobTitle = responses.jobTitle || 
+                    responses.positionTitle || 
+                    responses.position || 
+                    responses.role || 
+                    'Position from Intake Meeting';
+
+    // Extract job description from responses
+    let jobDescription = '';
+    const descriptionFields = [
+      'jobDescription', 'description', 'roleDescription', 
+      'responsibilities', 'duties', 'overview'
+    ];
+    
+    for (const field of descriptionFields) {
+      if (responses[field]) {
+        jobDescription += responses[field] + '\n';
+      }
+    }
+
+    // Extract requirements
+    const requirements = [];
+    const requirementFields = [
+      'requirements', 'qualifications', 'skills', 'experience',
+      'technicalSkills', 'softSkills', 'education', 'certifications'
+    ];
+    
+    for (const field of requirementFields) {
+      if (responses[field]) {
+        if (Array.isArray(responses[field])) {
+          requirements.push(...responses[field]);
+        } else if (typeof responses[field] === 'string') {
+          // Split by common delimiters
+          const items = responses[field].split(/[,;|\n]/).map((item: string) => item.trim()).filter(Boolean);
+          requirements.push(...items);
+        }
+      }
+    }
+
+    return {
+      jobTitle: jobTitle.toString(),
+      jobDescription: jobDescription.trim() || 'Job description from intake meeting responses',
+      jobRequirements: requirements
+    };
   };
 
   const getStatusIcon = (status: string) => {
@@ -354,6 +429,14 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
                             >
                               <Sparkles className="w-4 h-4" />
                             </button>
+
+                            <button
+                              onClick={() => handleGenerateInterviewTemplate(session)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Generate interview template"
+                            >
+                              <Users className="w-4 h-4" />
+                            </button>
                             
                             {hasJobDescription(session) && (
                               <button
@@ -532,6 +615,21 @@ export const IntakeMeetingCalendar: React.FC<IntakeMeetingCalendarProps> = ({
           clientName={clientName}
           isEditable={true}
           isSaving={saveJobDescriptionMutation.isPending}
+        />
+      )}
+
+      {/* Interview Template Generator */}
+      {selectedSessionForTemplate && (
+        <CreateInterviewTemplateModal
+          isOpen={showInterviewTemplateGenerator}
+          onClose={() => {
+            setShowInterviewTemplateGenerator(false);
+            setSelectedSessionForTemplate(null);
+          }}
+          onTemplateCreated={handleInterviewTemplateCreated}
+          organizationId={clientId}
+          startWithAI={true}
+          {...extractJobDataFromIntakeMeeting(selectedSessionForTemplate)}
         />
       )}
     </div>
