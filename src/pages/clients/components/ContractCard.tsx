@@ -151,7 +151,7 @@ const ContractCard: React.FC<ContractCardProps> = ({
             <div>
               <p className="text-xs text-gray-500">Contract Value</p>
               <p className="text-sm font-medium text-gray-900">
-                ${contract.contractValue.toLocaleString()}
+                {contract.paymentTerms?.currency || 'USD'} {contract.contractValue.toLocaleString()}
               </p>
             </div>
           </div>
