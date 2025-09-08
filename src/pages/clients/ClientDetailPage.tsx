@@ -7,11 +7,17 @@ import {
 } from 'lucide-react';
 import { clientApi } from '../../services/api';
 import { clientApiService } from '../../services/clientApiService';
+import { contractApiService } from '../../services/contractApiService';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isInternalUser } from '../../utils/userUtils';
 import type { Client } from './data/clientService';
+import type { Contract, CreateContractDto, UpdateContractDto, ContractStats } from '../../types/contract.types';
 import ClientForm from './components/ClientForm';
 import DeleteClientDialog from './components/DeleteClientDialog';
+import ContractForm from './components/ContractForm';
+import DeleteContractDialog from './components/DeleteContractDialog';
+import ContractCard from './components/ContractCard';
+import ContractViewModal from './components/ContractViewModal';
 import DepartmentForm from './components/DepartmentForm';
 import DeleteDepartmentDialog from './components/DeleteDepartmentDialog';
 import { DepartmentApiService } from '../../recruitment/organizations/services/departmentApiService';
@@ -111,6 +117,19 @@ const ClientDetailPage: React.FC = () => {
   const [showIntakeMeetingTemplateManager, setShowIntakeMeetingTemplateManager] = useState(false);
   const [showIntakeMeetingPreview, setShowIntakeMeetingPreview] = useState(false);
   const [selectedIntakeMeetingTemplate, setSelectedIntakeMeetingTemplate] = useState<IntakeMeetingTemplate | null>(null);
+  
+  // Contract states
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [contractStats, setContractStats] = useState<ContractStats | null>(null);
+  const [contractsLoading, setContractsLoading] = useState(false);
+  const [showContractForm, setShowContractForm] = useState(false);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [contractToDelete, setContractToDelete] = useState<Contract | null>(null);
+  const [contractToView, setContractToView] = useState<Contract | null>(null);
+  const [showDeleteContractDialog, setShowDeleteContractDialog] = useState(false);
+  const [showContractViewModal, setShowContractViewModal] = useState(false);
+  const [deleteContractLoading, setDeleteContractLoading] = useState(false);
+  const [contractFormLoading, setContractFormLoading] = useState(false);
   
   const departmentApiService = new DepartmentApiService();
   
@@ -221,6 +240,33 @@ const ClientDetailPage: React.FC = () => {
 
     if (client) {
     loadOrganizationData();
+    }
+  }, [clientId, client]);
+
+  // Load contracts for this client
+  useEffect(() => {
+    const loadContracts = async () => {
+      if (!clientId) return;
+
+      try {
+        setContractsLoading(true);
+        const [contractsResponse, statsResponse] = await Promise.all([
+          contractApiService.getClientContracts(clientId, { limit: 50 }),
+          contractApiService.getContractStats(clientId)
+        ]);
+        
+        setContracts(contractsResponse.contracts);
+        setContractStats(statsResponse);
+      } catch (err: any) {
+        console.error('Error loading contracts:', err);
+        // Don't show error for contracts as it's not critical for the page
+      } finally {
+        setContractsLoading(false);
+      }
+    };
+
+    if (client) {
+      loadContracts();
     }
   }, [clientId, client]);
 
@@ -384,6 +430,122 @@ const ClientDetailPage: React.FC = () => {
     if (position) {
       setPositionToDelete(position);
       setShowDeletePositionDialog(true);
+    }
+  };
+
+  // Contract handlers
+  const handleCreateContract = () => {
+    setEditingContract(null);
+    setShowContractForm(true);
+  };
+
+  const handleEditContract = (contract: Contract) => {
+    setEditingContract(contract);
+    setShowContractForm(true);
+  };
+
+  const handleContractSave = async (contractData: CreateContractDto | UpdateContractDto) => {
+    if (!clientId) return;
+
+    try {
+      setContractFormLoading(true);
+      let savedContract: Contract;
+      
+      if (editingContract) {
+        // Update existing contract
+        savedContract = await contractApiService.updateContract(
+          clientId, 
+          editingContract.id, 
+          contractData as UpdateContractDto
+        );
+        setContracts(prev => prev.map(c => c.id === savedContract.id ? savedContract : c));
+      } else {
+        // Create new contract
+        savedContract = await contractApiService.createContract(
+          clientId, 
+          contractData as CreateContractDto
+        );
+        setContracts(prev => [savedContract, ...prev]);
+      }
+
+      // Refresh contract stats
+      const stats = await contractApiService.getContractStats(clientId);
+      setContractStats(stats);
+
+      setShowContractForm(false);
+      setEditingContract(null);
+    } catch (err: any) {
+      console.error('Error saving contract:', err);
+      // TODO: Show error toast
+      throw err;
+    } finally {
+      setContractFormLoading(false);
+    }
+  };
+
+  const handleDeleteContract = (contract: Contract) => {
+    setContractToDelete(contract);
+    setShowDeleteContractDialog(true);
+  };
+
+  const handleConfirmDeleteContract = async () => {
+    if (!contractToDelete || !clientId) return;
+
+    try {
+      setDeleteContractLoading(true);
+      await contractApiService.deleteContract(clientId, contractToDelete.id);
+      setContracts(prev => prev.filter(c => c.id !== contractToDelete.id));
+      
+      // Refresh contract stats
+      const stats = await contractApiService.getContractStats(clientId);
+      setContractStats(stats);
+      
+      setShowDeleteContractDialog(false);
+      setContractToDelete(null);
+    } catch (err: any) {
+      console.error('Error deleting contract:', err);
+      // TODO: Show error toast
+    } finally {
+      setDeleteContractLoading(false);
+    }
+  };
+
+  const handleCancelDeleteContract = () => {
+    setShowDeleteContractDialog(false);
+    setContractToDelete(null);
+  };
+
+  const handleContractFormClose = () => {
+    setShowContractForm(false);
+    setEditingContract(null);
+  };
+
+  const handleViewContract = (contract: Contract) => {
+    setContractToView(contract);
+    setShowContractViewModal(true);
+  };
+
+  const handleCloseContractView = () => {
+    setShowContractViewModal(false);
+    setContractToView(null);
+  };
+
+  const handleDownloadContract = async (contract: Contract) => {
+    if (!clientId) return;
+    
+    try {
+      const blob = await contractApiService.downloadContractPDF(clientId, contract.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `contract-${contract.title.replace(/[^a-zA-Z0-9]/g, '-')}.html`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading contract:', error);
+      // You might want to show a toast notification here
     }
   };
 
@@ -807,14 +969,80 @@ const ClientDetailPage: React.FC = () => {
             </div>
           )}          {activeTab === 'contracts' && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contracts & Agreements</h3>
-              <div className="text-center py-8">
-                <div className="p-3 bg-gray-200 rounded-lg inline-block mb-3">
-                  <Target className="w-6 h-6 text-gray-400" />
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Contracts & Agreements</h3>
+                  {contractStats && (
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <span className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span>{contractStats.active} Active</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                        <span>{contractStats.total} Total</span>
+                      </span>
+                      {contractStats.totalActiveValue > 0 && (
+                        <span className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <span>${contractStats.totalActiveValue.toLocaleString()} Active Value</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <p className="text-gray-500 text-sm">No contracts available</p>
-                <p className="text-gray-400 text-xs mt-1">Contract information will appear here when implemented</p>
+                {!isInternalUserRole && (
+                  <button
+                    onClick={handleCreateContract}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Contract
+                  </button>
+                )}
               </div>
+
+              {contractsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                  <p className="text-gray-500">Loading contracts...</p>
+                </div>
+              ) : contracts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {contracts.map((contract) => (
+                    <ContractCard
+                      key={contract.id}
+                      contract={contract}
+                      onEdit={handleEditContract}
+                      onDelete={handleDeleteContract}
+                      onView={handleViewContract}
+                      onDownload={handleDownloadContract}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="p-3 bg-gray-200 rounded-lg inline-block mb-3">
+                    <Target className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">No contracts available</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {isInternalUserRole 
+                      ? 'Contracts will appear here when added by the HR organization'
+                      : 'Create your first contract to get started'
+                    }
+                  </p>
+                  {!isInternalUserRole && (
+                    <button
+                      onClick={handleCreateContract}
+                      className="mt-4 inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Contract
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1534,6 +1762,41 @@ const ClientDetailPage: React.FC = () => {
             setShowIntakeMeetingPreview(false);
             setSelectedIntakeMeetingTemplate(null);
           }}
+        />
+      )}
+
+      {/* Contract Form */}
+      {showContractForm && (
+        <ContractForm
+          contract={editingContract || undefined}
+          onSave={handleContractSave}
+          onCancel={handleContractFormClose}
+          isLoading={contractFormLoading}
+          clientData={{
+            name: client?.name,
+            industry: client?.industry,
+            size: client?.size,
+          }}
+          organizationName="Your HR Organization"
+        />
+      )}
+
+      {/* Delete Contract Dialog */}
+      {showDeleteContractDialog && contractToDelete && (
+        <DeleteContractDialog
+          contract={contractToDelete}
+          onConfirm={handleConfirmDeleteContract}
+          onCancel={handleCancelDeleteContract}
+          isLoading={deleteContractLoading}
+        />
+      )}
+
+      {/* Contract View Modal */}
+      {showContractViewModal && contractToView && (
+        <ContractViewModal
+          contract={contractToView}
+          onClose={handleCloseContractView}
+          onDownload={() => handleDownloadContract(contractToView)}
         />
       )}
     </div>
