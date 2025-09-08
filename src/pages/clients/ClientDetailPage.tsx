@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Building, Globe, Mail, Phone, MapPin, Users, Briefcase,
   Calendar, TrendingUp, Edit3, Settings, Trash2, MoreVertical,
-  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle, Building2, Plus, FileText
+  Clock, ExternalLink, Activity, Target, CheckCircle, XCircle, Building2, Plus, FileText, Receipt
 } from 'lucide-react';
 import { clientApi } from '../../services/api';
 import { clientApiService } from '../../services/clientApiService';
@@ -18,6 +18,7 @@ import ContractForm from './components/ContractForm';
 import DeleteContractDialog from './components/DeleteContractDialog';
 import ContractCard from './components/ContractCard';
 import ContractViewModal from './components/ContractViewModal';
+import InvoicesTab from './components/InvoicesTab';
 import DepartmentForm from './components/DepartmentForm';
 import DeleteDepartmentDialog from './components/DeleteDepartmentDialog';
 import { DepartmentApiService } from '../../recruitment/organizations/services/departmentApiService';
@@ -73,7 +74,7 @@ const ClientDetailPage: React.FC = () => {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts' | 'departments' | 'organization' | 'interview-templates' | 'intake-meetings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'contracts' | 'invoices' | 'departments' | 'organization' | 'interview-templates' | 'intake-meetings'>('overview');
   
   // Check if current user is internal (should not see edit/delete buttons)
   const isInternalUserRole = isInternalUser(currentUser);
@@ -628,6 +629,7 @@ const ClientDetailPage: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: Building },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'contracts', label: 'Contracts', icon: Target },
+    { id: 'invoices', label: 'Invoices', icon: Receipt },
     { id: 'departments', label: 'Departments', icon: Users },
     { id: 'organization', label: 'Organization Chart', icon: Building2 },
     { id: 'interview-templates', label: 'Templates', icon: FileText },
@@ -1044,6 +1046,10 @@ const ClientDetailPage: React.FC = () => {
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'invoices' && (
+            <InvoicesTab clientId={client.id} />
           )}
 
           {activeTab === 'departments' && (
