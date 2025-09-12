@@ -4,7 +4,7 @@ import {
   Search, Users, MessageSquare, 
   Settings, HelpCircle, ChevronDown,
   Briefcase, LayoutGrid, Shield, UserPlus, Building, Target, BarChart3, GitBranch, KeyRound, // Added for Jobs and Admin
-  Mail, UserCircle, Atom
+  Mail, UserCircle, Atom, BookOpen
 } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useMyAssignment } from '../hooks/useUserAssignment';
@@ -432,7 +432,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             title={!isExpanded ? "Resources" : ""}
           >
             <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/resources') ? '#7e22ce' : '#9ca3af' }}>
-              <HelpCircle className="w-4 h-4" />
+              <BookOpen className="w-4 h-4" />
             </div>
             {isExpanded && "Resources"}
           </Link>
@@ -444,7 +444,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             title={!isExpanded ? "Contact Support" : ""}
           >
             <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/contact-support') ? '#7e22ce' : '#9ca3af' }}>
-              <MessageSquare className="w-4 h-4" />
+              <HelpCircle className="w-4 h-4" />
             </div>
             {isExpanded && "Contact Support"}
           </Link>

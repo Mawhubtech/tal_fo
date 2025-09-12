@@ -13,9 +13,11 @@ import CalendarWidget from '../components/dashboard/CalendarWidget';
 import TodoListWidget from '../components/dashboard/TodoListWidget';
 import CreateTaskModal from '../components/CreateTaskModal';
 import { toast } from '../components/ToastContainer';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const DashboardOverview: React.FC = () => {
   const { hasPermission, hasAnyPermission } = usePermissionCheck();
+  const { user } = useAuthContext();
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   
   // Fetch dashboard metrics
@@ -178,7 +180,9 @@ const DashboardOverview: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Welcome back! Here's what's happening with your talent acquisition.</p>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
+            Welcome{user?.firstName ? `, ${user.firstName}` : ''}! Here's what's happening with your talent acquisition.
+          </p>
         </div>
         <div className="text-left sm:text-right">
           <p className="text-sm text-gray-500">Last updated</p>
@@ -187,67 +191,67 @@ const DashboardOverview: React.FC = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-600">Total Candidates</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">{stats.totalCandidates.toLocaleString()}</p>
-              <p className="text-sm text-green-600 flex items-center mt-1">
-                <TrendingUp className="w-4 h-4 mr-1 flex-shrink-0" />
-                <span className="truncate">+{stats.candidatesThisWeek} this week</span>
-              </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+        <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm min-h-[140px]">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between h-full">
+            <div className="flex-1 min-w-0 mb-3 sm:mb-0">
+              <p className="text-sm font-medium text-gray-600 mb-2 break-words">Total Candidates</p>
+              <p className="text-xl md:text-2xl xl:text-3xl font-bold text-gray-900 mb-2 break-words">{stats.totalCandidates.toLocaleString()}</p>
+              <div className="flex items-center flex-wrap">
+                <TrendingUp className="w-4 h-4 mr-1 flex-shrink-0 text-green-600" />
+                <span className="text-sm text-green-600 break-words">+{stats.candidatesThisWeek} this week</span>
+              </div>
             </div>
-            <div className="p-2 sm:p-3 bg-purple-100 rounded-lg flex-shrink-0 ml-2">
-              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-600">Active Jobs</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.activeJobs}</p>
-              <p className="text-sm text-blue-600 flex items-center mt-1">
-                <Building className="w-4 h-4 mr-1 flex-shrink-0" />
-                <span className="truncate">{stats.organizations} organizations</span>
-              </p>
-            </div>
-            <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0 ml-2">
-              <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <div className="p-2 md:p-3 bg-purple-100 rounded-lg flex-shrink-0 sm:ml-3 self-start">
+              <Users className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-600">Pending Interviews</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.pendingInterviews}</p>
-              <p className="text-sm text-orange-600 flex items-center mt-1">
-                <Clock className="w-4 h-4 mr-1 flex-shrink-0" />
-                <span className="truncate">Next: Today 2:00 PM</span>
-              </p>
+        <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm min-h-[140px]">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between h-full">
+            <div className="flex-1 min-w-0 mb-3 sm:mb-0">
+              <p className="text-sm font-medium text-gray-600 mb-2 break-words">Active Jobs</p>
+              <p className="text-xl md:text-2xl xl:text-3xl font-bold text-gray-900 mb-2 break-words">{stats.activeJobs}</p>
+              <div className="flex items-center flex-wrap">
+                <Building className="w-4 h-4 mr-1 flex-shrink-0 text-blue-600" />
+                <span className="text-sm text-blue-600 break-words">{stats.organizations} organizations</span>
+              </div>
             </div>
-            <div className="p-2 sm:p-3 bg-orange-100 rounded-lg flex-shrink-0 ml-2">
-              <Target className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
+            <div className="p-2 md:p-3 bg-blue-100 rounded-lg flex-shrink-0 sm:ml-3 self-start">
+              <Briefcase className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-600">This Month</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.thisMonthPlacements}</p>
-              <p className="text-sm text-green-600 flex items-center mt-1">
-                <TrendingUp className="w-4 h-4 mr-1 flex-shrink-0" />
-                <span className="truncate">Successful placements</span>
-              </p>
+        <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm min-h-[140px]">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between h-full">
+            <div className="flex-1 min-w-0 mb-3 sm:mb-0">
+              <p className="text-sm font-medium text-gray-600 mb-2 break-words">Pending Interviews</p>
+              <p className="text-xl md:text-2xl xl:text-3xl font-bold text-gray-900 mb-2 break-words">{stats.pendingInterviews}</p>
+              <div className="flex items-center flex-wrap">
+                <Clock className="w-4 h-4 mr-1 flex-shrink-0 text-orange-600" />
+                <span className="text-sm text-orange-600 break-words">Next: Today 2:00 PM</span>
+              </div>
             </div>
-            <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0 ml-2">
-              <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+            <div className="p-2 md:p-3 bg-orange-100 rounded-lg flex-shrink-0 sm:ml-3 self-start">
+              <Target className="w-5 h-5 md:w-6 md:h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm min-h-[140px]">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between h-full">
+            <div className="flex-1 min-w-0 mb-3 sm:mb-0">
+              <p className="text-sm font-medium text-gray-600 mb-2 break-words">This Month</p>
+              <p className="text-xl md:text-2xl xl:text-3xl font-bold text-gray-900 mb-2 break-words">{stats.thisMonthPlacements}</p>
+              <div className="flex items-center flex-wrap">
+                <TrendingUp className="w-4 h-4 mr-1 flex-shrink-0 text-green-600" />
+                <span className="text-sm text-green-600 break-words">Successful placements</span>
+              </div>
+            </div>
+            <div className="p-2 md:p-3 bg-green-100 rounded-lg flex-shrink-0 sm:ml-3 self-start">
+              <BarChart3 className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
             </div>
           </div>
         </div>

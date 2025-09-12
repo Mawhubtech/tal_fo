@@ -81,7 +81,12 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
     <div className="border-b border-gray-200 flex items-center justify-between p-3">
       <div className="flex-1 flex items-center">
         <Link to="/dashboard" className="hover:opacity-80 transition-opacity">
-          <img src="/TALL.png" alt="PeopleGPT" className="h-12" />
+          <span 
+            className="text-3xl font-black text-gray-900 hover:text-purple-600 transition-colors duration-200" 
+            style={{ fontFamily: 'ROMA, sans-serif' }}
+          >
+            TAL
+          </span>
         </Link>
       </div>
       
@@ -173,7 +178,7 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
         {/* User profile dropdown */}
         <div className="relative">
           <button 
-            className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-md hover:bg-gray-50"
+            className="flex items-center gap-2 text-sm p-1 rounded-md hover:bg-gray-50"
             onClick={() => setShowUserDropdown(!showUserDropdown)}
           >
             {user?.avatar ? (
@@ -187,11 +192,6 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
                 <User className="w-4 h-4 text-gray-600" />
               </div>
             )}
-            
-            <div className="hidden sm:block text-left">
-              <p className="font-medium text-gray-800 leading-tight">{user?.firstName} {user?.lastName}</p>
-              <p className="text-xs text-gray-500">{user?.email}</p>
-            </div>
             
             <ChevronDown className="w-4 h-4 text-gray-500" />
           </button>

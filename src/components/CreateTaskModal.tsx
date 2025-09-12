@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Briefcase, User, Search, Users } from 'lucide-react';
 import { useJobs } from '../hooks/useJobs';
 import { useAssignableUsers } from '../hooks/useUsers';
@@ -210,31 +211,75 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
+  // Handle escape key press
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    },
+    [onClose]
+  );
+
+  // Add and remove event listener for escape key
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, handleKeyDown]);
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+  // Handler for overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only close if the click was directly on the overlay, not on its children
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const modalContent = (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+      style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 999999,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+      }}
+      onClick={handleOverlayClick}
+    >
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">Create New Task</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="h-5 w-5 text-gray-400" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div>
+          <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-2">
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
           {/* Task Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Task Title *
             </label>
             <input
@@ -249,7 +294,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {/* Task Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
             </label>
             <textarea
@@ -261,10 +306,10 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             />
           </div>
 
-          {/* Task Type, Category, and Priority */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Two-column layout for Type and Category */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Task Type
               </label>
               <select
@@ -279,7 +324,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Category
               </label>
               <select
@@ -292,9 +337,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 ))}
               </select>
             </div>
-            
+          </div>
+          
+          {/* Two-column layout for Priority and Due Date */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Priority
               </label>
               <select
@@ -307,11 +355,24 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Due Date
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.dueDate}
+                onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                min={getDefaultDateTime()}
+              />
+            </div>
           </div>
 
           {/* Entity Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Related To
             </label>
             <select
@@ -336,7 +397,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           {/* Entity-specific fields */}
           {formData.entityType === 'job' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Associated Job
               </label>
               <div className="relative">
@@ -352,7 +413,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 </button>
                 
                 {showJobDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     <div className="p-2">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -365,9 +426,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                         />
                       </div>
                     </div>
-                    <div className="max-h-40 overflow-y-auto">
+                    <div className="max-h-32 overflow-y-auto">
                       {filteredJobs.length === 0 ? (
-                        <div className="p-4 text-sm text-gray-500 text-center">
+                        <div className="p-2 text-sm text-gray-500 text-center">
                           No jobs found
                         </div>
                       ) : (
@@ -398,7 +459,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {formData.entityType === 'candidate' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Candidate Name
               </label>
               <input
@@ -416,7 +477,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {formData.entityType !== 'none' && formData.entityType !== 'job' && formData.entityType !== 'candidate' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 {formData.entityType.charAt(0).toUpperCase() + formData.entityType.slice(1).replace('_', ' ')} Name
               </label>
               <input
@@ -429,26 +490,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           )}
 
-          {/* Due Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Due Date
-            </label>
-            <input
-              type="datetime-local"
-              value={formData.dueDate}
-              onChange={(e) => handleInputChange('dueDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
-              min={getDefaultDateTime()}
-            />
-          </div>
-
           {/* Assignment Mode Toggle */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Assignment Mode
             </label>
-            <div className="flex gap-4 mb-4">
+            <div className="flex gap-4 mb-1">
               <label className="flex items-center">
                 <input
                   type="radio"
@@ -477,12 +524,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           {/* Assignment Selection */}
           {assignmentMode === 'single' ? (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assign To
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assign To <span className="text-xs text-gray-500">(Leave blank to assign to yourself)</span>
               </label>
-              <p className="text-xs text-gray-500 mb-2">
-                Leave blank to assign to yourself
-              </p>
               <div className="relative">
                 <button
                   type="button"
@@ -496,7 +540,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 </button>
                 
                 {showUserDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     <div className="p-2">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -509,7 +553,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                         />
                       </div>
                     </div>
-                    <div className="max-h-40 overflow-y-auto">
+                    <div className="max-h-32 overflow-y-auto">
                       {/* Option to assign to self */}
                       <button
                         type="button"
@@ -524,13 +568,12 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                           <User className="h-4 w-4 text-purple-500 mr-2" />
                           <div>
                             <div className="text-sm font-medium text-purple-600">Assign to myself</div>
-                            <div className="text-xs text-gray-500">Task will be auto-assigned to you</div>
                           </div>
                         </div>
                       </button>
                       
                       {filteredUsers.length === 0 ? (
-                        <div className="p-4 text-sm text-gray-500 text-center">
+                        <div className="p-2 text-sm text-gray-500 text-center">
                           No users found
                         </div>
                       ) : (
@@ -559,12 +602,9 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Assign To Multiple Users
               </label>
-              <p className="text-xs text-gray-500 mb-2">
-                Select multiple users to assign this task to
-              </p>
               <MultiUserSelect
                 users={users}
                 selectedUserIds={selectedUserIds}
@@ -576,7 +616,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           )}
 
           {/* Submit Buttons */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className="flex justify-end space-x-3 pt-4 mt-2 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
@@ -592,10 +632,13 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               {createTaskMutation.isPending ? 'Creating...' : 'Create Task'}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default CreateTaskModal;
