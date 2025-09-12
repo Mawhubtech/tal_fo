@@ -11,6 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getAvatarUrl } from '../../utils/fileUtils';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
+import Select from 'react-select';
 
 // Enhanced candidate interface with additional professional fields
 interface EnhancedCandidate {
@@ -410,8 +411,8 @@ const CandidatesPage: React.FC = () => {
     );
   }  return (
     <React.Fragment>
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="space-y-6">
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 max-w-full overflow-hidden">
+        <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center text-sm text-gray-500 mb-4">
           <Link to="/dashboard" className="flex items-center hover:text-purple-600 transition-colors">
@@ -423,16 +424,16 @@ const CandidatesPage: React.FC = () => {
         </div>
         
         {/* Header */}
-        <div className="bg-white rounded-lg border p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg border p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900">
                 {isUserSuperAdmin 
                   ? (includeJobseekers ? 'All Candidates + Job Seekers' : 'Company Candidates') 
                   : 'Candidate Management'
                 }
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 mt-1 text-sm">
                 {isUserSuperAdmin 
                   ? (includeJobseekers 
                       ? 'Manage candidates from companies and independent job seekers' 
@@ -441,34 +442,71 @@ const CandidatesPage: React.FC = () => {
                   : 'Manage and review candidate applications efficiently'
                 }
               </p>
-            </div>            <div className="flex items-center space-x-4">
+            </div>
+            <div className="flex items-center space-x-4 mt-2 sm:mt-0">
               <div className="text-right">
-                <div className="text-2xl font-bold text-purple-600">{totalItems}</div>
-                <div className="text-sm text-gray-500">Total Candidates</div>
+                <div className="text-xl font-bold text-purple-600">{totalItems}</div>
+                <div className="text-xs text-gray-500">Total Candidates</div>
               </div>
-              <div className="w-px h-12 bg-gray-300"></div>
+              <div className="w-px h-10 bg-gray-300 hidden sm:block"></div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-                <div className="text-sm text-gray-500">Active</div>
+                <div className="text-xl font-bold text-green-600">{stats.active}</div>
+                <div className="text-xs text-gray-500">Active</div>
               </div>
             </div>
           </div>
-        </div>{/* Action Bar */}
-        <div className="bg-white rounded-lg border p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex-1 flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name, email, or skills..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-3">                <select
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+        </div>
+        
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">         
+          <div className="bg-white p-3 rounded-lg border shadow-sm">
+            <div className="text-xl font-bold text-purple-600 mb-1">{stats.total}</div>
+            <div className="text-xs font-medium text-gray-600">Total</div>
+            <div className="text-xs text-gray-500 mt-1 hidden sm:block">All applications</div>
+          </div>
+          <div className="bg-white p-3 rounded-lg border shadow-sm">
+            <div className="text-xl font-bold text-green-600 mb-1">{stats.active}</div>
+            <div className="text-xs font-medium text-gray-600">Active</div>
+            <div className="text-xs text-gray-500 mt-1 hidden sm:block">Ready to interview</div>
+          </div>
+          <div className="bg-white p-3 rounded-lg border shadow-sm">
+            <div className="text-xl font-bold text-yellow-600 mb-1">{stats.interviewing}</div>
+            <div className="text-xs font-medium text-gray-600">Interviewing</div>
+            <div className="text-xs text-gray-500 mt-1 hidden sm:block">In process</div>
+          </div>          
+          <div className="bg-white p-3 rounded-lg border shadow-sm">
+            <div className="text-xl font-bold text-purple-600 mb-1">{stats.hired}</div>
+            <div className="text-xs font-medium text-gray-600">Hired</div>
+            <div className="text-xs text-gray-500 mt-1 hidden sm:block">Successfully placed</div>
+          </div>
+          <div className="bg-white p-3 rounded-lg border shadow-sm sm:col-span-1 col-span-2">
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600 mb-1">{stats.rejected}</div>
+            <div className="text-xs sm:text-sm text-gray-600 font-medium">Rejected</div>
+            <div className="text-xs text-gray-500 mt-1 hidden sm:block">Not suitable</div>
+          </div>
+        </div>
+        
+        {/* Action Bar */}
+        <div className="bg-white rounded-lg border p-3 sm:p-4 overflow-hidden">
+          <div className="flex flex-col gap-3">
+            {/* Search and filters section */}
+            <div className="w-full relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name, email, or skills..."
+                className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            {/* Filters and Actions in a row */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {/* Filters */}
+              <div className="flex flex-wrap gap-2">
+                <select
+                  className="px-2 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -480,7 +518,7 @@ const CandidatesPage: React.FC = () => {
                   <option value="inactive">Inactive</option>
                 </select>
                 <select
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                  className="px-2 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
                   value={experienceFilter}
                   onChange={(e) => setExperienceFilter(e.target.value)}
                 >
@@ -489,78 +527,59 @@ const CandidatesPage: React.FC = () => {
                   <option value="mid">Mid (3-5 years)</option>
                   <option value="senior">Senior (5+ years)</option>
                 </select>
+                
+                {isUserSuperAdmin && (
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="checkbox"
+                      id="includeJobseekers"
+                      checked={includeJobseekers}
+                      onChange={(e) => setIncludeJobseekers(e.target.checked)}
+                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 border-gray-300 rounded"
+                    />
+                    <label htmlFor="includeJobseekers" className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">
+                      Job Seekers
+                    </label>
+                  </div>
+                )}
               </div>
-              {isUserSuperAdmin && (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="includeJobseekers"
-                    checked={includeJobseekers}
-                    onChange={(e) => setIncludeJobseekers(e.target.checked)}
-                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="includeJobseekers" className="text-sm text-gray-700 whitespace-nowrap">
-                    Include Job Seekers
-                  </label>
-                </div>
-              )}
-            </div>            <div className="flex gap-3">
-              <button 
-                className="flex items-center px-4 py-2 bg-white border border-purple-600 rounded-lg hover:bg-purple-100 text-purple-700"
-                onClick={() => setIsBulkImportModalOpen(true)}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </button>
-              {isUserSuperAdmin && (
-                <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
+              
+              {/* Action buttons section - always in a row */}
+              <div className="flex flex-nowrap gap-1 sm:gap-2">
+                <button 
+                  title="Import candidates from CSV"
+                  className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-purple-100 text-purple-700 text-xs sm:text-sm"
+                  onClick={() => setIsBulkImportModalOpen(true)}
+                >
+                  <Upload className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Import</span>
                 </button>
-              )}
-              <Link to="/dashboard/resume-processing" className="flex items-center px-4 py-2 bg-white border border-purple-600 rounded-lg hover:bg-gray-50 text-purple-700">
-                <FileText className="h-4 w-4 mr-2" />
-                Process CV
-              </Link>
-              <Link to="/dashboard/sourcing/projects" className="flex items-center px-4 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors">
-                <SearchCheckIcon className="h-4 w-4 mr-2" />
-                Sourcing Projects
-              </Link>              
-              <button 
-                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm"
-                onClick={() => setIsAddModalOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Candidate
-              </button>
+                {isUserSuperAdmin && (
+                  <button
+                    title="Export candidates to CSV" 
+                    className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-xs sm:text-sm">
+                    <Download className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Export</span>
+                  </button>
+                )}
+                <Link to="/dashboard/resume-processing" title="Process CV/Resume" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-gray-50 text-purple-700 text-xs sm:text-sm">
+                  <FileText className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">CV</span>
+                </Link>
+                <Link to="/dashboard/sourcing/projects" title="Candidate Sourcing Projects" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors text-xs sm:text-sm">
+                  <SearchCheckIcon className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Source</span>
+                </Link>              
+                <button 
+                  title="Add New Candidate"
+                  className="flex items-center justify-center px-2 sm:px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm text-xs sm:text-sm"
+                  onClick={() => setIsAddModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Add</span>
+                </button>
+              </div>
             </div>
-          </div>
-        </div>       
-		 {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">         
-			 <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="text-3xl font-bold text-purple-600 mb-1">{stats.total}</div>
-            <div className="text-sm text-gray-600 font-medium">Total Candidates</div>
-            <div className="text-xs text-gray-500 mt-1">All applications</div>
-          </div>
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="text-3xl font-bold text-green-600 mb-1">{stats.active}</div>
-            <div className="text-sm text-gray-600 font-medium">Active</div>
-            <div className="text-xs text-gray-500 mt-1">Ready to interview</div>
-          </div>
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="text-3xl font-bold text-yellow-600 mb-1">{stats.interviewing}</div>
-            <div className="text-sm text-gray-600 font-medium">Interviewing</div>
-            <div className="text-xs text-gray-500 mt-1">In process</div>
-          </div>          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="text-3xl font-bold text-purple-600 mb-1">{stats.hired}</div>
-            <div className="text-sm text-gray-600 font-medium">Hired</div>
-            <div className="text-xs text-gray-500 mt-1">Successfully placed</div>
-          </div>
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <div className="text-3xl font-bold text-red-600 mb-1">{stats.rejected}</div>
-            <div className="text-sm text-gray-600 font-medium">Rejected</div>
-            <div className="text-xs text-gray-500 mt-1">Not suitable</div>
           </div>
         </div>        {/* Candidates Table - This section will be affected by the panel */}
         <div className={`transition-all duration-300 ${
@@ -570,43 +589,44 @@ const CandidatesPage: React.FC = () => {
         }`}>
           <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed">
+              <table className="w-full" style={{minWidth: '750px', tableLayout: 'fixed'}}>
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="w-64 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[150px]">
                       Candidate
                     </th>
-                    <th className="w-56 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[110px]">
                       Position & Experience
                     </th>
-                    <th className="w-44 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[110px]">
                       Location & Salary
                     </th>
                     {isUserSuperAdmin && (
-                      <th className="w-40 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[90px]">
                         Company
                       </th>
                     )}
-                    <th className="w-36 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[80px]">
                       Status
                     </th>
-                    <th className="w-48 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[100px]">
                       Skills
                     </th>
-                    <th className="w-28 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[90px]">
                       Actions
                     </th>
                   </tr>
                 </thead><tbody className="bg-white divide-y divide-gray-100">
                   {candidates && Array.isArray(candidates) ? candidates.map((candidate: EnhancedCandidate) => (
-                    <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">                      <td className="px-6 py-4">
+                    <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">                      
+                      <td className="px-3 sm:px-4 lg:px-6 py-3">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
+                          <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
                             {candidate.avatar ? (
                               <img 
                                 src={getAvatarUrl(candidate.avatar) || ''} 
                                 alt={`${candidate.firstName} ${candidate.lastName}`}
-                                className="h-10 w-10 rounded-full object-cover"
+                                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full object-cover"
                                 onError={(e) => {
                                   // Fallback to initials if image fails to load
                                   const target = e.target as HTMLImageElement;
@@ -617,41 +637,41 @@ const CandidatesPage: React.FC = () => {
                               />
                             ) : null}
                             <div 
-                              className={`h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center ${candidate.avatar ? 'hidden' : ''}`}
+                              className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-purple-100 flex items-center justify-center ${candidate.avatar ? 'hidden' : ''}`}
                             >
-                              <span className="text-sm font-medium text-purple-600">
+                              <span className="text-xs sm:text-sm font-medium text-purple-600">
                                 {`${candidate.firstName?.charAt(0) || ''}${candidate.lastName?.charAt(0) || ''}`}
                               </span>
                             </div>
                           </div>
-                          <div className="ml-4 min-w-0 flex-1">
+                          <div className="ml-2 sm:ml-4 min-w-0 flex-1">
                             <button 
-                              className="text-sm font-semibold text-purple-600 hover:text-purple-800 hover:underline cursor-pointer transition-colors text-left flex items-center truncate w-full"
+                              className="text-xs sm:text-sm font-semibold text-purple-600 hover:text-purple-800 hover:underline cursor-pointer transition-colors text-left flex items-center truncate w-full"
                               onClick={() => handleOpenProfilePanel(candidate)}
                               title="Click to view full profile"
                               disabled={selectedCandidateQuery.isLoading && selectedCandidateId === candidate.id}
                             >
                               {selectedCandidateQuery.isLoading && selectedCandidateId === candidate.id && (
-                                <div className="w-3 h-3 border border-purple-300 border-t-purple-600 rounded-full animate-spin mr-2 flex-shrink-0"></div>
+                                <div className="w-3 h-3 border border-purple-300 border-t-purple-600 rounded-full animate-spin mr-1 flex-shrink-0"></div>
                               )}
                               <span className="truncate">
                                 {candidate.fullName || (candidate.firstName && candidate.lastName ? `${candidate.firstName} ${candidate.lastName}` : 'Unknown')}
                               </span>
                             </button>
-                            <div className="text-sm text-gray-500 flex items-center truncate">
+                            <div className="text-xs sm:text-sm text-gray-500 flex items-center truncate">
                               <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
                               <span className="truncate">{candidate.email || 'No email'}</span>
                             </div>
-                            <div className="text-sm text-gray-500 flex items-center truncate">
+                            <div className="text-xs sm:text-sm text-gray-500 flex items-center truncate">
                               <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
                               <span className="truncate">{candidate.phone || 'No phone'}</span>
                             </div>
                           </div>
                         </div>
                       </td>                      
-					  <td className="px-6 py-4">
+					  <td className="px-3 sm:px-4 lg:px-6 py-3">
                         <div>
-                          <div className="text-sm font-medium text-gray-900 truncate" title={candidate.currentPosition || 
+                          <div className="text-xs sm:text-sm font-medium text-gray-900 truncate" title={candidate.currentPosition || 
                              (candidate.experience && Array.isArray(candidate.experience) && candidate.experience.length > 0 
                               ? candidate.experience[0].position 
                               : 'No position data')}>
@@ -660,28 +680,28 @@ const CandidatesPage: React.FC = () => {
                               ? candidate.experience[0].position 
                               : 'No position data')}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs sm:text-sm text-gray-500">
                             {Array.isArray(candidate.experience) && candidate.experience.length > 0 
                               ? `${candidate.experience.length} position(s)`
                               : 'No experience data'}
                           </div>
                         </div>
                       </td>                      
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-4 lg:px-6 py-3">
                         <div>
-                          <div className="text-sm text-gray-900 flex items-center truncate">
+                          <div className="text-xs sm:text-sm text-gray-900 flex items-center truncate">
                             <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                             <span className="truncate" title={candidate.location}>{candidate.location}</span>
                           </div>
-                          <div className="text-sm text-gray-500 truncate" title={candidate.salaryExpectation || 'No salary data'}>
+                          <div className="text-xs sm:text-sm text-gray-500 truncate" title={candidate.salaryExpectation || 'No salary data'}>
                             {candidate.salaryExpectation || 'No salary data'}
                           </div>
                         </div>
                       </td>
                       
                       {isUserSuperAdmin && (
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 truncate" title={candidate.company?.name || 'Job Seeker (No Company)'}>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3">
+                          <div className="text-xs sm:text-sm text-gray-900 truncate" title={candidate.company?.name || 'Job Seeker (No Company)'}>
                             {candidate.company?.name ? (
                               <span className="text-gray-900">{candidate.company.name}</span>
                             ) : (
@@ -691,15 +711,15 @@ const CandidatesPage: React.FC = () => {
                         </td>
                       )}
                       
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-4 lg:px-6 py-3 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(candidate.status)}`}>
                           {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
                         </span>
                       </td>                      
-					  <td className="px-6 py-4">
+					  <td className="px-3 sm:px-4 lg:px-6 py-3">
                         <div className="flex flex-wrap gap-1">
                           {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.slice(0, 2).map((skill: string, index: number) => (
-                            <span key={index} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded truncate max-w-20" title={skill}>
+                            <span key={index} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded truncate max-w-16 sm:max-w-20" title={skill}>
                               {skill}
                             </span>
                           ))}
@@ -717,18 +737,19 @@ const CandidatesPage: React.FC = () => {
                           <div className="text-sm text-gray-500 truncate">Last: {candidate.lastActivity ? formatDate(candidate.lastActivity) : 'N/A'}</div>
                         </div>
                       </td>                       */}
-					  <td className="px-6 py-4 text-sm font-medium">
-                        <div className="relative dropdown-container">
+					  <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm font-medium text-center">
+                        <div className="relative dropdown-container inline-block">
                           <button 
-                            className="flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 hover:border-purple-300 transition-colors"
+                            className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 hover:border-purple-300 transition-colors"
                             onClick={() => setOpenDropdownId(openDropdownId === candidate.id ? null : candidate.id)}
                           >
-                            Actions
-                            <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${openDropdownId === candidate.id ? 'rotate-180' : ''}`} />
+                            <span className="hidden sm:inline">Actions</span>
+                            <span className="sm:hidden">Act</span>
+                            <ChevronDown className={`w-3 h-3 ml-0.5 transition-transform ${openDropdownId === candidate.id ? 'rotate-180' : ''}`} />
                           </button>{openDropdownId === candidate.id && (
-                            <div className="absolute right-0 mt-1 w-52 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                            <div className="absolute right-0 mt-1 w-36 sm:w-40 bg-white rounded-md shadow-lg border border-gray-200 z-50 dropdown-menu" style={{maxWidth: "180px"}}>
                               <div className="py-1">                                <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-purple-700 hover:bg-purple-50 transition-colors"
                                   onClick={() => {
                                     handleOpenProfilePanel(candidate);
                                     setOpenDropdownId(null);
@@ -736,77 +757,77 @@ const CandidatesPage: React.FC = () => {
                                   disabled={selectedCandidateQuery.isLoading && selectedCandidateId === candidate.id}
                                 >
                                   {selectedCandidateQuery.isLoading && selectedCandidateId === candidate.id ? (
-                                    <div className="w-4 h-4 border border-purple-300 border-t-purple-600 rounded-full animate-spin mr-3"></div>
+                                    <div className="w-3 h-3 border border-purple-300 border-t-purple-600 rounded-full animate-spin mr-1 sm:mr-2 flex-shrink-0"></div>
                                   ) : (
-                                    <Eye className="w-4 h-4 mr-3" />
+                                    <Eye className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
                                   )}
-                                  View Profile
+                                  <span className="truncate">View Profile</span>
                                 </button>
                                 <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-blue-700 hover:bg-blue-50 transition-colors"
                                   onClick={() => {
                                     handleEditCandidate(candidate);
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4 mr-3" />
-                                  Edit Profile
+                                  <Edit className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <span className="truncate">Edit Profile</span>
                                 </button>
 
                                 <div className="border-t border-gray-100 my-1"></div>
-                                <div className="px-4 py-1 text-xs font-semibold text-gray-500">Status</div>
+                                <div className="px-2 sm:px-3 py-1 text-xs font-semibold text-gray-500">Status</div>
                                 <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-green-700 hover:bg-green-50 transition-colors"
                                   onClick={() => {
                                     handleStatusChange(candidate.id, 'active');
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <CheckCircle className="w-4 h-4 mr-3" />
-                                  Active
+                                  <CheckCircle className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <span className="truncate">Active</span>
                                 </button>
                                 <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-yellow-700 hover:bg-yellow-50 transition-colors"
                                   onClick={() => {
                                     handleStatusChange(candidate.id, 'interviewing');
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <Clock className="w-4 h-4 mr-3" />
-                                  Interviewing
+                                  <Clock className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <span className="truncate">Interviewing</span>
                                 </button>
                                 <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-blue-700 hover:bg-blue-50 transition-colors"
                                   onClick={() => {
                                     handleStatusChange(candidate.id, 'hired');
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <UserCheck className="w-4 h-4 mr-3" />
-                                  Hired
+                                  <UserCheck className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <span className="truncate">Hired</span>
                                 </button>
                                 <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-red-700 hover:bg-red-50 transition-colors"
                                   onClick={() => {
                                     handleStatusChange(candidate.id, 'rejected');
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <XCircle className="w-4 h-4 mr-3" />
-                                  Rejected
+                                  <XCircle className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <span className="truncate">Rejected</span>
                                 </button>
                                 <div className="border-t border-gray-100 my-1"></div>
 
                                 <div className="border-t border-gray-100 my-1"></div>
                                 <button 
-                                  className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-red-700 hover:bg-red-50 transition-colors"
                                   onClick={() => {
                                     handleDeleteCandidate(candidate);
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4 mr-3" />
-                                  Delete Candidate
+                                  <Trash2 className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <span className="truncate">Delete</span>
                                 </button>
                               </div>
                             </div>
@@ -825,54 +846,58 @@ const CandidatesPage: React.FC = () => {
               </table>            
 			  </div>
           </div>
-        </div> {/* End of table container that gets affected by panel */}        {/* Pagination - This stays fixed and doesn't move with the panel */}
-        <div className="bg-white rounded-lg border p-4">
-          <div className="flex items-center justify-between">            <div className="text-sm text-gray-700">
+        </div> {/* End of table container that gets affected by panel */}        
+        
+        {/* Pagination - This stays fixed and doesn't move with the panel */}
+        <div className="bg-white rounded-lg border p-3 sm:p-4 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">
               Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{endIndex}</span> of <span className="font-medium">{totalItems}</span> candidates
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-3">
               {/* Items per page selector */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700">Show:</span>
+                <span className="text-xs sm:text-sm text-gray-700">Show:</span>
                 <select
                   value={itemsPerPage}
                   onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  className="border border-gray-300 rounded px-1 sm:px-2 py-1 text-xs sm:text-sm"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
                   <option value={20}>20</option>
                   <option value={50}>50</option>
                 </select>
-                <span className="text-sm text-gray-700">per page</span>
+                <span className="text-xs sm:text-sm text-gray-700">per page</span>
               </div>
               
               {/* Pagination controls */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
                 <button 
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage <= 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 py-1 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-xs sm:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Previous
+                  <span>Prev</span>
                 </button>
                 <div className="flex space-x-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  {Array.from({ length: Math.min(totalPages <= 3 ? totalPages : 3, totalPages) }, (_, i) => {
                     let pageNumber;
-                    if (totalPages <= 5) {
+                    if (totalPages <= 3) {
                       pageNumber = i + 1;
-                    } else if (currentPage <= 3) {
+                    } else if (currentPage <= 2) {
                       pageNumber = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
+                    } else if (currentPage >= totalPages - 1) {
+                      pageNumber = totalPages - 2 + i;
                     } else {
-                      pageNumber = currentPage - 2 + i;
+                      pageNumber = currentPage - 1 + i;
                     }
                     
                     return (
                       <button
                         key={pageNumber}
-                        onClick={() => handlePageChange(pageNumber)}                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-xs sm:text-sm font-medium ${
                           currentPage === pageNumber
                             ? 'bg-purple-600 text-white'
                             : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
@@ -882,15 +907,26 @@ const CandidatesPage: React.FC = () => {
                       </button>
                     );
                   })}
+                  {totalPages > 3 && currentPage < totalPages - 1 && (
+                    <span className="flex items-center justify-center px-1 text-xs sm:text-sm">...</span>
+                  )}
+                  {totalPages > 3 && currentPage < totalPages - 1 && (
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-xs sm:text-sm font-medium border border-gray-300 hover:bg-gray-50 text-gray-700"
+                    >
+                      {totalPages}
+                    </button>
+                  )}
                 </div>
                 <button 
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 py-1 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-xs sm:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next
+                  <span>Next</span>
                 </button>              
-				</div>
+				      </div>
             </div>
           </div>
         </div>
