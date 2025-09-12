@@ -159,7 +159,7 @@ const OrganizationsPage: React.FC = () => {
               <input
                 type="text"
                 placeholder={isSuperAdmin ? "Search all organizations..." : "Search your organizations..."}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -189,40 +189,43 @@ const OrganizationsPage: React.FC = () => {
             key={org.id}
             to={`/dashboard/organizations/${org.id}`}
             onMouseEnter={() => handleOrganizationHover(org.id)}
-            className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200"
+            className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200 flex flex-col h-full"
           >
-            <div className="p-6">
+            <div className="p-5 flex flex-col h-full">
               {/* Organization Header */}
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                     {org.name.charAt(0)}
                   </div>
-                  <div className="ml-3">
-                    <h3 className="font-semibold text-gray-900">{org.name}</h3>
-                    <p className="text-sm text-gray-500">{org.industry}</p>
+                  <div className="ml-3 overflow-hidden">
+                    <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
+                    <p className="text-sm text-gray-500 truncate">{org.industry}</p>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
+                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
               </div>
 
-              {/* Description */}
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{org.description}</p>
+              {/* Description - with fixed height */}
+              <div className="h-12 mb-3">
+                <p className="text-sm text-gray-600 line-clamp-2">{org.description}</p>
+              </div>
 
               {/* Location */}
-              <p className="text-sm text-gray-500 mb-4">{org.location}</p>             
-			   {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+              <p className="text-sm text-gray-500 mb-3 truncate">{org.location}</p>             
+              
+              {/* Stats - with equal widths and better alignment */}
+              <div className="mt-auto pt-3 border-t border-gray-100 grid grid-cols-3 gap-2">
                 <div className="text-center">
                   <p className="text-sm font-medium text-gray-900">{org.departmentCount || 0}</p>
                   <p className="text-xs text-gray-500">Departments</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-gray-900">{org.activeJobs}</p>
+                  <p className="text-sm font-medium text-gray-900">{org.activeJobs || 0}</p>
                   <p className="text-xs text-gray-500">Active Jobs</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-gray-900">{org.totalEmployees.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-900">{(org.totalEmployees || 0).toLocaleString()}</p>
                   <p className="text-xs text-gray-500">Employees</p>
                 </div>
               </div>
