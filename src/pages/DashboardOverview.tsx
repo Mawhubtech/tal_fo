@@ -293,31 +293,24 @@ const DashboardOverview: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {recentActivity.slice(0, 5).map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div className="mt-0.5 w-4 h-4 rounded border-2 border-green-300 flex items-center justify-center flex-shrink-0">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <div key={activity.id} className="flex items-start">
+                    <div className={`p-2 rounded-lg flex-shrink-0 mr-3 ${
+                      activity.type === 'candidate' ? 'bg-purple-100' :
+                      activity.type === 'job' ? 'bg-blue-100' :
+                      activity.type === 'interview' ? 'bg-orange-100' :
+                      activity.type === 'sequence' ? 'bg-green-100' :
+                      'bg-gray-100'
+                    }`}>
+                      {activity.type === 'candidate' && <Users className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />}
+                      {activity.type === 'job' && <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />}
+                      {activity.type === 'interview' && <Target className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />}
+                      {activity.type === 'sequence' && <Send className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />}
+                      {activity.type === 'resume' && <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start space-x-3 p-2 rounded-lg hover:bg-gray-50">
-                        <div className={`p-2 rounded-lg flex-shrink-0 ${
-                          activity.type === 'candidate' ? 'bg-purple-100' :
-                          activity.type === 'job' ? 'bg-blue-100' :
-                          activity.type === 'interview' ? 'bg-orange-100' :
-                          activity.type === 'sequence' ? 'bg-green-100' :
-                          'bg-gray-100'
-                        }`}>
-                          {activity.type === 'candidate' && <Users className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />}
-                          {activity.type === 'job' && <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />}
-                          {activity.type === 'interview' && <Target className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />}
-                          {activity.type === 'sequence' && <Send className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />}
-                          {activity.type === 'resume' && <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{activity.action}</p>
-                          <p className="text-sm text-gray-500 truncate">{activity.details}</p>
-                          <p className="text-xs text-gray-400 mt-1">{dashboardApiService.formatActivityTime(activity.time)}</p>
-                        </div>
-                      </div>
+                    <div className="flex-1 min-w-0 p-2 rounded-lg hover:bg-gray-50">
+                      <p className="text-sm font-medium text-gray-900 truncate">{activity.action}</p>
+                      <p className="text-sm text-gray-500 truncate">{activity.details}</p>
+                      <p className="text-xs text-gray-400 mt-1">{dashboardApiService.formatActivityTime(activity.time)}</p>
                     </div>
                   </div>
                 ))}

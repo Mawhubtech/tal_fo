@@ -546,14 +546,6 @@ const CandidatesPage: React.FC = () => {
               
               {/* Action buttons section - always in a row */}
               <div className="flex flex-nowrap gap-1 sm:gap-2">
-                <button 
-                  title="Import candidates from CSV"
-                  className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-purple-100 text-purple-700 text-xs sm:text-sm"
-                  onClick={() => setIsBulkImportModalOpen(true)}
-                >
-                  <Upload className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Import</span>
-                </button>
                 {isUserSuperAdmin && (
                   <button
                     title="Export candidates to CSV" 
@@ -562,6 +554,14 @@ const CandidatesPage: React.FC = () => {
                     <span className="hidden sm:inline">Export</span>
                   </button>
                 )}
+                <button 
+                  title="Import candidates from CSV"
+                  className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-purple-100 text-purple-700 text-xs sm:text-sm"
+                  onClick={() => setIsBulkImportModalOpen(true)}
+                >
+                  <Upload className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Import</span>
+                </button>
                 <Link to="/dashboard/resume-processing" title="Process CV/Resume" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-gray-50 text-purple-700 text-xs sm:text-sm">
                   <FileText className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">CV</span>
