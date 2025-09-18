@@ -346,7 +346,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value as CompanyMember['role'])}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 focus:border-primary-500"
                       required
                     >
                       {getRoleOptions().map((option) => (
@@ -387,7 +387,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., Senior Recruiter, HR Coordinator"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 focus:border-primary-500"
                 />
               </div>
 
@@ -421,7 +421,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 focus:border-primary-500"
                     required
                   />
                 </div>
@@ -433,7 +433,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 focus:border-primary-500"
                   required
                 />
               </div>
@@ -502,7 +502,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
                             id={`role-${role.id}`}
                             checked={selectedRoles.includes(role.id)}
                             onChange={() => handleRoleToggle(role.id)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:outline-none focus:border-purple-500"
                           />
                           <label htmlFor={`role-${role.id}`} className="ml-2 text-sm font-medium text-gray-900">
                             {role.name}
@@ -576,7 +576,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
                           type="checkbox"
                           checked={selectedClients.includes(client.id)}
                           onChange={() => handleClientToggle(client.id)}
-                          className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-primary-600 focus:border-purple-500 border-gray-300 rounded"
                         />
                         <Building className="h-5 w-5 text-gray-500" />
                         <div className="flex-1">
@@ -680,3 +680,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
     </div>
   );
 };
+
+
+
+
