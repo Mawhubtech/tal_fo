@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell, Calendar, CheckSquare, MessageSquare } from 'lucide-react';
+import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell, Calendar, CheckSquare, HelpCircle } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useLogout } from '../hooks/useAuth';
 import { AccountSettingsModal } from './AccountSettingsModal';
@@ -139,7 +139,7 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
             className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
             title="Submit Ticket"
           >
-            <MessageSquare className="w-5 h-5" />
+            <HelpCircle className="w-5 h-5" />
           </Link>
         </div>
 
