@@ -53,8 +53,8 @@ const OrganizationsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="text-center py-12">
+      <div className="bg-white min-h-screen">
+        <div className="text-center py-12 px-6">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
           <p className="text-gray-500 mt-4">Loading organizations...</p>
         </div>
@@ -64,8 +64,8 @@ const OrganizationsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="text-center py-12">
+      <div className="bg-white min-h-screen">
+        <div className="text-center py-12 px-6">
           <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Organizations</h3>
           <p className="text-gray-500 mb-4">Failed to load organizations. Please try again.</p>
@@ -75,16 +75,16 @@ const OrganizationsPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="bg-white min-h-screen">
       {/* Breadcrumbs */}
-      <div className="flex items-center text-sm text-gray-500 mb-4">
+      <div className="flex items-center text-sm text-gray-500 mb-4 px-6 pt-6">
         <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
         <span className="mx-2">/</span>
         <span className="text-gray-900 font-medium">Organizations</span>
       </div>
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 px-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             {isSuperAdmin ? 'All Organizations' : 'My Organizations'}
@@ -99,7 +99,7 @@ const OrganizationsPage: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 px-6">
         <div className="bg-white p-4 rounded-lg shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
@@ -150,7 +150,7 @@ const OrganizationsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6 mx-6">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1">
@@ -183,7 +183,7 @@ const OrganizationsPage: React.FC = () => {
       </div>
 
       {/* Organizations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6">
         {filteredOrganizations.map((org) => (
           <Link
             key={org.id}
@@ -236,7 +236,7 @@ const OrganizationsPage: React.FC = () => {
 
       {/* Empty State */}
       {filteredOrganizations.length === 0 && (
-        <div className="text-center py-12">
+        <div className="text-center py-12 px-6">
           <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             {isSuperAdmin ? 'No organizations found' : 'No assigned organizations found'}
