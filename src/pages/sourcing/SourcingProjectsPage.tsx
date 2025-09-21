@@ -81,13 +81,13 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
     Math.min((project.progress.totalProspects || 0) / (project.targets.totalProspects || 1) * 100, 100) : 0;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow overflow-hidden">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 pr-4">
             <Link 
               to={`/dashboard/sourcing/projects/${project.id}`}
-              className="text-lg font-semibold text-gray-900 hover:text-purple-600 transition-colors"
+              className="text-lg font-semibold text-gray-900 hover:text-purple-600 transition-colors block truncate"
             >
               {project.name}
             </Link>
@@ -95,21 +95,7 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
               <p className="text-sm text-gray-600 mt-1 line-clamp-2">{project.description}</p>
             )}
           </div>
-          <div className="flex items-center space-x-2 ml-4">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-              {getStatusIcon(project.status)}
-              <span className="ml-1 capitalize">{project.status}</span>
-            </span>
-            {project.requirements?.experience && (
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(project.requirements.experience)}`}>
-                <span className="capitalize">{project.requirements.experience} Level</span>
-              </span>
-            )}
-            {project.metadata?.jobTitle && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                <span>{project.metadata.jobTitle}</span>
-              </span>
-            )}
+          <div className="flex-shrink-0 flex items-center space-x-1">
             <div className="flex items-center space-x-1">
               <button
                 onClick={handleEdit}
@@ -127,6 +113,24 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Badges Row - Separate from header to prevent overflow */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+            {getStatusIcon(project.status)}
+            <span className="ml-1 capitalize">{project.status}</span>
+          </span>
+          {project.requirements?.experience && (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(project.requirements.experience)}`}>
+              <span className="capitalize">{project.requirements.experience} Level</span>
+            </span>
+          )}
+          {project.metadata?.jobTitle && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              <span className="truncate max-w-[120px]">{project.metadata.jobTitle}</span>
+            </span>
+          )}
         </div>
 
         {/* Progress Bar */}
@@ -166,33 +170,36 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            {project.assignedToTeam && (
-              <div className="flex items-center">
-                <Users className="w-4 h-4 mr-1" />
-                <span>{project.assignedToTeam.name}</span>
-              </div>
-            )}
-            {project.targetCompletionDate && (
-              <div className="flex items-center">
-                <Calendar className="w-4 h-4 mr-1" />
-                <span>{new Date(project.targetCompletionDate).toLocaleDateString()}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center space-x-1">
-            {project.tags?.slice(0, 2).map((tag, index) => (
-              <span 
-                key={index}
-                className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
-              >
-                {tag}
-              </span>
-            ))}
-            {(project.tags?.length || 0) > 2 && (
-              <span className="text-xs text-gray-400">+{(project.tags?.length || 0) - 2}</span>
-            )}
+        <div className="pt-4 border-t border-gray-100">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+              {project.assignedToTeam && (
+                <div className="flex items-center">
+                  <Users className="w-4 h-4 mr-1 flex-shrink-0" />
+                  <span className="truncate">{project.assignedToTeam.name}</span>
+                </div>
+              )}
+              {project.targetCompletionDate && (
+                <div className="flex items-center">
+                  <Calendar className="w-4 h-4 mr-1 flex-shrink-0" />
+                  <span>{new Date(project.targetCompletionDate).toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              {project.tags?.slice(0, 2).map((tag, index) => (
+                <span 
+                  key={index}
+                  className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded truncate max-w-[80px]"
+                  title={tag}
+                >
+                  {tag}
+                </span>
+              ))}
+              {(project.tags?.length || 0) > 2 && (
+                <span className="text-xs text-gray-400">+{(project.tags?.length || 0) - 2}</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -278,7 +285,7 @@ const SourcingProjectsPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -305,7 +312,7 @@ const SourcingProjectsPage: React.FC = () => {
           <select
             value={seniorityFilter}
             onChange={(e) => setSeniorityFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none sm:col-span-2 lg:col-span-1"
           >
             <option value="">All Seniority Levels</option>
             <option value="entry">Entry Level</option>
@@ -350,7 +357,7 @@ const SourcingProjectsPage: React.FC = () => {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
