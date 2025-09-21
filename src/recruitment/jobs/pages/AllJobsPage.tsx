@@ -188,10 +188,10 @@ const AllJobsPage: React.FC = () => {
 
   const getUrgencyColor = (urgency: Job['urgency']) => {
     switch (urgency) {
-      case 'High': return 'text-red-600';
-      case 'Medium': return 'text-yellow-600';
-      case 'Low': return 'text-green-600';
-      default: return 'text-gray-600';
+      case 'High': return 'bg-red-100 text-red-800 border-red-200';
+      case 'Medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'Low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
   const formatSalary = (job: Job) => {
@@ -407,11 +407,22 @@ const AllJobsPage: React.FC = () => {
         ) : (
           <div className="divide-y divide-gray-200">
             {jobs.map((job) => (
-              <div key={job.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={job.id} className="p-6 hover:bg-gray-50 transition-colors border-l-4 border-l-transparent hover:border-l-purple-500">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 hover:text-purple-600 cursor-pointer">
+                    {/* Status and Priority Badges - Top of card */}
+                    <div className="flex items-center space-x-2 mb-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
+                        {job.status}
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getUrgencyColor(job.urgency)}`}>
+                        {job.urgency} Priority
+                      </span>
+                    </div>
+                    
+                    {/* Job Title */}
+                    <div className="mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900 hover:text-purple-600 cursor-pointer">
                         <button 
                           onClick={() => handleJobClick(job)}
                           className="text-left hover:underline"
@@ -419,17 +430,10 @@ const AllJobsPage: React.FC = () => {
                           {job.title}
                         </button>
                       </h3>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
-                          {job.status}
-                        </span>
-                        <span className={`text-sm font-medium ${getUrgencyColor(job.urgency)}`}>
-                          {job.urgency} Priority
-                        </span>
-                      </div>
                     </div>
 
-                    <div className="flex items-center space-x-6 text-sm text-gray-600 mb-3">
+                    {/* Job Details */}
+                    <div className="flex items-center space-x-6 text-sm text-gray-600 mb-4">
                       <div className="flex items-center space-x-1">
                         <Building className="h-4 w-4" />
                         <span>{job.department}</span>
@@ -446,45 +450,48 @@ const AllJobsPage: React.FC = () => {
                         <Users className="h-4 w-4" />
                         <span>{job.applicantsCount || job.applicants || 0} applicants</span>
                       </div>
-                    </div>
-
-                    {/* Publishing Options */}
-                    <div className="mb-3">
-                      <div className="text-xs text-gray-500 mb-1">Publishing Status:</div>
-                      <div className="flex flex-wrap gap-1">
-                        {(() => {
-                          const publishingInfo = getPublishingInfo(job);
-                          return publishingInfo.badges.map((badge, index) => {
-                            const IconComponent = badge.icon;
-                            return (
-                              <span
-                                key={index}
-                                className={`px-2 py-1 text-xs rounded-full flex items-center ${badge.color}`}
-                              >
-                                {IconComponent && <IconComponent className="w-3 h-3 mr-1" />}
-                                {badge.text}
-                              </span>
-                            );
-                          });
-                        })()}
+                      <div className="flex items-center space-x-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          {formatSalary(job)}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-600">
-                        Posted {formatDate(job.postedDate || job.createdAt)}
+                    {/* Publishing Status */}
+                    <div className="flex items-center mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="text-xs text-gray-500">Publishing:</div>
+                        <div className="flex items-center gap-1">
+                          {(() => {
+                            const publishingInfo = getPublishingInfo(job);
+                            return publishingInfo.badges.map((badge, index) => {
+                              const IconComponent = badge.icon;
+                              return (
+                                <span
+                                  key={index}
+                                  className={`px-2 py-1 text-xs rounded-full flex items-center ${badge.color}`}
+                                >
+                                  {IconComponent && <IconComponent className="w-3 h-3 mr-1" />}
+                                  {badge.text}
+                                </span>
+                              );
+                            });
+                          })()}
+                        </div>
                       </div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatSalary(job)}
-                      </div>
+                    </div>
+
+                    {/* Posted Date */}
+                    <div className="text-sm text-gray-600">
+                      Posted {formatDate(job.postedDate || job.createdAt)}
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col space-y-2">
+                  {/* Action Buttons - Horizontal Layout */}
+                  <div className="flex items-start space-x-2 ml-6">
                     <button
                       onClick={() => handleEditJob(job)}
-                      className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 px-3 py-2 rounded-lg transition-colors"
+                      className="flex items-center space-x-2 text-purple-600 hover:text-white hover:bg-purple-600 px-4 py-2 rounded-lg transition-all duration-200 border border-purple-200 hover:border-purple-600 shadow-sm hover:shadow-md"
                       title="Edit Job"
                     >
                       <Edit3 className="h-4 w-4" />
@@ -492,7 +499,7 @@ const AllJobsPage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleDeleteJob(job)}
-                      className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                      className="flex items-center space-x-2 text-red-600 hover:text-white hover:bg-red-600 px-4 py-2 rounded-lg transition-all duration-200 border border-red-200 hover:border-red-600 shadow-sm hover:shadow-md"
                       title="Delete Job"
                     >
                       <Trash2 className="h-4 w-4" />
