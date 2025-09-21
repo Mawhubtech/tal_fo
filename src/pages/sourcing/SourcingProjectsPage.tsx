@@ -222,6 +222,7 @@ const SourcingProjectsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [seniorityFilter, setSeniorityFilter] = useState('');
+  const [sortBy, setSortBy] = useState('latest');
   
   const { data: projectsData, isLoading, error } = useProjects({
     search: searchTerm || undefined,
@@ -239,6 +240,24 @@ const SourcingProjectsPage: React.FC = () => {
       return false;
     }
     return true;
+  });
+
+  // Sort the filtered projects
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'status':
+        return a.status.localeCompare(b.status);
+      case 'seniority':
+        const seniorityOrder = { 'entry': 1, 'mid': 2, 'senior': 3, 'lead': 4, 'executive': 5 };
+        const aOrder = seniorityOrder[a.requirements?.experience as keyof typeof seniorityOrder] || 0;
+        const bOrder = seniorityOrder[b.requirements?.experience as keyof typeof seniorityOrder] || 0;
+        return bOrder - aOrder; // High to low
+      case 'latest':
+      default:
+        return new Date(b.createdAt || b.updatedAt || '').getTime() - new Date(a.createdAt || a.updatedAt || '').getTime();
+    }
   });
 
   if (isLoading) {
@@ -283,20 +302,23 @@ const SourcingProjectsPage: React.FC = () => {
         <QuickSearch className="max-w-4xl mx-auto" />
       </div>
 
+      {/* Search Bar - Full Width */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none text-lg"
+          />
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
-            />
-          </div>
-          
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -312,7 +334,7 @@ const SourcingProjectsPage: React.FC = () => {
           <select
             value={seniorityFilter}
             onChange={(e) => setSeniorityFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none sm:col-span-2 lg:col-span-1"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           >
             <option value="">All Seniority Levels</option>
             <option value="entry">Entry Level</option>
@@ -321,27 +343,28 @@ const SourcingProjectsPage: React.FC = () => {
             <option value="lead">Lead/Principal</option>
             <option value="executive">Executive</option>
           </select>
-        </div>
-      </div>
 
-      {/* Results Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="text-sm text-gray-600">
-          Showing {filteredProjects.length} of {total} projects
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">Sort by:</span>
-          <select className="text-sm border border-gray-300 rounded px-2 py-1">
-            <option>Latest</option>
-            <option>Name</option>
-            <option>Status</option>
-            <option>Seniority</option>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+          >
+            <option value="latest">Sort by: Latest</option>
+            <option value="name">Sort by: Name</option>
+            <option value="status">Sort by: Status</option>
+            <option value="seniority">Sort by: Seniority</option>
           </select>
+
+          <div className="flex items-center justify-center lg:justify-start">
+            <span className="text-sm text-gray-600">
+              {sortedProjects.length} of {total} projects
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Projects Grid */}
-      {filteredProjects.length === 0 ? (
+      {sortedProjects.length === 0 ? (
         <div className="text-center py-12">
           <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
@@ -358,7 +381,7 @@ const SourcingProjectsPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
+          {sortedProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
