@@ -768,7 +768,7 @@ const SendInvitationsModal: React.FC<SendInvitationsModalProps> = ({
                   onChange={(e) => setNewEmail(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Enter email address..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
               <button
@@ -838,7 +838,7 @@ const SendInvitationsModal: React.FC<SendInvitationsModalProps> = ({
                     value={meetingLink}
                     onChange={(e) => setMeetingLink(e.target.value)}
                     placeholder="https://meet.google.com/abc-defg-hij or https://zoom.us/j/123456789"
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">

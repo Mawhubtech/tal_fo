@@ -181,7 +181,7 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
                 placeholder="Search members by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
 
@@ -193,7 +193,7 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value as TeamRole)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 {TEAM_ROLES.map((role) => (
                   <option key={role.value} value={role.value}>

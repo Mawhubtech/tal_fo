@@ -11,7 +11,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getAvatarUrl } from '../../utils/fileUtils';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
-import Select from 'react-select';
 
 // Enhanced candidate interface with additional professional fields
 interface EnhancedCandidate {

@@ -166,7 +166,7 @@ const JobBoardPage: React.FC = () => {
                     placeholder="e.g. San Francisco, Remote"
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -176,7 +176,7 @@ const JobBoardPage: React.FC = () => {
                   <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">All Types</option>
                     <option value="Full-time">Full-time</option>
@@ -193,7 +193,7 @@ const JobBoardPage: React.FC = () => {
                   <select
                     value={experienceFilter}
                     onChange={(e) => setExperienceFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">All Levels</option>
                     <option value="entry">Entry Level</option>
@@ -211,7 +211,7 @@ const JobBoardPage: React.FC = () => {
                       const value = e.target.value;
                       setRemoteFilter(value === '' ? undefined : value === 'true');
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">All Options</option>
                     <option value="true">Remote Only</option>

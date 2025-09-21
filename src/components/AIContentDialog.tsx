@@ -82,7 +82,7 @@ const AIContentDialog: React.FC<AIContentDialogProps> = ({
               value={context}
               onChange={(e) => setContext(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder={
                 type === 'email'
                   ? "e.g., We want to introduce our AI recruitment platform and schedule a demo meeting..."

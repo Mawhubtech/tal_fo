@@ -127,7 +127,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
               id="name"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none ${
                 errors.name ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter role name (e.g., jobseeker, company-hr)"
@@ -151,7 +151,7 @@ export const RoleModal: React.FC<RoleModalProps> = ({
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none ${
                 errors.description ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Describe the role's purpose and responsibilities"

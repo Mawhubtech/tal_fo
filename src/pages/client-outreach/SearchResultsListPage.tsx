@@ -240,7 +240,7 @@ const SearchResultsListPage: React.FC = () => {
               placeholder="Filter companies..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
 
@@ -248,7 +248,7 @@ const SearchResultsListPage: React.FC = () => {
           <select
             value={selectedIndustries[0] || ''}
             onChange={(e) => setSelectedIndustries(e.target.value ? [e.target.value] : [])}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           >
             <option value="">All Industries</option>
             {industries.map(industry => (

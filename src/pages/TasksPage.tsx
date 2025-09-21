@@ -318,7 +318,7 @@ const TasksPage: React.FC = () => {
                 placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               />
             </div>
           </div>
@@ -327,7 +327,7 @@ const TasksPage: React.FC = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
             >
               <option value="all">All Status</option>
               <option value="Pending">Pending</option>
@@ -340,7 +340,7 @@ const TasksPage: React.FC = () => {
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value as any)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
             >
               <option value="all">All Priority</option>
               <option value="Urgent">Urgent Priority</option>

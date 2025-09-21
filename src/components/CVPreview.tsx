@@ -172,14 +172,14 @@ const CVPreview: React.FC<CVPreviewProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
           <input
             {...register('personalInfo.firstName')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
           <input
             {...register('personalInfo.lastName')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           />
         </div>
       </div>
@@ -192,7 +192,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <input
               {...register('personalInfo.email')}
               type="email"
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
         </div>
@@ -202,7 +202,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
               {...register('personalInfo.phone')}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
         </div>
@@ -214,7 +214,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
           <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <input
             {...register('personalInfo.location')}
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           />
         </div>
       </div>
@@ -226,7 +226,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <Linkedin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
               {...register('personalInfo.linkedIn')}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
         </div>
@@ -236,7 +236,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <Github className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
               {...register('personalInfo.github')}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
         </div>
@@ -249,7 +249,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <Globe className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
               {...register('personalInfo.website')}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
         </div>
@@ -259,7 +259,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <ExternalLink className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
               {...register('personalInfo.portfolio')}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
         </div>
@@ -273,7 +273,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
       <textarea
         {...register('professionalSummary')}
         rows={6}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
         placeholder="Enter your professional summary..."
       />
     </div>
@@ -319,14 +319,14 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
               <input
                 {...register(`workExperience.${index}.company`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
               <input
                 {...register(`workExperience.${index}.position`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>
@@ -337,7 +337,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <input
                 {...register(`workExperience.${index}.startDate`)}
                 type="month"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
             <div>
@@ -345,7 +345,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <input
                 {...register(`workExperience.${index}.endDate`)}
                 type="month"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Present"
               />
             </div>
@@ -353,7 +353,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
               <input
                 {...register(`workExperience.${index}.location`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>
@@ -363,7 +363,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <textarea
               {...register(`workExperience.${index}.description`)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Describe your role and achievements..."
             />
           </div>
@@ -410,14 +410,14 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
               <input
                 {...register(`education.${index}.institution`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Degree</label>
               <input
                 {...register(`education.${index}.degree`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>
@@ -427,7 +427,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Field of Study</label>
               <input
                 {...register(`education.${index}.field`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
             <div>
@@ -435,14 +435,14 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <input
                 {...register(`education.${index}.graduationDate`)}
                 type="month"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">GPA</label>
               <input
                 {...register(`education.${index}.gpa`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Optional"
               />
             </div>
@@ -461,7 +461,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">Technical Skills</label>
           <input
             {...register('skills.technical')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             placeholder="Comma-separated skills (e.g., JavaScript, Python, React)"
           />
         </div>
@@ -470,7 +470,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">Programming Languages</label>
           <input
             {...register('skills.programming')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             placeholder="Comma-separated languages"
           />
         </div>
@@ -479,7 +479,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">Frameworks & Libraries</label>
           <input
             {...register('skills.frameworks')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             placeholder="Comma-separated frameworks"
           />
         </div>
@@ -488,7 +488,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">Soft Skills</label>
           <input
             {...register('skills.soft')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             placeholder="Comma-separated soft skills"
           />
         </div>
@@ -497,7 +497,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">Other Skills</label>
           <input
             {...register('skills.other')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             placeholder="Comma-separated other skills"
           />
         </div>
@@ -542,14 +542,14 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
               <input
                 {...register(`projects.${index}.name`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Project URL</label>
               <input
                 {...register(`projects.${index}.url`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Optional"
               />
             </div>
@@ -560,7 +560,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <textarea
               {...register(`projects.${index}.description`)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
 
@@ -568,7 +568,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">Technologies</label>
             <input
               {...register(`projects.${index}.technologies`)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Comma-separated technologies"
             />
           </div>
@@ -613,14 +613,14 @@ const CVPreview: React.FC<CVPreviewProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">Certification Name</label>
               <input
                 {...register(`certifications.${index}.name`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Issuing Organization</label>
               <input
                 {...register(`certifications.${index}.issuer`)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>
@@ -630,7 +630,7 @@ const CVPreview: React.FC<CVPreviewProps> = ({
             <input
               {...register(`certifications.${index}.date`)}
               type="month"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
         </div>

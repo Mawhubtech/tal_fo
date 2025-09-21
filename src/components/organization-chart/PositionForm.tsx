@@ -246,7 +246,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none focus:ring-purple-500 focus:border-transparent ${
                 errors.title ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="e.g., Chief Executive Officer, Marketing Manager"
@@ -266,7 +266,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
               type="text"
               value={formData.employeeName}
               onChange={(e) => handleInputChange('employeeName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., John Smith (optional)"
             />
             <p className="mt-1 text-xs text-gray-500">
@@ -312,7 +312,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
             <select
               value={formData.parentId}
               onChange={(e) => handleInputChange('parentId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               <option value="">No supervisor (Top level position)</option>
               {availableParents.map(pos => (
@@ -337,7 +337,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.email ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="employee@company.com"
@@ -356,7 +356,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.phone ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="+1 (555) 123-4567"

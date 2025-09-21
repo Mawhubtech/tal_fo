@@ -260,7 +260,7 @@ export const CreateEmailCampaignModal: React.FC<CreateEmailCampaignModalProps> =
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Senior Developer Outreach - January 2024"
                   />
                 </div>
@@ -273,7 +273,7 @@ export const CreateEmailCampaignModal: React.FC<CreateEmailCampaignModalProps> =
                     required
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Describe the purpose and goals of this campaign..."
                   />
                 </div>
@@ -484,13 +484,13 @@ export const CreateEmailCampaignModal: React.FC<CreateEmailCampaignModalProps> =
                               type="date"
                               value={formData.scheduledDate}
                               onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             />
                             <input
                               type="time"
                               value={formData.scheduledTime}
                               onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             />
                           </div>
                         )}
@@ -510,7 +510,7 @@ export const CreateEmailCampaignModal: React.FC<CreateEmailCampaignModalProps> =
                       max="1440"
                       value={formData.delayBetweenEmails}
                       onChange={(e) => setFormData({ ...formData, delayBetweenEmails: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                     <p className="text-sm text-gray-600 mt-1">Minimum delay between individual emails</p>
                   </div>
@@ -524,7 +524,7 @@ export const CreateEmailCampaignModal: React.FC<CreateEmailCampaignModalProps> =
                       max="1000"
                       value={formData.maxEmailsPerDay}
                       onChange={(e) => setFormData({ ...formData, maxEmailsPerDay: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                     <p className="text-sm text-gray-600 mt-1">Daily email sending limit</p>
                   </div>
@@ -554,7 +554,7 @@ export const CreateEmailCampaignModal: React.FC<CreateEmailCampaignModalProps> =
                           type="time"
                           value={formData.businessHoursStart}
                           onChange={(e) => setFormData({ ...formData, businessHoursStart: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         />
                       </div>
                       <div>
@@ -565,7 +565,7 @@ export const CreateEmailCampaignModal: React.FC<CreateEmailCampaignModalProps> =
                           type="time"
                           value={formData.businessHoursEnd}
                           onChange={(e) => setFormData({ ...formData, businessHoursEnd: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         />
                       </div>
                     </div>

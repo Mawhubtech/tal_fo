@@ -431,7 +431,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="text"
                         value={formData.personalInfo.firstName || ''}
                         onChange={(e) => handlePersonalInfoChange('firstName', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                           errors.firstName ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="Enter first name"
@@ -446,7 +446,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="text"
                         value={formData.personalInfo.lastName || ''}
                         onChange={(e) => handlePersonalInfoChange('lastName', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                           errors.lastName ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="Enter last name"
@@ -471,7 +471,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="email"
                         value={formData.personalInfo.email || ''}
                         onChange={(e) => handlePersonalInfoChange('email', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                           errors.email ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="Enter email address"
@@ -486,7 +486,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="tel"
                         value={formData.personalInfo.phone || ''}
                         onChange={(e) => handlePersonalInfoChange('phone', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                           errors.phone ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="Enter phone number"
@@ -501,7 +501,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="text"
                         value={formData.personalInfo.location || ''}
                         onChange={(e) => handlePersonalInfoChange('location', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                           errors.location ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="Enter location"
@@ -515,7 +515,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                       <select
                         value={formData.status}
                         onChange={(e) => handleFieldChange('status', e.target.value as CandidateStatus)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value={CandidateStatus.ACTIVE}>Active</option>
                         <option value={CandidateStatus.INACTIVE}>Inactive</option>
@@ -542,7 +542,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="text"
                         value={formData.currentPosition || ''}
                         onChange={(e) => handleFieldChange('currentPosition', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="Enter current position"
                       />
                     </div>
@@ -554,7 +554,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="text"
                         value={formData.salaryExpectation || ''}
                         onChange={(e) => handleFieldChange('salaryExpectation', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="e.g., $80,000 - $100,000"
                       />
                     </div>
@@ -565,7 +565,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                       <select
                         value={formData.source}
                         onChange={(e) => handleFieldChange('source', e.target.value as CandidateSource)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value={CandidateSource.DIRECT_APPLICATION}>Direct Application</option>
                         <option value={CandidateSource.LINKEDIN}>LinkedIn</option>
@@ -593,7 +593,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="url"
                         value={formData.personalInfo.linkedIn || ''}
                         onChange={(e) => handlePersonalInfoChange('linkedIn', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="https://linkedin.com/in/..."
                       />
                     </div>
@@ -605,7 +605,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="url"
                         value={formData.personalInfo.github || ''}
                         onChange={(e) => handlePersonalInfoChange('github', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="https://github.com/..."
                       />
                     </div>
@@ -617,7 +617,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                         type="url"
                         value={formData.personalInfo.website || ''}
                         onChange={(e) => handlePersonalInfoChange('website', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="https://..."
                       />
                     </div>
@@ -631,7 +631,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                     value={formData.summary || ''}
                     onChange={(e) => handleFieldChange('summary', e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Brief professional summary..."
                   />
                 </div>
@@ -643,7 +643,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                     value={formData.notes || ''}
                     onChange={(e) => handleFieldChange('notes', e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Internal notes about the candidate..."
                   />
                 </div>
@@ -679,7 +679,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                       value={skillInput}
                       onChange={(e) => setSkillInput(e.target.value)}
                       onKeyDown={handleAddSkill}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="Type a skill and press Enter"
                     />
                     <div className="flex flex-wrap gap-2 mt-2">

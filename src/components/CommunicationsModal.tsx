@@ -446,7 +446,7 @@ const CommunicationsModal: React.FC<CommunicationsModalProps> = ({
                       type="text"
                       value={emailTo}
                       onChange={(e) => setEmailTo(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="recipient@example.com, another@example.com"
                     />
                     <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas or semicolons</p>
@@ -458,7 +458,7 @@ const CommunicationsModal: React.FC<CommunicationsModalProps> = ({
                       type="text"
                       value={emailCc}
                       onChange={(e) => setEmailCc(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="cc@example.com (optional)"
                     />
                   </div>
@@ -469,7 +469,7 @@ const CommunicationsModal: React.FC<CommunicationsModalProps> = ({
                       type="text"
                       value={emailBcc}
                       onChange={(e) => setEmailBcc(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="bcc@example.com (optional)"
                     />
                   </div>
@@ -482,7 +482,7 @@ const CommunicationsModal: React.FC<CommunicationsModalProps> = ({
                       type="text"
                       value={emailSubject}
                       onChange={(e) => setEmailSubject(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="Enter email subject"
                     />
                   </div>
@@ -510,7 +510,7 @@ const CommunicationsModal: React.FC<CommunicationsModalProps> = ({
                       value={emailContent}
                       onChange={(e) => setEmailContent(e.target.value)}
                       rows={8}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="Enter your message"
                     />
                   </div>
@@ -568,7 +568,7 @@ const CommunicationsModal: React.FC<CommunicationsModalProps> = ({
                         value={noteContent}
                         onChange={(e) => setNoteContent(e.target.value)}
                         rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="Enter your note about this organization"
                       />
                     </div>
@@ -652,7 +652,7 @@ const CommunicationsModal: React.FC<CommunicationsModalProps> = ({
                             value={editingNoteContent}
                             onChange={(e) => setEditingNoteContent(e.target.value)}
                             rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             placeholder="Edit your note"
                           />
                           <div className="flex justify-end gap-2">

@@ -319,7 +319,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Enter pipeline name"
                   />
                 </div>
@@ -345,7 +345,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="Enter pipeline description"
                 />
               </div>
@@ -358,7 +358,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="recruitment">Recruitment</option>
                     <option value="sourcing">Sourcing</option>
@@ -374,7 +374,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                   <select
                     value={formData.visibility}
                     onChange={(e) => setFormData({ ...formData, visibility: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="private">Private</option>
                     <option value="public">Public</option>
@@ -389,7 +389,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -457,7 +457,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                           min="1"
                           value={stage.order}
                           onChange={(e) => updateStage(index, 'order', parseInt(e.target.value) || 1)}
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                           placeholder="1"
                         />
                       </div>
@@ -471,7 +471,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                           required
                           value={stage.name}
                           onChange={(e) => updateStage(index, 'name', e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                           placeholder="Stage name"
                         />
                       </div>
@@ -483,7 +483,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                         <select
                           value={stage.type}
                           onChange={(e) => updateStage(index, 'type', e.target.value)}
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                         >
                           {stageTypes.map(type => (
                             <option key={type.value} value={type.value}>
@@ -572,7 +572,7 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
                         type="text"
                         value={stage.description}
                         onChange={(e) => updateStage(index, 'description', e.target.value)}
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                         placeholder="Stage description"
                       />
                     </div>

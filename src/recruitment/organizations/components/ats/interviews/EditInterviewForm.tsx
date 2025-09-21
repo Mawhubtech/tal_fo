@@ -171,7 +171,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
               <select
                 value={formData.type}
                 onChange={(e) => handleInputChange('type', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 required
               >
                 {interviewTypes.map(type => (
@@ -187,7 +187,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
               <select
                 value={formData.mode}
                 onChange={(e) => handleInputChange('mode', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 required
               >
                 {interviewModes.map(mode => (
@@ -203,7 +203,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
               <select
                 value={formData.stage}
                 onChange={(e) => handleInputChange('stage', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 required
               >
                 {interviewStages.map(stage => (
@@ -222,7 +222,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
                 max="480"
                 value={formData.durationMinutes}
                 onChange={(e) => handleInputChange('durationMinutes', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 required
               />
             </div>
@@ -237,7 +237,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
               type="datetime-local"
               value={formData.scheduledAt}
               onChange={(e) => handleInputChange('scheduledAt', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               required
             />
           </div>
@@ -254,7 +254,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   placeholder="Enter interview location"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
             )}
@@ -270,7 +270,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
                     value={formData.meetingLink}
                     onChange={(e) => handleInputChange('meetingLink', e.target.value)}
                     placeholder="https://..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
 
@@ -283,7 +283,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
                     value={formData.meetingId}
                     onChange={(e) => handleInputChange('meetingId', e.target.value)}
                     placeholder="Meeting ID"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
 
@@ -296,7 +296,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
                     value={formData.meetingPassword}
                     onChange={(e) => handleInputChange('meetingPassword', e.target.value)}
                     placeholder="Meeting password (optional)"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
               </>
@@ -409,7 +409,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
                 onChange={(e) => handleInputChange('agenda', e.target.value)}
                 placeholder="Interview agenda and topics to cover..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
 
@@ -422,7 +422,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
                 onChange={(e) => handleInputChange('notes', e.target.value)}
                 placeholder="Any additional notes or instructions..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
 
@@ -435,7 +435,7 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
                 onChange={(e) => handleInputChange('preparationNotes', e.target.value)}
                 placeholder="Preparation instructions for participants..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>

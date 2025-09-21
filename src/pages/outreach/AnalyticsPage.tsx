@@ -356,7 +356,7 @@ const AnalyticsPage: React.FC = () => {
           <select 
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           >
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
@@ -463,7 +463,7 @@ const AnalyticsPage: React.FC = () => {
           <select 
             value={selectedMetric}
             onChange={(e) => setSelectedMetric(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           >
             <option value="all">All Metrics</option>
             <option value="sent">Emails Sent</option>

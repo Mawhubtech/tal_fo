@@ -286,7 +286,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               placeholder="Enter task title..."
               required
             />
@@ -301,7 +301,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               placeholder="Enter task description..."
             />
           </div>
@@ -315,7 +315,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               <select
                 value={formData.type}
                 onChange={(e) => handleInputChange('type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 {taskTypes.map((type) => (
                   <option key={type} value={type}>{type}</option>
@@ -330,7 +330,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               <select
                 value={formData.category}
                 onChange={(e) => handleInputChange('category', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 {taskCategories.map((category) => (
                   <option key={category} value={category}>{category}</option>
@@ -348,7 +348,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               <select
                 value={formData.priority}
                 onChange={(e) => handleInputChange('priority', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 {priorities.map((priority) => (
                   <option key={priority} value={priority}>{priority}</option>
@@ -364,7 +364,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 type="datetime-local"
                 value={formData.dueDate}
                 onChange={(e) => handleInputChange('dueDate', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 min={getDefaultDateTime()}
               />
             </div>
@@ -378,7 +378,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             <select
               value={formData.entityType}
               onChange={(e) => handleEntityTypeChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
             >
               <option value="none">General Task (No specific entity)</option>
               <option value="job">Job</option>
@@ -422,7 +422,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                           placeholder="Search jobs..."
                           value={jobSearch}
                           onChange={(e) => setJobSearch(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -469,7 +469,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                   handleInputChange('candidateName', e.target.value);
                   handleInputChange('entityName', e.target.value);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 placeholder="Enter candidate name"
               />
             </div>
@@ -484,7 +484,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 type="text"
                 value={formData.entityName}
                 onChange={(e) => handleInputChange('entityName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 placeholder={`Enter ${formData.entityType.replace('_', ' ')} name`}
               />
             </div>
@@ -549,7 +549,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                           placeholder="Search users..."
                           value={userSearch}
                           onChange={(e) => setUserSearch(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                         />
                       </div>
                     </div>

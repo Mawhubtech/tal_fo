@@ -261,7 +261,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
               type="text"
               value={formData.employeeName}
               onChange={(e) => handleInputChange('employeeName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., John Smith (optional)"
             />
             <p className="mt-1 text-xs text-gray-500">
@@ -303,7 +303,7 @@ const PositionForm: React.FC<PositionFormProps> = ({
             <select
               value={formData.parentId}
               onChange={(e) => handleInputChange('parentId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               <option value="">No supervisor (Top level position)</option>
               {availableParents.map(pos => (

@@ -162,7 +162,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none focus:outline-none"
               placeholder="Enter task title"
               required
             />
@@ -177,7 +177,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none focus:outline-none"
               placeholder="Enter task description"
             />
           </div>
@@ -190,7 +190,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
             <select
               value={formData.type}
               onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none focus:outline-none"
               required
             >
               <option value="Review">Review</option>
@@ -213,7 +213,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none focus:outline-none"
               >
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -228,7 +228,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <select
                 value={formData.status}
                 onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none focus:outline-none"
               >
                 <option value="Pending">Pending</option>
                 <option value="In Progress">In Progress</option>
@@ -248,7 +248,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none focus:outline-none"
               />
               <Calendar className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
@@ -269,7 +269,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     setShowAssigneeDropdown(true);
                   }}
                   onFocus={() => setShowAssigneeDropdown(true)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 pr-10"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none pr-10"
                   placeholder="Search for team member or leave empty"
                 />
                 <User className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -320,7 +320,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     setShowCandidateDropdown(true);
                   }}
                   onFocus={() => setShowCandidateDropdown(true)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 pr-10"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none pr-10"
                   placeholder="Search for candidate or leave empty"
                 />
                 <FileText className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />

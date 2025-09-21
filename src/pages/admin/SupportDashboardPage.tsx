@@ -180,7 +180,7 @@ const SupportDashboardPage: React.FC = () => {
                 placeholder="Search tickets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>
@@ -189,7 +189,7 @@ const SupportDashboardPage: React.FC = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               <option value="all">All Status</option>
               <option value="open">Open</option>
@@ -202,7 +202,7 @@ const SupportDashboardPage: React.FC = () => {
             <select
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               <option value="all">All Priority</option>
               <option value="low">Low</option>
@@ -392,7 +392,7 @@ const SupportDashboardPage: React.FC = () => {
                       <select
                         value={newStatus}
                         onChange={(e) => setNewStatus(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="open">Open</option>
                         <option value="in_progress">In Progress</option>
@@ -418,7 +418,7 @@ const SupportDashboardPage: React.FC = () => {
                       <select
                         value={newPriority}
                         onChange={(e) => setNewPriority(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
@@ -443,7 +443,7 @@ const SupportDashboardPage: React.FC = () => {
                       <select
                         value={newAssignee}
                         onChange={(e) => setNewAssignee(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="">Unassigned</option>
                         {adminUsers.map((admin: AdminUser) => (
@@ -625,7 +625,7 @@ const SupportDashboardPage: React.FC = () => {
                           type="checkbox"
                           checked={isInternal}
                           onChange={(e) => setIsInternal(e.target.checked)}
-                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                         />
                         <span className="ml-2 text-sm text-gray-700">Internal note (not visible to customer)</span>
                       </label>
@@ -635,7 +635,7 @@ const SupportDashboardPage: React.FC = () => {
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder={isInternal ? "Add an internal note..." : "Reply to customer..."}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                     />
                     <div className="flex justify-end">
                       <button

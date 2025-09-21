@@ -765,7 +765,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                             const suggestedQuestions = Math.floor(duration / 5);
                             setAiInput(prev => ({ ...prev, questionCount: suggestedQuestions }));
                           }}
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         />
                         <span className="text-sm text-gray-500">min</span>
                       </div>
@@ -775,7 +775,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                       <select
                         value={aiInput.difficulty}
                         onChange={(e) => setAiInput(prev => ({ ...prev, difficulty: e.target.value as any }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="entry">Entry Level</option>
                         <option value="mid">Mid Level</option>
@@ -791,7 +791,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                         max="20"
                         value={aiInput.questionCount}
                         onChange={(e) => setAiInput(prev => ({ ...prev, questionCount: parseInt(e.target.value) || 5 }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         ~{Math.floor((template.duration || 30) / (aiInput.questionCount || 5))} min per question
@@ -806,7 +806,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                       value={aiInput.focusAreas}
                       onChange={(e) => setAiInput(prev => ({ ...prev, focusAreas: e.target.value }))}
                       placeholder="e.g., React, Leadership, Problem Solving (comma-separated)"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                   </div>
                   
@@ -817,7 +817,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                       onChange={(e) => setAiInput(prev => ({ ...prev, additionalInstructions: e.target.value }))}
                       placeholder="Any specific requirements or focus areas for the interview..."
                       rows={2}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                   </div>
 
@@ -830,7 +830,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                         ...prev, 
                         formatStrategy: e.target.value as any 
                       }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="balanced">Balanced Mix (Recommended)</option>
                       <option value="rating_focused">Rating Focused - Skill Assessments</option>
@@ -1122,7 +1122,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                   value={template.name}
                   onChange={(e) => setTemplate(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g., Software Engineer Phone Screen"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
               
@@ -1131,7 +1131,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                 <select
                   value={template.interviewType}
                   onChange={(e) => setTemplate(prev => ({ ...prev, interviewType: e.target.value as any }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   <option value="Phone Screen">Phone Screen</option>
                   <option value="Technical">Technical</option>
@@ -1154,7 +1154,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                   onChange={(e) => setTemplate(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
                   min="15"
                   max="240"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
               
@@ -1178,7 +1178,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                 onChange={(e) => setTemplate(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Brief description of this interview template and its purpose..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
 
@@ -1190,7 +1190,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                 onChange={(e) => setTemplate(prev => ({ ...prev, instructions: e.target.value }))}
                 placeholder="Instructions for the interviewer on how to conduct this interview..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
 
@@ -1256,7 +1256,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                             onChange={(e) => handleUpdateQuestion(index, { question: e.target.value })}
                             placeholder="Enter your interview question..."
                             rows={2}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           />
                         </div>
 
@@ -1266,7 +1266,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                             <select
                               value={question.type}
                               onChange={(e) => handleUpdateQuestion(index, { type: e.target.value as any })}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             >
                               <option value="general">General</option>
                               <option value="technical">Technical</option>
@@ -1281,7 +1281,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                             <select
                               value={question.format}
                               onChange={(e) => handleUpdateQuestion(index, { format: e.target.value as QuestionFormat })}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             >
                               <option value={QuestionFormat.YES_NO_WITH_JUSTIFICATION}>Yes/No + Justification</option>
                               <option value={QuestionFormat.RATING_WITH_JUSTIFICATION}>Rating + Justification</option>
@@ -1297,7 +1297,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                               value={question.category}
                               onChange={(e) => handleUpdateQuestion(index, { category: e.target.value })}
                               placeholder="e.g., Communication"
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             />
                           </div>
 
@@ -1306,7 +1306,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                             <select
                               value={question.difficulty}
                               onChange={(e) => handleUpdateQuestion(index, { difficulty: e.target.value as any })}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             >
                               <option value="easy">Easy</option>
                               <option value="medium">Medium</option>
@@ -1322,7 +1322,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                               onChange={(e) => handleUpdateQuestion(index, { timeLimit: parseInt(e.target.value) || 0 })}
                               min="1"
                               max="60"
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             />
                           </div>
                         </div>
@@ -1335,7 +1335,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                             value={question.section || ''}
                             onChange={(e) => handleUpdateQuestion(index, { section: e.target.value })}
                             placeholder="e.g., Technical Skills, Leadership Experience"
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           />
                         </div>
 
@@ -1463,7 +1463,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                               onChange={(e) => handleUpdateQuestion(index, { expectedAnswer: e.target.value })}
                               placeholder="What constitutes a good answer to this question..."
                               rows={2}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             />
                           </div>
                         )}
@@ -1482,7 +1482,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                 onChange={(e) => setTemplate(prev => ({ ...prev, preparationNotes: e.target.value }))}
                 placeholder="Notes to help the interviewer prepare for this interview..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
 
@@ -1510,7 +1510,7 @@ Create a professional, comprehensive template that leverages the mixed question 
                         value={criterion}
                         onChange={(e) => handleUpdateEvaluationCriterion(index, e.target.value)}
                         placeholder="e.g., Technical competency, Communication skills"
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                       <button
                         onClick={() => handleRemoveEvaluationCriterion(index)}

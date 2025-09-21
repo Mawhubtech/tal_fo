@@ -53,7 +53,7 @@ const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClo
             <textarea
               value={booleanExpression}
               onChange={(e) => setBooleanExpression(e.target.value)}
-              className="w-full h-32 p-4 border border-gray-300 rounded-lg text-sm font-mono"
+              className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none text-sm font-mono"
               placeholder="Example: (software OR engineer) AND (python OR java)"
             />
           </div>

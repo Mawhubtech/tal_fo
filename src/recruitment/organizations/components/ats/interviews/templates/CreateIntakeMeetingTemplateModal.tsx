@@ -282,7 +282,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                 type="text"
                 value={template.name}
                 onChange={(e) => setTemplate(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="e.g., Role Discussion | Intake Meeting"
               />
             </div>
@@ -293,7 +293,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                 value={template.description}
                 onChange={(e) => setTemplate(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Describe the purpose and scope of this intake meeting template..."
               />
             </div>
@@ -376,7 +376,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                           value={question.question}
                           onChange={(e) => handleUpdateQuestion(index, { question: e.target.value })}
                           rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="Enter your question..."
                         />
                       </div>
@@ -386,7 +386,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                         <select
                           value={question.type}
                           onChange={(e) => handleUpdateQuestion(index, { type: e.target.value as any })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         >
                           <option value="text">Text</option>
                           <option value="textarea">Textarea</option>
@@ -403,7 +403,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                           type="text"
                           value={question.category}
                           onChange={(e) => handleUpdateQuestion(index, { category: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="e.g., Role Requirements"
                         />
                       </div>
@@ -414,7 +414,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                           type="text"
                           value={question.section}
                           onChange={(e) => handleUpdateQuestion(index, { section: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="e.g., Role Discussion"
                         />
                       </div>
@@ -438,7 +438,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                           type="text"
                           value={question.placeholder || ''}
                           onChange={(e) => handleUpdateQuestion(index, { placeholder: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="Placeholder text for the input..."
                         />
                       </div>
@@ -452,7 +452,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                               options: e.target.value.split('\n').filter(opt => opt.trim()) 
                             })}
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             placeholder="Option 1&#10;Option 2&#10;Option 3"
                           />
                         </div>
@@ -464,7 +464,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                           type="text"
                           value={question.helpText || ''}
                           onChange={(e) => handleUpdateQuestion(index, { helpText: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="Additional guidance for this question..."
                         />
                       </div>
@@ -529,7 +529,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                   <select
                     value={aiInput.industry}
                     onChange={(e) => setAiInput(prev => ({ ...prev, industry: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">Select industry...</option>
                     <option value="Technology">Technology</option>
@@ -550,7 +550,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                   <select
                     value={aiInput.companySize}
                     onChange={(e) => setAiInput(prev => ({ ...prev, companySize: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">Select company size...</option>
                     <option value="Startup (1-10)">Startup (1-10)</option>
@@ -567,7 +567,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                   <select
                     value={aiInput.hiringVolume}
                     onChange={(e) => setAiInput(prev => ({ ...prev, hiringVolume: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">Select hiring volume...</option>
                     <option value="Low (1-5 per month)">Low (1-5 per month)</option>
@@ -627,7 +627,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                     onChange={(e) => setAiInput(prev => ({ ...prev, questionCount: parseInt(e.target.value) || 20 }))}
                     min="5"
                     max="50"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                   <p className="text-xs text-gray-500 mt-1">Recommended: 15-25 questions</p>
                 </div>
@@ -639,7 +639,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
                     value={aiInput.additionalInstructions}
                     onChange={(e) => setAiInput(prev => ({ ...prev, additionalInstructions: e.target.value }))}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Any specific requirements or focus areas for your intake meeting template..."
                   />
                 </div>

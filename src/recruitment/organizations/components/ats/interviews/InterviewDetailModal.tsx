@@ -659,7 +659,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                         value={editForm.notes || ''}
                         onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
                         rows={6}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="Add your notes about this interview..."
                       />
                     </div>
@@ -669,7 +669,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                         value={editForm.nextSteps || ''}
                         onChange={(e) => setEditForm(prev => ({ ...prev, nextSteps: e.target.value }))}
                         rows={3}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="What are the next steps for this candidate?"
                       />
                     </div>
@@ -771,7 +771,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                       <select
                         value={editForm.status || interview.status}
                         onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value as any }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="Scheduled">Scheduled</option>
                         <option value="In Progress">In Progress</option>
@@ -793,7 +793,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                       <select
                         value={editForm.result || interview.result || ''}
                         onChange={(e) => setEditForm(prev => ({ ...prev, result: e.target.value || null }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="">Not Set</option>
                         <option value="Pass">✅ Pass</option>
@@ -818,7 +818,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                       <select
                         value={editForm.overallRating || interview.overallRating || ''}
                         onChange={(e) => setEditForm(prev => ({ ...prev, overallRating: e.target.value ? Number(e.target.value) : null }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="">Not Rated</option>
                         <option value="1">⭐ (1/5) - Poor</option>
@@ -858,7 +858,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                       <select
                         value={editForm.recommendation || interview.recommendation || ''}
                         onChange={(e) => setEditForm(prev => ({ ...prev, recommendation: e.target.value || null }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="">Not Set</option>
                         <option value="Hire">✅ Hire</option>
@@ -888,7 +888,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                         value={editForm.notes || ''}
                         onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
                         rows={6}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="Add your detailed notes and feedback about this interview:&#10;• How did the candidate perform?&#10;• What were their strengths and weaknesses?&#10;• Key observations and impressions&#10;• Any concerns or highlights"
                       />
                     ) : (
@@ -907,7 +907,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                         value={editForm.nextSteps || ''}
                         onChange={(e) => setEditForm(prev => ({ ...prev, nextSteps: e.target.value }))}
                         rows={3}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="What are the next steps for this candidate?&#10;• Move to next interview round&#10;• Schedule technical assessment&#10;• Prepare job offer&#10;• Send rejection email&#10;• Request additional references"
                       />
                     ) : (
@@ -1323,7 +1323,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                               populateEmailTemplate(selectedTemplate);
                             }
                           }}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         >
                           {availableTemplateTypes.map(templateType => {
                             const template = emailTemplates[templateType];
@@ -1377,7 +1377,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                         value={emailForm.customRecipient}
                         onChange={(e) => setEmailForm(prev => ({ ...prev, customRecipient: e.target.value }))}
                         placeholder="Add recipient email..."
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                       <button
                         onClick={addRecipient}
@@ -1394,7 +1394,7 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
                       type="text"
                       value={emailForm.subject}
                       onChange={(e) => setEmailForm(prev => ({ ...prev, subject: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="Email subject..."
                     />
                     <p className="text-xs text-gray-500 mt-1">

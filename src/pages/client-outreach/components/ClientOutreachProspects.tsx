@@ -360,7 +360,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                   placeholder="Search prospects..."
                   value={filters.search}
                   onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
             </div>
@@ -369,7 +369,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
             <select
               value={filters.stage}
               onChange={(e) => setFilters(prev => ({ ...prev, stage: e.target.value }))}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               <option value="">All Stages</option>
               {pipeline?.stages?.map(stage => (
@@ -399,7 +399,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                 <select
                   value={filters.industry}
                   onChange={(e) => setFilters(prev => ({ ...prev, industry: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   <option value="">All Industries</option>
                   {uniqueIndustries.map(industry => (
@@ -416,7 +416,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                 <select
                   value={filters.location}
                   onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   <option value="">All Locations</option>
                   {uniqueLocations.map(location => (
@@ -437,7 +437,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                     ...prev, 
                     minEmployees: e.target.value ? parseInt(e.target.value) : undefined 
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="Min employees"
                 />
               </div>
@@ -451,7 +451,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
                     ...prev, 
                     maxEmployees: e.target.value ? parseInt(e.target.value) : undefined 
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="Max employees"
                 />
               </div>

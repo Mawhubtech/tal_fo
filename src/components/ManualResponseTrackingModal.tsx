@@ -117,7 +117,7 @@ const ManualResponseTrackingModal: React.FC<ManualResponseTrackingModalProps> = 
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
               rows={3}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-purple-500 focus:border-purple-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               placeholder="What did the candidate say or do?"
             />
           </div>
@@ -131,7 +131,7 @@ const ManualResponseTrackingModal: React.FC<ManualResponseTrackingModalProps> = 
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-purple-500 focus:border-purple-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               placeholder="Any additional notes about this interaction..."
             />
           </div>
@@ -140,7 +140,7 @@ const ManualResponseTrackingModal: React.FC<ManualResponseTrackingModalProps> = 
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
             >
               Cancel
             </button>

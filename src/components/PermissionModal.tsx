@@ -110,7 +110,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
               id="resource"
               value={formData.resource}
               onChange={(e) => setFormData(prev => ({ ...prev, resource: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none ${
                 errors.resource ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="e.g., users, jobs, candidates"
@@ -143,7 +143,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
               id="action"
               value={formData.action}
               onChange={(e) => setFormData(prev => ({ ...prev, action: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none ${
                 errors.action ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="e.g., create, read, update, delete"
@@ -176,7 +176,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:outline-none"
               placeholder="Optional description of what this permission allows"
               disabled={isLoading}
             />

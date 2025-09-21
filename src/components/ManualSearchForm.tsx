@@ -183,7 +183,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               value={tempInputs.companyName}
               onChange={(e) => setTempInputs(prev => ({ ...prev, companyName: e.target.value }))}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('companyNames', tempInputs.companyName, 'companyName'))}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., Apple, Microsoft, Google"
             />
             <button
@@ -225,7 +225,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               value={tempInputs.industry}
               onChange={(e) => setTempInputs(prev => ({ ...prev, industry: e.target.value }))}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('industries', tempInputs.industry, 'industry'))}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., Technology, Healthcare, Finance"
             />
             <button
@@ -267,7 +267,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               value={tempInputs.location}
               onChange={(e) => setTempInputs(prev => ({ ...prev, location: e.target.value }))}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('locations', tempInputs.location, 'location'))}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., United States, Germany, United Kingdom"
             />
             <button
@@ -309,7 +309,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               value={tempInputs.technology}
               onChange={(e) => setTempInputs(prev => ({ ...prev, technology: e.target.value }))}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('technologies', tempInputs.technology, 'technology'))}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., Python, AWS, React, Salesforce"
             />
             <button
@@ -351,7 +351,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               value={tempInputs.keyword}
               onChange={(e) => setTempInputs(prev => ({ ...prev, keyword: e.target.value }))}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('keywords', tempInputs.keyword, 'keyword'))}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., SaaS, AI, Machine Learning, startup"
             />
             <button
@@ -393,7 +393,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               value={tempInputs.website}
               onChange={(e) => setTempInputs(prev => ({ ...prev, website: e.target.value }))}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('websites', tempInputs.website, 'website'))}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., apple.com, microsoft.com"
             />
             <button
@@ -435,7 +435,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               value={tempInputs.specialty}
               onChange={(e) => setTempInputs(prev => ({ ...prev, specialty: e.target.value }))}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('specialties', tempInputs.specialty, 'specialty'))}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., Cloud Computing, Data Analytics"
             />
             <button
@@ -477,7 +477,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               value={tempInputs.ticker}
               onChange={(e) => setTempInputs(prev => ({ ...prev, ticker: e.target.value }))}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('ticker', tempInputs.ticker, 'ticker'))}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="e.g., AAPL, MSFT, GOOGL"
             />
             <button
@@ -613,7 +613,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="number"
               value={filters.employees?.min || ''}
               onChange={(e) => updateRange('employees', 'min', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Minimum employees"
               min="0"
             />
@@ -623,7 +623,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="number"
               value={filters.employees?.max || ''}
               onChange={(e) => updateRange('employees', 'max', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Maximum employees"
               min="0"
             />
@@ -643,7 +643,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="number"
               value={filters.revenue?.min || ''}
               onChange={(e) => updateRange('revenue', 'min', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Minimum revenue"
               min="0"
             />
@@ -653,7 +653,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="number"
               value={filters.revenue?.max || ''}
               onChange={(e) => updateRange('revenue', 'max', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Maximum revenue"
               min="0"
             />
@@ -673,7 +673,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="number"
               value={filters.followers?.min || ''}
               onChange={(e) => updateRange('followers', 'min', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Minimum followers"
               min="0"
             />
@@ -683,7 +683,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="number"
               value={filters.followers?.max || ''}
               onChange={(e) => updateRange('followers', 'max', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Maximum followers"
               min="0"
             />
@@ -703,7 +703,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="number"
               value={filters.founded?.min || ''}
               onChange={(e) => updateRange('founded', 'min', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Earliest year (e.g., 2000)"
               min="1800"
               max={new Date().getFullYear()}
@@ -714,7 +714,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="number"
               value={filters.founded?.max || ''}
               onChange={(e) => updateRange('founded', 'max', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Latest year (e.g., 2024)"
               min="1800"
               max={new Date().getFullYear()}
@@ -763,7 +763,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasPricing === true}
               onChange={(e) => updateFilters('hasPricing', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">Has Pricing</span>
           </label>
@@ -772,7 +772,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasFreeTrial === true}
               onChange={(e) => updateFilters('hasFreeTrial', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">Free Trial</span>
           </label>
@@ -781,7 +781,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasDemo === true}
               onChange={(e) => updateFilters('hasDemo', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">Demo Available</span>
           </label>
@@ -790,7 +790,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.isDownloadable === true}
               onChange={(e) => updateFilters('isDownloadable', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">Downloadable</span>
           </label>
@@ -799,7 +799,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasMobileApps === true}
               onChange={(e) => updateFilters('hasMobileApps', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">Mobile Apps</span>
           </label>
@@ -808,7 +808,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasApiDocs === true}
               onChange={(e) => updateFilters('hasApiDocs', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">API Documentation</span>
           </label>
@@ -824,7 +824,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasLinkedIn === true}
               onChange={(e) => updateFilters('hasLinkedIn', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">LinkedIn</span>
           </label>
@@ -833,7 +833,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasTwitter === true}
               onChange={(e) => updateFilters('hasTwitter', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">Twitter/X</span>
           </label>
@@ -842,7 +842,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasFacebook === true}
               onChange={(e) => updateFilters('hasFacebook', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">Facebook</span>
           </label>
@@ -851,7 +851,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasInstagram === true}
               onChange={(e) => updateFilters('hasInstagram', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">Instagram</span>
           </label>
@@ -860,7 +860,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasYoutube === true}
               onChange={(e) => updateFilters('hasYoutube', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">YouTube</span>
           </label>
@@ -869,7 +869,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
               type="checkbox"
               checked={filters.hasGithub === true}
               onChange={(e) => updateFilters('hasGithub', e.target.checked ? true : undefined)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">GitHub</span>
           </label>
@@ -892,7 +892,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
                 value={tempInputs.excludeCompany}
                 onChange={(e) => setTempInputs(prev => ({ ...prev, excludeCompany: e.target.value }))}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('excludeCompanies', tempInputs.excludeCompany, 'excludeCompany'))}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="e.g., Microsoft, Google"
               />
               <button
@@ -934,7 +934,7 @@ const ManualSearchForm: React.FC<ManualSearchFormProps> = ({
                 value={tempInputs.excludeDomain}
                 onChange={(e) => setTempInputs(prev => ({ ...prev, excludeDomain: e.target.value }))}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addToArray('excludeDomains', tempInputs.excludeDomain, 'excludeDomain'))}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="e.g., microsoft.com, google.com"
               />
               <button

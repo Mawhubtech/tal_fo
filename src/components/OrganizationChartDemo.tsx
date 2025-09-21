@@ -150,7 +150,7 @@ const OrganizationChartDemo: React.FC<OrganizationChartDemoProps> = ({
                 <select
                   value={selectedDepartment}
                   onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   <option value="">Choose a department...</option>
                   {demoDepartments.map(dept => (

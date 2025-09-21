@@ -206,7 +206,7 @@ export const CreateIntakeMeetingSessionModal: React.FC<CreateIntakeMeetingSessio
               value={scheduledAt}
               onChange={(e) => setScheduledAt(e.target.value)}
               min={minDateTime}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
             <p className="text-xs text-gray-500 mt-1">
               Leave empty to create a draft session that can be scheduled later
@@ -246,7 +246,7 @@ export const CreateIntakeMeetingSessionModal: React.FC<CreateIntakeMeetingSessio
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Add any notes or special instructions for this intake meeting..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
             />
           </div>
 
@@ -266,7 +266,7 @@ export const CreateIntakeMeetingSessionModal: React.FC<CreateIntakeMeetingSessio
                   onChange={(e) => setNewAttendeeEmail(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Enter email address..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
               <button

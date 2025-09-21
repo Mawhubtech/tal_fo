@@ -134,7 +134,7 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
           <select
             value={value}
             onChange={(e) => handleResponseChange(question.id || '', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             required={question.required}
           >
             <option value="">Select an option...</option>
@@ -159,7 +159,7 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
                       : currentValues.filter(v => v !== option);
                     handleResponseChange(question.id || '', newValues);
                   }}
-                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                 />
                 <span className="text-sm text-gray-700">{option}</span>
               </label>
@@ -174,7 +174,7 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
             value={value}
             onChange={(e) => handleResponseChange(question.id || '', e.target.value)}
             placeholder={question.placeholder}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             required={question.required}
           />
         );
@@ -185,7 +185,7 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
             type="date"
             value={value}
             onChange={(e) => handleResponseChange(question.id || '', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             required={question.required}
           />
         );
@@ -197,7 +197,7 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
             value={value}
             onChange={(e) => handleResponseChange(question.id || '', e.target.value)}
             placeholder={question.placeholder}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             required={question.required}
           />
         );
@@ -378,7 +378,7 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
                 value={newFollowUpAction}
                 onChange={(e) => setNewFollowUpAction(e.target.value)}
                 placeholder="Add a follow-up action..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddFollowUpAction()}
               />
               <button

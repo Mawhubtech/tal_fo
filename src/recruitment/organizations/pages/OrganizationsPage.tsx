@@ -159,7 +159,7 @@ const OrganizationsPage: React.FC = () => {
               <input
                 type="text"
                 placeholder={isSuperAdmin ? "Search all organizations..." : "Search your organizations..."}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -169,7 +169,7 @@ const OrganizationsPage: React.FC = () => {
           {/* Industry Filter */}
           <div className="md:w-64">
             <select
-              className="w-full py-2 px-3 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+              className="w-full py-2 px-3 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               value={industryFilter}
               onChange={(e) => setIndustryFilter(e.target.value)}
             >

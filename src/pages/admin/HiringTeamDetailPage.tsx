@@ -613,7 +613,7 @@ const HiringTeamDetailPage: React.FC = () => {
                       id="teamName"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="e.g. Engineering Hiring Team"
                       required
                     />
@@ -628,7 +628,7 @@ const HiringTeamDetailPage: React.FC = () => {
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="Brief description of this team's responsibilities..."
                     />
                   </div>
@@ -642,7 +642,7 @@ const HiringTeamDetailPage: React.FC = () => {
                         id="teamVisibility"
                         value={formData.visibility}
                         onChange={(e) => setFormData({ ...formData, visibility: e.target.value as any })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="public">Public</option>
                         <option value="private">Private</option>
@@ -658,7 +658,7 @@ const HiringTeamDetailPage: React.FC = () => {
                         id="teamStatus"
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>

@@ -590,7 +590,7 @@ const TeamManagementPage: React.FC = () => {
                         setItemsPerPage(Number(e.target.value));
                         setCurrentPage(1); // Reset to first page when changing items per page
                       }}
-                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value={5}>5</option>
                       <option value={10}>10</option>
@@ -1124,7 +1124,7 @@ const TeamManagementPage: React.FC = () => {
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="user@example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     disabled={inviteUserMutation.isPending}
                   />
                 </div>

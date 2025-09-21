@@ -209,7 +209,7 @@ Best regards,
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Initial Outreach, Follow-up"
                   />
                 </div>
@@ -292,7 +292,7 @@ Best regards,
                       <select
                         value={formData.templateId}
                         onChange={(e) => setFormData({ ...formData, templateId: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="">Choose a template...</option>
                         {stepTemplates.map((template) => (
@@ -352,7 +352,7 @@ Best regards,
                           type="text"
                           value={formData.customSubject}
                           onChange={(e) => setFormData({ ...formData, customSubject: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="Enter email subject..."
                         />
                       </div>
@@ -406,7 +406,7 @@ Best regards,
                           value={formData.customContent}
                           onChange={(e) => setFormData({ ...formData, customContent: e.target.value })}
                           rows={8}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="Enter your message content..."
                         />
                       )}
@@ -437,7 +437,7 @@ Best regards,
                         min="0"
                         value={formData.delayDays}
                         onChange={(e) => setFormData({ ...formData, delayDays: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                     <div>
@@ -448,7 +448,7 @@ Best regards,
                         max="23"
                         value={formData.delayHours}
                         onChange={(e) => setFormData({ ...formData, delayHours: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                     <div>
@@ -459,7 +459,7 @@ Best regards,
                         max="59"
                         value={formData.delayMinutes}
                         onChange={(e) => setFormData({ ...formData, delayMinutes: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                   </div>

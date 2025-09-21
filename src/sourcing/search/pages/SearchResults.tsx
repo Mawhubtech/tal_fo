@@ -887,7 +887,7 @@ const SearchResultsPage: React.FC = () => {
           <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-purple-100 to-purple-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <input type="checkbox" className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                <input type="checkbox" className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none" />
                 <h2 className="text-lg font-semibold text-gray-900">
                   All Profiles ({results.length})
                 </h2>
@@ -957,7 +957,7 @@ const SearchResultsPage: React.FC = () => {
                 return (
                   <div key={candidate.id || index} className={`px-6 py-6 hover:bg-gray-50 transition-colors duration-200 ${index !== results.length - 1 ? 'border-b border-gray-200' : ''}`}>
                     <div className="flex items-start">
-                      <input type="checkbox" className="mt-2 mr-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                      <input type="checkbox" className="mt-2 mr-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none" />
                       <div className="flex-1">
                         
                         {/* Header with name and actions */}

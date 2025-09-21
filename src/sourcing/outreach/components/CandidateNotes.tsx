@@ -175,7 +175,7 @@ const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateN
               value={newNoteContent}
               onChange={(e) => setNewNoteContent(e.target.value)}
               placeholder={`Add a note about ${candidateName || 'this candidate'}...`}
-              className="w-full p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               rows={3}
               disabled={createNoteMutation.isPending}
             />
@@ -299,7 +299,7 @@ const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateN
                     <textarea
                       value={editNoteContent}
                       onChange={(e) => setEditNoteContent(e.target.value)}
-                      className="w-full p-2 border border-gray-200 rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full p-2 border border-gray-200 rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       rows={3}
                       disabled={updateNoteMutation.isPending}
                     />

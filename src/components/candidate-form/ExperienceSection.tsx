@@ -92,7 +92,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                     type="text"
                     value={exp.position}
                     onChange={(e) => handleExperienceChange(index, 'position', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Senior Software Engineer"
                     required
                   />
@@ -105,7 +105,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                     type="text"
                     value={exp.company}
                     onChange={(e) => handleExperienceChange(index, 'company', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Microsoft"
                     required
                   />
@@ -118,7 +118,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                     type="date"
                     value={exp.startDate}
                     onChange={(e) => handleExperienceChange(index, 'startDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     required
                   />
                 </div>
@@ -130,7 +130,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                     type="date"
                     value={exp.endDate || ''}
                     onChange={(e) => handleExperienceChange(index, 'endDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                   <p className="text-xs text-gray-500 mt-1">Leave blank if current position</p>
                 </div>
@@ -142,7 +142,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                     type="text"
                     value={exp.location || ''}
                     onChange={(e) => handleExperienceChange(index, 'location', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Seattle, WA"
                   />
                 </div>
@@ -155,7 +155,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                 <textarea
                   value={exp.description || ''}
                   onChange={(e) => handleExperienceChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   rows={3}
                   placeholder="Brief description of the role and overall responsibilities..."
                 />
@@ -176,7 +176,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g., Led a team of 5 developers"
                 />
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -213,7 +213,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g., Reduced processing time by 40%"
                 />
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -250,7 +250,7 @@ const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience, onCha
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g., React, Node.js, PostgreSQL"
                 />
                 <div className="flex flex-wrap gap-2 mt-2">

@@ -212,7 +212,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                   id="firstName"
                   value={formData.firstName}
                   onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors.firstName ? 'border-red-300' : 'border-gray-300'
                   }`}
                   disabled={isLoading}
@@ -234,7 +234,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                   id="lastName"
                   value={formData.lastName}
                   onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors.lastName ? 'border-red-300' : 'border-gray-300'
                   }`}
                   disabled={isLoading}
@@ -258,7 +258,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                 id="email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                   errors.email ? 'border-red-300' : 'border-gray-300'
                 } ${isEditing ? 'bg-gray-50' : ''}`}
                 disabled={isLoading || isEditing}
@@ -283,7 +283,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                     id="password"
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none pr-10 ${
                       errors.password ? 'border-red-300' : 'border-gray-300'
                     }`}
                     disabled={isLoading}
@@ -313,7 +313,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                 id="status"
                 value={formData.status}
                 onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 disabled={isLoading}
               >
                 <option value="active">Active</option>

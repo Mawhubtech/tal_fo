@@ -107,7 +107,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
                 type="text"
                 value={formData.transactionId}
                 onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Bank transaction reference"
               />
             </div>
@@ -119,7 +119,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
                 type="text"
                 value={formData.bankReference}
                 onChange={(e) => setFormData({ ...formData, bankReference: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Bank reference number"
               />
             </div>
@@ -138,7 +138,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
                 type="text"
                 value={formData.transactionId}
                 onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Card transaction ID"
               />
             </div>
@@ -151,7 +151,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
                 maxLength={4}
                 value={formData.cardLastFour}
                 onChange={(e) => setFormData({ ...formData, cardLastFour: e.target.value.replace(/\D/g, '') })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Last 4 digits"
               />
             </div>
@@ -165,7 +165,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
                 min="0"
                 value={formData.processingFee}
                 onChange={(e) => setFormData({ ...formData, processingFee: parseFloat(e.target.value) || 0 })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="0.00"
               />
             </div>
@@ -182,7 +182,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
               type="text"
               value={formData.checkNumber}
               onChange={(e) => setFormData({ ...formData, checkNumber: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Check number"
             />
           </div>
@@ -199,7 +199,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
               type="text"
               value={formData.transactionId}
               onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Transaction reference"
             />
           </div>
@@ -247,7 +247,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
               required
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="0.00"
             />
           </div>
@@ -260,7 +260,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
             <select
               value={formData.paymentMethod}
               onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as PaymentMethod })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               {paymentMethods.map((method) => (
                 <option key={method.value} value={method.value}>
@@ -280,7 +280,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
               required
               value={formData.paymentDate}
               onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
 
@@ -296,7 +296,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder={`Payment for Invoice #${invoiceNumber}`}
             />
           </div>
@@ -310,7 +310,7 @@ const ReceivePaymentModal: React.FC<ReceivePaymentModalProps> = ({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Additional notes"
             />
           </div>

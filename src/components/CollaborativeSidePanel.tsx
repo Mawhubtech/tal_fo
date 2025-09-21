@@ -534,7 +534,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     rows={2}
                   />
                   <div className="flex space-x-2">
@@ -950,7 +950,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                                   placeholder="Search candidates..."
                                   value={candidateSearchQuery}
                                   onChange={(e) => setCandidateSearchQuery(e.target.value)}
-                                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                                 />
                               </div>
                               <div className="max-h-48 overflow-y-auto">
@@ -969,7 +969,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                                         type="checkbox"
                                         checked={selectedCandidates.includes(candidate.id)}
                                         onChange={() => {}} // Handled by button click
-                                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                                       />
                                       {candidate.avatar ? (
                                         <img 

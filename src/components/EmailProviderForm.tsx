@@ -296,7 +296,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 placeholder={`e.g., ${type.charAt(0).toUpperCase() + type.slice(1)} Account`}
                 required
               />
@@ -311,7 +311,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 placeholder="your-email@example.com"
                 required
               />
@@ -326,7 +326,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                 type="text"
                 value={formData.fromName || ''}
                 onChange={(e) => setFormData({ ...formData, fromName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 placeholder="e.g., John Smith, TAL Recruiting Team"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -375,7 +375,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                         ...formData, 
                         settings: { ...formData.settings, smtpHost: e.target.value }
                       })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       placeholder="smtp.gmail.com"
                       required
                     />
@@ -392,7 +392,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                         ...formData, 
                         settings: { ...formData.settings, smtpPort: parseInt(e.target.value) }
                       })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       min={1}
                       max={65535}
                       required
@@ -411,7 +411,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                       ...formData, 
                       settings: { ...formData.settings, username: e.target.value }
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     placeholder="Usually your email address"
                     required
                   />
@@ -429,7 +429,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                         ...formData, 
                         settings: { ...formData.settings, password: e.target.value }
                       })}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       placeholder="App password or regular password"
                       required
                     />

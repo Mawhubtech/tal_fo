@@ -96,7 +96,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                     type="text"
                     value={edu.degree}
                     onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Bachelor of Science"
                     required
                   />
@@ -109,7 +109,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                     type="text"
                     value={edu.institution}
                     onChange={(e) => handleEducationChange(index, 'institution', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., University of California"
                     required
                   />
@@ -122,7 +122,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                     type="text"
                     value={edu.major || ''}
                     onChange={(e) => handleEducationChange(index, 'major', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Computer Science"
                   />
                 </div>
@@ -134,7 +134,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                     type="text"
                     value={edu.minor || ''}
                     onChange={(e) => handleEducationChange(index, 'minor', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Mathematics"
                   />
                 </div>
@@ -146,7 +146,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                     type="date"
                     value={edu.startDate || ''}
                     onChange={(e) => handleEducationChange(index, 'startDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -160,7 +160,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                       handleEducationChange(index, 'graduationDate', e.target.value);
                       handleEducationChange(index, 'endDate', e.target.value);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -171,7 +171,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                     type="text"
                     value={edu.location || ''}
                     onChange={(e) => handleEducationChange(index, 'location', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Berkeley, CA"
                   />
                 </div>
@@ -187,14 +187,14 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                       max="4"
                       value={edu.gpa || ''}
                       onChange={(e) => handleEducationChange(index, 'gpa', parseFloat(e.target.value) || undefined)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="3.8"
                     />
                     <input
                       type="text"
                       value={edu.maxGpa || ''}
                       onChange={(e) => handleEducationChange(index, 'maxGpa', e.target.value)}
-                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="4.0"
                     />
                   </div>
@@ -208,7 +208,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                 <textarea
                   value={edu.description || ''}
                   onChange={(e) => handleEducationChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   rows={2}
                   placeholder="Additional details about your education..."
                 />
@@ -229,7 +229,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g., Data Structures and Algorithms"
                 />
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -266,7 +266,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ education, onChange
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g., Dean's List, Magna Cum Laude"
                 />
                 <div className="flex flex-wrap gap-2 mt-2">

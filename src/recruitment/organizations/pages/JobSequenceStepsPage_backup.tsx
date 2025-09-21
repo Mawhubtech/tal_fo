@@ -669,7 +669,7 @@ const CreateEditStepModal: React.FC<{
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       placeholder="e.g., Initial outreach email"
                       required
                     />
@@ -682,7 +682,7 @@ const CreateEditStepModal: React.FC<{
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     >
                       <option value="email">Email</option>
                       <option value="sms">SMS</option>
@@ -702,7 +702,7 @@ const CreateEditStepModal: React.FC<{
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     placeholder="Brief description of this step..."
                   />
                 </div>
@@ -810,7 +810,7 @@ const CreateEditStepModal: React.FC<{
                         type="text"
                         value={formData.subject}
                         onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                         placeholder="Email subject line..."
                         required={formData.type === 'email'}
                       />
@@ -956,7 +956,7 @@ Best regards,
                     <select
                       value={formData.triggerType}
                       onChange={(e) => setFormData(prev => ({ ...prev, triggerType: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     >
                       <option value="immediate">Immediate</option>
                       <option value="delay">After Delay</option>
@@ -978,7 +978,7 @@ Best regards,
                           min="0"
                           value={formData.delayHours}
                           onChange={(e) => setFormData(prev => ({ ...prev, delayHours: parseInt(e.target.value) || 0 }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                         />
                       </div>
                       
@@ -992,7 +992,7 @@ Best regards,
                           max="59"
                           value={formData.delayMinutes}
                           onChange={(e) => setFormData(prev => ({ ...prev, delayMinutes: parseInt(e.target.value) || 0 }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                         />
                       </div>
                     </>
@@ -1064,7 +1064,7 @@ export default JobSequenceStepsPage;
                                 newConditions[index] = { ...newConditions[index], field: e.target.value };
                                 setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
                               }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             >
                               <option value="">Select field...</option>
                               <option value="candidate.status">Candidate Status</option>
@@ -1087,7 +1087,7 @@ export default JobSequenceStepsPage;
                                 newConditions[index] = { ...newConditions[index], operator: e.target.value };
                                 setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
                               }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             >
                               <option value="">Select operator...</option>
                               <option value="equals">Equals</option>
@@ -1111,7 +1111,7 @@ export default JobSequenceStepsPage;
                                 setFormData(prev => ({ ...prev, triggerConditions: newConditions }));
                               }}
                               placeholder="Condition value..."
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             />
                           </div>
                           <div>
@@ -1163,7 +1163,7 @@ export default JobSequenceStepsPage;
                                 setFormData(prev => ({ ...prev, branchingRules: newRules }));
                               }}
                               placeholder="e.g., High Interest"
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             />
                           </div>
                           <div>
@@ -1179,7 +1179,7 @@ export default JobSequenceStepsPage;
                                 setFormData(prev => ({ ...prev, branchingRules: newRules }));
                               }}
                               placeholder="50"
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             />
                           </div>
                           <div>
@@ -1280,7 +1280,7 @@ export default JobSequenceStepsPage;
                           }));
                         }}
                         placeholder="e.g., Subject Line Test - Formal vs Casual"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       />
                     </div>
 
@@ -1311,7 +1311,7 @@ export default JobSequenceStepsPage;
                                       abTestConfig: { ...prev.abTestConfig!, trafficSplit: newSplit }
                                     }));
                                   }}
-                                  className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                  className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                                 />
                                 <span className="text-xs text-gray-500">%</span>
                               </div>
@@ -1337,7 +1337,7 @@ export default JobSequenceStepsPage;
                                     }));
                                   }}
                                   placeholder="e.g., Formal Tone"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                                 />
                               </div>
                               {formData.type === 'email' && (
@@ -1361,7 +1361,7 @@ export default JobSequenceStepsPage;
                                         }));
                                       }}
                                       placeholder="Subject line for this variant..."
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                                     />
                                   </div>
                                   <div>
@@ -1416,7 +1416,7 @@ export default JobSequenceStepsPage;
                                   }
                                 }));
                               }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             >
                               <option value="open_rate">Open Rate</option>
                               <option value="click_rate">Click Rate</option>
@@ -1441,7 +1441,7 @@ export default JobSequenceStepsPage;
                                   }
                                 }));
                               }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             />
                           </div>
                           <div>
@@ -1459,7 +1459,7 @@ export default JobSequenceStepsPage;
                                   }
                                 }));
                               }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             >
                               <option value="90">90%</option>
                               <option value="95">95%</option>
@@ -1484,7 +1484,7 @@ export default JobSequenceStepsPage;
                                   }
                                 }));
                               }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             />
                           </div>
                         </div>
@@ -1565,7 +1565,7 @@ export default JobSequenceStepsPage;
                                   smartTiming: { ...prev.smartTiming, businessHoursStart: e.target.value }
                                 }));
                               }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             />
                           </div>
                           <div>
@@ -1581,7 +1581,7 @@ export default JobSequenceStepsPage;
                                   smartTiming: { ...prev.smartTiming, businessHoursEnd: e.target.value }
                                 }));
                               }}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                             />
                           </div>
                         </div>
@@ -1607,7 +1607,7 @@ export default JobSequenceStepsPage;
                                       smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
                                     }));
                                   }}
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                                 >
                                   <option value="">Select day...</option>
                                   <option value="monday">Monday</option>
@@ -1632,7 +1632,7 @@ export default JobSequenceStepsPage;
                                       smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
                                     }));
                                   }}
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                                 />
                               </div>
                               <div>
@@ -1648,7 +1648,7 @@ export default JobSequenceStepsPage;
                                       smartTiming: { ...prev.smartTiming, sendingWindows: newWindows }
                                     }));
                                   }}
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                                 />
                               </div>
                               <div>

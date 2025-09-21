@@ -86,7 +86,7 @@ const JobAssignmentDebugPage: React.FC = () => {
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
                 placeholder="Enter external user ID (UUID)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>

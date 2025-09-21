@@ -303,7 +303,7 @@ const EmailSequencesPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Default Delay Between Steps
               </label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none">
                 <option>24 hours</option>
                 <option>48 hours</option>
                 <option>3 days</option>
@@ -316,7 +316,7 @@ const EmailSequencesPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Maximum Sequence Length
               </label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none">
                 <option>5 steps</option>
                 <option>10 steps</option>
                 <option>15 steps</option>
@@ -328,7 +328,7 @@ const EmailSequencesPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Unsubscribe Handling
               </label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none">
                 <option>Stop all sequences</option>
                 <option>Stop current sequence only</option>
                 <option>Mark for manual review</option>

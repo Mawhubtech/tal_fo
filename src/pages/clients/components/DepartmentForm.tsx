@@ -230,7 +230,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`pl-10 block w-full border rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 ${
+                    className={`pl-10 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500 ${
                       errors.name ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="e.g., Engineering, Marketing, Sales"
@@ -251,7 +251,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={3}
-                  className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   placeholder="Brief description of the department's role and responsibilities"
                   disabled={loading}
                 />
@@ -273,7 +273,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({
                       name="manager"
                       value={formData.manager}
                       onChange={handleInputChange}
-                      className="pl-10 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="pl-10 block w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       placeholder="Manager's full name"
                       disabled={loading}
                     />
@@ -294,7 +294,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({
                       name="managerEmail"
                       value={formData.managerEmail}
                       onChange={handleInputChange}
-                      className={`pl-10 block w-full border rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 ${
+                      className={`pl-10 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500 ${
                         errors.managerEmail ? 'border-red-300' : 'border-gray-300'
                       }`}
                       placeholder="manager@company.com"
@@ -321,7 +321,7 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({
                     value={formData.totalEmployees}
                     onChange={handleInputChange}
                     min="0"
-                    className={`pl-10 block w-full border rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 ${
+                    className={`pl-10 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-purple-500 focus:border-purple-500 ${
                       errors.totalEmployees ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="0"

@@ -119,7 +119,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                       ...settings,
                       general: { ...settings.general, fromName: e.target.value }
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -133,7 +133,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                       ...settings,
                       general: { ...settings.general, fromEmail: e.target.value }
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -147,7 +147,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                       ...settings,
                       general: { ...settings.general, replyToEmail: e.target.value }
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
               </div>
@@ -163,7 +163,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                     ...settings,
                     general: { ...settings.general, emailSignature: e.target.value }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
 
@@ -231,7 +231,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                           ...settings,
                           automation: { ...settings.automation, defaultDelay: parseInt(e.target.value) }
                         })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                     <div>
@@ -247,7 +247,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                           ...settings,
                           automation: { ...settings.automation, maxFollowUps: parseInt(e.target.value) }
                         })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                   </div>
@@ -282,7 +282,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                               ...settings,
                               automation: { ...settings.automation, businessHoursStart: e.target.value }
                             })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           />
                         </div>
                         <div>
@@ -296,7 +296,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                               ...settings,
                               automation: { ...settings.automation, businessHoursEnd: e.target.value }
                             })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           />
                         </div>
                         <div>
@@ -309,7 +309,7 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
                               ...settings,
                               automation: { ...settings.automation, timezone: e.target.value }
                             })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           >
                             <option value="America/New_York">Eastern Time</option>
                             <option value="America/Chicago">Central Time</option>

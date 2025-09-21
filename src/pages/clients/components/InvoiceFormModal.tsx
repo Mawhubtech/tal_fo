@@ -440,7 +440,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                   setFormData({ ...formData, title: e.target.value });
                   handleFieldChange('title', e.target.value);
                 }}
-                className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.title ? 'border-red-300 bg-red-50' : 'border-gray-300'
                 }`}
                 placeholder="Invoice title"
@@ -460,7 +460,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                   setFormData({ ...formData, type: e.target.value as InvoiceType });
                   handleFieldChange('type', e.target.value);
                 }}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 {invoiceTypes.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -486,7 +486,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                       setFormData({ ...formData, contractId: e.target.value });
                       handleFieldChange('contractId', e.target.value);
                     }}
-                    className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                       errors.contractId ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                   >
@@ -515,7 +515,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
               <select
                 value={formData.currency}
                 onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 {currencies.map((currency) => (
                   <option key={currency} value={currency}>
@@ -537,7 +537,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                   setFormData({ ...formData, issueDate: e.target.value });
                   handleFieldChange('issueDate', e.target.value);
                 }}
-                className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                   errors.issueDate ? 'border-red-300 bg-red-50' : 'border-gray-300'
                 }`}
               />
@@ -558,7 +558,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                   setFormData({ ...formData, dueDate: e.target.value });
                   handleFieldChange('dueDate', e.target.value);
                 }}
-                className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                   errors.dueDate ? 'border-red-300 bg-red-50' : 'border-gray-300'
                 }`}
               />
@@ -576,7 +576,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Invoice description"
             />
           </div>
@@ -604,7 +604,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                       placeholder="Description"
                       value={item.description}
                       onChange={(e) => updateLineItem(index, 'description', e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                   </div>
                   <div className="col-span-2">
@@ -614,7 +614,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                       min="1"
                       value={item.quantity}
                       onChange={(e) => updateLineItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                   </div>
                   <div className="col-span-2">
@@ -625,7 +625,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                       step="0.01"
                       value={item.unitPrice}
                       onChange={(e) => updateLineItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                   </div>
                   <div className="col-span-2">
@@ -634,7 +634,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                       placeholder="Amount"
                       value={item.amount.toFixed(2)}
                       readOnly
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                   </div>
                   <div className="col-span-1">
@@ -672,7 +672,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                       setFormData({ ...formData, subtotal: parseFloat(e.target.value) || 0 });
                       handleFieldChange('subtotal', e.target.value);
                     }}
-                    className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                       errors.subtotal ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                   />
@@ -704,7 +704,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setFormData({ ...formData, taxRate: parseFloat(e.target.value) || 0 });
                     handleFieldChange('taxRate', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors.taxRate ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                 />
@@ -727,7 +727,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setFormData({ ...formData, discountRate: parseFloat(e.target.value) || 0 });
                     handleFieldChange('discountRate', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors.discountRate ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                 />
@@ -793,7 +793,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setBillingAddress({ ...billingAddress, name: e.target.value });
                     handleFieldChange('billingAddress.name', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors['billingAddress.name'] ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="Contact person name"
@@ -814,7 +814,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setBillingAddress({ ...billingAddress, company: e.target.value });
                     handleFieldChange('billingAddress.company', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors['billingAddress.company'] ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="Company name"
@@ -835,7 +835,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setBillingAddress({ ...billingAddress, addressLine1: e.target.value });
                     handleFieldChange('billingAddress.addressLine1', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors['billingAddress.addressLine1'] ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="Street address"
@@ -853,7 +853,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                   type="text"
                   value={billingAddress.addressLine2 || ''}
                   onChange={(e) => setBillingAddress({ ...billingAddress, addressLine2: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="Apartment, suite, etc. (optional)"
                 />
               </div>
@@ -869,7 +869,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setBillingAddress({ ...billingAddress, city: e.target.value });
                     handleFieldChange('billingAddress.city', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors['billingAddress.city'] ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="City"
@@ -890,7 +890,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setBillingAddress({ ...billingAddress, state: e.target.value });
                     handleFieldChange('billingAddress.state', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors['billingAddress.state'] ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="State or Province"
@@ -911,7 +911,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setBillingAddress({ ...billingAddress, postalCode: e.target.value });
                     handleFieldChange('billingAddress.postalCode', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors['billingAddress.postalCode'] ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="Postal code"
@@ -932,7 +932,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                     setBillingAddress({ ...billingAddress, country: e.target.value });
                     handleFieldChange('billingAddress.country', e.target.value);
                   }}
-                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                     errors['billingAddress.country'] ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
                   placeholder="Country"
@@ -954,7 +954,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Internal notes"
               />
             </div>
@@ -967,7 +967,7 @@ const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({
                 value={formData.termsAndConditions}
                 onChange={(e) => setFormData({ ...formData, termsAndConditions: e.target.value })}
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Payment terms and conditions"
               />
             </div>

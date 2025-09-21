@@ -815,13 +815,13 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                       handleApplyFilters();
                     }
                   }}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
               <select
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 {CANDIDATE_STATUSES.map(status => (
                   <option key={status.value} value={status.value}>{status.label}</option>
@@ -830,7 +830,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
               <select
                 value={filters.source}
                 onChange={(e) => handleFilterChange('source', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 {CANDIDATE_SOURCES.map(source => (
                   <option key={source.value} value={source.value}>{source.label}</option>
@@ -880,7 +880,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                     placeholder="e.g., New York, Remote"
                     value={filters.location}
                     onChange={(e) => handleFilterChange('location', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -892,7 +892,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                       value={skillInput}
                       onChange={(e) => setSkillInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddArrayItem('skills', skillInput, setSkillInput)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                     <button
                       onClick={() => handleAddArrayItem('skills', skillInput, setSkillInput)}
@@ -933,7 +933,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                     step="0.1"
                     value={filters.minRating || ''}
                     onChange={(e) => handleFilterChange('minRating', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -945,7 +945,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                     step="0.1"
                     value={filters.maxRating || ''}
                     onChange={(e) => handleFilterChange('maxRating', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -955,7 +955,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                     min="0"
                     value={filters.minExperience || ''}
                     onChange={(e) => handleFilterChange('minExperience', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -965,7 +965,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                     min="0"
                     value={filters.maxExperience || ''}
                     onChange={(e) => handleFilterChange('maxExperience', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
               </div>
@@ -979,7 +979,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                     placeholder="e.g., Harvard University"
                     value={filters.education}
                     onChange={(e) => handleFilterChange('education', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -987,7 +987,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                   <select
                     value={filters.degreeType}
                     onChange={(e) => handleFilterChange('degreeType', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     {DEGREE_TYPES.map(degree => (
                       <option key={degree.value} value={degree.value}>{degree.label}</option>
@@ -1005,7 +1005,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                     placeholder="e.g., Software Engineer"
                     value={filters.position}
                     onChange={(e) => handleFilterChange('position', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1015,7 +1015,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                     placeholder="e.g., Google"
                     value={filters.company}
                     onChange={(e) => handleFilterChange('company', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
               </div>
@@ -1031,7 +1031,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                       value={interestInput}
                       onChange={(e) => setInterestInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddArrayItem('interests', interestInput, setInterestInput)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                     <button
                       onClick={() => handleAddArrayItem('interests', interestInput, setInterestInput)}
@@ -1068,7 +1068,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                       value={certificationInput}
                       onChange={(e) => setCertificationInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddArrayItem('certifications', certificationInput, setCertificationInput)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                     <button
                       onClick={() => handleAddArrayItem('certifications', certificationInput, setCertificationInput)}
@@ -1109,7 +1109,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                       value={awardInput}
                       onChange={(e) => setAwardInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddArrayItem('awards', awardInput, setAwardInput)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                     <button
                       onClick={() => handleAddArrayItem('awards', awardInput, setAwardInput)}
@@ -1146,7 +1146,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
                       value={languageInput}
                       onChange={(e) => setLanguageInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddArrayItem('languages', languageInput, setLanguageInput)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                     <button
                       onClick={() => handleAddArrayItem('languages', languageInput, setLanguageInput)}

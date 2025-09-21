@@ -452,7 +452,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
                                 type="checkbox"
                                 checked={selectedPermissions.has(permissionName)}
                                 onChange={() => togglePermission(permissionName)}
-                                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:outline-none"
                               />
                               <span className="text-sm text-gray-700 capitalize">
                                 {action.replace('-', ' ')}
@@ -490,7 +490,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
                                           type="checkbox"
                                           checked={selectedPermissions.has(permissionName)}
                                           onChange={() => togglePermission(permissionName)}
-                                          className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                                          className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:outline-none"
                                         />
                                         <span className="text-xs text-gray-600 capitalize">
                                           {action.replace('-', ' ')}

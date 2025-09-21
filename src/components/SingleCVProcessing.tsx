@@ -430,7 +430,7 @@ const SingleCVProcessing: React.FC = () => {
                       type="text" 
                       value={overrideData.personalInfo.fullName} 
                       onChange={(e) => handleOverrideChange('fullName', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     />
                   </div>
                   
@@ -441,7 +441,7 @@ const SingleCVProcessing: React.FC = () => {
                         type="text" 
                         value={overrideData.personalInfo.firstName} 
                         onChange={(e) => handleOverrideChange('firstName', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       />
                     </div>
                     
@@ -451,7 +451,7 @@ const SingleCVProcessing: React.FC = () => {
                         type="text" 
                         value={overrideData.personalInfo.middleName} 
                         onChange={(e) => handleOverrideChange('middleName', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       />
                     </div>
                     
@@ -461,7 +461,7 @@ const SingleCVProcessing: React.FC = () => {
                         type="text" 
                         value={overrideData.personalInfo.lastName} 
                         onChange={(e) => handleOverrideChange('lastName', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -472,7 +472,7 @@ const SingleCVProcessing: React.FC = () => {
                       type="email" 
                       value={overrideData.personalInfo.email} 
                       onChange={(e) => handleOverrideChange('email', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     />
                   </div>
                   
@@ -482,7 +482,7 @@ const SingleCVProcessing: React.FC = () => {
                       type="text" 
                       value={overrideData.personalInfo.phone} 
                       onChange={(e) => handleOverrideChange('phone', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     />
                   </div>
                   
@@ -492,7 +492,7 @@ const SingleCVProcessing: React.FC = () => {
                       type="text" 
                       value={overrideData.personalInfo.location} 
                       onChange={(e) => handleOverrideChange('location', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     />
                   </div>
                 </div>

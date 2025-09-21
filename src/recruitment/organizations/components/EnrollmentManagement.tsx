@@ -221,13 +221,13 @@ const EnrollmentManagement: React.FC<EnrollmentManagementProps> = ({
                   placeholder="Search candidates..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -418,7 +418,7 @@ const AutoEnrollmentConfig: React.FC<AutoEnrollmentConfigProps> = ({
                           setTriggerStages(triggerStages.filter(id => id !== stage.id));
                         }
                       }}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                     />
                     <span className="ml-2 text-sm text-gray-700">{stage.name}</span>
                   </label>
@@ -545,7 +545,7 @@ const EnrollCandidateModal: React.FC<EnrollCandidateModalProps> = ({
                 placeholder="Search candidates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>
@@ -556,7 +556,7 @@ const EnrollCandidateModal: React.FC<EnrollCandidateModalProps> = ({
                 type="checkbox"
                 checked={selectedCandidates.length === availableCandidates.length && availableCandidates.length > 0}
                 onChange={handleSelectAll}
-                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
               />
               <span className="ml-2 text-sm text-gray-700">
                 Select all ({availableCandidates.length})
@@ -579,7 +579,7 @@ const EnrollCandidateModal: React.FC<EnrollCandidateModalProps> = ({
                       type="checkbox"
                       checked={selectedCandidates.includes(application.candidateId)}
                       onChange={() => handleSelectCandidate(application.candidateId)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                     />
                     <div className="ml-3">
                       <p className="text-sm font-medium text-gray-900">

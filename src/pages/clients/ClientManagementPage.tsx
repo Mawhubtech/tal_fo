@@ -301,14 +301,14 @@ const ClientManagementPage: React.FC = () => {
                 ? "Search clients by name, industry, or location..."
                 : "Search your clients by name, industry, or location..."
               }
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg  focus:ring-1 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex gap-3">
             <select
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg  focus:ring-1 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -318,7 +318,7 @@ const ClientManagementPage: React.FC = () => {
               <option value="suspended">Suspended</option>
             </select>
             <select
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg  focus:ring-1 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               value={industryFilter}
               onChange={(e) => setIndustryFilter(e.target.value)}
             >
@@ -328,7 +328,7 @@ const ClientManagementPage: React.FC = () => {
               ))}
             </select>
             <select
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg  focus:ring-1 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               value={sizeFilter}
               onChange={(e) => setSizeFilter(e.target.value)}
             >

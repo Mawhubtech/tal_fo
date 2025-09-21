@@ -74,7 +74,7 @@ const AwardsSection: React.FC<AwardsSectionProps> = ({ awards, onChange }) => {
                     type="text"
                     value={award.name}
                     onChange={(e) => handleAwardChange(index, 'name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Employee of the Year"
                     required
                   />
@@ -87,7 +87,7 @@ const AwardsSection: React.FC<AwardsSectionProps> = ({ awards, onChange }) => {
                     type="text"
                     value={award.issuer}
                     onChange={(e) => handleAwardChange(index, 'issuer', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Microsoft Corporation"
                     required
                   />
@@ -100,7 +100,7 @@ const AwardsSection: React.FC<AwardsSectionProps> = ({ awards, onChange }) => {
                     type="date"
                     value={award.date}
                     onChange={(e) => handleAwardChange(index, 'date', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     required
                   />
                 </div>
@@ -112,7 +112,7 @@ const AwardsSection: React.FC<AwardsSectionProps> = ({ awards, onChange }) => {
                     type="text"
                     value={award.category || ''}
                     onChange={(e) => handleAwardChange(index, 'category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Performance, Innovation"
                   />
                 </div>
@@ -123,7 +123,7 @@ const AwardsSection: React.FC<AwardsSectionProps> = ({ awards, onChange }) => {
                   <select
                     value={award.recognitionLevel || ''}
                     onChange={(e) => handleAwardChange(index, 'recognitionLevel', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">Select level...</option>
                     <option value="Team">Team</option>
@@ -143,7 +143,7 @@ const AwardsSection: React.FC<AwardsSectionProps> = ({ awards, onChange }) => {
                 <textarea
                   value={award.description || ''}
                   onChange={(e) => handleAwardChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   rows={2}
                   placeholder="What was this award for? What did you accomplish?"
                 />

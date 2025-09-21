@@ -1117,7 +1117,7 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
                             setEvaluation(prev => ({ ...prev, strengths: newStrengths }));
                           }}
                           placeholder={`Strength ${index + 1}...`}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         />
                         {evaluation.strengths.length > 1 && (
                           <button
@@ -1159,7 +1159,7 @@ export const InterviewConductSidepanel: React.FC<InterviewConductSidepanelProps>
                             setEvaluation(prev => ({ ...prev, weaknesses: newWeaknesses }));
                           }}
                           placeholder={`Area for improvement ${index + 1}...`}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         />
                         {evaluation.weaknesses.length > 1 && (
                           <button

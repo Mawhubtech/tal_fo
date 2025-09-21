@@ -237,7 +237,7 @@ const TemplateShareDialog: React.FC<TemplateShareDialogProps> = ({
                         e.target.value = '';
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     defaultValue=""
                   >
                     <option value="">Add a team...</option>
@@ -292,7 +292,7 @@ const TemplateShareDialog: React.FC<TemplateShareDialogProps> = ({
                         e.target.value = '';
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     defaultValue=""
                   >
                     <option value="">Add an organization...</option>

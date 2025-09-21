@@ -76,7 +76,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifica
                     type="text"
                     value={cert.name}
                     onChange={(e) => handleCertificationChange(index, 'name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., AWS Certified Solutions Architect"
                     required
                   />
@@ -89,7 +89,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifica
                     type="text"
                     value={cert.issuer}
                     onChange={(e) => handleCertificationChange(index, 'issuer', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Amazon Web Services"
                     required
                   />
@@ -102,7 +102,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifica
                     type="date"
                     value={cert.dateIssued}
                     onChange={(e) => handleCertificationChange(index, 'dateIssued', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     required
                   />
                 </div>
@@ -114,7 +114,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifica
                     type="date"
                     value={cert.expirationDate || ''}
                     onChange={(e) => handleCertificationChange(index, 'expirationDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -125,7 +125,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifica
                     type="text"
                     value={cert.credentialId || ''}
                     onChange={(e) => handleCertificationChange(index, 'credentialId', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., AWS-SAA-12345"
                   />
                 </div>
@@ -137,7 +137,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifica
                     type="url"
                     value={cert.credentialUrl || ''}
                     onChange={(e) => handleCertificationChange(index, 'credentialUrl', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="https://..."
                   />
                 </div>
@@ -150,7 +150,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({ certifica
                 <textarea
                   value={cert.description || ''}
                   onChange={(e) => handleCertificationChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   rows={2}
                   placeholder="Additional details about this certification..."
                 />

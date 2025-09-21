@@ -338,7 +338,7 @@ const CreateProjectPage: React.FC = () => {
                 type="text"
                 id="name"
                 {...register('name')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Enter project name..."
               />
               {errors.name && (
@@ -354,7 +354,7 @@ const CreateProjectPage: React.FC = () => {
                 id="description"
                 rows={4}
                 {...register('description')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Describe the project goals, requirements, and context..."
               />
               {errors.description && (
@@ -372,7 +372,7 @@ const CreateProjectPage: React.FC = () => {
                   type="text"
                   id="jobTitle"
                   {...register('jobTitle')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g. Senior Project Manager, Financial Analyst, Civil Engineer"
                 />
                 {errors.jobTitle && (
@@ -388,7 +388,7 @@ const CreateProjectPage: React.FC = () => {
                 <select
                   id="seniority"
                   {...register('seniority')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   <option value="entry">Entry Level (0-2 years)</option>
                   <option value="mid">Mid Level (3-5 years)</option>
@@ -416,7 +416,7 @@ const CreateProjectPage: React.FC = () => {
                   value={locationInput}
                   onChange={(e) => setLocationInput(e.target.value)}
                   onKeyPress={handleLocationInputKeyPress}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g. Riyadh, Saudi Arabia or Dubai, UAE"
                 />
                 <button
@@ -485,7 +485,7 @@ const CreateProjectPage: React.FC = () => {
                 type="date"
                 id="targetCompletionDate"
                 {...register('targetCompletionDate')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
               {errors.targetCompletionDate && (
                 <p className="mt-1 text-sm text-red-600">{errors.targetCompletionDate.message}</p>
@@ -511,7 +511,7 @@ const CreateProjectPage: React.FC = () => {
                 id="totalProspects"
                 min="1"
                 {...register('targets.totalProspects', { valueAsNumber: true })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="100"
               />
               {errors.targets?.totalProspects && (
@@ -529,7 +529,7 @@ const CreateProjectPage: React.FC = () => {
                 min="0"
                 max="100"
                 {...register('targets.responseRate', { valueAsNumber: true })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="20"
               />
               {errors.targets?.responseRate && (
@@ -546,7 +546,7 @@ const CreateProjectPage: React.FC = () => {
                 id="hireTarget"
                 min="0"
                 {...register('targets.hireTarget', { valueAsNumber: true })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="1"
               />
               {errors.targets?.hireTarget && (
@@ -571,7 +571,7 @@ const CreateProjectPage: React.FC = () => {
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={handleTagInputKeyPress}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="e.g. Visa Sponsorship, NEOM Project, Expat Friendly"
               />
               <button
@@ -641,7 +641,7 @@ const CreateProjectPage: React.FC = () => {
             <select
               id="assignedToTeamId"
               {...register('assignedToTeamId')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               <option value="">Select a team (optional)</option>
               {/* Teams will be loaded dynamically */}

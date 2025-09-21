@@ -564,7 +564,7 @@ When helping users, be specific about TAL's features and provide actionable solu
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   disabled={aiLoading || isStreaming}
                 />
                 <button
@@ -633,7 +633,7 @@ When helping users, be specific about TAL's features and provide actionable solu
                     value={formData.subject}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Brief description of your issue"
                   />
                 </div>
@@ -647,7 +647,7 @@ When helping users, be specific about TAL's features and provide actionable solu
                     value={formData.priority}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     {priorityLevels.map((level) => (
                       <option key={level.value} value={level.value}>
@@ -670,7 +670,7 @@ When helping users, be specific about TAL's features and provide actionable solu
                   onChange={handleInputChange}
                   required
                   rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="Please provide as much detail as possible about your issue..."
                 />
               </div>

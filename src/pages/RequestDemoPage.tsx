@@ -97,29 +97,29 @@ const RequestDemoPage: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6"> 
                       <div>
                         <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First name *</label>
-                        <input type="text" name="firstName" id="firstName" required value={formData.firstName} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm transition-all duration-150" /> 
+                        <input type="text" name="firstName" id="firstName" required value={formData.firstName} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm transition-all duration-150" /> 
                       </div>
                       <div>
                         <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last name *</label>
-                        <input type="text" name="lastName" id="lastName" required value={formData.lastName} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm transition-all duration-150" />
+                        <input type="text" name="lastName" id="lastName" required value={formData.lastName} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm transition-all duration-150" />
                       </div>
                     </div>
                     <div>
                       <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">Company *</label>
-                      <input type="text" name="company" id="company" required value={formData.company} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm transition-all duration-150" />
+                      <input type="text" name="company" id="company" required value={formData.company} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm transition-all duration-150" />
                     </div>
                     <div>
                       <label htmlFor="companyEmail" className="block text-sm font-medium text-gray-700 mb-1">Company email *</label>
-                      <input type="email" name="companyEmail" id="companyEmail" required value={formData.companyEmail} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm transition-all duration-150" />
+                      <input type="email" name="companyEmail" id="companyEmail" required value={formData.companyEmail} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm transition-all duration-150" />
                     </div>
                     <div>
                       <label htmlFor="howDidYouHear" className="block text-sm font-medium text-gray-700 mb-1">How did you hear about Tal? *</label>
-                      <textarea name="howDidYouHear" id="howDidYouHear" rows={3} required value={formData.howDidYouHear} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm transition-all duration-150"></textarea>
+                      <textarea name="howDidYouHear" id="howDidYouHear" rows={3} required value={formData.howDidYouHear} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm transition-all duration-150"></textarea>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6"> 
                         <div>
                           <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Your Company Type *</label>
-                          <select name="type" id="type" required value={formData.type} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm bg-white transition-all duration-150">
+                          <select name="type" id="type" required value={formData.type} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm bg-white transition-all duration-150">
                             <option value="">Select type...</option>
                             <option value="Recruiting Agency">Recruiting Agency</option>
                             <option value="Corporate HR">Corporate HR</option>
@@ -130,7 +130,7 @@ const RequestDemoPage: React.FC = () => {
                         </div>
                         <div>
                           <label htmlFor="numEmployees" className="block text-sm font-medium text-gray-700 mb-1">Number of Employees *</label>
-                          <select name="numEmployees" id="numEmployees" required value={formData.numEmployees} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm bg-white transition-all duration-150">
+                          <select name="numEmployees" id="numEmployees" required value={formData.numEmployees} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm bg-white transition-all duration-150">
                             <option value="">Select range...</option>
                             <option value="1-10">1-10</option>
                             <option value="11-50">11-50</option>
@@ -142,7 +142,7 @@ const RequestDemoPage: React.FC = () => {
                     </div>
                     <div>
                       <label htmlFor="hqLocation" className="block text-sm font-medium text-gray-700 mb-1">Company HQ Location *</label>
-                      <select name="hqLocation" id="hqLocation" required value={formData.hqLocation} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 sm:text-sm bg-white transition-all duration-150">
+                      <select name="hqLocation" id="hqLocation" required value={formData.hqLocation} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm bg-white transition-all duration-150">
                         <option value="">Select location...</option>
                         <option value="North America">North America</option>
                         <option value="Europe">Europe</option>

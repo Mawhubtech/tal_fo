@@ -497,7 +497,7 @@ const RecruiterJobBoardDashboard: React.FC = () => {
               <select 
                 value={selectedJobBoard} 
                 onChange={(e) => setSelectedJobBoard(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="all">All Job Boards</option>
                 <option value="indeed">Indeed</option>
@@ -507,7 +507,7 @@ const RecruiterJobBoardDashboard: React.FC = () => {
               <select 
                 value={responseFilter} 
                 onChange={(e) => setResponseFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="all">All Statuses</option>
                 <option value="new">New</option>
@@ -519,7 +519,7 @@ const RecruiterJobBoardDashboard: React.FC = () => {
               <select 
                 value={timeRange} 
                 onChange={(e) => setTimeRange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="7d">Last 7 days</option>
                 <option value="30d">Last 30 days</option>

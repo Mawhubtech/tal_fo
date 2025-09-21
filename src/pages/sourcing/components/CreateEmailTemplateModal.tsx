@@ -187,7 +187,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Senior Developer Outreach"
                   />
                 </div>
@@ -199,7 +199,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                     required
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     {typeOptions.map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -214,7 +214,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                     required
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     {categoryOptions.map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -229,7 +229,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                     required
                     value={formData.scope}
                     onChange={(e) => setFormData({ ...formData, scope: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     {scopeOptions.map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -246,7 +246,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                   type="text"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="Brief description of when to use this template"
                 />
               </div>
@@ -286,7 +286,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                   required
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g., Exciting {{position_title}} opportunity at {{company_name}}"
                 />
               </div>
@@ -328,7 +328,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                       value={newVariable}
                       onChange={(e) => setNewVariable(e.target.value)}
                       placeholder="Enter variable name (e.g., candidate_name)"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVariable())}
                     />
                     <button

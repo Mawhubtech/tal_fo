@@ -184,7 +184,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter company name"
@@ -201,7 +201,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
                 type="text"
                 value={formData.industry}
                 onChange={(e) => handleInputChange('industry', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.industry ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., Technology, Healthcare"
@@ -217,7 +217,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
               <select
                 value={formData.size}
                 onChange={(e) => handleInputChange('size', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="Small (1-50 employees)">Small (1-50 employees)</option>
                 <option value="Medium (51-200 employees)">Medium (51-200 employees)</option>
@@ -235,7 +235,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
                 type="text"
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.location ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., San Francisco, CA"
@@ -252,7 +252,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="contact@company.com"
@@ -269,7 +269,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg  focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="+1 (555) 123-4567"
               />
             </div>
@@ -285,7 +285,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
                   type="text"
                   value={formData.website}
                   onChange={(e) => handleInputChange('website', e.target.value)}
-                  className={`w-full pl-20 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  className={`w-full pl-20 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                     errors.website ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="company.com"
@@ -302,7 +302,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
               <select
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg  focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -320,7 +320,7 @@ const ClientForm: React.FC<ClientFormProps> = ({
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg  focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               placeholder="Brief description of the company..."
             />
           </div>

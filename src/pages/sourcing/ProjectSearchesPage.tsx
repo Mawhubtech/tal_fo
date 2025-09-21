@@ -82,7 +82,7 @@ const SearchHistoryTab: React.FC<SearchHistoryTabProps> = ({ projectSearches, is
             placeholder="Search by name, description, or query..."
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           />
         </div>
       </div>

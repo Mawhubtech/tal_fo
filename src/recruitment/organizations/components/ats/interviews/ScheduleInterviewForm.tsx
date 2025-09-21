@@ -363,7 +363,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
               <select
                 value={formData.jobApplicationId}
                 onChange={(e) => handleInputChange('jobApplicationId', e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 required
               >
                 <option value="">Select candidate...</option>
@@ -401,7 +401,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                     }));
                   }
                 }}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 <option value="">No template - Create custom interview</option>
                 {availableTemplates.map(template => (
@@ -429,7 +429,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
               <select
                 value={formData.type}
                 onChange={(e) => handleInputChange('type', e.target.value as InterviewType)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 required
               >
                 {INTERVIEW_TYPES.map((type) => (
@@ -448,7 +448,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
               <select
                 value={formData.mode}
                 onChange={(e) => handleInputChange('mode', e.target.value as InterviewMode)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 required
               >
                 {INTERVIEW_MODES.map((mode) => (
@@ -467,7 +467,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
               <select
                 value={formData.stage}
                 onChange={(e) => handleInputChange('stage', e.target.value as InterviewStage)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 required
               >
                 {INTERVIEW_STAGES.map((stage) => (
@@ -488,7 +488,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                   type="datetime-local"
                   value={formData.scheduledAt}
                   onChange={(e) => handleInputChange('scheduledAt', e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   required
                 />
                 <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" />
@@ -510,7 +510,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                   onChange={(e) => handleInputChange('durationMinutes', parseInt(e.target.value))}
                   min="15"
                   max="480"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 />
                 <Clock className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" />
               </div>
@@ -529,7 +529,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                   value={formData.location || ''}
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   placeholder="Enter interview location"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   required
                 />
                 <MapPin className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" />
@@ -552,7 +552,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                     value={formData.meetingLink || ''}
                     onChange={(e) => handleInputChange('meetingLink', e.target.value)}
                     placeholder="https://meet.google.com/..."
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     required
                   />
                   <Video className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" />
@@ -570,7 +570,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                   value={formData.meetingId || ''}
                   onChange={(e) => handleInputChange('meetingId', e.target.value)}
                   placeholder="Meeting ID or Room Number"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -587,7 +587,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                   value={formData.location || ''}
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   placeholder="Phone number for the call"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 />
                 <Phone className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" />
               </div>
@@ -665,7 +665,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                     value={participant.name}
                     onChange={(e) => updateParticipant(index, 'name', e.target.value)}
                     placeholder="Interviewer name"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     required
                   />
                 </div>
@@ -678,7 +678,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                     value={participant.email}
                     onChange={(e) => updateParticipant(index, 'email', e.target.value)}
                     placeholder="interviewer@company.com"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     required
                   />
                 </div>
@@ -689,7 +689,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                   <select
                     value={participant.role}
                     onChange={(e) => updateParticipant(index, 'role', e.target.value as ParticipantRole)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   >
                     {PARTICIPANT_ROLES.map((role) => (
                       <option key={role} value={role}>
@@ -745,7 +745,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                     onChange={(e) => handleInputChange('agenda', e.target.value)}
                     placeholder="Interview agenda and topics to cover..."
                     rows={3}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   />
                 </div>
 
@@ -758,7 +758,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                     onChange={(e) => handleInputChange('preparationNotes', e.target.value)}
                     placeholder="Notes for interviewers to prepare..."
                     rows={3}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   />
                 </div>
 
@@ -771,7 +771,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                     onChange={(e) => handleInputChange('notes', e.target.value)}
                     placeholder="Additional notes..."
                     rows={2}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   />
                 </div>
 
@@ -785,7 +785,7 @@ export const ScheduleInterviewForm: React.FC<ScheduleInterviewFormProps> = ({
                       value={formData.meetingPassword || ''}
                       onChange={(e) => handleInputChange('meetingPassword', e.target.value)}
                       placeholder="Meeting password (if required)"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     />
                   </div>
                 )}

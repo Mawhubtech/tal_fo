@@ -102,7 +102,7 @@ const ResourceFilters: React.FC<ResourceFiltersProps> = ({
                     type="checkbox"
                     checked={selectedTypes.includes(type)}
                     onChange={() => handleTypeChange(type)}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                   />
                   <span className="text-sm text-gray-700 capitalize">{type}</span>
                 </label>
@@ -120,7 +120,7 @@ const ResourceFilters: React.FC<ResourceFiltersProps> = ({
                     type="checkbox"
                     checked={selectedDifficulties.includes(difficulty)}
                     onChange={() => handleDifficultyChange(difficulty)}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                   />
                   <span className="text-sm text-gray-700">{difficulty}</span>
                 </label>

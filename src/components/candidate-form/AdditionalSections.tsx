@@ -129,7 +129,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="text"
                       value={lang.language}
                       onChange={(e) => handleLanguageChange(index, 'language', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="e.g., Spanish, French"
                       required
                     />
@@ -141,7 +141,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                     <select
                       value={lang.proficiency}
                       onChange={(e) => handleLanguageChange(index, 'proficiency', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       required
                     >
                       <option value="Beginner">Beginner</option>
@@ -160,7 +160,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="text"
                       value={lang.level || ''}
                       onChange={(e) => handleLanguageChange(index, 'level', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="e.g., B2, C1"
                     />
                   </div>
@@ -214,7 +214,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="text"
                       value={interest.name}
                       onChange={(e) => handleInterestChange(index, 'name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="e.g., Photography, Rock Climbing"
                       required
                     />
@@ -227,7 +227,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="text"
                       value={interest.description || ''}
                       onChange={(e) => handleInterestChange(index, 'description', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="Brief description..."
                     />
                   </div>
@@ -281,7 +281,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="text"
                       value={reference.name}
                       onChange={(e) => handleReferenceChange(index, 'name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="e.g., John Smith"
                       required
                     />
@@ -294,7 +294,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="text"
                       value={reference.title || ''}
                       onChange={(e) => handleReferenceChange(index, 'title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="e.g., Senior Manager"
                     />
                   </div>
@@ -306,7 +306,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="text"
                       value={reference.company || ''}
                       onChange={(e) => handleReferenceChange(index, 'company', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="e.g., Microsoft"
                     />
                   </div>
@@ -318,7 +318,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="text"
                       value={reference.relationship || ''}
                       onChange={(e) => handleReferenceChange(index, 'relationship', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="e.g., Direct Supervisor, Colleague"
                     />
                   </div>
@@ -330,7 +330,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="email"
                       value={reference.email || ''}
                       onChange={(e) => handleReferenceChange(index, 'email', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="john@example.com"
                     />
                   </div>
@@ -342,7 +342,7 @@ const AdditionalSections: React.FC<AdditionalSectionsProps> = ({
                       type="tel"
                       value={reference.phone || ''}
                       onChange={(e) => handleReferenceChange(index, 'phone', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="+1 (555) 123-4567"
                     />
                   </div>

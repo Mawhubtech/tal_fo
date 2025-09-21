@@ -316,7 +316,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="text"
                       value={formData.title}
                       onChange={(e) => handleInputChange('title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="Enter contract title"
                       required
                     />
@@ -329,7 +329,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     <select
                       value={formData.contractType}
                       onChange={(e) => handleInputChange('contractType', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       required
                     >
                       {contractTypeOptions.map((option) => (
@@ -347,7 +347,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     <select
                       value={formData.status}
                       onChange={(e) => handleInputChange('status', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       {statusOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -365,7 +365,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="date"
                       value={formData.startDate}
                       onChange={(e) => handleInputChange('startDate', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       required
                     />
                   </div>
@@ -378,7 +378,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => handleInputChange('endDate', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       required
                     />
                   </div>
@@ -392,7 +392,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       step="0.01"
                       value={formData.contractValue || ''}
                       onChange={(e) => handleInputChange('contractValue', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="0.00"
                     />
                   </div>
@@ -408,7 +408,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       max="100"
                       value={formData.commissionRate || ''}
                       onChange={(e) => handleInputChange('commissionRate', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="0.00"
                     />
                   </div>
@@ -421,7 +421,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="url"
                       value={formData.documentUrl || ''}
                       onChange={(e) => handleInputChange('documentUrl', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="https://..."
                     />
                   </div>
@@ -435,7 +435,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Describe the contract..."
                   />
                 </div>
@@ -448,7 +448,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     value={formData.terms}
                     onChange={(e) => handleInputChange('terms', e.target.value)}
                     rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Enter contract terms and conditions..."
                   />
                 </div>
@@ -459,7 +459,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="checkbox"
                       checked={formData.isAutoRenewal}
                       onChange={(e) => handleInputChange('isAutoRenewal', e.target.checked)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                     />
                     <span className="ml-2 text-sm text-gray-700">Auto-renewal</span>
                   </label>
@@ -472,7 +472,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                         min="1"
                         value={formData.renewalPeriodMonths || ''}
                         onChange={(e) => handleInputChange('renewalPeriodMonths', e.target.value ? parseInt(e.target.value) : undefined)}
-                        className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-20 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         placeholder="12"
                       />
                       <span className="text-sm text-gray-700">months</span>
@@ -492,7 +492,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     <select
                       value={formData.paymentTerms?.paymentMethod || ''}
                       onChange={(e) => handlePaymentTermsChange('paymentMethod', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="">Select payment method</option>
                       {paymentMethodOptions.map((method) => (
@@ -510,7 +510,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     <select
                       value={formData.paymentTerms?.paymentSchedule || ''}
                       onChange={(e) => handlePaymentTermsChange('paymentSchedule', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="">Select payment schedule</option>
                       {paymentScheduleOptions.map((schedule) => (
@@ -528,7 +528,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     <select
                       value={formData.paymentTerms?.invoicingFrequency || ''}
                       onChange={(e) => handlePaymentTermsChange('invoicingFrequency', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="">Select invoicing frequency</option>
                       {invoicingFrequencyOptions.map((frequency) => (
@@ -546,7 +546,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     <select
                       value={formData.paymentTerms?.currency || 'USD'}
                       onChange={(e) => handlePaymentTermsChange('currency', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       {currencyOptions.map((currency) => (
                         <option key={currency} value={currency}>
@@ -565,7 +565,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                     value={formData.paymentTerms?.additionalTerms || ''}
                     onChange={(e) => handlePaymentTermsChange('additionalTerms', e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Enter additional payment terms..."
                   />
                 </div>
@@ -607,7 +607,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                           value={deliverable.description || ''}
                           onChange={(e) => updateDeliverable(index, 'description', e.target.value)}
                           rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="Describe this deliverable..."
                         />
                       </div>
@@ -621,7 +621,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                           min="1"
                           value={deliverable.quantity || ''}
                           onChange={(e) => updateDeliverable(index, 'quantity', e.target.value ? parseInt(e.target.value) : undefined)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="1"
                         />
                       </div>
@@ -634,7 +634,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                           type="text"
                           value={deliverable.timeline || ''}
                           onChange={(e) => updateDeliverable(index, 'timeline', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="e.g., 30 days, End of Q1"
                         />
                       </div>
@@ -663,7 +663,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="text"
                       value={formData.contactPerson?.name || ''}
                       onChange={(e) => handleContactPersonChange('name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="John Doe"
                     />
                   </div>
@@ -676,7 +676,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="text"
                       value={formData.contactPerson?.title || ''}
                       onChange={(e) => handleContactPersonChange('title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="HR Director"
                     />
                   </div>
@@ -689,7 +689,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="email"
                       value={formData.contactPerson?.email || ''}
                       onChange={(e) => handleContactPersonChange('email', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="john.doe@company.com"
                     />
                   </div>
@@ -702,7 +702,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
                       type="tel"
                       value={formData.contactPerson?.phone || ''}
                       onChange={(e) => handleContactPersonChange('phone', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="+1 (555) 123-4567"
                     />
                   </div>

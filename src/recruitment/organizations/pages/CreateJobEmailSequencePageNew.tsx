@@ -223,7 +223,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 placeholder="e.g., Initial Candidate Outreach"
                 required
               />
@@ -237,7 +237,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
                 id="type"
                 value={formData.type}
                 onChange={(e) => handleInputChange('type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 <option value="candidate_outreach">Candidate Outreach</option>
                 <option value="follow_up">Follow Up</option>
@@ -258,7 +258,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               placeholder="Describe the purpose and flow of this email sequence..."
             />
           </div>
@@ -273,7 +273,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
                 id="scope"
                 value={formData.scope}
                 onChange={(e) => handleInputChange('scope', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 <option value="organization">Organization</option>
                 <option value="team">Team</option>
@@ -289,7 +289,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
                 id="status"
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 <option value="draft">Draft</option>
                 <option value="active">Active</option>
@@ -323,7 +323,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 placeholder="Add a tag..."
               />
               <button

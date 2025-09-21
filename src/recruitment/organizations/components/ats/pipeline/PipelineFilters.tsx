@@ -37,7 +37,7 @@ export const PipelineFilters: React.FC<PipelineFiltersProps> = ({
             <input
               type="text"
               placeholder="Search candidates..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
             />
@@ -47,7 +47,7 @@ export const PipelineFilters: React.FC<PipelineFiltersProps> = ({
         {/* Stage Filter */}
         <div className="md:w-48">
           <select
-            className="w-full py-2 px-3 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full py-2 px-3 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             value={selectedStage}
             onChange={(e) => onStageChange(e.target.value)}
           >
@@ -61,7 +61,7 @@ export const PipelineFilters: React.FC<PipelineFiltersProps> = ({
         {/* Sort By */}
         <div className="md:w-48">
           <select
-            className="w-full py-2 px-3 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full py-2 px-3 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value as 'date' | 'score')}
           >

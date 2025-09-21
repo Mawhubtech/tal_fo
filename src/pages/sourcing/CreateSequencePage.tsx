@@ -176,7 +176,7 @@ const CreateSequencePage: React.FC = () => {
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="e.g. Initial Outreach Sequence"
                 required
               />
@@ -189,7 +189,7 @@ const CreateSequencePage: React.FC = () => {
               <select
                 value={formData.type}
                 onChange={(e) => handleInputChange('type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="email">Email</option>
                 <option value="linkedin">LinkedIn</option>
@@ -206,7 +206,7 @@ const CreateSequencePage: React.FC = () => {
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="Describe the purpose and goals of this sequence..."
               />
             </div>
@@ -218,7 +218,7 @@ const CreateSequencePage: React.FC = () => {
               <select
                 value={formData.trigger}
                 onChange={(e) => handleInputChange('trigger', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="manual">Manual</option>
                 <option value="automatic">Automatic</option>
@@ -238,7 +238,7 @@ const CreateSequencePage: React.FC = () => {
                 max="20"
                 value={formData.config.maxSteps}
                 onChange={(e) => handleInputChange('config.maxSteps', parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
           </div>
@@ -254,7 +254,7 @@ const CreateSequencePage: React.FC = () => {
                   type="checkbox"
                   checked={formData.config.stopOnReply}
                   onChange={(e) => handleInputChange('config.stopOnReply', e.target.checked)}
-                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                 />
                 <span className="ml-2 text-sm text-gray-700">Stop sequence on reply</span>
               </label>
@@ -264,7 +264,7 @@ const CreateSequencePage: React.FC = () => {
                   type="checkbox"
                   checked={formData.config.stopOnUnsubscribe}
                   onChange={(e) => handleInputChange('config.stopOnUnsubscribe', e.target.checked)}
-                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                 />
                 <span className="ml-2 text-sm text-gray-700">Stop on unsubscribe</span>
               </label>
@@ -274,7 +274,7 @@ const CreateSequencePage: React.FC = () => {
                   type="checkbox"
                   checked={formData.config.businessHoursOnly}
                   onChange={(e) => handleInputChange('config.businessHoursOnly', e.target.checked)}
-                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                 />
                 <span className="ml-2 text-sm text-gray-700">Business hours only</span>
               </label>
@@ -288,7 +288,7 @@ const CreateSequencePage: React.FC = () => {
                 <select
                   value={formData.config.timezone}
                   onChange={(e) => handleInputChange('config.timezone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   <option value="America/New_York">Eastern Time</option>
                   <option value="America/Chicago">Central Time</option>
@@ -305,7 +305,7 @@ const CreateSequencePage: React.FC = () => {
                 <select
                   value={formData.config.sendingHours.start}
                   onChange={(e) => handleInputChange('config.sendingHours.start', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   {Array.from({ length: 24 }, (_, i) => (
                     <option key={i} value={i}>
@@ -322,7 +322,7 @@ const CreateSequencePage: React.FC = () => {
                 <select
                   value={formData.config.sendingHours.end}
                   onChange={(e) => handleInputChange('config.sendingHours.end', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   {Array.from({ length: 24 }, (_, i) => (
                     <option key={i} value={i}>

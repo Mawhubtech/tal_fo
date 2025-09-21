@@ -405,7 +405,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                       type="number"
                       value={formData.stepOrder}
                       onChange={(e) => setFormData(prev => ({ ...prev, stepOrder: parseInt(e.target.value) || 1 }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       min="1"
                     />
                   </div>
@@ -492,7 +492,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                           <select
                             value={formData.templateId}
                             onChange={(e) => handleTemplateChange(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             disabled={templatesLoading}
                           >
                             <option value="">
@@ -712,7 +712,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                         type="number"
                         value={formData.delayDays}
                         onChange={(e) => setFormData({ ...formData, delayDays: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         min="0"
                       />
                     </div>
@@ -724,7 +724,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                         type="number"
                         value={formData.delayHours}
                         onChange={(e) => setFormData({ ...formData, delayHours: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         min="0"
                         max="23"
                       />
@@ -737,7 +737,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                         type="number"
                         value={formData.delayMinutes}
                         onChange={(e) => setFormData({ ...formData, delayMinutes: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         min="0"
                         max="59"
                       />
@@ -757,7 +757,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                       type="time"
                       value={formData.sendTime}
                       onChange={(e) => setFormData({ ...formData, sendTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                     <p className="text-xs text-gray-600 mt-1">
                       If specified, the step will execute at this time
@@ -771,7 +771,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                     <select
                       value={formData.timezone}
                       onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="">Use sequence default</option>
                       <option value="UTC">UTC</option>
@@ -832,7 +832,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                         <select
                           value={formData.priority}
                           onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         >
                           <option value="low">Low</option>
                           <option value="normal">Normal</option>
@@ -864,7 +864,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                         <select
                           value={formData.messageType}
                           onChange={(e) => setFormData({ ...formData, messageType: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         >
                           <option value="connection">Connection Request</option>
                           <option value="message">Direct Message</option>
@@ -888,7 +888,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                             type="number"
                             value={formData.maxAttempts}
                             onChange={(e) => setFormData({ ...formData, maxAttempts: parseInt(e.target.value) || 1 })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             min="1"
                             max="10"
                           />
@@ -902,7 +902,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                             type="number"
                             value={formData.timeBetweenAttempts}
                             onChange={(e) => setFormData({ ...formData, timeBetweenAttempts: parseInt(e.target.value) || 1 })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             min="1"
                           />
                         </div>
@@ -927,7 +927,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                             value={formData.voicemailScript}
                             onChange={(e) => setFormData({ ...formData, voicemailScript: e.target.value })}
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             placeholder="Hi [Name], this is [Your Name] from [Company]..."
                           />
                         </div>
@@ -948,7 +948,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                           <select
                             value={formData.duration}
                             onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           >
                             <option value={15}>15 minutes</option>
                             <option value={30}>30 minutes</option>
@@ -965,7 +965,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                           <select
                             value={formData.meetingType}
                             onChange={(e) => setFormData({ ...formData, meetingType: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           >
                             <option value="discovery">Discovery Call</option>
                             <option value="demo">Product Demo</option>
@@ -995,7 +995,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                             type="url"
                             value={formData.meetingLink}
                             onChange={(e) => setFormData({ ...formData, meetingLink: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             placeholder="https://zoom.us/j/..."
                           />
                         </div>
@@ -1016,7 +1016,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                           <select
                             value={formData.taskType}
                             onChange={(e) => setFormData({ ...formData, taskType: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           >
                             <option value="call">Call</option>
                             <option value="email">Email</option>
@@ -1037,7 +1037,7 @@ const CreateClientSequenceStepModal: React.FC<CreateClientSequenceStepModalProps
                             type="number"
                             value={formData.estimatedDuration}
                             onChange={(e) => setFormData({ ...formData, estimatedDuration: parseInt(e.target.value) || 15 })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                             min="5"
                           />
                         </div>

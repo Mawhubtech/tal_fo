@@ -543,7 +543,7 @@ const CalendarPage: React.FC = () => {
                   placeholder="Search events..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
 
@@ -551,7 +551,7 @@ const CalendarPage: React.FC = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="all">All Status</option>
                 <option value="scheduled">Scheduled</option>
@@ -564,7 +564,7 @@ const CalendarPage: React.FC = () => {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               >
                 <option value="all">All Types</option>
                 <option value="interview">Interviews</option>
@@ -1072,7 +1072,7 @@ const CalendarPage: React.FC = () => {
                     type="text"
                     value={eventForm.title}
                     onChange={(e) => setEventForm(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Enter event title"
                     required
                   />
@@ -1087,7 +1087,7 @@ const CalendarPage: React.FC = () => {
                     value={eventForm.description}
                     onChange={(e) => setEventForm(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Enter event description"
                   />
                 </div>
@@ -1101,7 +1101,7 @@ const CalendarPage: React.FC = () => {
                     <select
                       value={eventForm.status}
                       onChange={(e) => setEventForm(prev => ({ ...prev, status: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="scheduled">Scheduled</option>
                       <option value="confirmed">Confirmed</option>
@@ -1119,7 +1119,7 @@ const CalendarPage: React.FC = () => {
                     id="isAllDay"
                     checked={eventForm.isAllDay}
                     onChange={(e) => setEventForm(prev => ({ ...prev, isAllDay: e.target.checked }))}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                   />
                   <label htmlFor="isAllDay" className="ml-2 text-sm text-gray-700">
                     All day event
@@ -1136,7 +1136,7 @@ const CalendarPage: React.FC = () => {
                       type="date"
                       value={eventForm.startDate}
                       onChange={(e) => setEventForm(prev => ({ ...prev, startDate: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       required
                     />
                   </div>
@@ -1150,7 +1150,7 @@ const CalendarPage: React.FC = () => {
                         type="time"
                         value={eventForm.startTime}
                         onChange={(e) => setEventForm(prev => ({ ...prev, startTime: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                   )}
@@ -1163,7 +1163,7 @@ const CalendarPage: React.FC = () => {
                       type="date"
                       value={eventForm.endDate}
                       onChange={(e) => setEventForm(prev => ({ ...prev, endDate: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     />
                   </div>
 
@@ -1176,7 +1176,7 @@ const CalendarPage: React.FC = () => {
                         type="time"
                         value={eventForm.endTime}
                         onChange={(e) => setEventForm(prev => ({ ...prev, endTime: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                   )}
@@ -1201,7 +1201,7 @@ const CalendarPage: React.FC = () => {
                     <select
                       value={eventForm.type}
                       onChange={(e) => setEventForm(prev => ({ ...prev, type: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="meeting">Meeting</option>
                       <option value="interview">Interview</option>
@@ -1220,7 +1220,7 @@ const CalendarPage: React.FC = () => {
                     <select
                       value={eventForm.priority}
                       onChange={(e) => setEventForm(prev => ({ ...prev, priority: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -1239,7 +1239,7 @@ const CalendarPage: React.FC = () => {
                     type="text"
                     value={eventForm.location}
                     onChange={(e) => setEventForm(prev => ({ ...prev, location: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Enter location or address"
                   />
                 </div>
@@ -1253,7 +1253,7 @@ const CalendarPage: React.FC = () => {
                     type="url"
                     value={eventForm.meetingLink}
                     onChange={(e) => setEventForm(prev => ({ ...prev, meetingLink: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="https://..."
                   />
                 </div>
@@ -1267,7 +1267,7 @@ const CalendarPage: React.FC = () => {
                     value={eventForm.notes}
                     onChange={(e) => setEventForm(prev => ({ ...prev, notes: e.target.value }))}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Additional notes..."
                   />
                 </div>

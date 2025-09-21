@@ -145,7 +145,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           )}
         </div>
         <div className="flex items-center gap-3">
-          <select className="text-sm border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
+          <select className="text-sm border border-gray-300 rounded-lg px-4 py-2 bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none transition-all">
             <option>Sort by relevance</option>
             <option>Sort by experience</option>
             <option>Sort by name</option>

@@ -207,7 +207,7 @@ const AddToProspectsModal: React.FC<AddToProspectsModalProps> = ({
               <select
                 value={selectedProjectId}
                 onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 disabled={projectsLoading}
               >
                 <option value="">No specific project</option>
@@ -231,7 +231,7 @@ const AddToProspectsModal: React.FC<AddToProspectsModalProps> = ({
             <select
               value={selectedStageId}
               onChange={(e) => setSelectedStageId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               disabled={pipelineLoading}
               required
             >

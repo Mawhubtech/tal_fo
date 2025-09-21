@@ -160,7 +160,7 @@ const ExternalUserRegisterPage: React.FC = () => {
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     className={`appearance-none block w-full px-3 py-2 border ${
                       errors.firstName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm`}
+                    } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm`}
                     placeholder="John"
                   />
                   <User className="h-5 w-5 text-gray-400 absolute right-3 top-2.5" />
@@ -185,7 +185,7 @@ const ExternalUserRegisterPage: React.FC = () => {
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     className={`appearance-none block w-full px-3 py-2 border ${
                       errors.lastName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm`}
+                    } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm`}
                     placeholder="Doe"
                   />
                   <User className="h-5 w-5 text-gray-400 absolute right-3 top-2.5" />
@@ -211,7 +211,7 @@ const ExternalUserRegisterPage: React.FC = () => {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   className={`appearance-none block w-full px-3 py-2 border ${
                     errors.email ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm`}
+                  } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm`}
                   placeholder="john.doe@company.com"
                 />
                 <Mail className="h-5 w-5 text-gray-400 absolute right-3 top-2.5" />
@@ -236,7 +236,7 @@ const ExternalUserRegisterPage: React.FC = () => {
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   className={`appearance-none block w-full px-3 py-2 border ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm pr-10`}
+                  } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm pr-10`}
                   placeholder="••••••••"
                 />
                 <button
@@ -274,7 +274,7 @@ const ExternalUserRegisterPage: React.FC = () => {
                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                   className={`appearance-none block w-full px-3 py-2 border ${
                     errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm pr-10`}
+                  } rounded-md placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none sm:text-sm pr-10`}
                   placeholder="••••••••"
                 />
                 <button

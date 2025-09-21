@@ -445,7 +445,7 @@ const HiringTeamMembersPage: React.FC = () => {
               placeholder="Search members by name, email, or role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
         </div>
@@ -651,7 +651,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           value={userSearchQuery}
                           onChange={(e) => setUserSearchQuery(e.target.value)}
                           placeholder="Type to search users by name or email..."
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                         />
                       </div>
                       {searching && (
@@ -695,7 +695,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="text"
                           value={memberForm.externalFirstName}
                           onChange={(e) => setMemberForm({ ...memberForm, externalFirstName: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="John"
                           required
                         />
@@ -708,7 +708,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="text"
                           value={memberForm.externalLastName}
                           onChange={(e) => setMemberForm({ ...memberForm, externalLastName: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="Doe"
                           required
                         />
@@ -721,7 +721,7 @@ const HiringTeamMembersPage: React.FC = () => {
                           type="email"
                           value={memberForm.externalEmail}
                           onChange={(e) => setMemberForm({ ...memberForm, externalEmail: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                           placeholder="john.doe@company.com"
                           required
                         />
@@ -736,7 +736,7 @@ const HiringTeamMembersPage: React.FC = () => {
                     <select
                       value={memberForm.teamRole}
                       onChange={(e) => setMemberForm({ ...memberForm, teamRole: e.target.value as TeamRole })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       {TEAM_ROLES.map((role) => (
                         <option key={role.value} value={role.value}>

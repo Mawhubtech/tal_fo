@@ -322,7 +322,7 @@ Best regards,
                     type="text"
                     value={formData.name || ''}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Software Engineer Outreach"
                     required
                   />
@@ -335,7 +335,7 @@ Best regards,
                   <select
                     value={formData.type || ''}
                     onChange={(e) => handleInputChange('type', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="candidate_outreach">Candidate Outreach</option>
                     <option value="client_outreach">Client Outreach</option>
@@ -351,7 +351,7 @@ Best regards,
                   <select
                     value={formData.category || ''}
                     onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="candidate_sourcing">Candidate Sourcing</option>
                     <option value="client_outreach">Client Outreach</option>
@@ -368,7 +368,7 @@ Best regards,
                   <select
                     value={formData.status || ''}
                     onChange={(e) => handleInputChange('status', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="draft">Draft</option>
                     <option value="active">Active</option>
@@ -384,7 +384,7 @@ Best regards,
                 <textarea
                   value={formData.description || ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   rows={3}
                   placeholder="Describe the purpose and use case for this sequence..."
                 />
@@ -415,7 +415,7 @@ Best regards,
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="Add a tag..."
                   />
                   <button
@@ -442,7 +442,7 @@ Best regards,
                     type="number"
                     value={formData.timing?.defaultDelay || 24}
                     onChange={(e) => handleTimingChange('defaultDelay', parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     min="1"
                   />
                 </div>
@@ -454,7 +454,7 @@ Best regards,
                   <select
                     value={formData.timing?.timezone || 'America/New_York'}
                     onChange={(e) => handleTimingChange('timezone', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="America/New_York">Eastern Time</option>
                     <option value="America/Chicago">Central Time</option>
@@ -471,7 +471,7 @@ Best regards,
                     type="checkbox"
                     checked={formData.timing?.autoAdvance || false}
                     onChange={(e) => handleTimingChange('autoAdvance', e.target.checked)}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                   />
                   <span className="ml-2 text-sm text-gray-700">Auto-advance sequences</span>
                 </label>
@@ -481,7 +481,7 @@ Best regards,
                     type="checkbox"
                     checked={formData.timing?.businessHoursOnly || false}
                     onChange={(e) => handleTimingChange('businessHoursOnly', e.target.checked)}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
                   />
                   <span className="ml-2 text-sm text-gray-700">Business hours only</span>
                 </label>

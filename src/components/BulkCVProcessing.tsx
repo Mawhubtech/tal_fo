@@ -257,7 +257,7 @@ const BulkCVProcessing: React.FC = () => {
                         max="5"
                         value={maxConcurrency}
                         onChange={(e) => setMaxConcurrency(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Files processed simultaneously. Lower values recommended for AI processing.
@@ -275,7 +275,7 @@ const BulkCVProcessing: React.FC = () => {
                         max="20"
                         value={batchSize}
                         onChange={(e) => setBatchSize(Math.min(20, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Files per batch. Smaller batches reduce memory usage.
@@ -289,7 +289,7 @@ const BulkCVProcessing: React.FC = () => {
                       <select
                         value={aiProcessingMode}
                         onChange={(e) => setAiProcessingMode(e.target.value as 'parallel' | 'sequential' | 'batch')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       >
                         <option value="parallel">Parallel</option>
                         <option value="sequential">Sequential</option>

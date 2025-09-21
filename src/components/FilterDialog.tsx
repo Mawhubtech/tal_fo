@@ -141,7 +141,7 @@ const ArrayInput: React.FC<ArrayInputProps> = ({
           value={currentValue}
           onChange={(e) => setCurrentValue(e.target.value)}
           placeholder={placeholder || `Add ${label.toLowerCase().slice(0, -1)}`}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           onKeyDown={handleKeyDown}
         />
         <button
@@ -488,7 +488,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   placeholder="Search filters (e.g., 'Location', 'Skills')..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
             </div>
@@ -517,7 +517,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <input type="number" value={filters.general.minExperience}
                     onChange={(e) => updateFilter('general', 'minExperience', e.target.value)}
                     placeholder="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -525,7 +525,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <input type="number" value={filters.general.maxExperience}
                     onChange={(e) => updateFilter('general', 'maxExperience', e.target.value)}
                     placeholder="e.g., 10"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
               </div>
@@ -534,7 +534,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <label className="block mb-2 text-sm font-medium text-gray-700">Required Contact Info</label>
                   <select value={filters.general.requiredContactInfo}
                     onChange={(e) => updateFilter('general', 'requiredContactInfo', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">Any contact info</option>
                     <option value="email">Email required</option>
@@ -547,7 +547,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <label className="block mb-2 text-sm font-medium text-gray-700">Hide Viewed/Shortlisted</label>
                    <select value={filters.general.hideViewedProfiles}
                     onChange={(e) => updateFilter('general', 'hideViewedProfiles', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">Don't hide profiles</option>
                     <option value="viewed">Hide viewed profiles</option>
@@ -559,7 +559,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <label className="block mb-2 text-sm font-medium text-gray-700">Connection Level</label>
                    <select value={filters.general.onlyConnections}
                     onChange={(e) => updateFilter('general', 'onlyConnections', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">All connections</option>
                     <option value="1st">1st connections only</option>
@@ -590,7 +590,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <label className="block mb-2 text-sm font-medium text-gray-700">Search Radius</label>
                   <select value={filters.location.radius}
                     onChange={(e) => updateFilter('location', 'radius', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="25">Within 25 miles</option>
                     <option value="50">Within 50 miles</option>
@@ -646,7 +646,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                 <label className="block mb-2 text-sm font-medium text-gray-700">Company Size</label>
                 <select value={filters.company.size}
                   onChange={(e) => updateFilter('company', 'size', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   <option value="">Any size</option>
                   <option value="1-10">Startup (1-10 employees)</option>
@@ -717,7 +717,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <label className="block mb-2 text-sm font-medium text-gray-700">Likelihood to Switch</label>
                   <select value={filters.likelyToSwitch.likelihood}
                     onChange={(e) => updateFilter('likelyToSwitch', 'likelihood', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">Any likelihood</option>
                     <option value="very_likely">Very Likely (Actively looking)</option>
@@ -730,7 +730,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <label className="block mb-2 text-sm font-medium text-gray-700">Recent Activity</label>
                   <select value={filters.likelyToSwitch.recentActivity}
                     onChange={(e) => updateFilter('likelyToSwitch', 'recentActivity', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   >
                     <option value="">Any activity level</option>
                     <option value="last_24_hours">Active in last 24 hours</option>
@@ -783,7 +783,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <input type="text" value={filters.boolean.fullName}
                     onChange={(e) => updateFilter('boolean', 'fullName', e.target.value)}
                     placeholder="Enter exact name to search for"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -791,7 +791,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
                   <textarea value={filters.boolean.booleanString}
                     onChange={(e) => updateFilter('boolean', 'booleanString', e.target.value)}
                     placeholder='Example: ("software engineer" OR "developer") AND (React OR Angular) NOT "manager"'
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
               </div>

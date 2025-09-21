@@ -188,7 +188,7 @@ const RecruiterAssignmentModal: React.FC<RecruiterAssignmentModalProps> = ({
                   placeholder="Search recruiters..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 />
               </div>
               <div className="relative">
@@ -196,7 +196,7 @@ const RecruiterAssignmentModal: React.FC<RecruiterAssignmentModalProps> = ({
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -228,7 +228,7 @@ const RecruiterAssignmentModal: React.FC<RecruiterAssignmentModalProps> = ({
                     <select
                       value={newAssignment.recruiterId}
                       onChange={(e) => setNewAssignment(prev => ({ ...prev, recruiterId: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     >
                       <option value="">Choose a recruiter...</option>
                       {unassignedRecruiters.map(recruiter => (
@@ -249,7 +249,7 @@ const RecruiterAssignmentModal: React.FC<RecruiterAssignmentModalProps> = ({
                         placeholder="e.g. 5000"
                         value={newAssignment.budgetLimit}
                         onChange={(e) => setNewAssignment(prev => ({ ...prev, budgetLimit: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                     <div>
@@ -261,7 +261,7 @@ const RecruiterAssignmentModal: React.FC<RecruiterAssignmentModalProps> = ({
                         placeholder="e.g. 10"
                         value={newAssignment.postingLimit}
                         onChange={(e) => setNewAssignment(prev => ({ ...prev, postingLimit: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       />
                     </div>
                   </div>

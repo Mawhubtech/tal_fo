@@ -94,7 +94,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                     type="text"
                     value={project.name}
                     onChange={(e) => handleProjectChange(index, 'name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., E-commerce Platform"
                     required
                   />
@@ -107,7 +107,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                     type="text"
                     value={project.role || ''}
                     onChange={(e) => handleProjectChange(index, 'role', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., Full-Stack Developer, Team Lead"
                   />
                 </div>
@@ -119,7 +119,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                     type="date"
                     value={project.startDate || ''}
                     onChange={(e) => handleProjectChange(index, 'startDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -130,7 +130,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                     type="date"
                     value={project.endDate || ''}
                     onChange={(e) => handleProjectChange(index, 'endDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                   <p className="text-xs text-gray-500 mt-1">Leave blank if ongoing</p>
                 </div>
@@ -142,7 +142,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                     type="text"
                     value={project.teamSize || ''}
                     onChange={(e) => handleProjectChange(index, 'teamSize', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="e.g., 5 people, Solo project"
                   />
                 </div>
@@ -154,7 +154,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                     type="url"
                     value={project.url || ''}
                     onChange={(e) => handleProjectChange(index, 'url', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="https://..."
                   />
                 </div>
@@ -166,7 +166,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                     type="url"
                     value={project.repositoryUrl || ''}
                     onChange={(e) => handleProjectChange(index, 'repositoryUrl', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                     placeholder="https://github.com/..."
                   />
                 </div>
@@ -179,7 +179,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                 <textarea
                   value={project.description}
                   onChange={(e) => handleProjectChange(index, 'description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   rows={3}
                   placeholder="Describe the project, its purpose, and what you built..."
                   required
@@ -201,7 +201,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g., React, Node.js, MongoDB"
                 />
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -238,7 +238,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({ projects, onChange })
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   placeholder="e.g., Increased user engagement by 35%"
                 />
                 <div className="flex flex-wrap gap-2 mt-2">

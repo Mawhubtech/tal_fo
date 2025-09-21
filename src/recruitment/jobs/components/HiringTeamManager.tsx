@@ -348,7 +348,7 @@ const HiringTeamManager: React.FC<HiringTeamManagerProps> = ({ jobId, isEditMode
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       placeholder="Search by name or email..."
                     />
                   </div>
@@ -393,7 +393,7 @@ const HiringTeamManager: React.FC<HiringTeamManagerProps> = ({ jobId, isEditMode
                       type="text"
                       value={newMemberForm.firstName}
                       onChange={(e) => setNewMemberForm(prev => ({ ...prev, firstName: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       required
                     />
                   </div>
@@ -405,7 +405,7 @@ const HiringTeamManager: React.FC<HiringTeamManagerProps> = ({ jobId, isEditMode
                       type="text"
                       value={newMemberForm.lastName}
                       onChange={(e) => setNewMemberForm(prev => ({ ...prev, lastName: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       required
                     />
                   </div>
@@ -417,7 +417,7 @@ const HiringTeamManager: React.FC<HiringTeamManagerProps> = ({ jobId, isEditMode
                       type="email"
                       value={newMemberForm.email}
                       onChange={(e) => setNewMemberForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       required
                     />
                   </div>

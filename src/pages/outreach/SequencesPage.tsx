@@ -315,7 +315,7 @@ const SequencesPage: React.FC = () => {
         <select 
           value={selectedFilter}
           onChange={(e) => setSelectedFilter(e.target.value as SequenceType | 'all')}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
         >
           <option value="all">All Types</option>
           <option value="initial">Initial Outreach</option>
@@ -330,7 +330,7 @@ const SequencesPage: React.FC = () => {
         <select 
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value as SequenceCategory | 'all')}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
         >
           {categories.map(category => (
             <option key={category} value={category === 'All' ? 'all' : category.toLowerCase().replace(' ', '_')}>

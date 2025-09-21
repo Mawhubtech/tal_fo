@@ -1019,7 +1019,7 @@ If you received this email, your email provider is working correctly.
                                           type="email"
                                           value={testEmailAddress}
                                           onChange={(e) => setTestEmailAddress(e.target.value)}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                                           placeholder="Enter email address to test"
                                           required
                                       />

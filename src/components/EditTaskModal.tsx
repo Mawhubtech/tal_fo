@@ -190,7 +190,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               type="text"
               value={formData.title || ''}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               placeholder="Enter task title"
               required
             />
@@ -205,7 +205,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               value={formData.description || ''}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               placeholder="Enter task description (optional)"
             />
           </div>
@@ -219,7 +219,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <select
                 value={formData.priority || 'Medium'}
                 onChange={(e) => handleInputChange('priority', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -235,7 +235,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <select
                 value={formData.type || 'General'}
                 onChange={(e) => handleInputChange('type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               >
                 <option value="General">General</option>
                 <option value="Reminder">Reminder</option>
@@ -272,7 +272,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               type="datetime-local"
               value={formData.dueDate || ''}
               onChange={(e) => handleInputChange('dueDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               min={getDefaultDateTime()}
             />
           </div>
@@ -339,7 +339,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
                           placeholder="Search users..."
                           value={userSearch}
                           onChange={(e) => setUserSearch(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                         />
                       </div>
                     </div>

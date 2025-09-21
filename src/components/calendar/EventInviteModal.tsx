@@ -196,7 +196,7 @@ export const EventInviteModal: React.FC<EventInviteModalProps> = ({
                 placeholder="Search team members..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
 
@@ -246,7 +246,7 @@ export const EventInviteModal: React.FC<EventInviteModalProps> = ({
                     value={externalEmail}
                     onChange={(e) => setExternalEmail(e.target.value)}
                     placeholder="example@company.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div>
@@ -258,7 +258,7 @@ export const EventInviteModal: React.FC<EventInviteModalProps> = ({
                     value={externalName}
                     onChange={(e) => setExternalName(e.target.value)}
                     placeholder="John Doe"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -295,7 +295,7 @@ export const EventInviteModal: React.FC<EventInviteModalProps> = ({
               onChange={(e) => setInviteMessage(e.target.value)}
               rows={3}
               placeholder="Add a personal message to your invitation..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
 

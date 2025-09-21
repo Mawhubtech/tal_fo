@@ -225,7 +225,7 @@ export const HiringTeamModal: React.FC<HiringTeamModalProps> = ({
                 id="status"
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 disabled={isLoading}
               >
                 {STATUS_OPTIONS.map((option) => (
@@ -305,7 +305,7 @@ export const HiringTeamModal: React.FC<HiringTeamModalProps> = ({
                 id="icon"
                 value={formData.icon}
                 onChange={(e) => handleInputChange('icon', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                 placeholder="👥 (optional emoji icon)"
                 maxLength={2}
                 disabled={isLoading}

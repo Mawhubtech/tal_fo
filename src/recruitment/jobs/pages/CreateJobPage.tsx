@@ -781,7 +781,7 @@ const CreateJobPage: React.FC = () => {
                     id="jobTitle"
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="e.g., Senior Software Engineer"
                     required
                   />
@@ -797,7 +797,7 @@ const CreateJobPage: React.FC = () => {
                       const selected = departments.find(dept => dept.id === e.target.value);
                       setSelectedDepartment(selected || null);
                     }}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                     required
                     disabled={loading || departments.length === 0}
                   >
@@ -828,7 +828,7 @@ const CreateJobPage: React.FC = () => {
                     id="location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="e.g., New York, NY"
                     required
                   />
@@ -842,7 +842,7 @@ const CreateJobPage: React.FC = () => {
                     id="employmentType"
                     value={employmentType}
                     onChange={(e) => setEmploymentType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   >
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
@@ -862,7 +862,7 @@ const CreateJobPage: React.FC = () => {
                     id="experienceLevel"
                     value={experienceLevel}
                     onChange={(e) => setExperienceLevel(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   >
                     <option value="">Select Experience Level</option>
                     <option value="Entry Level">Entry Level (0-2 years)</option>
@@ -882,7 +882,7 @@ const CreateJobPage: React.FC = () => {
                     id="applicationDeadline"
                     value={applicationDeadline}
                     onChange={(e) => setApplicationDeadline(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
               </div>
@@ -893,7 +893,7 @@ const CreateJobPage: React.FC = () => {
                   id="remote"
                   checked={remote}
                   onChange={(e) => setRemote(e.target.checked)}
-                  className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                  className="h-5 w-5 text-purple-600 focus:ring-purple-500 focus:outline-none border-gray-300 rounded"
                 />
                 <label htmlFor="remote" className="ml-3 text-sm font-semibold text-gray-700">
                   Remote work available
@@ -921,7 +921,7 @@ const CreateJobPage: React.FC = () => {
                     id="salaryMin"
                     value={salaryMin}
                     onChange={(e) => setSalaryMin(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="50000"
                   />
                 </div>
@@ -934,7 +934,7 @@ const CreateJobPage: React.FC = () => {
                     id="salaryMax"
                     value={salaryMax}
                     onChange={(e) => setSalaryMax(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="80000"
                   />
                 </div>
@@ -946,7 +946,7 @@ const CreateJobPage: React.FC = () => {
                     id="currency"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   >
                     <option value="USD">USD ($)</option>
                     <option value="EUR">EUR (€)</option>
@@ -974,7 +974,7 @@ const CreateJobPage: React.FC = () => {
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                   placeholder="Provide a compelling overview of the role, company culture, and what makes this position exciting..."
                   required
                 />
@@ -991,7 +991,7 @@ const CreateJobPage: React.FC = () => {
                       type="text"
                       value={responsibility}
                       onChange={(e) => updateResponsibility(index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                       placeholder="e.g., Design and implement scalable backend systems"
                     />
                     {responsibilities.length > 1 && (
@@ -1026,7 +1026,7 @@ const CreateJobPage: React.FC = () => {
                       type="text"
                       value={requirement}
                       onChange={(e) => updateRequirement(index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                       placeholder="e.g., 5+ years of experience with React and TypeScript"
                     />
                     {requirements.length > 1 && (
@@ -1089,7 +1089,7 @@ const CreateJobPage: React.FC = () => {
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="e.g., React, TypeScript, Node.js"
                   />
                   <button
@@ -1130,7 +1130,7 @@ const CreateJobPage: React.FC = () => {
                     value={newBenefit}
                     onChange={(e) => setNewBenefit(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="e.g., Health Insurance, Remote Work, Flexible Hours"
                   />
                   <button
@@ -1194,7 +1194,7 @@ const CreateJobPage: React.FC = () => {
                     id="pipeline"
                     value={selectedPipelineId}
                     onChange={(e) => setSelectedPipelineId(e.target.value)}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                     disabled={pipelinesLoading}
                     required
                   >
@@ -1344,7 +1344,7 @@ const CreateJobPage: React.FC = () => {
                   id="hiringTeam"
                   value={selectedHiringTeamId}
                   onChange={(e) => setSelectedHiringTeamId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   disabled={hiringTeamsLoading}
                   required={hiringTeams.length > 0}
                 >

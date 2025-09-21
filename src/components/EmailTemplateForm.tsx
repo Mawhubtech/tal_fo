@@ -288,7 +288,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                     placeholder="e.g., Interview Invitation Template"
                     required
                   />
@@ -302,7 +302,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 >
                   {templateTypes.map((type) => (
                     <option key={type.value} value={type.value}>
@@ -320,7 +320,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 >
                   {templateCategories.map((category) => (
                     <option key={category.value} value={category.value}>
@@ -365,7 +365,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                   value={formData.description || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   placeholder="Brief description of this template's purpose..."
                 />
               </div>
@@ -415,7 +415,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                           e.target.value = '';
                         }
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       defaultValue=""
                     >
                       <option value="">Select a team to add...</option>
@@ -476,7 +476,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                           e.target.value = '';
                         }
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                       defaultValue=""
                     >
                       <option value="">Select an organization to add...</option>
@@ -560,7 +560,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   placeholder="e.g., Interview Invitation for [Position] Role"
                   required
                 />

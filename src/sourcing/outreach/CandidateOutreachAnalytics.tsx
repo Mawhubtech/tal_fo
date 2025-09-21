@@ -79,7 +79,7 @@ const CandidateOutreachAnalytics: React.FC = () => {
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
         >
           {timeRangeOptions.map(option => (
             <option key={option.value} value={option.value}>{option.label}</option>

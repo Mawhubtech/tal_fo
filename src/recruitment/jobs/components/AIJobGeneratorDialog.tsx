@@ -208,7 +208,7 @@ Always respond with valid JSON that matches the provided schema exactly.`;
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none resize-none"
                   placeholder="E.g., 'Senior React Developer for fintech startup, remote-first company, working on trading platform, needs 5+ years experience with React, TypeScript, and API integration. Team of 10 engineers, fast-paced environment, competitive salary with equity.'"
                 />
                 <p className="text-xs text-gray-500 mt-2">

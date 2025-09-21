@@ -253,7 +253,7 @@ const SourcingProjectsPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-none mx-auto px-6 lg:px-8 xl:px-12 2xl:px-16">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -271,14 +271,14 @@ const SourcingProjectsPage: React.FC = () => {
         </Link>
       </div>
 
-      {/* Quick Search Section */}
+      {/* Quick Search Section - Moved to top and made more prominent */}
       <div className="mb-8">
-        <QuickSearch className="max-w-2xl" />
+        <QuickSearch className="max-w-4xl mx-auto" />
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -286,14 +286,14 @@ const SourcingProjectsPage: React.FC = () => {
               placeholder="Search projects..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             />
           </div>
           
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="active">Active</option>
@@ -305,7 +305,7 @@ const SourcingProjectsPage: React.FC = () => {
           <select
             value={seniorityFilter}
             onChange={(e) => setSeniorityFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
           >
             <option value="">All Seniority Levels</option>
             <option value="entry">Entry Level</option>
@@ -314,11 +314,6 @@ const SourcingProjectsPage: React.FC = () => {
             <option value="lead">Lead/Principal</option>
             <option value="executive">Executive</option>
           </select>
-          
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <Filter className="w-4 h-4 mr-2" />
-            More Filters
-          </button>
         </div>
       </div>
 
