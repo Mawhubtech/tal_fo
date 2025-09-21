@@ -264,23 +264,31 @@ const CalendarWidget: React.FC<CalendarWidgetProps> = ({ className = '', events 
         </div>
       ) : (
         <div className="space-y-2">
-          {upcomingEvents.slice(0, 3).map((event) => (
-            <div key={event.id} className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-purple-50">
-              <div className={`p-1 rounded flex-shrink-0 ${
-                event.type === 'interview' ? 'bg-purple-100' :
-                event.type === 'meeting' ? 'bg-purple-100' :
-                'bg-purple-100'
-              }`}>
-                {event.type === 'interview' && <Target className="w-3 h-3 text-purple-600" />}
-                {event.type === 'meeting' && <Building className="w-3 h-3 text-purple-600" />}
-                {event.type === 'review' && <BarChart3 className="w-3 h-3 text-purple-600" />}
+          {upcomingEvents.length > 0 ? (
+            upcomingEvents.slice(0, 3).map((event) => (
+              <div key={event.id} className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-purple-50">
+                <div className={`p-1 rounded flex-shrink-0 ${
+                  event.type === 'interview' ? 'bg-purple-100' :
+                  event.type === 'meeting' ? 'bg-purple-100' :
+                  'bg-purple-100'
+                }`}>
+                  {event.type === 'interview' && <Target className="w-3 h-3 text-purple-600" />}
+                  {event.type === 'meeting' && <Building className="w-3 h-3 text-purple-600" />}
+                  {event.type === 'review' && <BarChart3 className="w-3 h-3 text-purple-600" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-900 truncate">{event.title}</p>
+                  <p className="text-xs text-gray-500">{formatEventDate(event)} at {formatEventTime(event)}</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-900 truncate">{event.title}</p>
-                <p className="text-xs text-gray-500">{formatEventDate(event)} at {formatEventTime(event)}</p>
-              </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <Calendar className="h-8 w-8 text-gray-300 mb-2" />
+              <p className="text-sm font-medium text-gray-500 mb-1">No upcoming events</p>
+              <p className="text-xs text-gray-400">Your calendar events will appear here</p>
             </div>
-          ))}
+          )}
         </div>
       )}
 

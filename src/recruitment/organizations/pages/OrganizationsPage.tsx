@@ -75,7 +75,7 @@ const OrganizationsPage: React.FC = () => {
   }
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen pb-2">
       {/* Breadcrumbs */}
       <div className="flex items-center text-sm text-gray-500 mb-4 px-6 pt-6">
         <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>

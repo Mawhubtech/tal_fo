@@ -122,57 +122,17 @@ class DashboardApiService {
    */
   async getRecentActivity(limit: number = 10): Promise<DashboardActivity[]> {
     // TODO: Implement /dashboard/activity endpoint on backend
-    // For now, return mock data until the endpoint is ready
+    // Return empty array until the endpoint is ready
     
-    // Temporarily disabled API call to avoid 404 errors
     // try {
     //   const response = await apiClient.get(`/dashboard/activity?limit=${limit}`);
     //   return response.data;
     // } catch (error) {
     //   console.error('Error fetching recent activity:', error);
-    
-    // Return mock data until endpoint is implemented
-    const mockActivities: DashboardActivity[] = [
-      {
-        id: '1',
-        type: 'candidate' as const,
-        action: 'New candidate added',
-        details: 'John Doe - Software Engineer',
-        time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: '2',
-        type: 'job' as const,
-        action: 'Job posted',
-        details: 'Senior React Developer at TechCorp',
-        time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: '3',
-        type: 'interview' as const,
-        action: 'Interview scheduled',
-        details: 'Jane Smith - Product Manager',
-        time: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: '4',
-        type: 'sequence' as const,
-        action: 'Sequence completed',
-        details: 'Backend Engineers outreach campaign',
-        time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: '5',
-        type: 'resume' as const,
-        action: 'Resume processed',
-        details: '12 new resumes analyzed',
-        time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ];
-    
-    return mockActivities.slice(0, limit);
-    
+    //   return [];
     // }
+    
+    return [];
   }
 
   /**

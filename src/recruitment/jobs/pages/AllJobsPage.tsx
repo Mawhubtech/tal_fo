@@ -272,7 +272,7 @@ const AllJobsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className=" p-4">
       {/* Header */}
       <div className="bg-white border-2 border-purple-500 rounded-lg p-6">
         <div className="flex justify-between items-center">
