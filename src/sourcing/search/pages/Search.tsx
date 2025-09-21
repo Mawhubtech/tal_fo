@@ -355,17 +355,20 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
             <div className="flex items-center justify-between mb-4">
               <div></div> {/* Spacer */}
               <h1 className="text-2xl font-bold text-gray-900">Talent Search</h1>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  aiQuery.reset();
-                }}
-                className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                title="Clear search and start fresh"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Clear
-              </button>
+              {searchQuery.trim() && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    aiQuery.reset();
+                  }}
+                  className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  title="Clear search and start fresh"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear
+                </button>
+              )}
+              {!searchQuery.trim() && <div></div>} {/* Spacer when no clear button */}
             </div>
             <p className="text-gray-500 text-sm">
               Find exactly who you're looking for, in seconds.

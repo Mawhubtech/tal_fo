@@ -7,7 +7,8 @@ import {
   Filter,
   Sparkles,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Plus
 } from 'lucide-react';
 import FilterDialog from '../components/FilterDialog';
 import BooleanSearchDialog from '../sourcing/search/components/BooleanSearchDialog';
@@ -270,17 +271,20 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
             <div className="flex items-center justify-between mb-4">
               <div></div> {/* Spacer */}
               <h1 className="text-2xl font-bold text-gray-900">Global Talent Search</h1>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  aiQuery.reset();
-                }}
-                className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                title="Clear search and start fresh"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Clear
-              </button>
+              {searchQuery.trim() && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    aiQuery.reset();
+                  }}
+                  className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  title="Clear search and start fresh"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear
+                </button>
+              )}
+              {!searchQuery.trim() && <div></div>} {/* Spacer when no clear button */}
             </div>
             <p className="text-gray-500 text-sm">
               Search across all talent databases without creating a project.
@@ -293,10 +297,25 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
               <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-amber-800 mb-1">Project Required for Shortlisting</h4>
-                <p className="text-sm text-amber-700">
+                <p className="text-sm text-amber-700 mb-3">
                   You can search and view candidate profiles globally. When you find candidates to shortlist, 
                   you'll be prompted to create or select a project to organize your prospects.
                 </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => navigate('/dashboard/sourcing/projects/create')}
+                    className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Project Now
+                  </button>
+                  <button
+                    onClick={() => navigate('/dashboard/sourcing/projects')}
+                    className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    View My Projects
+                  </button>
+                </div>
               </div>
             </div>
           </div>
