@@ -124,7 +124,7 @@ const RecruiterLoginForm: React.FC<RecruiterLoginFormProps> = ({ onClose }) => {
               {...register('email')}
               type="email"
               id="email"
-              className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+              className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.email ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter your email"
@@ -147,7 +147,7 @@ const RecruiterLoginForm: React.FC<RecruiterLoginFormProps> = ({ onClose }) => {
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
               id="password"
-              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:outline-none  focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.password ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter your password"

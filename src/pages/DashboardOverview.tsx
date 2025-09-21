@@ -192,24 +192,27 @@ const DashboardOverview: React.FC = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
-        <Link 
-          to="/dashboard/candidates" 
-          className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm min-h-[140px] hover:shadow-md hover:border-purple-200 transition-all duration-200 cursor-pointer"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between h-full">
-            <div className="flex-1 min-w-0 mb-3 sm:mb-0">
-              <p className="text-sm font-medium text-gray-600 mb-2 break-words">Total Candidates</p>
-              <p className="text-xl md:text-2xl xl:text-3xl font-bold text-gray-900 mb-2 break-words">{stats.totalCandidates.toLocaleString()}</p>
-              {/* <div className="flex items-center flex-wrap">
-                <TrendingUp className="w-4 h-4 mr-1 flex-shrink-0 text-green-600" />
-                <span className="text-sm text-green-600 break-words">+{stats.candidatesThisWeek} this week</span>
-              </div> */}
+        {/* Total Candidates Card - Only show if user has candidates access */}
+        {hasPermission(SIDEBAR_PERMISSIONS.CANDIDATES_ACCESS) && (
+          <Link 
+            to="/dashboard/candidates" 
+            className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm min-h-[140px] hover:shadow-md hover:border-purple-200 transition-all duration-200 cursor-pointer"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between h-full">
+              <div className="flex-1 min-w-0 mb-3 sm:mb-0">
+                <p className="text-sm font-medium text-gray-600 mb-2 break-words">Total Candidates</p>
+                <p className="text-xl md:text-2xl xl:text-3xl font-bold text-gray-900 mb-2 break-words">{stats.totalCandidates.toLocaleString()}</p>
+                {/* <div className="flex items-center flex-wrap">
+                  <TrendingUp className="w-4 h-4 mr-1 flex-shrink-0 text-green-600" />
+                  <span className="text-sm text-green-600 break-words">+{stats.candidatesThisWeek} this week</span>
+                </div> */}
+              </div>
+              <div className="p-2 md:p-3 bg-purple-100 rounded-lg flex-shrink-0 sm:ml-3 self-start">
+                <Users className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
+              </div>
             </div>
-            <div className="p-2 md:p-3 bg-purple-100 rounded-lg flex-shrink-0 sm:ml-3 self-start">
-              <Users className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
-            </div>
-          </div>
-        </Link>
+          </Link>
+        )}
 
         <Link 
           to="/dashboard/my-jobs" 
