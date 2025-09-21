@@ -142,7 +142,7 @@ const Dashboard: React.FC = () => {
             onNewSearch={handleNewSearch}
           />
         )}        {/* Main content area */}        
-        <main className="flex-1 p-4 overflow-y-auto"> {/* Removed flex items-center justify-center and added overflow-y-auto if not already present for scrolling */}          
+        <main className="flex-1 pb-4 overflow-y-auto"> {/* Removed flex items-center justify-center and added overflow-y-auto if not already present for scrolling */}          
           <Routes> {/* Add Routes component here */}
             <Route path="/" element={
               <RoutePermissionGuard>
