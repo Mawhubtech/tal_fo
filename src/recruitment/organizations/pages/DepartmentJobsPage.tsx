@@ -43,7 +43,7 @@ const DepartmentJobsPage: React.FC = () => {
   // Filter jobs
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (job.skills && job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));
+                         (job.skills && Array.isArray(job.skills) && job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
     const matchesType = typeFilter === 'all' || job.type === typeFilter;
     const matchesLevel = levelFilter === 'all' || job.experienceLevel === levelFilter;
