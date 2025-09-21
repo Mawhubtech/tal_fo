@@ -175,7 +175,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   name="name"
                   value={formData.name || ''}
                   onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                     errors.name ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Enter company name"
@@ -197,7 +197,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   name="industry"
                   value={formData.industry || ''}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="e.g., Technology, Healthcare, Finance"
                 />
               </div>
@@ -212,7 +212,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 value={formData.description || ''}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Brief description of your company"
               />
             </div>
@@ -343,7 +343,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   name="email"
                   value={formData.email || ''}
                   onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                     errors.email ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="business@company.com"
@@ -365,7 +365,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   name="phone"
                   value={formData.phone || ''}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
@@ -379,7 +379,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   name="website"
                   value={formData.website || ''}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="https://www.company.com"
                 />
               </div>
@@ -412,7 +412,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 name="address"
                 value={formData.address || ''}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="123 Business Street"
               />
             </div>
@@ -427,7 +427,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   name="city"
                   value={formData.city || ''}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="City"
                 />
               </div>
@@ -441,7 +441,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   name="country"
                   value={formData.country || ''}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Country"
                 />
               </div>
@@ -455,7 +455,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                   name="zipCode"
                   value={formData.zipCode || ''}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="12345"
                 />
               </div>

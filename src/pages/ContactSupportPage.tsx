@@ -940,7 +940,7 @@ When helping users, be specific about TAL's features and provide actionable solu
                     onChange={(e) => setNewReply(e.target.value)}
                     placeholder="Type your reply..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                   />
                   <div className="flex justify-end">
                     <button

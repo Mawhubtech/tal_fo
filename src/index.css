@@ -1,8 +1,8 @@
+@import './styles/responsive-utils.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import './styles/responsive-utils.css';
 
 @font-face {
   font-family: 'ROMA';

@@ -527,7 +527,7 @@ Best regards,
                           type="text"
                           value={step.name}
                           onChange={(e) => handleStepChange(stepIndex, 'name', e.target.value)}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                         />
                       </div>
 
@@ -557,7 +557,7 @@ Best regards,
                             type="text"
                             value={step.subject || ''}
                             onChange={(e) => handleStepChange(stepIndex, 'subject', e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                             placeholder="Email subject line..."
                           />
                         </div>
@@ -570,7 +570,7 @@ Best regards,
                         <textarea
                           value={step.content}
                           onChange={(e) => handleStepChange(stepIndex, 'content', e.target.value)}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                           rows={4}
                           placeholder="Step content... Use {{firstName}}, {{lastName}}, {{companyName}} for variables"
                         />
