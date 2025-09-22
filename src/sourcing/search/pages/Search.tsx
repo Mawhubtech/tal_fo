@@ -412,7 +412,7 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
               ) : (
                 <>
                   <SearchIcon className="w-5 h-5" />
-                  Search Candidates
+                  AI Search Candidates
                 </>
               )}
             </button>
