@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Eye, 
   Edit3, 
@@ -42,6 +43,32 @@ export const JobDescriptionViewer: React.FC<JobDescriptionViewerProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [jobDescription, setJobDescription] = useState<GeneratedJobDescription>(initialJobDescription);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Enhanced modal behavior
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   useEffect(() => {
     setJobDescription(initialJobDescription);
@@ -134,8 +161,11 @@ ${jobDescription.companyInfo ? `\nCompany Information:\n${jobDescription.company
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  const modalContent = (
+    <div 
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -546,6 +576,9 @@ ${jobDescription.companyInfo ? `\nCompany Information:\n${jobDescription.company
       </div>
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };
 
 export default JobDescriptionViewer;

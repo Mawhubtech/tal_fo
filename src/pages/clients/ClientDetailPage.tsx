@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Building, Globe, Mail, Phone, MapPin, Users, Briefcase,
@@ -118,6 +119,30 @@ const ClientDetailPage: React.FC = () => {
   const [showIntakeMeetingTemplateManager, setShowIntakeMeetingTemplateManager] = useState(false);
   const [showIntakeMeetingPreview, setShowIntakeMeetingPreview] = useState(false);
   const [selectedIntakeMeetingTemplate, setSelectedIntakeMeetingTemplate] = useState<IntakeMeetingTemplate | null>(null);
+  
+  // Modal behavior: Prevent body scroll and handle ESC key for template managers
+  useEffect(() => {
+    if (!showInterviewTemplateManager && !showIntakeMeetingTemplateManager) return;
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Handle ESC key to close modal
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowInterviewTemplateManager(false);
+        setShowIntakeMeetingTemplateManager(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [showInterviewTemplateManager, showIntakeMeetingTemplateManager]);
   
   // Contract states
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -1561,8 +1586,15 @@ const ClientDetailPage: React.FC = () => {
 
       {/* Interview Template Manager Modal */}
       {showInterviewTemplateManager && client && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowInterviewTemplateManager(false);
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Template Manager</h2>
@@ -1589,9 +1621,16 @@ const ClientDetailPage: React.FC = () => {
       )}
 
       {/* Intake Meeting Template Manager Modal */}
-      {showIntakeMeetingTemplateManager && client && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+      {showIntakeMeetingTemplateManager && client && createPortal(
+        <div 
+          className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowIntakeMeetingTemplateManager(false);
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Intake Meeting Template Manager</h2>
@@ -1611,7 +1650,8 @@ const ClientDetailPage: React.FC = () => {
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Position Form Modal */}

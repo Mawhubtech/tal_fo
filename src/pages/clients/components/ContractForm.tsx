@@ -160,6 +160,33 @@ const ContractForm: React.FC<ContractFormProps> = ({
     }
   }, [contract]);
 
+  // Body scroll prevention and ESC key handler
+  useEffect(() => {
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
+    
+    // ESC key handler
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCancel();
+      }
+    };
+    
+    document.addEventListener('keydown', handleEsc);
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [onCancel]);
+
+  // Overlay click handler
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onCancel();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
@@ -256,8 +283,8 @@ const ContractForm: React.FC<ContractFormProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h2 className="text-xl font-semibold text-gray-900">

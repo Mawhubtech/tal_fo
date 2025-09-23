@@ -66,6 +66,27 @@ const DepartmentForm: React.FC<DepartmentFormProps> = ({
     setErrors({});
   }, [department, mode, clientId]);
 
+  // Modal behavior: Prevent body scroll and handle ESC key
+  useEffect(() => {
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Handle ESC key to close modal
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [onClose]);
+
   // Predefined color options
   const colorOptions = [
     { value: '#3B82F6', label: 'Blue', class: 'bg-blue-500' },

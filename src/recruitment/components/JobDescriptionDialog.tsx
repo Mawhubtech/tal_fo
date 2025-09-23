@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, FileText, Upload, Sparkles } from 'lucide-react';
 import { useAIStructuredQuery, useAIQuery, useDocumentProcessing } from '../../hooks/ai';
 import { extractKeywords, convertKeywordsToFilters } from '../../services/searchService';
@@ -23,6 +24,32 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
   const aiQuery = useAIQuery(); // For generating job descriptions
   const structuredQuery = useAIStructuredQuery(); // For extracting structured search criteria
   const documentProcessor = useDocumentProcessing(); // For processing uploaded documents
+  
+  // Enhanced modal behavior
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
   
   // Effect to update job description when AI query completes
   useEffect(() => {
@@ -215,8 +242,13 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  if (!isOpen) return null;
+
+  const modalContent = (
+    <div 
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-6 flex-shrink-0 border-b border-gray-200">
@@ -440,7 +472,14 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
 
       {/* Generate Job Description Dialog */}
       {isGenerateDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+        <div 
+          className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsGenerateDialogOpen(false);
+            }
+          }}
+        >
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col">
             <div className="p-6 flex-shrink-0">
               <div className="flex items-center justify-between mb-4">
@@ -498,6 +537,9 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
         </div>      )}
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };
 
 export default JobDescriptionDialog;

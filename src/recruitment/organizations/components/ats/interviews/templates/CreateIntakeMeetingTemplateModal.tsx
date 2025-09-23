@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Trash2, Edit2, Save, ArrowUp, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { 
   IntakeMeetingTemplate, 
@@ -44,6 +45,29 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
   const createTemplateMutation = useCreateIntakeMeetingTemplate();
   const updateTemplateMutation = useUpdateIntakeMeetingTemplate();
   const generateAIMutation = useGenerateAIIntakeMeetingTemplate();
+
+  // Modal behavior: Prevent body scroll and handle ESC key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Handle ESC key to close modal
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
 
   // AI Generation states
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -281,9 +305,9 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
       onClick={handleOverlayClick}
     >
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
@@ -539,7 +563,9 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
 
       {/* AI Generation Panel */}
       {showAIPanel && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div 
+          className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+        >
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
@@ -709,4 +735,7 @@ export const CreateIntakeMeetingTemplateModal: React.FC<CreateIntakeMeetingTempl
       )}
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };

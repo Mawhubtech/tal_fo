@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Eye, EyeOff, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { type User, type CreateUserData, type UpdateUserData, type Role } from '../services/adminUserApiService';
 import { filterRolesByCompanyType, getRoleDescriptionsForCompanyType } from '../utils/companyRoleMapping';
@@ -167,11 +168,45 @@ export const UserModal: React.FC<UserModalProps> = ({
     });
   };
 
+  // Enhanced modal behavior: ESC key and body scroll prevention
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Handle ESC key to close modal
+      const handleEscKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && !isLoading) {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscKey);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose, isLoading]);
+
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !isLoading) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+  const modalContent = (
+    <div 
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+      onClick={handleOverlayClick}
+    >
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+           onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">
             {isEditing ? 'Edit User' : 'Create New User'}
@@ -409,6 +444,9 @@ export const UserModal: React.FC<UserModalProps> = ({
       </div>
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };
 
 export default UserModal;

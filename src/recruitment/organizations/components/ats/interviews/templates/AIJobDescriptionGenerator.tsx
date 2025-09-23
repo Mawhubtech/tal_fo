@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Sparkles, Loader2, CheckCircle, AlertCircle, FileText, Edit3 } from 'lucide-react';
 import { useAIStructuredQuery } from '../../../../../../hooks/useAIStructuredQuery';
 import { IntakeMeetingSession } from '../../../../../../types/intakeMeetingTemplate.types';
@@ -34,6 +35,32 @@ const AIJobDescriptionGenerator: React.FC<AIJobDescriptionGeneratorProps> = ({
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [retryCount, setRetryCount] = useState(0);
   const { data, loading, error, structuredQuery, reset } = useAIStructuredQuery();
+
+  // Enhanced modal behavior
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -241,8 +268,13 @@ Always respond with valid JSON that matches the provided schema exactly. Use the
   const intakeData = extractIntakeMeetingData();
   const hasIntakeData = Object.keys(intakeData).length > 0;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  if (!isOpen) return null;
+
+  const modalContent = (
+    <div 
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -422,6 +454,9 @@ Always respond with valid JSON that matches the provided schema exactly. Use the
       </div>
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };
 
 export default AIJobDescriptionGenerator;

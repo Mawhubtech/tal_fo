@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   User as UserIcon, 
@@ -50,9 +51,34 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 }) => {
   const [showActions, setShowActions] = useState(false);
   
+  // Always call hooks - React Query will handle the conditional logic internally
   const { data: userJobs } = useUserJobs(user?.id || '');
   const { data: userOrganizations } = useUserOrganizations(user?.id || '');
 
+  // Enhanced modal behavior: ESC key and body scroll prevention
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Handle ESC key to close modal
+      const handleEscKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscKey);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
+
+  // Early return AFTER all hooks have been called
   if (!isOpen || !user) return null;
 
   const getStatusColor = (status: string) => {
@@ -98,9 +124,20 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
     </div>
   );
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const modalContent = (
+    <div 
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+      onClick={handleOverlayClick}
+    >
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+           onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center space-x-4">
@@ -437,6 +474,9 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
       </div>
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };
 
 export default UserDetailsModal;

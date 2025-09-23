@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertCircle } from 'lucide-react';
 import { type Permission, type CreatePermissionData, type UpdatePermissionData } from '../services/roleApiService';
 
@@ -29,6 +30,29 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
   // Common resources and actions for suggestions
   const commonResources = ['users', 'roles', 'permissions', 'jobs', 'candidates', 'clients', 'teams', 'reports'];
   const commonActions = ['create', 'read', 'update', 'delete', 'list', 'manage', 'view', 'edit'];
+
+  // Enhanced modal behavior: ESC key and body scroll prevention
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Handle ESC key to close modal
+      const handleEscKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscKey);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
 
   // Reset form when modal opens/closes or permission changes
   useEffect(() => {
@@ -81,11 +105,24 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
     onSubmit(submitData);
   };
 
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+  const modalContent = (
+    <div 
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center z-[9999]"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl w-full max-w-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">
             {isEditing ? 'Edit Permission' : 'Create New Permission'}
@@ -214,4 +251,6 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

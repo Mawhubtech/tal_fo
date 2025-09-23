@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface DeleteDepartmentDialogProps {
@@ -16,6 +16,28 @@ const DeleteDepartmentDialog: React.FC<DeleteDepartmentDialogProps> = ({
   onCancel,
   loading = false
 }) => {
+  // Body scroll prevention and ESC key handler
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onCancel();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [isOpen, onCancel]);
+
   if (!isOpen) return null;
 
   return (

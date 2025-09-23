@@ -238,6 +238,35 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
     };
   }, [panelState]);
 
+  // Modal-level ESC key handler and body scroll prevention
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scrolling when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // ESC key handler for closing the modal
+      const handleModalEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleModalEsc);
+      
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleModalEsc);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  // Overlay click handler
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
   const handleFilterChange = (key: keyof FilterState, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
@@ -563,8 +592,8 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-[95vw] h-[95vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-[95vw] h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex-1">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Download, Loader2, Check, AlertCircle, ChevronDown, ChevronUp, Sparkles, Info } from 'lucide-react';
 import { useAvailablePresets, useCreatePresetTemplates } from '../hooks/useEmailManagement';
 import type { CreatePresetTemplatesDto, PresetTemplateInfo } from '../hooks/useEmailManagement';
@@ -40,6 +41,33 @@ const PresetTemplatesDialog: React.FC<PresetTemplatesDialogProps> = ({
       setShowPreview(false);
     }
   }, [isOpen]);
+
+  // Enhanced modal behavior - ESC key and body scroll prevention
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const handleTypeChange = (type: string) => {
     setSelectedTypes(prev => 
@@ -136,9 +164,15 @@ const PresetTemplatesDialog: React.FC<PresetTemplatesDialogProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999]"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b pb-4 mb-6">
           <div>
             <h3 className="text-lg font-medium text-gray-900">Create Preset Email Templates</h3>
@@ -368,7 +402,8 @@ const PresetTemplatesDialog: React.FC<PresetTemplatesDialogProps> = ({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

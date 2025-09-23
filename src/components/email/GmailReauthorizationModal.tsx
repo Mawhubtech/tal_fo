@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X, Mail } from 'lucide-react';
 import { useGmailReauthorization } from '../../hooks/useGmailReauthorization';
 
@@ -33,8 +34,8 @@ export const GmailReauthorizationModal: React.FC<GmailReauthorizationModalProps>
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  const modalContent = (
+    <div className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -106,4 +107,7 @@ export const GmailReauthorizationModal: React.FC<GmailReauthorizationModalProps>
       </div>
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };

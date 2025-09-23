@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Trash2, AlertTriangle } from 'lucide-react';
 
 interface DeleteInvoiceModalProps {
@@ -20,6 +20,35 @@ const DeleteInvoiceModal: React.FC<DeleteInvoiceModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
 
+  // Body scroll prevention and ESC key handler
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  // Overlay click handler
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
   const handleConfirm = async () => {
     setLoading(true);
     try {
@@ -36,8 +65,8 @@ const DeleteInvoiceModal: React.FC<DeleteInvoiceModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-lg max-w-md w-full" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Delete Invoice</h2>
           <button

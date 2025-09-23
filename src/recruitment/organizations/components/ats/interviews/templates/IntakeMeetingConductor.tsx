@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Calendar, 
   Clock, 
@@ -46,6 +47,27 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
   const [followUpActions, setFollowUpActions] = useState<string[]>([]);
   const [newFollowUpAction, setNewFollowUpAction] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Modal behavior: Prevent body scroll and handle ESC key
+  useEffect(() => {
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Handle ESC key to close modal
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [onClose]);
 
   // Group questions by section
   const sections = session ? Array.from(new Set(session.template.questions.map(q => q.section))) : [];
@@ -255,9 +277,16 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
     );
   }
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+  const modalContent = (
+    <div 
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
@@ -438,4 +467,7 @@ export const IntakeMeetingConductor: React.FC<IntakeMeetingConductorProps> = ({
       </div>
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };

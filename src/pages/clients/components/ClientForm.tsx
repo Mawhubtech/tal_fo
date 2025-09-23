@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, Loader2 } from 'lucide-react';
 import { clientApi } from '../../../services/api';
 import { Client } from '../data/clientService';
@@ -86,7 +87,36 @@ const ClientForm: React.FC<ClientFormProps> = ({
       });
     }
     setErrors({});
-  }, [client, mode, isOpen]);  const validateForm = (): boolean => {
+  }, [client, mode, isOpen]);
+
+  // Body scroll prevention and ESC key handler
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  // Overlay click handler
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };  const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
     if (!formData.name.trim()) newErrors.name = 'Name is required';
@@ -158,9 +188,9 @@ const ClientForm: React.FC<ClientFormProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+  const modalContent = (
+    <div className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
             {mode === 'edit' ? 'Edit Client' : 'Add New Client'}
@@ -356,6 +386,9 @@ const ClientForm: React.FC<ClientFormProps> = ({
       </div>
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };
 
 export default ClientForm;

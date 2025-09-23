@@ -48,6 +48,33 @@ export const CreateSequenceModal: React.FC<CreateSequenceModalProps> = ({
     }
   }, [sequence]);
 
+  // Handle ESC key and body scroll
+  useEffect(() => {
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    
+    // Handle ESC key
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      // Restore body scroll
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   // Dynamic stage options based on project pipeline
   const stageOptions = useMemo(() => {
     if (pipeline?.stages?.length > 0) {
@@ -137,7 +164,7 @@ export const CreateSequenceModal: React.FC<CreateSequenceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">

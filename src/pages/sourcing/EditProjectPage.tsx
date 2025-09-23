@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,6 +29,35 @@ const EditProjectPage: React.FC = () => {
   const navigate = useNavigate();
   const [tagInput, setTagInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Body scroll prevention and ESC key handler for delete modal
+  useEffect(() => {
+    if (showDeleteConfirm) {
+      // Prevent body scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setShowDeleteConfirm(false);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [showDeleteConfirm]);
+
+  // Overlay click handler for delete modal
+  const handleDeleteModalOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      setShowDeleteConfirm(false);
+    }
+  };
   
   const { data: project, isLoading: projectLoading } = useProject(projectId!);
   const updateProject = useUpdateProject();
@@ -455,8 +484,8 @@ const EditProjectPage: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleDeleteModalOverlayClick}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Project</h3>
             <p className="text-sm text-gray-600 mb-6">
               Are you sure you want to delete "{project.name}"? This action cannot be undone.

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Mail, Clock, Users, Settings, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface ProjectEmailSettingsProps {
@@ -11,6 +11,33 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<'general' | 'automation' | 'providers'>('general');
+  
+  // Body scroll prevention and ESC key handler
+  useEffect(() => {
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
+    
+    // ESC key handler
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleEsc);
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
+
+  // Overlay click handler
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
   
   // Mock settings data - replace with actual API calls
   const [settings, setSettings] = useState({
@@ -60,8 +87,8 @@ export const ProjectEmailSettings: React.FC<ProjectEmailSettingsProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Search, UserPlus, Users, Check } from 'lucide-react';
 import { useProjectProspects } from '../../../hooks/useSourcingProjects';
 import { useEnrollCandidate, useBulkEnrollCandidates } from '../../../hooks/useSourcingSequences';
@@ -35,6 +35,35 @@ export const EnrollCandidatesModal: React.FC<EnrollCandidatesModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [enrollmentTrigger, setEnrollmentTrigger] = useState<'manual' | 'automatic' | 'pipeline_stage'>('manual');
+
+  // Body scroll prevention and ESC key handler
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  // Overlay click handler
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
 
   const { addToast } = useToast();
   
@@ -125,8 +154,8 @@ export const EnrollCandidatesModal: React.FC<EnrollCandidatesModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>

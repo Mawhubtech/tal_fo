@@ -50,6 +50,33 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
     }
   }, [template]);
 
+  // Handle ESC key and body scroll
+  useEffect(() => {
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    
+    // Handle ESC key
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      // Restore body scroll
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -142,7 +169,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={handleOverlayClick}>
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">

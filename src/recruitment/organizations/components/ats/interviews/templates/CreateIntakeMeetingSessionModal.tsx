@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, Clock, User, X, Plus, Mail, UserPlus, Trash2 } from 'lucide-react';
 import { IntakeMeetingTemplate } from '../../../../../../types/intakeMeetingTemplate.types';
 import { useCreateIntakeMeetingSession, useSendIntakeMeetingInvitations } from '../../../../../../hooks/useIntakeMeetingTemplates';
@@ -140,9 +141,9 @@ export const CreateIntakeMeetingSessionModal: React.FC<CreateIntakeMeetingSessio
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
       onClick={handleOverlayClick}
     >
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -393,4 +394,7 @@ export const CreateIntakeMeetingSessionModal: React.FC<CreateIntakeMeetingSessio
       />
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Mail, Plus, Settings, Send, Trash2, Edit, Copy, AlertCircle, CheckCircle, Eye, MoreVertical, ExternalLink, RefreshCw, Download, X, TestTube, Power, Star, Users, Building2, Share2 } from 'lucide-react';
 import { 
   useEmailTemplates, 
@@ -90,6 +91,60 @@ const EmailManagementPage: React.FC = () => {
       setShowGmailReconnectionBanner(true);
     }
   }, [providers, emailSettings]);
+
+  // Enhanced modal behavior: ESC key and body scroll prevention for Preview Modal
+  useEffect(() => {
+    if (isPreviewModalOpen) {
+      document.body.style.overflow = 'hidden';
+      
+      const handleEscKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setIsPreviewModalOpen(false);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscKey);
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isPreviewModalOpen]);
+
+  // Enhanced modal behavior: ESC key and body scroll prevention for Test Email Modal
+  useEffect(() => {
+    if (isTestEmailModalOpen) {
+      document.body.style.overflow = 'hidden';
+      
+      const handleEscKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setIsTestEmailModalOpen(false);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscKey);
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isTestEmailModalOpen]);
+
+  // Handle overlay click to close Preview Modal
+  const handlePreviewModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setIsPreviewModalOpen(false);
+    }
+  };
+
+  // Handle overlay click to close Test Email Modal
+  const handleTestEmailModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setIsTestEmailModalOpen(false);
+    }
+  };
 
   const handleCreateTemplate = () => {
     setSelectedTemplate(null);
@@ -906,11 +961,18 @@ If you received this email, your email provider is working correctly.
         />
       )}
 
-      {isPreviewModalOpen && previewTemplate && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-30" aria-hidden="true">
+      {isPreviewModalOpen && previewTemplate && createPortal(
+          <div 
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-[9999]" 
+            aria-hidden="true"
+            onClick={handlePreviewModalOverlayClick}
+          >
               <div className="fixed inset-0 z-40 w-screen overflow-y-auto">
                   <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                      <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl">
+                      <div 
+                        className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                               <div className="flex items-start justify-between">
                                   <div>
@@ -960,15 +1022,23 @@ If you received this email, your email provider is working correctly.
                       </div>
                   </div>
               </div>
-          </div>
+          </div>,
+          document.body
       )}
 
       {/* Test Email Modal */}
-      {isTestEmailModalOpen && testEmailProvider && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-30" aria-hidden="true">
+      {isTestEmailModalOpen && testEmailProvider && createPortal(
+          <div 
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-[9999]" 
+            aria-hidden="true"
+            onClick={handleTestEmailModalOverlayClick}
+          >
               <div className="fixed inset-0 z-40 w-screen overflow-y-auto">
                   <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                      <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                      <div 
+                        className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                               <div className="flex items-start justify-between">
                                   <div className="flex items-center">
@@ -1019,7 +1089,7 @@ If you received this email, your email provider is working correctly.
                                           type="email"
                                           value={testEmailAddress}
                                           onChange={(e) => setTestEmailAddress(e.target.value)}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                                           placeholder="Enter email address to test"
                                           required
                                       />
@@ -1059,7 +1129,8 @@ If you received this email, your email provider is working correctly.
                       </div>
                   </div>
               </div>
-          </div>
+          </div>,
+          document.body
       )}
 
       {/* Delete Template Confirmation Modal */}

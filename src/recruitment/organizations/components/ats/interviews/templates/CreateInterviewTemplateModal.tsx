@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, Plus, Trash2, Edit2, Copy, Sparkles, Clock, FileText, 
   Users, Save, ArrowUp, ChevronUp, ChevronDown 
@@ -80,6 +81,29 @@ export const CreateInterviewTemplateModal: React.FC<CreateInterviewTemplateModal
   const createTemplateMutation = useCreateInterviewTemplate();
   const updateTemplateMutation = useUpdateInterviewTemplate();
   const generateAIMutation = useGenerateAIInterviewTemplate();
+
+  // Modal behavior: Prevent body scroll and handle ESC key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Handle ESC key to close modal
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
 
   // Initialize template state with edit data when in edit mode
   useEffect(() => {
@@ -737,9 +761,9 @@ Create a professional, comprehensive template that leverages the mixed question 
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
       onClick={handleOverlayClick}
     >
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -1593,4 +1617,7 @@ Create a professional, comprehensive template that leverages the mixed question 
       </div>
     </div>
   );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
 };

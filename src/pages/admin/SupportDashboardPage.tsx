@@ -1,19 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Ticket,
   Users,
   Clock,
-  AlertCircle,
   CheckCircle,
-  MessageSquare,
-  Search,
-  Filter,
   Mail,
   UserCheck,
   Archive,
   TrendingUp,
-  BarChart3,
-  Settings
+  Settings,
+  Search
 } from 'lucide-react';
 import { useSupportDashboard, type SupportTicket, type SupportMessage, type AdminUser } from '../../hooks/useSupportDashboard';
 
@@ -23,7 +20,6 @@ const SupportDashboardPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const {
-    // State
     selectedTicket,
     setSelectedTicket,
     isManaging,
@@ -37,35 +33,49 @@ const SupportDashboardPage: React.FC = () => {
     setNewPriority,
     newAssignee,
     setNewAssignee,
-    
-    // Query hooks
     useTickets,
     useStats,
     useMessages,
     useAdminUsers,
-    
-    // Mutations
     addMessageMutation,
     assignTicketMutation,
     updateStatusMutation,
     updatePriorityMutation,
-    
-    // Helper functions
     openManageTicket,
     closeManageTicket,
     retryMessages,
   } = useSupportDashboard();
 
-  // Use the query hooks
   const { data: ticketsData, isLoading: ticketsLoading } = useTickets(selectedStatus, selectedPriority, searchTerm);
   const { data: statsData } = useStats();
   const { data: messagesData, isLoading: messagesLoading, error: messagesError } = useMessages();
-  const { data: adminUsersData, error: adminUsersError } = useAdminUsers();
+  const { data: adminUsersData } = useAdminUsers();
 
   const tickets = ticketsData?.data?.tickets || [];
   const stats = statsData?.data || {};
   const messages = messagesData?.data || [];
   const adminUsers = adminUsersData?.data || [];
+
+  // Enhanced modal behavior: ESC key and body scroll prevention
+  useEffect(() => {
+    if (selectedTicket && isManaging) {
+      document.body.style.overflow = 'hidden';
+      
+      const handleEscKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setSelectedTicket(null);
+          closeManageTicket();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscKey);
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [selectedTicket, isManaging, setSelectedTicket, closeManageTicket]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -98,6 +108,13 @@ const SupportDashboardPage: React.FC = () => {
     }
   };
 
+  const handleModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setSelectedTicket(null);
+      closeManageTicket();
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -107,72 +124,68 @@ const SupportDashboardPage: React.FC = () => {
           <p className="text-gray-600 mt-1">Manage support tickets and customer inquiries</p>
         </div>
         <div className="flex space-x-3">
-          <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
-            <Mail className="w-4 h-4 inline mr-2" />
-            Email All Users
+          <button className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+            <Mail className="w-4 h-4 mr-2" />
+            Send Update
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <Ticket className="w-6 h-6 text-blue-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Tickets</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalTickets || 0}</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.total || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-lg">
               <Clock className="w-6 h-6 text-yellow-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Open/In Progress</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {(stats.openTickets || 0) + (stats.inProgressTickets || 0)}
-              </p>
+              <p className="text-sm font-medium text-gray-600">Open Tickets</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.open || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Resolved</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.resolvedTickets || 0}</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.resolved || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
               <TrendingUp className="w-6 h-6 text-purple-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Avg Response</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {stats.averageResponseTime ? `${Math.round(stats.averageResponseTime)}h` : 'N/A'}
-              </p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.avgResponseTime || '0h'}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex-1 min-w-64">
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
+          <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
@@ -180,16 +193,14 @@ const SupportDashboardPage: React.FC = () => {
                 placeholder="Search tickets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               />
             </div>
-          </div>
-          
-          <div className="flex gap-4">
+            
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               <option value="all">All Status</option>
               <option value="open">Open</option>
@@ -202,7 +213,7 @@ const SupportDashboardPage: React.FC = () => {
             <select
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             >
               <option value="all">All Priority</option>
               <option value="low">Low</option>
@@ -215,25 +226,24 @@ const SupportDashboardPage: React.FC = () => {
       </div>
 
       {/* Tickets Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Support Tickets</h3>
+          <h3 className="text-lg font-medium text-gray-900">Support Tickets</h3>
         </div>
         
         {ticketsLoading ? (
-          <div className="p-8 text-center">
+          <div className="p-6 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-            <p className="text-gray-600 mt-2">Loading tickets...</p>
+            <p className="text-gray-500 mt-2">Loading tickets...</p>
           </div>
         ) : tickets.length === 0 ? (
-          <div className="p-8 text-center">
-            <Ticket className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Tickets Found</h3>
-            <p className="text-gray-600">No support tickets match your current filters.</p>
+          <div className="p-6 text-center text-gray-500">
+            <Ticket className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+            <p>No tickets found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -243,13 +253,13 @@ const SupportDashboardPage: React.FC = () => {
                     Customer
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Assignee
+                    Priority
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assigned To
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
@@ -263,79 +273,41 @@ const SupportDashboardPage: React.FC = () => {
                 {tickets.map((ticket: SupportTicket) => (
                   <tr key={ticket.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium text-gray-900">
-                            #{ticket.ticketNumber}
-                          </span>
-                          {ticket.messageCount > 0 && (
-                            <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
-                              <MessageSquare className="w-3 h-3 mr-1" />
-                              {ticket.messageCount}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1 max-w-xs truncate">
-                          {ticket.subject}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {ticket.category}
+                      <div className="flex items-center">
+                        {getStatusIcon(ticket.status)}
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-gray-900">#{ticket.ticketNumber}</p>
+                          <p className="text-sm text-gray-500 truncate max-w-xs">{ticket.subject}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {ticket.requester.firstName} {ticket.requester.lastName}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {ticket.requester.email}
-                        </div>
-                      </div>
+                      <div className="text-sm text-gray-900">{ticket.requester.firstName} {ticket.requester.lastName}</div>
+                      <div className="text-sm text-gray-500">{ticket.requester.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                        {ticket.status.replace('_', ' ')}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`text-sm font-medium ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority.toUpperCase()}
+                        {ticket.priority}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                        {getStatusIcon(ticket.status)}
-                        <span className="ml-1">{ticket.status.replace('_', ' ').toUpperCase()}</span>
-                      </span>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {ticket.assignee ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` : 'Unassigned'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {ticket.assignee ? (
-                        <div className="text-sm text-gray-900">
-                          {ticket.assignee.firstName} {ticket.assignee.lastName}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">Unassigned</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(ticket.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => openManageTicket(ticket)}
-                          className="text-purple-600 hover:text-purple-700 text-sm font-medium"
-                        >
-                          Manage
-                        </button>
-                        {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
-                          <button
-                            onClick={() => updateStatusMutation.mutate({ 
-                              ticketId: ticket.id, 
-                              status: ticket.status === 'open' ? 'in_progress' : 'resolved' 
-                            })}
-                            className="text-green-600 hover:text-green-700 text-sm font-medium"
-                          >
-                            {ticket.status === 'open' ? 'Start' : 'Resolve'}
-                          </button>
-                        )}
-                      </div>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => openManageTicket(ticket)}
+                        className="text-purple-600 hover:text-purple-900"
+                      >
+                        Manage
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -345,11 +317,16 @@ const SupportDashboardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Ticket Management Modal */}
-      {selectedTicket && isManaging && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
+      {/* Ticket Management Modal with React Portal */}
+      {selectedTicket && isManaging && createPortal(
+        <div 
+          className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]"
+          onClick={handleModalOverlayClick}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>
@@ -371,10 +348,8 @@ const SupportDashboardPage: React.FC = () => {
             </div>
             
             <div className="flex flex-1 overflow-hidden">
-              {/* Left Panel - Ticket Details and Actions */}
               <div className="w-1/3 border-r border-gray-200 p-6 overflow-y-auto">
                 <div className="space-y-6">
-                  {/* Customer Information */}
                   <div>
                     <h4 className="font-medium text-gray-900 mb-3">Customer</h4>
                     <div className="bg-gray-50 rounded-lg p-4 space-y-2">
@@ -385,7 +360,6 @@ const SupportDashboardPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Ticket Status */}
                   <div>
                     <h4 className="font-medium text-gray-900 mb-3">Status</h4>
                     <div className="space-y-3">
@@ -411,7 +385,6 @@ const SupportDashboardPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Priority */}
                   <div>
                     <h4 className="font-medium text-gray-900 mb-3">Priority</h4>
                     <div className="space-y-3">
@@ -436,9 +409,8 @@ const SupportDashboardPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Assignment */}
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Assignee</h4>
+                    <h4 className="font-medium text-gray-900 mb-3">Assignment</h4>
                     <div className="space-y-3">
                       <select
                         value={newAssignee}
@@ -463,7 +435,6 @@ const SupportDashboardPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Ticket Details */}
                   <div>
                     <h4 className="font-medium text-gray-900 mb-3">Details</h4>
                     <div className="bg-gray-50 rounded-lg p-4 space-y-2">
@@ -481,16 +452,12 @@ const SupportDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Panel - Messages */}
               <div className="flex-1 flex flex-col">
-                {/* Messages Header */}
                 <div className="p-4 border-b border-gray-200 flex-shrink-0">
                   <h4 className="font-medium text-gray-900">Conversation</h4>
                 </div>
 
-                {/* Messages List */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {/* Original Ticket Description */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
@@ -499,104 +466,82 @@ const SupportDashboardPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="ml-3 flex-1">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-blue-900">
                             {selectedTicket.requester.firstName} {selectedTicket.requester.lastName}
                           </p>
-                          <span className="text-xs text-blue-600">Original Request</span>
+                          <p className="text-xs text-blue-600">
+                            {new Date(selectedTicket.createdAt).toLocaleString()}
+                          </p>
                         </div>
-                        <div className="mt-2 text-sm text-blue-800">
-                          <p className="font-medium mb-1">{selectedTicket.subject}</p>
-                          <p className="whitespace-pre-wrap">{selectedTicket.description}</p>
+                        <div className="mt-2">
+                          <p className="text-sm text-blue-800 font-medium">Original Request</p>
+                          <div className="mt-1 p-3 bg-white rounded border">
+                            <p className="whitespace-pre-wrap text-sm text-gray-700">{selectedTicket.description}</p>
+                          </div>
                         </div>
-                        <p className="text-xs text-blue-600 mt-2">
-                          {new Date(selectedTicket.createdAt).toLocaleString()}
-                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Messages */}
                   {messagesLoading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
-                      <p className="text-gray-600 mt-2 text-sm">Loading messages...</p>
+                    <div className="flex justify-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
                     </div>
                   ) : messagesError ? (
-                    <div className="text-center py-8">
-                      <p className="text-red-600 text-sm">Error loading messages: {messagesError.message}</p>
-                      <button 
+                    <div className="text-center py-4">
+                      <p className="text-red-600 text-sm">Error loading messages</p>
+                      <button
                         onClick={retryMessages}
-                        className="mt-2 text-purple-600 hover:text-purple-700 text-sm"
+                        className="mt-2 text-purple-600 hover:text-purple-800 text-sm underline"
                       >
                         Retry
                       </button>
                     </div>
-                  ) : messages.length === 0 ? (
-                    <div className="text-center py-8">
-                      <MessageSquare className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-600 text-sm">No messages found</p>
-                    </div>
                   ) : (
                     messages.map((message: SupportMessage) => (
-                      <div
-                        key={message.id}
-                        className={`${
-                          message.sender === 'admin' 
-                            ? message.isInternal 
-                              ? 'bg-yellow-50 border-yellow-200' 
-                              : 'bg-purple-50 border-purple-200'
-                            : 'bg-gray-50 border-gray-200'
-                        } border rounded-lg p-4`}
-                      >
-                        <div className="flex items-start">
-                          <div className="flex-shrink-0">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      <div key={message.id} className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            message.sender === 'admin'
+                              ? message.isInternal
+                                ? 'bg-yellow-100'
+                                : 'bg-purple-100'
+                              : 'bg-gray-100'
+                          }`}>
+                            {message.sender === 'admin' ? (
+                              <UserCheck className={`w-4 h-4 ${
+                                message.isInternal ? 'text-yellow-600' : 'text-purple-600'
+                              }`} />
+                            ) : (
+                              <Users className="w-4 h-4 text-gray-600" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <p className={`text-sm font-medium ${
                               message.sender === 'admin'
                                 ? message.isInternal
-                                  ? 'bg-yellow-100'
-                                  : 'bg-purple-100'
-                                : 'bg-gray-100'
+                                  ? 'text-yellow-900'
+                                  : 'text-purple-900'
+                                : 'text-gray-900'
                             }`}>
-                              {message.sender === 'admin' ? (
-                                message.isInternal ? (
-                                  <UserCheck className="w-4 h-4 text-yellow-600" />
-                                ) : (
-                                  <UserCheck className="w-4 h-4 text-purple-600" />
-                                )
-                              ) : (
-                                <Users className="w-4 h-4 text-gray-600" />
-                              )}
-                            </div>
-                          </div>
-                          <div className="ml-3 flex-1">
-                            <div className="flex items-center space-x-2">
-                              <p className={`text-sm font-medium ${
-                                message.sender === 'admin'
-                                  ? message.isInternal
-                                    ? 'text-yellow-900'
-                                    : 'text-purple-900'
-                                  : 'text-gray-900'
-                              }`}>
-                                {message.author 
-                                  ? `${message.author.firstName} ${message.author.lastName}`
-                                  : message.sender === 'admin' 
-                                    ? 'Admin' 
-                                    : 'Customer'
-                                }
-                              </p>
-                              {message.isInternal && (
-                                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                              {message.sender === 'admin' ? 'Support Team' : `${selectedTicket.requester.firstName} ${selectedTicket.requester.lastName}`}
+                              {message.sender === 'admin' && message.isInternal && (
+                                <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
                                   Internal Note
                                 </span>
                               )}
-                            </div>
-                            <div className={`mt-2 text-sm ${
+                            </p>
+                          </div>
+                          <div className="mt-1">
+                            <div className={`p-3 rounded-lg ${
                               message.sender === 'admin'
                                 ? message.isInternal
-                                  ? 'text-yellow-800'
-                                  : 'text-purple-800'
-                                : 'text-gray-800'
+                                  ? 'bg-yellow-50 border border-yellow-200'
+                                  : 'bg-purple-50 border border-purple-200'
+                                : 'bg-gray-50 border border-gray-200'
                             }`}>
                               <p className="whitespace-pre-wrap">{message.content}</p>
                             </div>
@@ -616,7 +561,6 @@ const SupportDashboardPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Reply Form */}
                 <div className="border-t border-gray-200 p-4 flex-shrink-0">
                   <div className="space-y-3">
                     <div className="flex items-center space-x-4">
@@ -655,7 +599,8 @@ const SupportDashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

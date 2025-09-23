@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Users, Building, Link as LinkIcon, 
   MoreHorizontal, Edit, Plus, X, Check, AlertCircle, User,
@@ -120,6 +121,48 @@ const TeamManagementPage: React.FC = () => {
   const archiveUserMutation = useArchiveUser();
   const restoreUserMutation = useRestoreUser();
   const inviteUserMutation = useInviteUserToTeam();
+
+  // Enhanced modal behavior: ESC key and body scroll prevention
+  useEffect(() => {
+    const isAnyModalOpen = showAssignModal || showBulkAssignModal || showUserModal || showDetailsModal || showInviteModal;
+    
+    if (isAnyModalOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Handle ESC key to close modals
+      const handleEscKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          // Close the appropriate modal
+          if (showAssignModal) {
+            setShowAssignModal(false);
+            setSelectedUser(null);
+            setSelectedClients([]);
+          } else if (showBulkAssignModal) {
+            setShowBulkAssignModal(false);
+            setSelectedClients([]);
+          } else if (showUserModal) {
+            setShowUserModal(false);
+            setEditingUser(null);
+          } else if (showDetailsModal) {
+            setShowDetailsModal(false);
+            setSelectedUser(null);
+          } else if (showInviteModal) {
+            setShowInviteModal(false);
+            setInviteEmail('');
+          }
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscKey);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showAssignModal, showBulkAssignModal, showUserModal, showDetailsModal, showInviteModal]);
 
   // Extract users and roles from response
   const users = usersResponse?.users || [];
@@ -440,6 +483,22 @@ const TeamManagementPage: React.FC = () => {
     return <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
       {config.label}
     </span>;
+  };
+
+  // Handle overlay click to close modals
+  const handleAssignModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowAssignModal(false);
+      setSelectedUser(null);
+      setSelectedClients([]);
+    }
+  };
+
+  const handleBulkAssignModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowBulkAssignModal(false);
+      setSelectedClients([]);
+    }
   };
 
   return (
@@ -812,9 +871,15 @@ const TeamManagementPage: React.FC = () => {
         )}
 
         {/* Assign Clients Modal */}
-        {showAssignModal && selectedUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        {showAssignModal && selectedUser && createPortal(
+          <div 
+            className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center z-[9999]"
+            onClick={handleAssignModalOverlayClick}
+          >
+            <div 
+              className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -915,13 +980,20 @@ const TeamManagementPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Bulk Assign Clients Modal */}
-        {showBulkAssignModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        {showBulkAssignModal && createPortal(
+          <div 
+            className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center z-[9999]"
+            onClick={handleBulkAssignModalOverlayClick}
+          >
+            <div 
+              className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -1040,7 +1112,8 @@ const TeamManagementPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 

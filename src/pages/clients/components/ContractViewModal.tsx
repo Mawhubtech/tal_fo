@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Calendar, DollarSign, FileText, User, Mail, Phone, Building, CheckCircle, Clock, Download } from 'lucide-react';
 import type { Contract } from '../../../types/contract.types';
 
@@ -13,6 +13,33 @@ const ContractViewModal: React.FC<ContractViewModalProps> = ({
   onClose,
   onDownload,
 }) => {
+  // Body scroll prevention and ESC key handler
+  useEffect(() => {
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
+    
+    // ESC key handler
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleEsc);
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
+
+  // Overlay click handler
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -60,8 +87,8 @@ const ContractViewModal: React.FC<ContractViewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center space-x-3">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Users, Building2, Plus, Minus, Save } from 'lucide-react';
 import { 
   useShareTemplateWithTeams, 
@@ -63,6 +64,33 @@ const TemplateShareDialog: React.FC<TemplateShareDialogProps> = ({
       setInitialOrganizations(orgIds);
     }
   }, [template, templateSharing]);
+
+  // Enhanced modal behavior - ESC key and body scroll prevention
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const handleAddTeam = (teamId: string) => {
     if (!selectedTeams.includes(teamId)) {
@@ -149,11 +177,18 @@ const TemplateShareDialog: React.FC<TemplateShareDialogProps> = ({
 
   if (!isOpen || !template) return null;
 
-  return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50" aria-hidden="true">
-      <div className="fixed inset-0 z-50 w-screen overflow-y-auto">
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-[9999]" 
+      aria-hidden="true"
+      onClick={handleOverlayClick}
+    >
+      <div className="fixed inset-0 z-[9999] w-screen overflow-y-auto">
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-          <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+          <div 
+            className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <div className="flex items-start justify-between">
@@ -359,7 +394,8 @@ const TemplateShareDialog: React.FC<TemplateShareDialogProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

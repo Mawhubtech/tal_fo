@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, Eye, Code, Eye as EyeIcon, Sparkles, Users, Building2, Plus, Minus } from 'lucide-react';
 import { useCreateEmailTemplate, useUpdateEmailTemplate, useGenerateAiTemplateContent, type EmailTemplate, type CreateTemplateData } from '../hooks/useEmailManagement';
 import { useHiringTeams } from '../hooks/useHiringTeam';
@@ -46,6 +47,33 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
   // Fetch teams and organizations for sharing
   const { data: teams = [] } = useHiringTeams();
   const { data: organizations = [] } = useOrganizations();
+
+  // Enhanced modal behavior - ESC key and body scroll prevention
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   // Add custom CSS for email preview
   const emailPreviewStyles = `
@@ -246,11 +274,17 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
       <style>{emailPreviewStyles}</style>
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] flex flex-col overflow-hidden">
+      <div 
+        className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-[9999] p-4"
+        onClick={handleOverlayClick}
+      >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header - Fixed at top */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <h3 className="text-lg font-medium text-gray-900">
@@ -288,7 +322,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                     placeholder="e.g., Interview Invitation Template"
                     required
                   />
@@ -839,7 +873,8 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 };
 
