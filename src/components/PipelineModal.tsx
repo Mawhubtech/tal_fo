@@ -70,6 +70,29 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
 
   const [stages, setStages] = useState<StageFormData[]>([]);
 
+  // Handle body scroll and ESC key
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (pipeline) {
       setFormData({
@@ -253,10 +276,20 @@ const PipelineModal: React.FC<PipelineModalProps> = ({
     setStages(newStages);
   };
 
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[90vh]">
           {/* Header */}

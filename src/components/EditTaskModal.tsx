@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Briefcase, User, Search, Users } from 'lucide-react';
 import { useJobs } from '../hooks/useJobs';
 import { useAssignableUsers } from '../hooks/useUsers';
@@ -67,6 +67,35 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
       job.department.toLowerCase().includes(jobSearch.toLowerCase())
     );
   }, [jobs, jobSearch]);
+
+  // Handle ESC key and body scroll
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      
+      // Handle ESC key
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        // Restore body scroll
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const filteredUsers = useMemo(() => {
     return users.filter(user =>
@@ -162,7 +191,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={handleOverlayClick}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Edit Task</h2>

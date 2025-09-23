@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -22,11 +22,41 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   cancelText = 'Cancel',
   type = 'warning'
 }) => {
+  // Handle body scroll and ESC key
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleConfirm = () => {
     onConfirm();
     onClose();
+  };
+
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
   };
 
   const getTypeStyles = () => {
@@ -62,7 +92,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const styles = getTypeStyles();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>

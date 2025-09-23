@@ -51,6 +51,29 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
 
   const updateInterviewMutation = useUpdateInterview();
 
+  // Handle body scroll and ESC key
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -146,10 +169,20 @@ export const EditInterviewForm: React.FC<EditInterviewFormProps> = ({
     }
   };
 
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900">Edit Interview</h2>

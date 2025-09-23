@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { 
   MessageSquare, 
@@ -13,7 +14,9 @@ import {
   Shield,
   Bot,
   FileText,
-  Ticket
+  Ticket,
+  X,
+  User
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useAIChatStream } from '../hooks/ai';
@@ -131,6 +134,29 @@ const ContactSupportPage: React.FC = () => {
     }
   }, [chatMessages, aiLoading, isStreaming]);
 
+  // Handle ESC key and body scroll for modal
+  useEffect(() => {
+    if (selectedTicket) {
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      
+      // Handle ESC key
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setSelectedTicket(null);
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        // Restore body scroll
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [selectedTicket]);
+
   // Support ticket mutations
   const createTicketMutation = useMutation({
     mutationFn: (ticketData: any) => apiClient.post('/support/tickets', ticketData),
@@ -160,6 +186,12 @@ const ContactSupportPage: React.FC = () => {
     queryKey: ['support-tickets'],
     queryFn: () => apiClient.get('/support/tickets'),
   });
+
+  const handleModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setSelectedTicket(null);
+    }
+  };
 
   // Function to load messages for a specific ticket
   const loadTicketMessages = async (ticketId: string) => {
@@ -425,8 +457,142 @@ When helping users, be specific about TAL's features and provide actionable solu
     );
   }
 
+  // Modal content for Portal rendering
+  const modalContent = selectedTicket && (
+    <div className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]" onClick={handleModalOverlayClick}>
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Ticket #{selectedTicket.ticketNumber}
+              </h3>
+              <p className="text-gray-600 mt-1">{selectedTicket.subject}</p>
+              <div className="flex items-center space-x-4 mt-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
+                  {selectedTicket.status.replace('_', ' ').toUpperCase()}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {new Date(selectedTicket.createdAt).toLocaleDateString()} at {new Date(selectedTicket.createdAt).toLocaleTimeString()}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedTicket(null)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {/* Original Ticket Description */}
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <User className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-medium text-blue-800">
+                  Original Request
+                </h4>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p className="whitespace-pre-wrap">{selectedTicket.description}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Messages */}
+          {isLoadingMessages ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            </div>
+          ) : (
+            ticketMessages.map((message) => (
+              <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-md p-3 rounded-lg ${
+                  message.sender === 'user' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-900'
+                }`}>
+                  <div className="flex items-start space-x-2">
+                    <div className="flex-shrink-0">
+                      {message.sender === 'user' ? (
+                        <User className="w-4 h-4 mt-0.5" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4 mt-0.5" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className={`text-xs mt-1 ${
+                        message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
+                      }`}>
+                        {new Date(message.createdAt).toLocaleDateString()} at {new Date(message.createdAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Reply Form - Only show if ticket is not closed/resolved */}
+        {selectedTicket.status !== 'closed' && selectedTicket.status !== 'resolved' && (
+          <div className="border-t border-gray-200 p-4 flex-shrink-0">
+            <form onSubmit={handleReplySubmit} className="flex space-x-3">
+              <input
+                type="text"
+                value={newReply}
+                onChange={(e) => setNewReply(e.target.value)}
+                placeholder="Type your reply..."
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
+              />
+              <button
+                type="submit"
+                disabled={!newReply.trim() || addMessageMutation.isPending}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {addMessageMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Send</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Closed/Resolved notice */}
+        {(selectedTicket.status === 'closed' || selectedTicket.status === 'resolved') && (
+          <div className="border-t border-gray-200 p-4 bg-gray-50 flex-shrink-0">
+            <div className="flex items-center justify-center text-gray-600">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              <span className="text-sm">
+                This ticket has been {selectedTicket.status}. Contact support to reopen if needed.
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="p-6 space-y-8">
+    <>
+      <div className="p-6 space-y-8">
       {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Contact Support</h1>
@@ -795,190 +961,7 @@ When helping users, be specific about TAL's features and provide actionable solu
       )}
 
       {/* Ticket Conversation Modal */}
-      {selectedTicket && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    Ticket #{selectedTicket.ticketNumber}
-                  </h3>
-                  <p className="text-gray-600 mt-1">{selectedTicket.subject}</p>
-                  <div className="flex items-center space-x-4 mt-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
-                      {selectedTicket.status.replace('_', ' ').toUpperCase()}
-                    </span>
-                    <span className={`text-sm font-medium ${getPriorityColor(selectedTicket.priority)}`}>
-                      {selectedTicket.priority.toUpperCase()} PRIORITY
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      Category: {selectedTicket.category}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={closeTicketConversation}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {/* Original Ticket Description */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Users className="w-4 h-4 text-blue-600" />
-                    </div>
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <div className="flex items-center space-x-2">
-                      <p className="text-sm font-medium text-blue-900">You</p>
-                      <span className="text-xs text-blue-600">Original Request</span>
-                    </div>
-                    <div className="mt-2 text-sm text-blue-800">
-                      <p className="font-medium mb-1">{selectedTicket.subject}</p>
-                      <p className="whitespace-pre-wrap">{selectedTicket.description}</p>
-                    </div>
-                    <p className="text-xs text-blue-600 mt-2">
-                      {new Date(selectedTicket.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Messages */}
-              {isLoadingMessages ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
-                  <p className="text-gray-600 mt-2 text-sm">Loading messages...</p>
-                </div>
-              ) : ticketMessages.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">No messages yet</p>
-                </div>
-              ) : (
-                ticketMessages
-                  .filter(message => !message.isInternal) // Only show non-internal messages to customers
-                  .map((message: SupportMessage) => (
-                    <div
-                      key={message.id}
-                      className={`${
-                        message.sender === 'user' 
-                          ? 'bg-purple-50 border-purple-200' 
-                          : 'bg-gray-50 border-gray-200'
-                      } border rounded-lg p-4`}
-                    >
-                      <div className="flex items-start">
-                        <div className="flex-shrink-0">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            message.sender === 'user'
-                              ? 'bg-purple-100'
-                              : 'bg-gray-100'
-                          }`}>
-                            {message.sender === 'user' ? (
-                              <Users className="w-4 h-4 text-purple-600" />
-                            ) : (
-                              <Users className="w-4 h-4 text-gray-600" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="ml-3 flex-1">
-                          <div className="flex items-center space-x-2">
-                            <p className={`text-sm font-medium ${
-                              message.sender === 'user'
-                                ? 'text-purple-900'
-                                : 'text-gray-900'
-                            }`}>
-                              {message.sender === 'user' 
-                                ? 'You' 
-                                : message.author 
-                                  ? `${message.author.firstName} ${message.author.lastName}` 
-                                  : 'Support Team'
-                              }
-                            </p>
-                            {message.sender !== 'user' && (
-                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                Support Team
-                              </span>
-                            )}
-                          </div>
-                          <div className={`mt-2 text-sm ${
-                            message.sender === 'user'
-                              ? 'text-purple-800'
-                              : 'text-gray-800'
-                          }`}>
-                            <p className="whitespace-pre-wrap">{message.content}</p>
-                          </div>
-                          <p className={`text-xs mt-2 ${
-                            message.sender === 'user'
-                              ? 'text-purple-600'
-                              : 'text-gray-600'
-                          }`}>
-                            {new Date(message.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-
-            {/* Reply Form */}
-            {selectedTicket.status !== 'closed' && selectedTicket.status !== 'resolved' && (
-              <div className="border-t border-gray-200 p-4 flex-shrink-0">
-                <form onSubmit={handleReplySubmit} className="space-y-3">
-                  <textarea
-                    value={newReply}
-                    onChange={(e) => setNewReply(e.target.value)}
-                    placeholder="Type your reply..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={!newReply.trim() || addMessageMutation.isPending}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {addMessageMutation.isPending ? (
-                        <div className="flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Sending...
-                        </div>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4 inline mr-2" />
-                          Send Reply
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Closed/Resolved notice */}
-            {(selectedTicket.status === 'closed' || selectedTicket.status === 'resolved') && (
-              <div className="border-t border-gray-200 p-4 bg-gray-50 flex-shrink-0">
-                <div className="flex items-center justify-center text-gray-600">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  <span className="text-sm">
-                    This ticket has been {selectedTicket.status}. Contact support to reopen if needed.
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      
 
       {/* Contact Information */}
       <div className="max-w-4xl mx-auto">
@@ -1009,7 +992,10 @@ When helping users, be specific about TAL's features and provide actionable solu
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      {/* Render modal using Portal to document.body for full screen coverage */}
+      {modalContent && createPortal(modalContent, document.body)}
+    </>
   );
 };
 

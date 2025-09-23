@@ -37,6 +37,23 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
     if (isOpen) {
       loadCandidates();
       loadExistingCandidates();
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          handleClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
     }
   }, [isOpen]);
 
@@ -158,7 +175,16 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
     setSearchQuery('');
     setSelectedCandidates(new Set());
     setExistingCandidateIds(new Set());
+    // Restore body scroll before closing
+    document.body.style.overflow = 'unset';
     onClose();
+  };
+
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
   };
 
   // Helper function to generate initials from name
@@ -176,7 +202,10 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">

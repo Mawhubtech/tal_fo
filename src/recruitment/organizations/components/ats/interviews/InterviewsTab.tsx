@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Filter, Users, Calendar, Clock, CheckCircle, RefreshCw } from 'lucide-react';
 import { useInterviews, useInterviewStats, useInterviewFilters, useUpdateInterview, useAddInterviewFeedback, useInterviewQueryInvalidation } from '../../../../../hooks/useInterviews';
 import { useInterviewCalendarSync } from '../../../../../hooks/useInterviewCalendarSync';
@@ -90,6 +90,29 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   const scheduledInterviews = stats?.scheduled || 0;
   const completedInterviews = stats?.completed || 0;
 
+  // Handle body scroll and ESC key for the Job ID Required modal
+  useEffect(() => {
+    if (showScheduleForm && !jobId) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setShowScheduleForm(false);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showScheduleForm, jobId]);
+
   const handleNavigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
@@ -146,6 +169,13 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedInterview(null);
+  };
+
+  // Handle overlay click for Job ID Required modal
+  const handleJobIdModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowScheduleForm(false);
+    }
   };
 
   const handleUpdateInterview = async (interview: Interview, updates: Partial<Interview>) => {
@@ -476,7 +506,10 @@ export const InterviewsTab: React.FC<InterviewsTabProps> = ({
               }}
             />
           ) : (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+              onClick={handleJobIdModalOverlayClick}
+            >
               <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Job ID Required</h3>
                 <p className="text-gray-600 mb-4">

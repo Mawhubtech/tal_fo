@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmationDialogProps {
@@ -24,6 +24,29 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   loading = false,
   variant = 'danger'
 }) => {
+  // Handle body scroll and ESC key
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const getVariantStyles = () => {

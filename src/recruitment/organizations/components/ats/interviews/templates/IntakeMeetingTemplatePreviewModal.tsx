@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, MessageSquare, Clock, Users, Play, FileText } from 'lucide-react';
 import { IntakeMeetingTemplate } from '../../../../../../types/intakeMeetingTemplate.types';
 
@@ -15,6 +15,36 @@ export const IntakeMeetingTemplatePreviewModal: React.FC<IntakeMeetingTemplatePr
   template,
   onUseTemplate
 }) => {
+  // Handle body scroll and ESC key
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
+
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   // Group questions by section
@@ -29,7 +59,10 @@ export const IntakeMeetingTemplatePreviewModal: React.FC<IntakeMeetingTemplatePr
   const sections = Object.keys(questionsBySection);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">

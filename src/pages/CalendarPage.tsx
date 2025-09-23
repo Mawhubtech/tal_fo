@@ -89,6 +89,37 @@ const CalendarPage: React.FC = () => {
 
   const queryClient = useQueryClient();
 
+  // Handle body scroll and ESC key for modals
+  useEffect(() => {
+    if (showEventModal || showDateEventsModal || showEventFormModal || showInviteModal || showInvitationsManager || showDeleteConfirmation || showGoogleCalendarSync) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setShowEventModal(false);
+          setShowDateEventsModal(false);
+          setShowEventFormModal(false);
+          setShowInviteModal(false);
+          setShowInvitationsManager(false);
+          setShowDeleteConfirmation(false);
+          setShowGoogleCalendarSync(false);
+          setSelectedEvent(null);
+          setEventToDelete(null);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showEventModal, showDateEventsModal, showEventFormModal, showInviteModal, showInvitationsManager, showDeleteConfirmation, showGoogleCalendarSync]);
+
   // Handle Google Calendar OAuth callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -473,6 +504,35 @@ const CalendarPage: React.FC = () => {
     setEventToDelete(null);
   };
 
+  // Handle overlay click for modals
+  const handleEventModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowEventModal(false);
+      setSelectedEvent(null);
+    }
+  };
+
+  const handleDateEventsModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowDateEventsModal(false);
+      setSelectedDate(null);
+    }
+  };
+
+  const handleEventFormModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowEventFormModal(false);
+      setSelectedEvent(null);
+    }
+  };
+
+  const handleDeleteConfirmationOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowDeleteConfirmation(false);
+      setEventToDelete(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -714,7 +774,7 @@ const CalendarPage: React.FC = () => {
 
         {/* Event Detail Modal */}
         {showEventModal && selectedEvent && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onClick={handleEventModalOverlayClick}>
             <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-start justify-between mb-6">
                 <div>
@@ -913,7 +973,7 @@ const CalendarPage: React.FC = () => {
 
         {/* Date Events Modal */}
         {showDateEventsModal && selectedDate && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onClick={handleDateEventsModalOverlayClick}>
             <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -1048,7 +1108,7 @@ const CalendarPage: React.FC = () => {
 
         {/* Event Form Modal (Create/Edit) */}
         {showEventFormModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onClick={handleEventFormModalOverlayClick}>
             <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-start justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -1322,7 +1382,7 @@ const CalendarPage: React.FC = () => {
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirmation && eventToDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]" onClick={handleDeleteConfirmationOverlayClick}>
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">

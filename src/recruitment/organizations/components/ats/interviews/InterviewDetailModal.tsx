@@ -50,6 +50,29 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     customRecipient: ''
   });
 
+  // Handle body scroll and ESC key
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
+
   // Use the mutation hook for automatic query invalidation
   const updateInterviewMutation = useUpdateInterview();
   const deleteInterviewMutation = useDeleteInterview();
@@ -414,6 +437,13 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
     }));
   };
 
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen || !interview) return null;
 
   const candidate = interview.jobApplication?.candidate;
@@ -421,10 +451,13 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
   const scheduler = interview.scheduler;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
+    <div className="fixed top-0 left-0 right-0 bottom-0 z-[60] overflow-hidden" style={{ margin: 0, padding: 0 }}>
+      <div 
+        className="absolute inset-0 bg-black bg-opacity-50" 
+        onClick={handleOverlayClick} 
+      />
       
-      <div className="absolute inset-0 bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto">
+      <div className="absolute top-0 left-0 right-0 bottom-0 bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto" style={{ margin: 0, padding: 0 }}>
         {/* Header */}
         <div className="bg-purple-600 text-white p-6 sticky top-0 z-10">
           <div className="flex items-center justify-between">
@@ -523,9 +556,9 @@ export const InterviewDetailModal: React.FC<InterviewDetailModalProps> = ({
         </div>
 
         {/* Tab Content */}
-        <div className="p-8">
+        <div className="p-6">
           {activeTab === 'details' && (
-            <div className="max-w-7xl mx-auto space-y-6">
+            <div className="w-full space-y-6">
               {/* Basic Information */}
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Interview Information</h3>

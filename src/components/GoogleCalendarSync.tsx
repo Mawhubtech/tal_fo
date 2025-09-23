@@ -31,6 +31,35 @@ export const GoogleCalendarSync: React.FC<GoogleCalendarSyncProps> = ({
     }
   }, [isOpen]);
 
+  // Handle ESC key and body scroll
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      
+      // Handle ESC key
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        // Restore body scroll
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   const loadSettings = async () => {
     try {
       setLoading(true);
@@ -144,7 +173,7 @@ export const GoogleCalendarSync: React.FC<GoogleCalendarSyncProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleOverlayClick}>
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">Google Calendar Sync</h2>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   Globe, 
@@ -145,6 +145,30 @@ const OrganizationJobBoardsPage: React.FC = () => {
   const createConnectionMutation = useCreateJobBoardConnection();
   const updateConnectionMutation = useUpdateJobBoardConnection();
   const deleteConnectionMutation = useDeleteJobBoardConnection();
+
+  // Handle body scroll and ESC key for modal
+  useEffect(() => {
+    if (isAddModalOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setIsAddModalOpen(false);
+          setSelectedJobBoard(null);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isAddModalOpen]);
 
   // Transform API data to match component interface
   const mockJobBoards: OrganizationJobBoard[] = (jobBoardConnections?.data || []).map(connection => ({
@@ -376,6 +400,14 @@ const OrganizationJobBoardsPage: React.FC = () => {
       await deleteConnectionMutation.mutateAsync(connectionId);
     } catch (error) {
       console.error('Failed to delete job board connection:', error);
+    }
+  };
+
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setIsAddModalOpen(false);
+      setSelectedJobBoard(null);
     }
   };
 
@@ -861,7 +893,10 @@ const OrganizationJobBoardsPage: React.FC = () => {
       
       {/* Add Job Board Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={handleOverlayClick}
+        >
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <div>

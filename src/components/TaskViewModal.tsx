@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Edit, Calendar, Clock, User, Target, CheckSquare, Briefcase, AlertCircle } from 'lucide-react';
 import type { Task } from '../recruitment/organizations/services/taskApiService';
 import TaskStatusDropdown from './TaskStatusDropdown';
@@ -20,6 +20,35 @@ const TaskViewModal: React.FC<TaskViewModalProps> = ({
   onTaskUpdated = () => {}
 }) => {
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Handle ESC key and body scroll
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      
+      // Handle ESC key
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        // Restore body scroll
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -93,7 +122,7 @@ const TaskViewModal: React.FC<TaskViewModalProps> = ({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
         <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">

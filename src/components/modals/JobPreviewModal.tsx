@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, MapPin, DollarSign, Users, Calendar, Briefcase, Clock, CheckCircle } from 'lucide-react';
 import type { Job } from '../../recruitment/data/types';
 
@@ -9,6 +9,30 @@ interface JobPreviewModalProps {
 }
 
 const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job }) => {
+  // Handle body scroll and ESC key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Disable body scrolling
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Handle ESC key
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = originalStyle;
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Helper function to safely parse string or array fields
@@ -82,8 +106,18 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
     return job.postedDate || job.createdAt;
   };
 
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">

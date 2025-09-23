@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Save, Globe, Eye, Settings, Plus, Edit3, Trash2, AlertCircle, CheckCircle, XCircle, RefreshCw, ExternalLink, Monitor, ToggleLeft, ToggleRight } from 'lucide-react';
 import { jobBoardApiService, type JobBoard } from '../../services/jobBoardApiService';
@@ -48,6 +48,32 @@ const JobBoardConfigPage: React.FC = () => {
   };
 
   const stats = getJobBoardStats();
+
+  // Handle body scroll and ESC key for modals
+  useEffect(() => {
+    if (isViewModalOpen || isEditModalOpen || isAddModalOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setIsViewModalOpen(false);
+          setIsEditModalOpen(false);
+          setIsAddModalOpen(false);
+          setSelectedBoard(null);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isViewModalOpen, isEditModalOpen, isAddModalOpen]);
 
   const getStatusIcon = (status: JobBoard['status']) => {
     switch (status) {
@@ -108,6 +134,27 @@ const JobBoardConfigPage: React.FC = () => {
 
   const handleRefresh = () => {
     refetch();
+  };
+
+  // Handle overlay click for modals
+  const handleViewModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setIsViewModalOpen(false);
+      setSelectedBoard(null);
+    }
+  };
+
+  const handleEditModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setIsEditModalOpen(false);
+      setSelectedBoard(null);
+    }
+  };
+
+  const handleAddModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setIsAddModalOpen(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -491,7 +538,10 @@ const JobBoardConfigPage: React.FC = () => {
 
       {/* View Job Board Modal */}
       {isViewModalOpen && selectedBoard && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+          onClick={handleViewModalOverlayClick}
+        >
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">Job Board Details</h3>
@@ -594,7 +644,10 @@ const JobBoardConfigPage: React.FC = () => {
 
       {/* Edit Job Board Modal */}
       {isEditModalOpen && selectedBoard && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+          onClick={handleEditModalOverlayClick}
+        >
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">Edit Job Board</h3>
@@ -726,7 +779,10 @@ const JobBoardConfigPage: React.FC = () => {
 
       {/* Add Job Board Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+          onClick={handleAddModalOverlayClick}
+        >
           <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">Add New Job Board</h3>

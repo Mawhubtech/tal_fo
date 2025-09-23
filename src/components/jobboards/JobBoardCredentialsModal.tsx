@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Eye, EyeOff, Key, Globe, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useJobBoardConfig, useTestJobBoardConnection } from '../../hooks/useJobBoards';
 import type { JobBoardConfig, OrganizationJobBoard } from '../../services/jobBoardApiService';
@@ -54,6 +54,29 @@ const JobBoardCredentialsModal: React.FC<JobBoardCredentialsModalProps> = ({
     features: string[];
   } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Handle body scroll and ESC key
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isOpen, onClose]);
 
   const { data: jobBoardConfig, isLoading: configLoading } = useJobBoardConfig(jobBoardId);
   const testConnection = useTestJobBoardConnection();
@@ -118,6 +141,13 @@ const JobBoardCredentialsModal: React.FC<JobBoardCredentialsModalProps> = ({
     }
   };
 
+  // Handle overlay click
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   const isPasswordField = (fieldName: string) => {
     return fieldName.toLowerCase().includes('password') || 
            fieldName.toLowerCase().includes('secret') || 
@@ -134,7 +164,10 @@ const JobBoardCredentialsModal: React.FC<JobBoardCredentialsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center">

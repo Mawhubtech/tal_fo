@@ -372,6 +372,13 @@ const JobATSPage: React.FC = () => {
     closePipelineModal();
   };
 
+  // Handle overlay click for Pipeline Selector Modal
+  const handlePipelineSelectorOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      setShowPipelineSelector(false);
+    }
+  };
+
   // Pipeline creation/update handler
   const handlePipelineSubmit = async (data: CreatePipelineDto) => {
     try {
@@ -845,6 +852,29 @@ const JobATSPage: React.FC = () => {
       setSelectedUserDataForPanel(userDataForPanel);
     }
   }, [selectedCandidateDetails, selectedCandidateId]);
+
+  // Handle Pipeline Selector Modal body scroll and ESC key
+  useEffect(() => {
+    if (showPipelineSelector) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setShowPipelineSelector(false);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.removeEventListener('keydown', handleEsc);
+        // Restore body scroll when modal closes
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showPipelineSelector]);
 
   // Comprehensive function to invalidate all relevant queries
   const invalidateAllQueries = async () => {
@@ -1362,7 +1392,8 @@ const JobATSPage: React.FC = () => {
 			  pipelineId={effectivePipeline?.id}
 			  onDataChange={invalidateAllQueries}
 			/>
-		  </div>          <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
+		  </div>          
+		  <div style={{ display: activeTab === 'interviews' ? 'block' : 'none' }}>
 			<InterviewsTab 
 			  jobId={jobId!}
 			  jobTitle={job.title}
@@ -1532,7 +1563,10 @@ const JobATSPage: React.FC = () => {
 
 	  {/* Pipeline Selector Modal */}
 	  {showPipelineSelector && (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+		<div 
+		  className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+		  onClick={handlePipelineSelectorOverlayClick}
+		>
 		  <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
 			<div className="p-6">
 			  {/* Header */}
