@@ -22,6 +22,7 @@ import { SourcingProject, sourcingProjectApiService } from '../../services/sourc
 import LoadingSpinner from '../../components/LoadingSpinner';
 import QuickSearch from '../../components/QuickSearch';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import CompactSearchComponent from '../../components/CompactSearchComponent';
 
 const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
   const navigate = useNavigate();
@@ -299,7 +300,8 @@ const SourcingProjectsPage: React.FC = () => {
 
       {/* Quick Search Section - Moved to top and made more prominent */}
       <div className="mb-8">
-        <QuickSearch className="max-w-4xl mx-auto" />
+        {/* <QuickSearch className="max-w-4xl mx-auto" /> */}
+		<CompactSearchComponent showTitle={true} className="max-w-4xl mx-auto" />
       </div>
 
       {/* Search Bar - Full Width */}

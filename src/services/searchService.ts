@@ -304,6 +304,34 @@ class SearchService {
   }
 
   /**
+   * Search using external sources with rich candidate data (equivalent to /search/candidates/external)
+   * This provides the same detailed candidate information as the direct external search endpoint
+   */
+  async searchCandidatesExternalDirect(filters: SearchFilters, searchText?: string, pagination?: PaginationOptions): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      if (pagination?.limit) {
+        queryParams.append('limit', pagination.limit.toString());
+      }
+      
+      const url = `${this.baseURL}/candidates/external${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const response = await apiClient.post<SearchResponse>(url, {
+        filters,
+        searchText: searchText || ''
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('External direct search failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get candidate by ID (using existing candidate service)
    */
   async getCandidateById(id: string): Promise<Candidate | undefined> {
@@ -359,6 +387,7 @@ export const convertKeywordsToFilters = (keywords: ExtractedKeywords) => searchS
 export const extractEnhancedKeywords = (searchText: string) => searchService.extractEnhancedKeywords(searchText);
 export const convertEnhancedKeywordsToFilters = (keywords: any) => searchService.convertEnhancedKeywordsToFilters(keywords);
 export const searchEnhanced = (searchText: string, includeExternal?: boolean, pagination?: PaginationOptions) => searchService.searchEnhanced(searchText, includeExternal, pagination);
+export const searchCandidatesExternalDirect = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalDirect(filters, searchText, pagination);
 export const searchUsers = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchUsers(filters, searchText, pagination);
 export const searchCandidates = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidates(filters, searchText, pagination);
 export const getAllCandidates = () => searchService.getAllUsers();

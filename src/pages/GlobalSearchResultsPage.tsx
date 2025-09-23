@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Eye, Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Eye, Plus, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles } from 'lucide-react';
 import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../hooks/useSearch';
 import { useAddProspectsToProject } from '../hooks/useSourcingProjects';
 import { useShortlistExternalCandidate } from '../hooks/useShortlistExternal';
 import { useAuthContext } from '../contexts/AuthContext';
 import type { SearchFilters } from '../services/searchService';
-import { searchEnhanced } from '../services/searchService';
+import { searchEnhanced, searchCandidatesExternalDirect } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProjectSelectionModal from '../components/ProjectSelectionModal';
@@ -28,6 +28,7 @@ const GlobalSearchResultsPage: React.FC = () => {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [fromQuickSearch, setFromQuickSearch] = useState(false);
   const [isEnhanced, setIsEnhanced] = useState(false);
+  const [isBooleanSearch, setIsBooleanSearch] = useState(false);
   const [criticalRequirements, setCriticalRequirements] = useState<any>(null);
   const [preferredCriteria, setPreferredCriteria] = useState<any>(null);
   const [contextualHints, setContextualHints] = useState<any>(null);
@@ -69,12 +70,14 @@ const GlobalSearchResultsPage: React.FC = () => {
         isGlobalSearch, 
         fromQuickSearch,
         isEnhanced,
+        isBooleanSearch,
         criticalRequirements,
         preferredCriteria,
         contextualHints,
         newProjectId,
         candidateToShortlist,
-        shouldAutoShortlist
+        shouldAutoShortlist,
+        preloadedResults
       } = location.state;
       
       setSearchQuery(query || '');
@@ -82,18 +85,51 @@ const GlobalSearchResultsPage: React.FC = () => {
       setSearchMode(stateSearchMode || 'external');
       setFromQuickSearch(!!fromQuickSearch);
       setIsEnhanced(!!isEnhanced);
+      setIsBooleanSearch(!!isBooleanSearch);
       setCriticalRequirements(criticalRequirements || null);
       setPreferredCriteria(preferredCriteria || null);
       setContextualHints(contextualHints || null);
       
-      if (isGlobalSearch && query) {
-        console.log('GlobalSearchResults: Executing search for:', query);
+      if (isGlobalSearch && (query || preloadedResults)) {
+        console.log('GlobalSearchResults: Executing search for:', query || 'filter search');
         // Reset pagination state for new search
         setCurrentCursor(undefined);
         setNextCursor(undefined);
         setHasNextPage(false);
         setCurrentPage(1);
-        fetchResults(filters || {}, query, stateSearchMode || 'external', !!isEnhanced, undefined, true);
+        
+        // If we have preloaded results from QuickSearch, use them directly
+        if (preloadedResults) {
+          console.log('GlobalSearchResults: Using preloaded results:', preloadedResults);
+          console.log('GlobalSearchResults: Preloaded results type:', typeof preloadedResults);
+          console.log('GlobalSearchResults: Preloaded results.results:', preloadedResults.results);
+          console.log('GlobalSearchResults: Preloaded results.results length:', preloadedResults.results?.length || 0);
+          
+          const resultsToSet = preloadedResults.results || [];
+          console.log('GlobalSearchResults: Setting results array:', resultsToSet);
+          setResults(resultsToSet);
+          setIsLoading(false);
+          
+          // Set pagination info if available
+          if (preloadedResults.externalPagination) {
+            setNextCursor(preloadedResults.externalPagination.nextCursor);
+            setHasNextPage(preloadedResults.externalPagination.hasNextPage);
+            setCurrentPage(preloadedResults.externalPagination.currentPage || 1);
+          } else if (preloadedResults && typeof preloadedResults.page === 'number' && typeof preloadedResults.totalPages === 'number') {
+            // Handle standard pagination format from external direct search
+            const currentPageNum = preloadedResults.page || 1;
+            const totalPagesNum = preloadedResults.totalPages || 1;
+            const hasMorePages = currentPageNum < totalPagesNum;
+            console.log('GlobalSearchResults: Preloaded standard pagination - page:', currentPageNum, 'of', totalPagesNum, 'hasMore:', hasMorePages);
+            setHasNextPage(hasMorePages);
+            setNextCursor(hasMorePages ? (currentPageNum + 1).toString() : undefined);
+            setCurrentPage(currentPageNum);
+            console.log('GlobalSearchResults: Preloaded set hasNextPage:', hasMorePages, 'nextCursor:', hasMorePages ? (currentPageNum + 1).toString() : undefined);
+          }
+        } else if (query) {
+          // Only fetch results if we have a query and no preloaded results
+          fetchResults(filters || {}, query, stateSearchMode || 'external', !!isEnhanced, undefined, true);
+        }
       }
       
       // Handle auto-shortlisting after project creation
@@ -159,20 +195,42 @@ const GlobalSearchResultsPage: React.FC = () => {
       // If enhanced search wasn't used or failed, use standard search methods
       if (!useEnhanced || !searchResults) {
         console.log('GlobalSearchResults: Using standard search...');
-        const searchParams = {
-          filters,
-          searchText: query,
-          pagination: { page: 1, limit: 10 },
-          after: cursor
-        };
         
-        // Execute search based on mode
+        // For external search, prefer our direct external search for richer data
         if (searchMode === 'external') {
-          searchResults = await executeExternalSourceSearch(searchParams);
-        } else if (searchMode === 'combined') {
-          searchResults = await executeCombinedSearch(searchParams, true);
+          try {
+            console.log('GlobalSearchResults: Using direct external search for richer data...');
+            // Calculate page number from cursor or use 1 for initial search
+            const pageNumber = cursor ? parseInt(cursor) : 1;
+            searchResults = await searchCandidatesExternalDirect(filters, query, { 
+              page: pageNumber, 
+              limit: 10 
+            });
+          } catch (externalError) {
+            console.warn('GlobalSearchResults: Direct external search failed, using hook fallback:', externalError);
+            // Fallback to the existing hook method
+            const searchParams = {
+              filters,
+              searchText: query,
+              pagination: { page: 1, limit: 10 },
+              after: cursor
+            };
+            searchResults = await executeExternalSourceSearch(searchParams);
+          }
         } else {
-          searchResults = await executeSearch(searchParams);
+          // For other search modes, use existing methods
+          const searchParams = {
+            filters,
+            searchText: query,
+            pagination: { page: 1, limit: 10 },
+            after: cursor
+          };
+          
+          if (searchMode === 'combined') {
+            searchResults = await executeCombinedSearch(searchParams, true);
+          } else {
+            searchResults = await executeSearch(searchParams);
+          }
         }
       }
       
@@ -194,6 +252,15 @@ const GlobalSearchResultsPage: React.FC = () => {
       if (searchResults && searchResults.externalPagination) {
         setNextCursor(searchResults.externalPagination.nextCursor);
         setHasNextPage(searchResults.externalPagination.hasNextPage);
+      } else if (searchResults && typeof searchResults.page === 'number' && typeof searchResults.totalPages === 'number') {
+        // Handle standard pagination format from external direct search
+        const currentPageNum = searchResults.page || 1;
+        const totalPagesNum = searchResults.totalPages || 1;
+        const hasMorePages = currentPageNum < totalPagesNum;
+        console.log('GlobalSearchResults: Standard pagination - page:', currentPageNum, 'of', totalPagesNum, 'hasMore:', hasMorePages);
+        setHasNextPage(hasMorePages);
+        setNextCursor(hasMorePages ? (currentPageNum + 1).toString() : undefined);
+        console.log('GlobalSearchResults: Set hasNextPage:', hasMorePages, 'nextCursor:', hasMorePages ? (currentPageNum + 1).toString() : undefined);
       } else {
         setNextCursor(undefined);
         setHasNextPage(false);
@@ -238,8 +305,11 @@ const GlobalSearchResultsPage: React.FC = () => {
   // Handle pagination - load more results
   const handleNextPage = () => {
     if (hasNextPage && nextCursor && !isLoadingMore) {
-      console.log('GlobalSearchResults: Loading next page with cursor:', nextCursor);
+      console.log('GlobalSearchResults: Loading next page:', nextCursor, 'hasNextPage:', hasNextPage);
+      setIsLoadingMore(true);
       fetchResults(filters, searchQuery, searchMode, isEnhanced, nextCursor, false);
+    } else {
+      console.log('GlobalSearchResults: Cannot load more - hasNextPage:', hasNextPage, 'nextCursor:', nextCursor, 'isLoadingMore:', isLoadingMore);
     }
   };
 
@@ -610,10 +680,23 @@ const GlobalSearchResultsPage: React.FC = () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Global Search Results</h1>
-              <p className="text-gray-600">
-                Showing {results.length} candidates for "{searchQuery}"
-                {hasNextPage && <span className="text-purple-600"> • More results available</span>}
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-gray-600">
+                  Showing {results.length} candidates
+                  {searchQuery ? ` for "${searchQuery}"` : ' for your filter criteria'}
+                  {hasNextPage && <span className="text-purple-600"> • More results available</span>}
+                </p>
+                {isBooleanSearch && (
+                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                    Boolean Search
+                  </span>
+                )}
+                {isEnhanced && !isBooleanSearch && (
+                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                    AI Enhanced
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -653,83 +736,208 @@ const GlobalSearchResultsPage: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {results.map((result, index) => (
-                <div key={index} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                          <span className="text-purple-600 font-medium text-lg">
-                            {result.candidate?.fullName?.charAt(0) || result.fullName?.charAt(0) || '?'}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 
-                            className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-purple-600 transition-colors"
-                            onClick={() => {
-                              const userData = convertCandidateToUserData(result);
-                              handleOpenProfilePanel(userData, result.candidate?.id || result.id);
-                            }}
-                          >
-                            {result.candidate?.fullName || result.fullName || 'Unknown'}
-                          </h3>
-                          <p className="text-gray-600">
-                            {result.candidate?.currentPosition || result.currentPosition || 'Position not specified'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
-                        <div>
-                          <span className="font-medium">Location:</span>
-                          <div>{result.candidate?.location || result.location || 'Not specified'}</div>
-                        </div>
-                        <div>
-                          <span className="font-medium">Experience:</span>
-                          <div>{result.candidate?.yearsOfExperience || result.yearsOfExperience || 'Not specified'} years</div>
-                        </div>
-                        <div>
-                          <span className="font-medium">Company:</span>
-                          <div>{result.candidate?.currentCompany || result.currentCompany || 'Not specified'}</div>
-                        </div>
-                        <div>
-                          <span className="font-medium">Skills:</span>
-                          <div className="truncate">
-                            {result.candidate?.skills?.slice(0, 3).join(', ') || result.skills?.slice(0, 3).join(', ') || 'Not specified'}
+              {results.map((result, index) => {
+                const { candidate, matchCriteria, matchedCriteria } = result; // Backend returns CandidateMatchDto with candidate property and match criteria
+                // Ensure candidate exists
+                if (!candidate) {
+                    console.warn("Candidate data is missing for result:", result);
+                    return null; // Skip rendering this item
+                }
+                
+                // Map backend candidate structure to frontend expected structure
+                const personalInfo = {
+                  fullName: candidate.fullName || 'Unknown',
+                  email: candidate.email || '',
+                  location: candidate.location || 'Location not specified',
+                  linkedIn: candidate.linkedIn || candidate.linkedinUrl || '',
+                  github: candidate.github || '',
+                  avatar: candidate.avatar || ''
+                };
+                
+                const experience = candidate.experience || [];
+                // Extract skills from skillMappings structure
+                const skills = candidate.skillMappings 
+                  ? candidate.skillMappings.map(mapping => mapping.skill?.name).filter(Boolean)
+                  : (candidate.skills ? candidate.skills.map(skill => skill.name || skill) : []);
+                
+                return (
+                  <div key={candidate.id || index} className={`px-6 py-6 hover:bg-gray-50 transition-colors duration-200 ${index !== results.length - 1 ? 'border-b border-gray-200' : ''}`}>
+                    <div className="flex items-start">
+                      <input type="checkbox" className="mt-2 mr-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none" />
+                      <div className="flex-1">
+                        
+                        {/* Header with name and actions */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            {/* Avatar */}
+                            <div className="flex-shrink-0">
+                              {personalInfo.avatar ? (
+                                <img
+                                  src={personalInfo.avatar}
+                                  alt={`${personalInfo.fullName} avatar`}
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                  onError={(e) => {
+                                    // If image fails to load, hide it and show initials fallback
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              {/* Fallback initials avatar */}
+                              <div 
+                                className={`w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ${personalInfo.avatar ? 'hidden' : 'flex'}`}
+                                style={{ display: personalInfo.avatar ? 'none' : 'flex' }}
+                              >
+                                {personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                              </div>
+                            </div>
+                            
+                            <h3
+                              className="text-lg font-semibold cursor-pointer hover:text-purple-600 transition-colors duration-200 flex items-center gap-2"
+                              onClick={() => {
+                                const userData = convertCandidateToUserData(result);
+                                handleOpenProfilePanel(userData, candidate.id);
+                              }}
+                            >
+                              {personalInfo.fullName}
+                              {/* Icon indicates clickable, panel will open */}
+                              <svg className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </h3>
+                            
+                            {/* Social Links */}
+                            {personalInfo.linkedIn && (
+                                <a href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-600 transition-colors duration-200" title="LinkedIn">
+                                <span className="sr-only">LinkedIn</span>
+                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                                </a>
+                            )}
+                            {personalInfo.github && (
+                                <a href={personalInfo.github.startsWith('http') ? personalInfo.github : `https://${personalInfo.github}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-600 transition-colors duration-200" title="GitHub">
+                                <span className="sr-only">GitHub</span>
+                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                                </a>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => handleShortlistCandidate(candidate)}
+                              disabled={shortlistingCandidates[candidate.id]}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors flex items-center gap-2 text-sm"
+                            >
+                              {shortlistingCandidates[candidate.id] ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  Shortlisting...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-3 w-3" />
+                                  Shortlist
+                                </>
+                              )}
+                            </button>
                           </div>
                         </div>
+
+                        {/* Current Position */}
+                        <div className="text-sm text-gray-500 mb-3">
+                          {experience && experience.length > 0 && (
+                            <p className="flex items-center gap-1">
+                              <Building className="h-4 w-4" />
+                              {experience[0].position} at {experience[0].company}
+                              <span className="mx-1.5">•</span>
+                              <MapPin className="h-4 w-4" />
+                              {personalInfo.location}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Match Criteria */}
+                        {(matchCriteria || matchedCriteria) && (
+                          <div className="mb-3 p-3 bg-purple-100 rounded-lg border border-purple-200">
+                            <h4 className="text-sm font-medium text-purple-900 mb-2 flex items-center gap-1">
+                              <Search className="h-4 w-4" />
+                              Match Criteria
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {matchCriteria?.titleMatch && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
+                                  ✓ Job Title Match
+                                </span>
+                              )}
+                              {matchCriteria?.locationMatch && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
+                                  ✓ Location Match
+                                </span>
+                              )}
+                              {matchCriteria?.skillsMatch && matchCriteria.skillsMatch.length > 0 && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
+                                  <Code className="h-3 w-3 mr-1" />
+                                  {matchCriteria.skillsMatch.length} Skills: {matchCriteria.skillsMatch.slice(0, 2).join(', ')}
+                                  {matchCriteria.skillsMatch.length > 2 && ` +${matchCriteria.skillsMatch.length - 2} more`}
+                                </span>
+                              )}
+                              {matchedCriteria && Array.isArray(matchedCriteria) && matchedCriteria.length > 0 && (
+                                <>
+                                  {matchedCriteria.slice(0, 3).map((criteria, i) => (
+                                    <span key={i} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
+                                      ✓ {criteria}
+                                    </span>
+                                  ))}
+                                  {matchedCriteria.length > 3 && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
+                                      +{matchedCriteria.length - 3} more matches
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Experience Summary */}
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600">
+                            <span
+                              className="font-medium cursor-pointer hover:text-purple-600 transition-colors"
+                              onClick={() => {
+                                const userData = convertCandidateToUserData(result);
+                                handleOpenProfilePanel(userData, candidate.id);
+                              }}
+                            >
+                              {personalInfo.fullName.split(' ')[0]}
+                            </span>
+                            {experience?.[0]?.company ? ` has been a ${experience[0].position} at ${experience[0].company}` : ' has relevant experience'}
+                            {experience?.[0]?.startDate && ` since ${new Date(experience[0].startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
+                            {experience && experience.length > 1 && experience[1].position && `, with prior experience as a ${experience[1].position}`}.
+                          </p>
+                        </div>
+
+                        {/* Skills */}
+                        <div className="mt-3">
+                          {skills && skills.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {skills.slice(0, 4).map((skill: string, i: number) => (
+                                <span key={i} className="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
+                                  {skill}
+                                </span>
+                              ))}
+                              {skills.length > 4 && (
+                                <span className="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-500 rounded">
+                                  +{skills.length - 4} more
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="flex flex-col gap-2 ml-4">
-                      <button
-                        onClick={() => handleShortlistCandidate(result.candidate || result)}
-                        disabled={shortlistingCandidates[result.candidate?.id || result.id]}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
-                      >
-                        {shortlistingCandidates[result.candidate?.id || result.id] ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            Shortlisting...
-                          </>
-                        ) : (
-                          'Shortlist'
-                        )}
-                      </button>
-                      <button 
-                        onClick={() => {
-                          const userData = convertCandidateToUserData(result);
-                          handleOpenProfilePanel(userData, result.candidate?.id || result.id);
-                        }}
-                        className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View Profile
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               
               {/* Load More Button */}
               {hasNextPage && (

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Sparkles, Filter, FileText, ToggleRight } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
-import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters } from '../services/searchService';
+import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect } from '../services/searchService';
+import BooleanSearchParser from '../services/booleanSearchParser';
 
 interface QuickSearchProps {
   onSearchClick?: () => void;
@@ -30,51 +31,123 @@ const QuickSearch: React.FC<QuickSearchProps> = ({ onSearchClick, className = ''
     setIsSearching(true);
     
     try {
-      // First try enhanced search with priority classification
-      let keywords, filters;
+      // Check if this is a boolean search query
+      const isBooleanQuery = searchQuery.includes('+Keywords:') || 
+                           searchQuery.includes('+Job title:') || 
+                           searchQuery.includes('+Location:');
       
-      try {
-        // Extract enhanced keywords with priority classification
-        keywords = await extractEnhancedKeywords(searchQuery);
+      let keywords, filters, searchResults;
+      
+      if (isBooleanQuery) {
+        console.log('QuickSearch: Detected boolean search query');
         
-        // Convert enhanced keywords to filters with must/should logic
-        filters = await convertEnhancedKeywordsToFilters(keywords);
+        // Validate boolean query
+        const validation = BooleanSearchParser.validateQuery(searchQuery);
+        if (!validation.isValid) {
+          addToast({
+            type: 'error',
+            title: 'Invalid Boolean Query',
+            message: validation.errors.join(', ')
+          });
+          return;
+        }
         
-        console.log("QuickSearch: Using enhanced search with filters:", filters);
+        // Parse boolean query
+        const parsedQuery = BooleanSearchParser.parseQuery(searchQuery);
+        filters = BooleanSearchParser.convertToSearchFilters(parsedQuery);
         
-        // Navigate to global search results with enhanced data
-        navigate('/dashboard/search-results', {
-          state: {
-            query: searchQuery,
-            filters: filters,
-            searchMode: 'external', // Default to external search for quick search
-            isGlobalSearch: true,
-            fromQuickSearch: true,
-            isEnhanced: true,
-            criticalRequirements: keywords.criticalRequirements,
-            preferredCriteria: keywords.preferredCriteria,
-            contextualHints: keywords.contextualHints
-          }
-        });
-      } catch (enhancedError) {
-        console.warn('QuickSearch: Enhanced search failed, using fallback:', enhancedError);
+        console.log('QuickSearch: Parsed boolean query filters:', filters);
         
-        // Fallback to regular keyword extraction
-        keywords = await extractKeywords(searchQuery);
-        filters = await convertKeywordsToFilters(keywords);
+        // Use the direct external search with boolean filters
+        try {
+          searchResults = await searchCandidatesExternalDirect(filters, searchQuery, { page: 1, limit: 10 });
+          console.log('QuickSearch: Got boolean search results:', searchResults);
+        } catch (searchError) {
+          console.warn('QuickSearch: Boolean search failed:', searchError);
+        }
         
-        console.log("QuickSearch: Using fallback search with filters:", filters);
-        
-        // Navigate to global search results with standard data
+        // Navigate with boolean search results
         navigate('/dashboard/search-results', {
           state: {
             query: searchQuery,
             filters: filters,
             searchMode: 'external',
             isGlobalSearch: true,
-            fromQuickSearch: true
+            fromQuickSearch: true,
+            isBooleanSearch: true,
+            preloadedResults: searchResults
           }
         });
+      } else {
+        // Handle regular search queries
+        try {
+          // Extract enhanced keywords with priority classification
+          keywords = await extractEnhancedKeywords(searchQuery);
+          
+          // Convert enhanced keywords to filters with must/should logic
+          filters = await convertEnhancedKeywordsToFilters(keywords);
+          
+          console.log("QuickSearch: Using enhanced keyword extraction with filters:", filters);
+          
+          // Now use the direct external search to get rich candidate data
+          searchResults = await searchCandidatesExternalDirect(filters, searchQuery, { page: 1, limit: 10 });
+          
+          console.log("QuickSearch: Got rich search results:", searchResults);
+          
+          // Navigate to global search results with the actual search results
+          navigate('/dashboard/search-results', {
+            state: {
+              query: searchQuery,
+              filters: filters,
+              searchMode: 'external',
+              isGlobalSearch: true,
+              fromQuickSearch: true,
+              isEnhanced: true,
+              criticalRequirements: keywords.criticalRequirements,
+              preferredCriteria: keywords.preferredCriteria,
+              contextualHints: keywords.contextualHints,
+              preloadedResults: searchResults // Pass the actual results
+            }
+          });
+        } catch (enhancedError) {
+          console.warn('QuickSearch: Enhanced search failed, using fallback:', enhancedError);
+          
+          // Fallback to regular keyword extraction
+          keywords = await extractKeywords(searchQuery);
+          filters = await convertKeywordsToFilters(keywords);
+          
+          console.log("QuickSearch: Using fallback search with filters:", filters);
+          
+          try {
+            // Try to get search results with fallback filters
+            searchResults = await searchCandidatesExternalDirect(filters, searchQuery, { page: 1, limit: 10 });
+            
+            // Navigate to global search results with fallback results
+            navigate('/dashboard/search-results', {
+              state: {
+                query: searchQuery,
+                filters: filters,
+                searchMode: 'external',
+                isGlobalSearch: true,
+                fromQuickSearch: true,
+                preloadedResults: searchResults
+              }
+            });
+          } catch (fallbackError) {
+            console.error('QuickSearch: Fallback search also failed:', fallbackError);
+            
+            // Final fallback - navigate without preloaded results
+            navigate('/dashboard/search-results', {
+              state: {
+                query: searchQuery,
+                filters: filters,
+                searchMode: 'external',
+                isGlobalSearch: true,
+                fromQuickSearch: true
+              }
+            });
+          }
+        }
       }
       
       if (onSearchClick) {

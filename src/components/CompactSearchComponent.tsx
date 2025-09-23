@@ -7,33 +7,37 @@ import {
   Filter,
   Sparkles,
   X,
-  AlertTriangle,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
-import FilterDialog, { FilterState } from '../components/FilterDialog';
+import FilterDialog, { FilterState } from './FilterDialog';
 import BooleanSearchDialog from '../sourcing/search/components/BooleanSearchDialog';
 import JobDescriptionDialog from '../recruitment/components/JobDescriptionDialog';
-import AIEnhancementModal from '../components/AIEnhancementModal';
+import AIEnhancementModal from './AIEnhancementModal';
 import { useAIQuery } from '../hooks/ai';
 import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect } from '../services/searchService';
 import BooleanSearchParser from '../services/booleanSearchParser';
 import type { SearchFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
-import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../hooks/useSearch';
 
-export interface GlobalSearchRef {
+export interface CompactSearchRef {
   clearSearch: () => void;
 }
 
-const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {  
+interface CompactSearchComponentProps {
+  className?: string;
+  showTitle?: boolean;
+  placeholder?: string;
+}
+
+const CompactSearchComponent = forwardRef<CompactSearchRef, CompactSearchComponentProps>(({ 
+  className = '', 
+  showTitle = false,
+  placeholder = "Search for candidates..."
+}, ref) => {  
   const navigate = useNavigate();
   const location = useLocation();
   const { addToast } = useToast();
-  
-  // Search hooks for different modes
-  const databaseSearch = useSearch();
-  const externalSourceSearch = useExternalSourceSearch();
-  const combinedSearch = useCombinedSearch();
   
   const [searchQuery, setSearchQuery] = useState('');  
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
@@ -41,26 +45,12 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
   const [isAIEnhancementModalOpen, setIsAIEnhancementModalOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external'); // Default to external search
+  const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external');
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
-  // Handle state from other pages
-  useEffect(() => {
-    if (location.state) {
-      const { query, fromQuickSearch } = location.state;
-      if (query) {
-        setSearchQuery(query);
-        if (fromQuickSearch) {
-          // Auto-trigger search if coming from quick search
-          setTimeout(() => handleAISearch(), 100);
-        }
-      }
-    }
-  }, [location.state]);
-
-  // AI hook for search enhancement
+  // AI query hook
   const aiQuery = useAIQuery();
 
-  // Expose clear functionality through ref
   useImperativeHandle(ref, () => ({
     clearSearch: () => {
       setSearchQuery('');
@@ -68,15 +58,36 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     }
   }));
 
-  // Function to enhance search with AI
+  // Handle state from other pages
+  useEffect(() => {
+    if (location.state) {
+      const { query, fromQuickSearch } = location.state;
+      if (query) {
+        setSearchQuery(query);
+      }
+      // Clear the state after using it
+      if (fromQuickSearch) {
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state]);
+
   const enhanceSearchWithAI = async () => {
     if (!searchQuery.trim()) return;
 
     try {
       await aiQuery.query({
-        prompt: `Enhance this job search query to be more specific and effective: "${searchQuery}"`,
-        systemPrompt: "You are a recruitment specialist. Help enhance job search queries to be more effective and specific.",
-        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+        prompt: `Please enhance this recruitment search query: "${searchQuery}"`,
+        systemPrompt: `You are a recruitment expert. Enhance the user's search query to be more comprehensive and effective for finding candidates. 
+            
+Guidelines:
+- Keep the core intent but expand with relevant keywords and synonyms
+- Add industry-relevant terms and skills
+- Include alternative job titles and experience levels
+- Maintain the original language and tone
+- Make it 2-3x more detailed while staying focused
+- Don't add unrealistic requirements`,
+        model: 'gpt-4-turbo-preview',
         max_tokens: 500
       });
     } catch (error) {
@@ -105,7 +116,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
       let keywords, filters, searchResults;
       
       if (isBooleanQuery) {
-        console.log('GlobalSearch: Detected boolean search query');
+        console.log('CompactSearch: Detected boolean search query');
         
         // Validate boolean query
         const validation = BooleanSearchParser.validateQuery(searchQuery);
@@ -123,7 +134,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
         const parsedQuery = BooleanSearchParser.parseQuery(searchQuery);
         filters = BooleanSearchParser.convertToSearchFilters(parsedQuery);
         
-        console.log('GlobalSearch: Parsed boolean query filters:', filters);
+        console.log('CompactSearch: Parsed boolean query filters:', filters);
         
         // Get rich search results using external direct search
         if (searchMode === 'external' || searchMode === 'combined') {
@@ -178,7 +189,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
               criticalRequirements: keywords.criticalRequirements,
               preferredCriteria: keywords.preferredCriteria,
               contextualHints: keywords.contextualHints,
-              preloadedResults: searchResults // Pass the actual results if we got them
+              preloadedResults: searchResults
             }
           });
         } catch (enhancedError) {
@@ -222,30 +233,6 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
       });
     } finally {
       setIsSearching(false);
-    }
-  };
-
-  // Execute search with current filters
-  const runSearch = async (filters: SearchFilters) => {
-    setIsSearching(true);
-    try {
-      // Navigate to global search results
-      navigate('/dashboard/search-results', {
-        state: {
-          query: searchQuery,
-          filters: filters,
-          searchMode: searchMode,
-          isGlobalSearch: true
-        }
-      });
-    } catch (error) {
-      console.error('Error with search navigation:', error);
-      setIsSearching(false);
-      addToast({
-        type: 'error',
-        title: 'Search Failed',
-        message: 'Failed to process search. Please try again.'
-      });
     }
   };
 
@@ -319,7 +306,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     try {
       // Convert FilterState to SearchFilters format
       const filters = convertFilterStateToSearchFilters(filterState);
-      console.log('GlobalSearchComponent: Converted filters:', filters);
+      console.log('CompactSearch: Converted filters:', filters);
       
       let searchResults;
       
@@ -328,8 +315,8 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
         try {
           // Use external search with the applied filters
           searchResults = await searchCandidatesExternalDirect(filters, searchQuery || '', { page: 1, limit: 10 });
-          console.log("GlobalSearchComponent: Got filtered search results:", searchResults);
-          console.log("GlobalSearchComponent: Results count:", searchResults?.results?.length || 0);
+          console.log("CompactSearch: Got filtered search results:", searchResults);
+          console.log("CompactSearch: Results count:", searchResults?.results?.length || 0);
         } catch (searchError) {
           console.warn("Filter search failed, will navigate without preloaded results:", searchError);
         }
@@ -444,182 +431,139 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex justify-center items-start pt-20 min-h-screen">
-        {/* Centered Search Section */}
-        <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg border border-gray-200 p-8">
-          {/* AI Error Display */}
-          {aiQuery.error && (
-            <div className="w-full mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">Error enhancing search: {aiQuery.error}</p>
-              <button 
-                onClick={aiQuery.reset}
-                className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
+    <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
+      {/* AI Error Display */}
+      {aiQuery.error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-700">Error enhancing search: {aiQuery.error}</p>
+          <button 
+            onClick={aiQuery.reset}
+            className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
-          {/* Logo and title */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div></div> {/* Spacer */}
-              <h1 className="text-2xl font-bold text-gray-900">Global Talent Search</h1>
+      <div className="p-6">
+        {/* Title */}
+        {showTitle && (
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Global Talent Search</h2>
+            <p className="text-sm text-gray-600">Search across all talent databases</p>
+          </div>
+        )}
+        
+        {/* Search Input */}
+        <div className="mb-4">
+          <div className="relative">
+            <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-3 border border-gray-200 hover:border-purple-300 transition-colors">
+              <SearchIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder={placeholder}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim() && !isSearching) {
+                    handleAISearch();
+                  }
+                }}
+              />
               {searchQuery.trim() && (
-                <button
+                <button 
                   onClick={() => {
                     setSearchQuery('');
                     aiQuery.reset();
                   }}
-                  className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                  title="Clear search and start fresh"
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-md transition-colors flex-shrink-0"
+                  title="Clear search"
                 >
-                  <X className="w-4 h-4 mr-1" />
-                  Clear
+                  <X className="w-4 h-4" />
                 </button>
               )}
-              {!searchQuery.trim() && <div></div>} {/* Spacer when no clear button */}
-            </div>
-            <p className="text-gray-500 text-sm">
-              Search across all talent databases without creating a project.
-            </p>
-          </div>
-
-          {/* Project Notice */}
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-amber-800 mb-1">Project Required for Shortlisting</h4>
-                <p className="text-sm text-amber-700 mb-3">
-                  You can search and view candidate profiles globally. When you find candidates to shortlist, 
-                  you'll be prompted to create or select a project to organize your prospects.
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => navigate('/dashboard/sourcing/projects/create')}
-                    className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create Project Now
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard/sourcing/projects')}
-                    className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    View My Projects
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Who are you looking for section */}
-          <div className="w-full mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <SearchIcon className="w-5 h-5 text-purple-600" />
-              <h2 className="text-lg font-medium text-gray-700">Who are you looking for?</h2>
-            </div>
-            
-            <div className="relative">
-              <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3 border border-gray-200 hover:border-purple-300 transition-colors">
-                <SearchIcon className="w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Software Engineers with 5+ yrs of experience at fintech companies..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && searchQuery.trim() && !isSearching) {
-                      handleAISearch();
-                    }
-                  }}
-                />
-                {searchQuery.trim() && (
-                  <button 
-                    onClick={() => {
-                      setSearchQuery('');
-                      aiQuery.reset();
-                    }}
-                    className="text-gray-400 hover:text-gray-600 p-1 rounded-md transition-colors"
-                    title="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-                {searchQuery.trim() && !aiQuery.loading && (
-                  <button 
-                    onClick={enhanceSearchWithAI}
-                    className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-2 rounded-md transition-colors"
-                    title="Enhance with AI"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                  </button>
-                )}
-                {aiQuery.loading && (
-                  <div className="p-2">
-                    <div className="w-4 h-4 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Search Button */}
-          <div className="w-full mb-6">
-            <button 
-              onClick={handleAISearch}
-              disabled={!searchQuery.trim() || isSearching}
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-4 rounded-lg text-lg font-medium transition-colors flex items-center justify-center gap-3"
-            >
-              {isSearching ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <SearchIcon className="w-5 h-5" />
-                  Search Candidates
-                </>
+              {searchQuery.trim() && !aiQuery.loading && (
+                <button 
+                  onClick={enhanceSearchWithAI}
+                  className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-2 rounded-md transition-colors flex-shrink-0"
+                  title="Enhance with AI"
+                >
+                  <Sparkles className="w-4 h-4" />
+                </button>
               )}
-            </button>
-          </div>
-
-          {/* Action buttons */}
-          <div className="w-full">
-            <p className="text-sm text-gray-600 text-center mb-4">Or use advanced search options:</p>
-            <div className="flex justify-center space-x-4">
-              <button
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-4 py-2 rounded-lg transition-colors"
-                onClick={() => setIsJobDescriptionDialogOpen(true)}
-                title="Search from Job Description"
-              >
-                <FileText className="w-4 h-4" />
-                Job Description
-              </button>
-
-              <button
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-4 py-2 rounded-lg transition-colors"
-                onClick={() => setIsBooleanDialogOpen(true)}
-                title="Boolean Search"
-              >
-                <ToggleRight className="w-4 h-4" />
-                Boolean Search
-              </button>
-              
-              <button
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-4 py-2 rounded-lg transition-colors"
-                onClick={() => setIsFilterDialogOpen(true)}
-                title="Advanced Filters"
-              >
-                <Filter className="w-4 h-4" />
-                Advanced Filters
-              </button>
+              {aiQuery.loading && (
+                <div className="p-2 flex-shrink-0">
+                  <div className="w-4 h-4 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
             </div>
           </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-3">
+          {/* Main Search Button */}
+          <button 
+            onClick={handleAISearch}
+            disabled={!searchQuery.trim() || isSearching}
+            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            {isSearching ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Searching...
+              </>
+            ) : (
+              <>
+                <SearchIcon className="w-4 h-4" />
+                Search Candidates
+              </>
+            )}
+          </button>
+
+          {/* Advanced Options Toggle */}
+          <button
+            onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+            className="flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-purple-600 transition-colors"
+          >
+            Advanced Options
+            <ChevronDown className={`w-4 h-4 transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Advanced Options */}
+          {showAdvancedOptions && (
+            <div className="pt-2 border-t border-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  className="flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg transition-colors text-sm"
+                  onClick={() => setIsJobDescriptionDialogOpen(true)}
+                  title="Search from Job Description"
+                >
+                  <FileText className="w-4 h-4" />
+                  Job Description
+                </button>
+
+                <button
+                  className="flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg transition-colors text-sm"
+                  onClick={() => setIsBooleanDialogOpen(true)}
+                  title="Boolean Search"
+                >
+                  <ToggleRight className="w-4 h-4" />
+                  Boolean Search
+                </button>
+                
+                <button
+                  className="flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg transition-colors text-sm"
+                  onClick={() => setIsFilterDialogOpen(true)}
+                  title="Advanced Filters"
+                >
+                  <Filter className="w-4 h-4" />
+                  Advanced Filters
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -649,17 +593,17 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
         isOpen={isAIEnhancementModalOpen}
         onClose={() => {
           setIsAIEnhancementModalOpen(false);
-          aiQuery.reset(); // Reset AI query state when modal is closed/cancelled
+          aiQuery.reset();
         }}
         content={aiQuery.data?.content || ''}
         onUseEnhancedQuery={(enhancedQuery) => {
           setSearchQuery(enhancedQuery);
           setIsAIEnhancementModalOpen(false);
-          aiQuery.reset(); // Reset AI query state after using enhanced query
+          aiQuery.reset();
         }}
       />
     </div>
   );
 });
 
-export default GlobalSearchComponent;
+export default CompactSearchComponent;
