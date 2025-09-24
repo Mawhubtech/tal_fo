@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import { X, Sparkles } from 'lucide-react';
 
@@ -15,6 +16,32 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
   content,
   onUseEnhancedQuery
 }) => {
+  // Enhanced modal behavior hooks
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      // Handle ESC key
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }
+      };
+
+      // Use capture phase to ensure we get the event first
+      document.addEventListener('keydown', handleEsc, true);
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.removeEventListener('keydown', handleEsc, true);
+      };
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleUseQuery = () => {
@@ -22,17 +49,23 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
     // Don't call onClose() here - let the parent component handle it
   };
 
-  return (
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return createPortal(
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn"
-      onClick={(e) => {
-        // Close modal when clicking on backdrop
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4 animate-fadeIn"
+      onClick={handleOverlayClick}
     >
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl transform animate-scaleIn flex flex-col">
+      <div 
+        className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl transform animate-scaleIn flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -98,7 +131,8 @@ const AIEnhancementModal: React.FC<AIEnhancementModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

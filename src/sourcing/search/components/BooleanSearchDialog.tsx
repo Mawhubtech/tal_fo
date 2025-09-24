@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, HelpCircle, BookOpen, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { SearchFilters } from '../../../services/searchService';
 import BooleanSearchParser from '../../../services/booleanSearchParser';
@@ -13,6 +14,32 @@ const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClo
   const [booleanExpression, setBooleanExpression] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [validation, setValidation] = useState<{ isValid: boolean; errors: string[] }>({ isValid: true, errors: [] });
+
+  // Enhanced modal behavior hooks
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      // Handle ESC key
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }
+      };
+
+      // Use capture phase to ensure we get the event first
+      document.addEventListener('keydown', handleEsc, true);
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.removeEventListener('keydown', handleEsc, true);
+      };
+    }
+  }, [isOpen, onClose]);
 
   const handleExpressionChange = (value: string) => {
     setBooleanExpression(value);
@@ -59,9 +86,23 @@ const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClo
 
   const examples = BooleanSearchParser.getExampleQueries();
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black/75 flex items-center justify-center z-[9999] p-4"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -179,7 +220,8 @@ const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClo
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

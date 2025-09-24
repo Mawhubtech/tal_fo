@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   MapPin,
@@ -380,6 +381,32 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
     }
   }, [isOpen, initialFilters]);
 
+  // Enhanced modal behavior hooks
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      // Handle ESC key
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }
+      };
+
+      // Use capture phase to ensure we get the event first
+      document.addEventListener('keydown', handleEsc, true);
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.removeEventListener('keydown', handleEsc, true);
+      };
+    }
+  }, [isOpen, onClose]);
+
   const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
   }, []);
@@ -444,9 +471,23 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col">
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black/75 flex items-center justify-center z-[9999] p-4"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-gray-200 p-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Search Filters</h2>
@@ -802,7 +843,8 @@ const FilterDialog: React.FC<FilterDialogProps> = ({
 
 </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

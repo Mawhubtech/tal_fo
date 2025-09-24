@@ -31,21 +31,26 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
         onClose();
       }
     };
 
     // Prevent body scroll
     document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', handleEscape);
+    // Use capture phase to ensure we get the event first
+    document.addEventListener('keydown', handleEscape, true);
 
     return () => {
       document.body.style.overflow = 'unset';
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleEscape, true);
     };
   }, [isOpen, onClose]);
 
   const handleOverlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (e.target === e.currentTarget) {
       onClose();
     }
