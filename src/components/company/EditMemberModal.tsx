@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, User, Shield, Building, UserCheck, UserX, Edit, Save, Link as LinkIcon, Check } from 'lucide-react';
 import { CompanyMember } from '../../services/companyApiService';
 import { 
@@ -82,6 +83,33 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
       setActiveTab('company');
     }
   }, [isOpen, member]);
+
+  // Enhanced modal behavior - ESC key and body scroll prevention
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const getRoleOptions = () => {
     if (companyType === 'external_hr_agency') {
@@ -237,9 +265,15 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
   const roleOptions = getRoleOptions();
   const isOwner = member.role === 'owner';
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden">
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Edit Team Member</h2>
           <button
@@ -677,7 +711,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

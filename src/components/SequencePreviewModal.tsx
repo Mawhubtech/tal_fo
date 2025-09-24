@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { EmailSequence } from '../services/emailSequencesApiService';
 import { X, Clock, Send, MessageSquare, Phone, Calendar, Linkedin } from 'lucide-react';
 
@@ -9,6 +10,31 @@ interface SequencePreviewModalProps {
 }
 
 const SequencePreviewModal: React.FC<SequencePreviewModalProps> = ({ sequence, onClose, onEdit }) => {
+  // Enhanced modal behavior - ESC key and body scroll prevention
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [onClose]);
+
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   const getStepIcon = (type: string) => {
     switch (type) {
       case 'email':
@@ -56,9 +82,15 @@ const SequencePreviewModal: React.FC<SequencePreviewModalProps> = ({ sequence, o
 
   const steps = sequence.steps || [];
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="bg-purple-600 text-white p-6">
           <div className="flex items-start justify-between">
@@ -271,7 +303,8 @@ const SequencePreviewModal: React.FC<SequencePreviewModalProps> = ({ sequence, o
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

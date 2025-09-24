@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Search, Users, User, Crown, UserCheck, MessageSquare, Calendar, Gavel, Shield, Eye, Plus, Minus } from 'lucide-react';
 import { useTeamMembers, useAddTeamMember, useRemoveTeamMember } from '../../hooks/useHiringTeam';
 import { useCompanyMembers } from '../../hooks/useCompany';
@@ -76,6 +77,29 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
   const addMemberMutation = useAddTeamMember();
   const removeMemberMutation = useRemoveTeamMember();
 
+  // Enhanced modal behavior hooks
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      // Handle ESC key
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      document.addEventListener('keydown', handleEsc);
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [isOpen, onClose]);
+
   const companyMembers = companyMembersData?.members || [];
 
   // Get team member user IDs for filtering
@@ -147,9 +171,21 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col">
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -345,6 +381,7 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

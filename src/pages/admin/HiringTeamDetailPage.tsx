@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Edit, Users, Settings, Archive, Trash2,
@@ -57,6 +58,29 @@ const HiringTeamDetailPage: React.FC = () => {
   const { data: userClients = [], isLoading: loadingClients } = useUserClients();
   const updateTeamMutation = useUpdateHiringTeam();
   const deleteTeamMutation = useDeleteHiringTeam();
+
+  // Enhanced modal behavior for edit modal
+  useEffect(() => {
+    if (isEditModalOpen) {
+      // Prevent body scroll when modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      // Handle ESC key
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setIsEditModalOpen(false);
+        }
+      };
+
+      document.addEventListener('keydown', handleEsc);
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [isEditModalOpen]);
 
   const openEditModal = useCallback(() => {
     if (!team) return;
@@ -585,9 +609,19 @@ const HiringTeamDetailPage: React.FC = () => {
         </div>
 
         {/* Edit Team Modal */}
-        {isEditModalOpen && team && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+        {isEditModalOpen && team && createPortal(
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setIsEditModalOpen(false);
+              }
+            }}
+          >
+            <div 
+              className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -758,7 +792,8 @@ const HiringTeamDetailPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Delete Confirmation */}

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Search, 
@@ -53,6 +54,29 @@ const JobAssignmentModal: React.FC<JobAssignmentModalProps> = ({
   const unassignJobMutation = useUnassignJobFromTeam();
   const bulkAssignMutation = useBulkAssignJobsToTeam();
   const bulkUnassignMutation = useBulkUnassignJobsFromTeam();
+
+  // Enhanced modal behavior hooks
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      // Handle ESC key
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      document.addEventListener('keydown', handleEsc);
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [isOpen, onClose]);
 
   // Filter jobs based on search
   const filteredAvailableJobs = useMemo(() => {
@@ -256,9 +280,21 @@ const JobAssignmentModal: React.FC<JobAssignmentModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col">
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999]"
+      onClick={handleOverlayClick}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -504,7 +540,8 @@ const JobAssignmentModal: React.FC<JobAssignmentModalProps> = ({
       </div>
 
       <ToastContainer />
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, UserPlus, AlertCircle, Users } from 'lucide-react';
 import { useInviteMember, useCheckUserExists } from '../../hooks/useCompany';
 import { useRoles } from '../../hooks/useAdminUsers';
@@ -68,6 +69,33 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   const systemRoles = Array.isArray(rolesData) ? rolesData : rolesData?.roles || [];
   const availableRoles = filterRolesByCompanyType(systemRoles, companyType);
   const roleDescriptions = getRoleDescriptionsForCompanyType(companyType);
+
+  // Enhanced modal behavior - ESC key and body scroll prevention
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+
+  // Handle overlay click to close modal
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -220,11 +248,17 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
 
   const roleOptions = getRoleOptions();
 
-  return (
+  return createPortal(
     <>
       {/* Main Invitation Modal */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-        <div className="bg-white rounded-lg shadow-xl max-w-lg w-full m-4">
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+        onClick={handleOverlayClick}
+      >
+        <div 
+          className="bg-white rounded-lg shadow-xl max-w-lg w-full m-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center justify-between p-6 border-b">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -345,8 +379,11 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
 
       {/* Create User Confirmation Modal */}
       {showCreateUserConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full m-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-lg w-full m-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between p-6 border-b">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -432,6 +469,7 @@ export const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 };
