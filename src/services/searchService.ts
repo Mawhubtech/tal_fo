@@ -324,9 +324,15 @@ class SearchService {
         searchText: searchText || ''
       });
 
+      console.log('🔍 External search response:', response.data);
+      console.log('🔍 Results count:', response.data?.results?.length || 0);
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response headers:', response.headers);
+      
       return response.data;
     } catch (error) {
-      console.error('External direct search failed:', error);
+      console.error('❌ External direct search failed:', error);
+      console.error('❌ Error details:', error.response?.data);
       throw error;
     }
   }

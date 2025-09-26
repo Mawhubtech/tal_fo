@@ -24,6 +24,8 @@ export interface PersonalInfo {
   website?: string;
   linkedIn?: string;
   github?: string;
+  facebook?: string;
+  twitter?: string;
   avatar?: string;
 }
 

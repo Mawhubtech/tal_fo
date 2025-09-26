@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, Award, FileBadge2, Heart, Mail, Phone, Languages } from 'lucide-react'; // Ensure these icons are installed
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, Award, FileBadge2, Heart, Mail, Phone, Languages, Settings } from 'lucide-react'; // Ensure these icons are installed
 import Button from '../../../components/Button'; // Adjust path to your Button component if necessary
 import CandidateProspectsManager from '../../../components/CandidateProspectsManager';
 import CandidateNotes from './CandidateNotes';
@@ -14,6 +14,8 @@ export interface PersonalInfo {
   website?: string;
   linkedIn?: string;
   github?: string;
+  facebook?: string;
+  twitter?: string;
   avatar?: string;
 }
 
@@ -39,6 +41,34 @@ export interface Education {
   major?: string;
   courses?: string[];
   honors?: string[];
+  
+  // Enhanced PDL fields
+  fieldOfStudy?: string;
+  startYear?: number;
+  endYear?: number;
+  institutionLocation?: string;
+  institutionWebsite?: string;
+  institutionDomain?: string;
+  institutionLinkedIn?: string;
+  institutionType?: string;
+  gpa?: number | null;
+  minors?: string;
+  socialProfiles?: {
+    linkedin?: string;
+    facebook?: string;
+    twitter?: string;
+    website?: string;
+  };
+  pdlMetadata?: {
+    schoolId?: string;
+    linkedinId?: string;
+    schoolType?: string;
+    hasLocation?: boolean;
+    hasGpa?: boolean;
+    degreesCount?: number;
+    majorsCount?: number;
+    minorsCount?: number;
+  };
 }
 
 export interface Project {
@@ -166,7 +196,12 @@ interface ProfileSidePanelProps {
 const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, candidateId, projectId }) => {
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs
-  const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(false); // For collapsing candidate actions
+  const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(true); // For collapsing candidate actions - hidden by default
+  
+  // Refs for scroll-based tab switching
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
   if (!userData || panelState === 'closed') {
     return null;
   }
@@ -271,19 +306,82 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
     return bStartDate.getTime() - aStartDate.getTime();
   });
 
-  // Main profile tabs for the 2/3 section
-  const profileTabs = [
-    { name: 'Experience', icon: Briefcase, index: 0, count: sortedExperience?.length || 0 },
-    { name: 'Education', icon: GraduationCap, index: 1, count: sortedEducation?.length || 0 },
-    { name: 'Skills', icon: Zap, index: 2, count: skills?.length || 0 },
-    { name: 'Projects', icon: FolderOpen, index: 3, count: projects?.length || 0 },
-    { name: 'Certifications', icon: FileBadge2, index: 4, count: certifications?.length || 0 },
-    { name: 'Awards', icon: Award, index: 5, count: awards?.length || 0 },
-    { name: 'Languages', icon: Languages, index: 6, count: languages?.length || 0 },
-    { name: 'Interests', icon: Heart, index: 7, count: interests?.length || 0 },
-    { name: 'References', icon: Mail, index: 8, count: references?.length || 0 },
-    { name: 'Custom Fields', icon: FileText, index: 9, count: customFields?.length || 0 },
+  // Main profile tabs for the 2/3 section - filter out empty tabs
+  const allProfileTabs = [
+    { name: 'Experience', icon: Briefcase, index: 0, count: sortedExperience?.length || 0, data: sortedExperience },
+    { name: 'Education', icon: GraduationCap, index: 1, count: sortedEducation?.length || 0, data: sortedEducation },
+    { name: 'Skills', icon: Zap, index: 2, count: skills?.length || 0, data: skills },
+    { name: 'Projects', icon: FolderOpen, index: 3, count: projects?.length || 0, data: projects },
+    { name: 'Certifications', icon: FileBadge2, index: 4, count: certifications?.length || 0, data: certifications },
+    { name: 'Awards', icon: Award, index: 5, count: awards?.length || 0, data: awards },
+    { name: 'Languages', icon: Languages, index: 6, count: languages?.length || 0, data: languages },
+    { name: 'Interests', icon: Heart, index: 7, count: interests?.length || 0, data: interests },
+    { name: 'References', icon: Mail, index: 8, count: references?.length || 0, data: references },
+    { name: 'Custom Fields', icon: FileText, index: 9, count: customFields?.length || 0, data: customFields },
   ];
+  
+  // Filter out empty tabs and re-index
+  const profileTabs = allProfileTabs
+    .filter(tab => tab.count > 0)
+    .map((tab, index) => ({ ...tab, originalIndex: tab.index, index }));
+  
+  // Reset active tab if current tab is out of bounds
+  useEffect(() => {
+    if (activeTab >= profileTabs.length && profileTabs.length > 0) {
+      setActiveTab(0);
+    }
+  }, [profileTabs.length, activeTab]);
+
+  // Auto-switch tabs based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!scrollContainerRef.current || profileTabs.length === 0) return;
+      
+      const scrollContainer = scrollContainerRef.current;
+      const scrollTop = scrollContainer.scrollTop;
+      const containerHeight = scrollContainer.clientHeight;
+      
+      // Find which section is most visible
+      let newActiveTab = 0;
+      let maxVisibility = 0;
+      
+      sectionRefs.current.forEach((section, index) => {
+        if (section && index < profileTabs.length) {
+          const rect = section.getBoundingClientRect();
+          const containerRect = scrollContainer.getBoundingClientRect();
+          
+          const sectionTop = rect.top - containerRect.top;
+          const sectionBottom = rect.bottom - containerRect.top;
+          
+          // Calculate how much of the section is visible
+          const visibleTop = Math.max(0, sectionTop);
+          const visibleBottom = Math.min(containerHeight, sectionBottom);
+          const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+          const sectionHeight = rect.height;
+          
+          const visibility = sectionHeight > 0 ? visibleHeight / sectionHeight : 0;
+          
+          if (visibility > maxVisibility && visibility > 0.3) { // 30% threshold
+            maxVisibility = visibility;
+            newActiveTab = index;
+          }
+        }
+      });
+      
+      setActiveTab(newActiveTab);
+    };
+    
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      // Initial check
+      handleScroll();
+      
+      return () => {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [profileTabs.length]);
 
   // Side panel tabs for the 1/3 section (candidate management)
   const sideTabs = [
@@ -294,7 +392,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
   if (panelState === 'collapsed') {
     return (
-      <div className="fixed inset-y-0 right-0 w-1/3 bg-white shadow-2xl z-50 flex">
+      <div className="fixed inset-y-0 right-0 w-full sm:w-2/3 md:w-1/2 lg:w-1/3 bg-white shadow-2xl z-50 flex">
         {/* Profile Info Section - Full width in collapsed view */}
         <div className="flex-1 w-full flex flex-col">
           {/* Panel Header - Sticky */}
@@ -316,19 +414,27 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               <div className="flex items-center">
                 <Button
                   variant="primary"
-                  onClick={() => onStateChange('expanded')}
-                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 p-2"
-                  aria-label="Expand Panel"
-                >
-                  <ChevronLeft size={20} />
-                </Button>
-                <Button
-                  variant="primary"
                   onClick={() => onStateChange('closed')}
-                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 p-2 ml-1"
+                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 p-2"
                   aria-label="Close Panel"
                 >
                   <X size={20} />
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => setIsCandidateActionsCollapsed(!isCandidateActionsCollapsed)}
+                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 p-2 ml-1"
+                  aria-label="Toggle Actions"
+                >
+                  <Settings size={20} />
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => onStateChange('expanded')}
+                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 p-2 ml-1"
+                  aria-label="Expand Panel"
+                >
+                  <ChevronLeft size={20} />
                 </Button>
               </div>
             </div>
@@ -401,6 +507,34 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
               
+              {personalInfo.facebook && (
+                <div className="flex items-center text-sm">
+                  <Globe className="w-4 h-4 text-blue-400 mr-2 flex-shrink-0" />
+                  <a 
+                    href={personalInfo.facebook.startsWith('http') ? personalInfo.facebook : `https://${personalInfo.facebook}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-700 hover:text-blue-600 transition-colors truncate"
+                  >
+                    Facebook Profile
+                  </a>
+                </div>
+              )}
+              
+              {personalInfo.twitter && (
+                <div className="flex items-center text-sm">
+                  <Globe className="w-4 h-4 text-sky-400 mr-2 flex-shrink-0" />
+                  <a 
+                    href={personalInfo.twitter.startsWith('http') ? personalInfo.twitter : `https://${personalInfo.twitter}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-700 hover:text-sky-600 transition-colors truncate"
+                  >
+                    Twitter Profile
+                  </a>
+                </div>
+              )}
+              
               {personalInfo.website && personalInfo.website.trim() && (
                 <div className="flex items-center text-sm">
                   <ExternalLink className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
@@ -418,30 +552,33 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
           </div> 
 
           {/* Scrollable Content Area - Collapsed view with tabs */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col">
             {/* AI-Powered Spotlight (Using Summary) */}
             {summary && (
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-4 sm:p-6 border-b border-gray-100">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">AI-Powered Spotlight</h3>
                 <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
               </div>
             )}
 
-            {/* Tabs Navigation */}
-            <div className="border-b border-gray-200">
-              <nav className="flex px-6" aria-label="Tabs">
+            {/* Tabs Navigation - Responsive */}
+            <div className="border-b border-gray-200 sticky top-0 bg-white z-10">
+              <nav className="flex px-4 sm:px-6 overflow-x-auto" aria-label="Tabs" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
                 {profileTabs.map((tab) => (
                   <button
                     key={tab.name}
-                    onClick={() => setActiveTab(tab.index)}
+                    onClick={() => {
+                      setActiveTab(tab.index);
+                    }}
                     className={`${
                       activeTab === tab.index
                         ? 'border-purple-500 text-purple-600 font-semibold'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-3 px-1 border-b-2 text-xs flex items-center gap-1 mr-4`}
+                    } whitespace-nowrap py-3 px-2 sm:px-3 border-b-2 text-xs flex items-center gap-1 mr-2 sm:mr-4 flex-shrink-0`}
                   >
                     <tab.icon className="w-3.5 h-3.5" />
-                    {tab.name}
+                    <span className="hidden sm:inline">{tab.name}</span>
+                    <span className="sm:hidden">{tab.name.slice(0, 3)}</span>
                     {tab.count > 0 && (
                       <span className={`${
                         activeTab === tab.index ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
@@ -454,10 +591,10 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               </nav>
             </div>
 
-            {/* Tab Content - Compact view for collapsed state */}
-            <div className="flex-1 overflow-y-auto p-4">
+            {/* Tab Content - Scrollable with section refs */}
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
               {/* Experience Tab */}
-              {activeTab === 0 && (
+              {profileTabs[activeTab]?.originalIndex === 0 && (
                 <div>
                   {sortedExperience && sortedExperience.length > 0 ? (
                     <div className="space-y-5">
@@ -514,30 +651,83 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Education Tab */}
-              {activeTab === 1 && (
+              {profileTabs[activeTab]?.originalIndex === 1 && (
                 <div>
                   {sortedEducation && sortedEducation.length > 0 ? (
                     <div className="space-y-4">
                       {sortedEducation.map((edu, index) => (
                         <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== sortedEducation.length - 1 ? "mb-4" : ""}`}>
                           <div className="flex justify-between items-start">
-                            <div className="flex">
+                            <div className="flex flex-1">
                               <div className="mr-3 mt-1">
                                 <GraduationCap className="h-5 w-5 text-blue-600" />
                               </div>
-                              <div>
-                                <h4 className="font-medium text-gray-900">{edu.degree}</h4>
-                                <p className="text-sm text-gray-600">{edu.institution}</p>
-                                {edu.location && <p className="text-xs text-gray-500 mt-0.5">{edu.location}</p>}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium text-gray-900">{edu.degree}</h4>
+                                  {edu.gpa && (
+                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                      GPA: {edu.gpa}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Institution with enhanced details */}
+                                <div className="mt-1">
+                                  {edu.institutionWebsite ? (
+                                    <a 
+                                      href={edu.institutionWebsite.startsWith('http') ? edu.institutionWebsite : `https://${edu.institutionWebsite}`}
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                    >
+                                      {edu.institution}
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm text-gray-600">{edu.institution}</p>
+                                  )}
+                                  
+                                  {/* Institution type */}
+                                  {edu.institutionType && (
+                                    <span className="ml-2 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                      {edu.institutionType}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Location with priority for institutionLocation */}
+                                {(edu.institutionLocation || edu.location) && (
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    📍 {edu.institutionLocation || edu.location}
+                                  </p>
+                                )}
                               </div>
                             </div>
+                            
                             <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
-                              {edu.startDate && edu.endDate ? `${formatDateForDisplay(edu.startDate)} - ${formatDateForDisplay(edu.endDate)}` : 
+                              {/* Enhanced date handling with year support */}
+                              {edu.startYear && edu.endYear ? `${edu.startYear} - ${edu.endYear}` :
+                               edu.startDate && edu.endDate ? `${formatDateForDisplay(edu.startDate)} - ${formatDateForDisplay(edu.endDate)}` : 
                                edu.graduationDate ? formatDateForDisplay(edu.graduationDate) :
+                               edu.startYear ? `${edu.startYear} - Present` :
                                edu.startDate ? `${formatDateForDisplay(edu.startDate)} - Present` : ''}
                             </div>
                           </div>
-                          {edu.major && <p className="text-xs text-gray-600 mt-1 ml-8">Major: {edu.major}</p>}
+                          
+                          {/* Field of Study / Major */}
+                          {(edu.fieldOfStudy || edu.major) && (
+                            <p className="text-xs text-gray-600 mt-1 ml-8">
+                              Major: {edu.fieldOfStudy || edu.major}
+                            </p>
+                          )}
+                          
+                          {/* Minors */}
+                          {edu.minors && (
+                            <p className="text-xs text-gray-600 mt-0.5 ml-8">
+                              Minors: {edu.minors}
+                            </p>
+                          )}
+                          
                           {edu.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{edu.description}</p>}
                           
                           {edu.courses && edu.courses.length > 0 && (
@@ -563,6 +753,62 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                               </ul>
                             </div>
                           )}
+                          
+                          {/* Enhanced Institution Links & Social Profiles */}
+                          {edu.socialProfiles && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <h5 className="text-xs font-medium mb-2 text-gray-700">Institution Links:</h5>
+                              <div className="flex flex-wrap gap-2">
+                                {edu.socialProfiles.website && (
+                                  <a 
+                                    href={edu.socialProfiles.website.startsWith('http') ? edu.socialProfiles.website : `https://${edu.socialProfiles.website}`}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-xs transition-colors"
+                                  >
+                                    🌐 Website
+                                  </a>
+                                )}
+                                {edu.socialProfiles.linkedin && (
+                                  <a 
+                                    href={edu.socialProfiles.linkedin.startsWith('http') ? edu.socialProfiles.linkedin : `https://${edu.socialProfiles.linkedin}`}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-xs transition-colors"
+                                  >
+                                    💼 LinkedIn
+                                  </a>
+                                )}
+                                {edu.socialProfiles.facebook && (
+                                  <a 
+                                    href={edu.socialProfiles.facebook.startsWith('http') ? edu.socialProfiles.facebook : `https://${edu.socialProfiles.facebook}`}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-xs transition-colors"
+                                  >
+                                    📘 Facebook
+                                  </a>
+                                )}
+                                {edu.socialProfiles.twitter && (
+                                  <a 
+                                    href={edu.socialProfiles.twitter.startsWith('http') ? edu.socialProfiles.twitter : `https://${edu.socialProfiles.twitter}`}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-xs transition-colors"
+                                  >
+                                    🐦 Twitter
+                                  </a>
+                                )}
+                              </div>
+                              
+                              {/* Institution Domain */}
+                              {edu.institutionDomain && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  Domain: {edu.institutionDomain}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -576,7 +822,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Skills Tab */}
-              {activeTab === 2 && (
+              {profileTabs[activeTab]?.originalIndex === 2 && (
                 <div>
                   {skills && skills.length > 0 ? (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
@@ -601,7 +847,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                   )}
                 </div>
               )}              {/* Projects Tab */}
-              {activeTab === 3 && (
+              {profileTabs[activeTab]?.originalIndex === 3 && (
                 <div>
                   {projects && projects.length > 0 ? (
                     <div className="space-y-4">
@@ -672,7 +918,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Certifications Tab */}
-              {activeTab === 4 && (
+              {profileTabs[activeTab]?.originalIndex === 4 && (
                 <div>
                   {certifications && certifications.length > 0 ? (
                     <div className="space-y-4">
@@ -706,7 +952,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Awards Tab */}
-              {activeTab === 5 && (
+              {profileTabs[activeTab]?.originalIndex === 5 && (
                 <div>
                   {awards && awards.length > 0 ? (
                     <div className="space-y-4">
@@ -740,7 +986,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Languages Tab */}
-              {activeTab === 6 && (
+              {profileTabs[activeTab]?.originalIndex === 6 && (
                 <div>
                   {languages && languages.length > 0 ? (
                     <div className="space-y-4">
@@ -804,7 +1050,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Interests Tab */}
-              {activeTab === 7 && (
+              {profileTabs[activeTab]?.originalIndex === 7 && (
                 <div>
                   {interests && interests.length > 0 ? (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
@@ -831,7 +1077,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* References Tab */}
-              {activeTab === 8 && (
+              {profileTabs[activeTab]?.originalIndex === 8 && (
                 <div>
                   {references && references.length > 0 ? (
                     <div className="space-y-4">
@@ -898,7 +1144,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Custom Fields Tab */}
-              {activeTab === 9 && (
+              {profileTabs[activeTab]?.originalIndex === 9 && (
                 <div>
                   {customFields && customFields.length > 0 ? (
                     <div className="space-y-4">
@@ -951,23 +1197,31 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
 
   // Expanded state - full panel covering 2/3 of page width
   return (
-    <div className="fixed inset-y-0 right-0 w-2/3 bg-white shadow-2xl z-50 flex">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-4/5 md:w-3/4 lg:w-2/3 bg-white shadow-2xl z-50 flex">
       {/* Profile Info Section - Responsive width based on candidate actions state */}
       <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'w-2/3'} flex flex-col border-r border-gray-200 transition-all duration-300 ease-in-out`}>
         {/* Panel Header - Sticky */}
         <div className="sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center">
-              <Button 
-                variant="primary" 
-                onClick={() => onStateChange('collapsed')} 
-                className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 flex items-center text-sm p-2 rounded-md mr-1"
-              >
-                <ChevronRight size={20} />
-                 <span className="ml-1 font-medium">Collapse</span>
+              <Button variant="primary" onClick={() => onStateChange('closed')} className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 flex items-center text-sm p-2 rounded-md mr-2">
+                <X size={18} className="mr-1" /> Back to Search
               </Button>
-            </div>            <Button variant="primary" onClick={() => onStateChange('closed')} className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 flex items-center text-sm p-2 rounded-md">
-              <X size={18} className="mr-1" /> Back to Search
+              <Button
+                variant="primary"
+                onClick={() => setIsCandidateActionsCollapsed(!isCandidateActionsCollapsed)}
+                className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 flex items-center text-sm p-2 rounded-md mr-2"
+              >
+                <Settings size={18} className="mr-1" /> Actions
+              </Button>
+            </div>
+            <Button 
+              variant="primary" 
+              onClick={() => onStateChange('collapsed')} 
+              className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 flex items-center text-sm p-2 rounded-md"
+            >
+              <ChevronRight size={20} />
+              <span className="ml-1 font-medium">Collapse</span>
             </Button>
           </div>
         </div>
@@ -1073,8 +1327,8 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
           )}
 
           {/* Tabs Navigation */}
-          <div className="border-b border-gray-200">
-            <nav className="flex px-6" aria-label="Tabs">
+          <div className="border-b border-gray-200 sticky top-0 bg-white z-10">
+            <nav className="flex px-4 sm:px-6 overflow-x-auto" aria-label="Tabs" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
               {profileTabs.map((tab) => (
                 <button
                   key={tab.name}
@@ -1083,10 +1337,11 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                     activeTab === tab.index
                       ? 'border-purple-600 text-purple-700 font-semibold'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-3 px-1 border-b-2 text-sm flex items-center gap-1.5 mr-6`}
+                  } whitespace-nowrap py-3 px-2 sm:px-3 border-b-2 text-sm flex items-center gap-1.5 mr-3 sm:mr-6 flex-shrink-0`}
                 >
                   <tab.icon className="w-4 h-4" />
-                  {tab.name}
+                  <span className="hidden sm:inline">{tab.name}</span>
+                  <span className="sm:hidden">{tab.name.slice(0, 3)}</span>
                   {tab.count > 0 && (
                     <span className={`${
                       activeTab === tab.index ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
@@ -1102,7 +1357,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto p-6">
             {/* Experience Tab */}
-            {activeTab === 0 && (
+            {profileTabs[activeTab]?.originalIndex === 0 && (
               <div>
                 {sortedExperience && sortedExperience.length > 0 ? (
                   <div className="space-y-5">
@@ -1159,7 +1414,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
             )}
 
             {/* Education Tab */}
-            {activeTab === 1 && (
+            {profileTabs[activeTab]?.originalIndex === 1 && (
               <div>
                 {sortedEducation && sortedEducation.length > 0 ? (
                   <div className="space-y-4">
@@ -1221,7 +1476,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
             )}
 
             {/* Skills Tab */}
-            {activeTab === 2 && (
+            {profileTabs[activeTab]?.originalIndex === 2 && (
               <div>
                 {skills && skills.length > 0 ? (
                   <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
@@ -1248,7 +1503,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
             )}
 
             {/* Projects Tab */}
-              {activeTab === 3 && (
+              {profileTabs[activeTab]?.originalIndex === 3 && (
                 <div>
                   {projects && projects.length > 0 ? (
                     <div className="space-y-4">
@@ -1319,7 +1574,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Certifications Tab */}
-              {activeTab === 4 && (
+              {profileTabs[activeTab]?.originalIndex === 4 && (
                 <div>
                   {certifications && certifications.length > 0 ? (
                     <div className="space-y-4">
@@ -1353,7 +1608,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Awards Tab */}
-              {activeTab === 5 && (
+              {profileTabs[activeTab]?.originalIndex === 5 && (
                 <div>
                   {awards && awards.length > 0 ? (
                     <div className="space-y-4">
@@ -1387,7 +1642,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Languages Tab */}
-              {activeTab === 6 && (
+              {profileTabs[activeTab]?.originalIndex === 6 && (
                 <div>
                   {languages && languages.length > 0 ? (
                     <div className="space-y-4">
@@ -1451,7 +1706,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Interests Tab */}
-              {activeTab === 7 && (
+              {profileTabs[activeTab]?.originalIndex === 7 && (
                 <div>
                   {interests && interests.length > 0 ? (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
@@ -1478,7 +1733,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* References Tab */}
-              {activeTab === 8 && (
+              {profileTabs[activeTab]?.originalIndex === 8 && (
                 <div>
                   {references && references.length > 0 ? (
                     <div className="space-y-4">
@@ -1545,7 +1800,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Custom Fields Tab */}
-              {activeTab === 9 && (
+              {profileTabs[activeTab]?.originalIndex === 9 && (
                 <div>
                   {customFields && customFields.length > 0 ? (
                     <div className="space-y-4">
