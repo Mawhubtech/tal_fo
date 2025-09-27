@@ -491,6 +491,23 @@ class SearchService {
       throw error;
     }
   }
+
+  /**
+   * Generate AI-powered profile analysis for a candidate
+   */
+  async generateProfileAnalysis(candidateData: any, searchContext?: { query?: string; filters?: SearchFilters }): Promise<{ summary: string; keyHighlights: string[] }> {
+    try {
+      const response = await apiClient.post(`${this.baseURL}/profile-analysis`, {
+        candidateData,
+        searchContext
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error generating profile analysis:', error);
+      throw error;
+    }
+  }
 }
 export const searchService = new SearchService();
 
@@ -509,3 +526,5 @@ export const getAllCandidates = () => searchService.getAllUsers();
 export const getCandidateById = (id: string) => searchService.getCandidateById(id);
 export const shortlistExternalCandidate = (coreSignalId: number, candidateData: any, createdBy: string) => 
   searchService.shortlistExternalCandidate(coreSignalId, candidateData, createdBy);
+export const generateProfileAnalysis = (candidateData: any, searchContext?: { query?: string; filters?: SearchFilters }) => 
+  searchService.generateProfileAnalysis(candidateData, searchContext);

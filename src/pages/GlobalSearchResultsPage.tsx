@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Eye, Plus, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, Filter, X, ChevronDown, ChevronUp, Layers, KeySquare, GraduationCap, Zap, Command, Briefcase, Globe } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Eye, Plus, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, Filter, X, ChevronDown, ChevronUp, Layers, KeySquare, GraduationCap, Zap, Command, Briefcase, Globe, User } from 'lucide-react';
 import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../hooks/useSearch';
 import { useAddProspectsToProject } from '../hooks/useSourcingProjects';
 import { useShortlistExternalCandidate } from '../hooks/useShortlistExternal';
+import { useProfileAnalysis } from '../hooks/useProfileAnalysis';
 import { useAuthContext } from '../contexts/AuthContext';
 import type { SearchFilters } from '../services/searchService';
 import { searchEnhanced, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced, fetchCachedEnhancedResults } from '../services/searchService';
@@ -16,7 +17,7 @@ import { FilterState } from '../components/FilterDialog';
 
 // Helper function to create default FilterState
 const createDefaultFilterState = (): FilterState => ({
-  general: { minExperience: '0', maxExperience: '', requiredContactInfo: '', hideViewedProfiles: '', onlyConnections: '' },
+  general: { minExperience: '', maxExperience: '', requiredContactInfo: '', hideViewedProfiles: '', onlyConnections: '' },
   location: { currentLocations: [], pastLocations: [], radius: '25', timezone: false },
   job: { titles: [], skills: [] },
   company: { names: [], industries: [], size: '' },
@@ -45,7 +46,7 @@ const parseEnhancedFilters = (filtersData: any): SearchFilters => {
   // If it has the enhanced structure (mustFilters, shouldFilters), transform it
   if (parsedFilters.mustFilters || parsedFilters.shouldFilters) {
     const result: SearchFilters = {
-      general: { minExperience: '0', maxExperience: '', requiredContactInfo: '', hideViewedProfiles: '', onlyConnections: '' },
+      general: { minExperience: '', maxExperience: '', requiredContactInfo: '', hideViewedProfiles: '', onlyConnections: '' },
       location: { currentLocations: [], pastLocations: [], radius: '25', timezone: false },
       job: { titles: [], skills: [] },
       company: { names: [], industries: [], size: '' },
@@ -410,6 +411,212 @@ const GlobalSearchResultsPage: React.FC = () => {
       console.log('❌ QueryHash is null - pagination will use new search');
     }
   }, [queryHash]);
+
+  // Helper function to highlight keywords in text with improved relevance
+  const highlightKeywords = (text: string, keywords: string[] = [], candidate?: any) => {
+    if (!text || keywords.length === 0) return text;
+    
+    // Expanded stop words to exclude from highlighting
+    const stopWords = new Set([
+      'the', 'is', 'was', 'are', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 
+      'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must',
+      'can', 'shall', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 
+      'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below',
+      'between', 'among', 'under', 'over', 'out', 'off', 'down', 'during', 'against',
+      'and', 'or', 'but', 'so', 'yet', 'nor', 'if', 'then', 'else', 'when', 'where',
+      'how', 'why', 'what', 'who', 'which', 'that', 'this', 'these', 'those', 'i',
+      'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my',
+      'your', 'his', 'its', 'our', 'their', 'mine', 'yours', 'ours', 'theirs', 'a', 'an',
+      'as', 'an', 'all', 'any', 'each', 'every', 'some', 'many', 'most', 'few', 'both',
+      'either', 'neither', 'more', 'less', 'much', 'little', 'very', 'too', 'quite',
+      'rather', 'just', 'only', 'also', 'even', 'still', 'already', 'yet', 'again',
+      'once', 'twice', 'here', 'there', 'everywhere', 'anywhere', 'somewhere', 'nowhere',
+      'now', 'then', 'today', 'tomorrow', 'yesterday', 'always', 'never', 'sometimes',
+      'often', 'usually', 'rarely', 'seldom', 'frequently', 'occasionally'
+    ]);
+    
+    // Get more intelligent highlighting keywords
+    const getRelevantKeywords = () => {
+      const relevantKeywords = new Set<string>();
+      
+      // Add explicit search keywords (filter out stop words)
+      if (searchQuery) {
+        searchQuery.split(/[\s,]+/).forEach(word => {
+          const cleanWord = word.toLowerCase().trim().replace(/[^\w]/g, '');
+          if (cleanWord.length > 2 && !stopWords.has(cleanWord)) {
+            relevantKeywords.add(cleanWord);
+          }
+        });
+      }
+      
+      // Add job titles from search filters
+      if (filters?.job?.titles) {
+        filters.job.titles.forEach(title => {
+          // Add the full title if it's a meaningful phrase
+          const cleanTitle = title.toLowerCase().trim();
+          if (cleanTitle.length > 3 && cleanTitle.split(' ').length <= 4) {
+            relevantKeywords.add(cleanTitle);
+          }
+          
+          // Also add individual significant words
+          title.split(/[\s,]+/).forEach(word => {
+            const cleanWord = word.toLowerCase().trim().replace(/[^\w]/g, '');
+            if (cleanWord.length > 2 && !stopWords.has(cleanWord)) {
+              relevantKeywords.add(cleanWord);
+            }
+          });
+        });
+      }
+      
+      // Add skills from search filters
+      if (filters?.job?.skills) {
+        filters.job.skills.forEach(skill => {
+          // Add the full skill if it's a meaningful phrase
+          const cleanSkill = skill.toLowerCase().trim();
+          if (cleanSkill.length > 2) {
+            relevantKeywords.add(cleanSkill);
+          }
+          
+          // Also add individual significant words for compound skills
+          skill.split(/[\s,]+/).forEach(word => {
+            const cleanWord = word.toLowerCase().trim().replace(/[^\w]/g, '');
+            if (cleanWord.length > 2 && !stopWords.has(cleanWord)) {
+              relevantKeywords.add(cleanWord);
+            }
+          });
+        });
+      }
+      
+      // Add skills keywords from search filters
+      if (filters?.skillsKeywords?.items) {
+        filters.skillsKeywords.items.forEach(keyword => {
+          keyword.split(/[\s,]+/).forEach(word => {
+            const cleanWord = word.toLowerCase().trim().replace(/[^\w]/g, '');
+            if (cleanWord.length > 2 && !stopWords.has(cleanWord)) {
+              relevantKeywords.add(cleanWord);
+            }
+          });
+        });
+      }
+      
+      // Add company names from search filters
+      if (filters?.company?.names) {
+        filters.company.names.forEach(company => {
+          company.split(/[\s,]+/).forEach(word => {
+            const cleanWord = word.toLowerCase().trim().replace(/[^\w]/g, '');
+            if (cleanWord.length > 2 && !stopWords.has(cleanWord)) {
+              relevantKeywords.add(cleanWord);
+            }
+          });
+        });
+      }
+      
+      // Add candidate's own skills if available for context-aware highlighting
+      if (candidate?.skillMappings) {
+        candidate.skillMappings.forEach((skillMapping: any) => {
+          if (skillMapping.skill?.name) {
+            const skill = skillMapping.skill.name.toLowerCase().trim();
+            if (skill.length > 2 && !stopWords.has(skill)) {
+              // Only add skills that are also in search context
+              const contextText = (searchQuery || '').toLowerCase();
+              const filterSkills = [
+                ...(filters?.job?.skills || []),
+                ...(filters?.skillsKeywords?.items || [])
+              ].map(s => s.toLowerCase());
+              
+              if (contextText.includes(skill) || 
+                  filterSkills.some(fs => fs.includes(skill) || skill.includes(fs))) {
+                relevantKeywords.add(skill);
+              }
+            }
+          }
+        });
+      }
+      
+      // Add current position keywords if relevant to search
+      if (candidate?.currentPosition) {
+        const positionWords = candidate.currentPosition.split(/[\s,]+/);
+        positionWords.forEach(word => {
+          const cleanWord = word.toLowerCase().trim().replace(/[^\w]/g, '');
+          if (cleanWord.length > 2 && !stopWords.has(cleanWord)) {
+            const contextText = (searchQuery || '').toLowerCase();
+            const filterTitles = (filters?.job?.titles || []).map(t => t.toLowerCase());
+            
+            if (contextText.includes(cleanWord) || 
+                filterTitles.some(title => title.includes(cleanWord))) {
+              relevantKeywords.add(cleanWord);
+            }
+          }
+        });
+      }
+      
+      // Add technology/technical keywords that are commonly relevant
+      const techKeywords = [
+        'javascript', 'python', 'java', 'react', 'angular', 'vue', 'node', 'typescript',
+        'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'api', 'microservices', 'devops',
+        'sql', 'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch', 'kafka',
+        'machine', 'learning', 'artificial', 'intelligence', 'blockchain', 'cloud',
+        'frontend', 'backend', 'fullstack', 'mobile', 'ios', 'android', 'flutter',
+        'fintech', 'healthcare', 'e-commerce', 'saas', 'startup', 'enterprise',
+        'finance', 'financial', 'cfo', 'director', 'manager', 'analyst', 'consultant',
+        'leadership', 'management', 'strategy', 'operations', 'technology', 'digital'
+      ];
+      
+      // Only add tech keywords if they appear in the search context or text
+      const contextText = (searchQuery || '').toLowerCase();
+      techKeywords.forEach(keyword => {
+        if (contextText.includes(keyword) || text.toLowerCase().includes(keyword)) {
+          relevantKeywords.add(keyword);
+        }
+      });
+      
+      return Array.from(relevantKeywords);
+    };
+    
+    const allKeywords = [...keywords, ...getRelevantKeywords()]
+      .filter(keyword => keyword && keyword.length > 2)
+      .map(k => k.toLowerCase().trim());
+    
+    if (allKeywords.length === 0) return text;
+    
+    // Create regex pattern for all keywords with word boundaries
+    // Sort keywords by length (longest first) to prioritize longer matches
+    const sortedKeywords = allKeywords.sort((a, b) => b.length - a.length);
+    const escapedKeywords = sortedKeywords.map(keyword => 
+      keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    );
+    const pattern = new RegExp(`\\b(${escapedKeywords.join('|')})\\b`, 'gi');
+    
+    // Split text and highlight matches
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = pattern.exec(text)) !== null) {
+      // Add text before match
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      
+      // Add highlighted match
+      parts.push(
+        <span key={`highlight-${match.index}`} className="bg-purple-200 text-purple-900 font-semibold px-1 rounded">
+          {match[0]}
+        </span>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+    
+    return parts.length > 1 ? parts : text;
+  };
+
+
   // Track active shortlist calls to prevent duplicates (use ref to avoid React state delays)
   const activeShortlistCallsRef = useRef<Set<string>>(new Set());
   
@@ -426,12 +633,17 @@ const GlobalSearchResultsPage: React.FC = () => {
   // State for search criteria card expansion
   const [isSearchCriteriaExpanded, setIsSearchCriteriaExpanded] = useState(false);
   
+  // State for AI profile analysis
+  const [candidateAnalyses, setCandidateAnalyses] = useState<Record<string, { summary: string; keyHighlights: string[] }>>({});
+  const [loadingAnalyses, setLoadingAnalyses] = useState<Set<string>>(new Set());
+  
   // Search hooks for different modes
   const { executeSearch } = useSearch();
   const { executeSearch: executeExternalSourceSearch } = useExternalSourceSearch();
   const { executeSearch: executeCombinedSearch } = useCombinedSearch();
   const addProspectsToProjectMutation = useAddProspectsToProject();
   const shortlistExternalMutation = useShortlistExternalCandidate();
+  const profileAnalysis = useProfileAnalysis();
   
   // Get current user context
   const { user } = useAuthContext();
@@ -578,7 +790,7 @@ const GlobalSearchResultsPage: React.FC = () => {
       (filters.location?.pastLocations && filters.location.pastLocations.length > 0) ||
       (filters.company?.names && filters.company.names.length > 0) ||
       (filters.company?.industries && filters.company.industries.length > 0) ||
-      (filters.general?.minExperience && filters.general.minExperience !== '0') ||
+      (filters.general?.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0') ||
       (filters.general?.maxExperience && filters.general.maxExperience !== '') ||
       (filters.education?.schools && filters.education.schools.length > 0) ||
       (filters.education?.degrees && filters.education.degrees.length > 0) ||
@@ -800,13 +1012,13 @@ const GlobalSearchResultsPage: React.FC = () => {
     }
 
     // Experience Filter
-    if ((filters.general?.minExperience && filters.general.minExperience !== '0') || filters.general?.maxExperience) {
+    if ((filters.general?.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0') || filters.general?.maxExperience) {
       badges.push(
         <div key="experience" className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
           <span className="font-medium mr-2">Experience:</span>
           <span>
-            {filters.general.minExperience && filters.general.minExperience !== '0' && `${filters.general.minExperience}+ years`}
-            {filters.general.minExperience && filters.general.minExperience !== '0' && filters.general.maxExperience && ' - '}
+            {filters.general.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0' && `${filters.general.minExperience}+ years`}
+            {filters.general.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0' && filters.general.maxExperience && ' - '}
             {filters.general.maxExperience && `max ${filters.general.maxExperience} years`}
           </span>
         </div>
@@ -1640,6 +1852,52 @@ const GlobalSearchResultsPage: React.FC = () => {
     await fetchResults(convertedFilters, tempSearchQuery, searchMode, false, undefined, true);
   };
 
+  // AI Profile Analysis Handler
+  const handleGenerateAnalysis = async (candidate: any) => {
+    const candidateId = candidate.id;
+    
+    // Don't regenerate if already exists or is loading
+    if (candidateAnalyses[candidateId] || loadingAnalyses.has(candidateId)) {
+      return;
+    }
+    
+    try {
+      // Mark as loading
+      setLoadingAnalyses(prev => new Set(prev).add(candidateId));
+      
+      // Prepare search context for AI analysis
+      const searchContext = {
+        query: searchQuery,
+        filters: filters
+      };
+      
+      // Generate analysis with search context
+      const analysis = await profileAnalysis.generateAnalysis(candidate, searchContext);
+      
+      if (analysis) {
+        setCandidateAnalyses(prev => ({
+          ...prev,
+          [candidateId]: analysis
+        }));
+      }
+    } catch (error) {
+      console.error('Error generating candidate analysis:', error);
+      addToast({
+        type: 'error',
+        title: 'Analysis Failed',
+        message: 'Failed to generate AI analysis for this candidate.',
+        duration: 5000
+      });
+    } finally {
+      // Remove from loading set
+      setLoadingAnalyses(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(candidateId);
+        return newSet;
+      });
+    }
+  };
+
 
 
   if (isLoading) {
@@ -1698,14 +1956,22 @@ const GlobalSearchResultsPage: React.FC = () => {
 
         {/* Search Keywords and Filters Display */}
         {hasActiveFilters && (
-          <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+          <div 
+            className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer hover:border-purple-300 hover:bg-purple-50/30 transition-colors"
+            onClick={handleOpenFilters}
+            title="Click to edit search criteria"
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <Search className="w-5 h-5 text-gray-500" />
                 <h4 className="text-sm font-medium text-gray-900">Search Criteria</h4>
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Click to edit</span>
               </div>
               <button
-                onClick={() => setIsSearchCriteriaExpanded(!isSearchCriteriaExpanded)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering the parent div's onClick
+                  setIsSearchCriteriaExpanded(!isSearchCriteriaExpanded);
+                }}
                 className="inline-flex items-center px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
               >
                 {isSearchCriteriaExpanded ? (
@@ -1791,21 +2057,21 @@ const GlobalSearchResultsPage: React.FC = () => {
                   : (candidate.skills ? candidate.skills.map(skill => skill.name || skill) : []);
                 
                 return (
-                  <div key={candidate.id || index} className={`px-6 py-6 hover:bg-gray-50 transition-colors duration-200 ${index !== results.length - 1 ? 'border-b border-gray-200' : ''}`}>
+                  <div key={candidate.id || index} className={`px-4 py-4 hover:bg-gray-50 transition-colors duration-200 ${index !== results.length - 1 ? 'border-b border-gray-200' : ''}`}>
                     <div className="flex items-start">
-                      <input type="checkbox" className="mt-2 mr-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none" />
+                      <input type="checkbox" className="mt-1 mr-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none" />
                       <div className="flex-1">
                         
                         {/* Header with name and actions */}
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
                             {/* Avatar */}
                             <div className="flex-shrink-0">
                               {personalInfo.avatar ? (
                                 <img
                                   src={personalInfo.avatar}
                                   alt={`${personalInfo.fullName} avatar`}
-                                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
                                   onError={(e) => {
                                     // If image fails to load, hide it and show initials fallback
                                     e.currentTarget.style.display = 'none';
@@ -1816,28 +2082,31 @@ const GlobalSearchResultsPage: React.FC = () => {
                               ) : null}
                               {/* Fallback initials avatar */}
                               <div 
-                                className={`w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ${personalInfo.avatar ? 'hidden' : 'flex'}`}
+                                className={`w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm ${personalInfo.avatar ? 'hidden' : 'flex'}`}
                                 style={{ display: personalInfo.avatar ? 'none' : 'flex' }}
                               >
                                 {personalInfo.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                               </div>
                             </div>
                             
-                            <h3
-                              className="text-lg font-semibold cursor-pointer hover:text-purple-600 transition-colors duration-200 flex items-center gap-2"
-                              onClick={() => {
-                                const userData = convertCandidateToUserData(result);
-                                handleOpenProfilePanel(userData, candidate.id);
-                              }}
-                            >
-                              {personalInfo.fullName}
-                              {/* Icon indicates clickable, panel will open */}
-                              <svg className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </h3>
+                            <div>
+                              <h3
+                                className="text-base font-semibold cursor-pointer hover:text-purple-600 transition-colors duration-200 flex items-center gap-1"
+                                onClick={() => {
+                                  const userData = convertCandidateToUserData(result);
+                                  handleOpenProfilePanel(userData, candidate.id);
+                                }}
+                              >
+                                {personalInfo.fullName}
+                                {/* Icon indicates clickable, panel will open */}
+                                <svg className="h-3 w-3 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </h3>
+                            </div>
                             
                             {/* Social Links */}
+                            <div className="flex items-center gap-1">
                             {personalInfo.linkedIn && (
                                 <a href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-600 transition-colors duration-200" title="LinkedIn">
                                 <span className="sr-only">LinkedIn</span>
@@ -1862,17 +2131,53 @@ const GlobalSearchResultsPage: React.FC = () => {
                                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
                                 </a>
                             )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            {/* AI Analysis Button */}
+                            {candidateAnalyses[candidate.id] ? (
+                              <button
+                                onClick={() => {
+                                  setCandidateAnalyses(prev => {
+                                    const newAnalyses = { ...prev };
+                                    delete newAnalyses[candidate.id];
+                                    return newAnalyses;
+                                  });
+                                }}
+                                className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors flex items-center gap-1 text-xs font-medium"
+                                title="Clear AI Analysis"
+                              >
+                                <Sparkles className="h-3 w-3" />
+                                Clear Analysis
+                              </button>
+                            ) : loadingAnalyses.has(candidate.id) ? (
+                              <button
+                                disabled
+                                className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded transition-colors flex items-center gap-1 text-xs font-medium cursor-not-allowed"
+                              >
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                Analyzing...
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleGenerateAnalysis(candidate)}
+                                className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors flex items-center gap-1 text-xs font-medium"
+                              >
+                                <Sparkles className="h-3 w-3" />
+                                AI Analysis
+                              </button>
+                            )}
+                            
+                            {/* Shortlist Button */}
                             <button
                               onClick={() => handleShortlistCandidate(candidate)}
                               disabled={shortlistingCandidates[candidate.id]}
-                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors flex items-center gap-2 text-sm"
+                              className="px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400 transition-colors flex items-center gap-1 text-xs font-medium"
                             >
                               {shortlistingCandidates[candidate.id] ? (
                                 <>
                                   <Loader2 className="h-3 w-3 animate-spin" />
-                                  Shortlisting...
+                                  Adding...
                                 </>
                               ) : (
                                 <>
@@ -1884,50 +2189,122 @@ const GlobalSearchResultsPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Current Position */}
-                        <div className="text-sm text-gray-500 mb-3">
+                        {/* Current Position & Location */}
+                        <div className="mb-2">
                           {experience && experience.length > 0 && (
-                            <p className="flex items-center gap-1">
-                              <Building className="h-4 w-4" />
-                              {experience[0].position} at {experience[0].company}
-                              <span className="mx-1.5">•</span>
-                              <MapPin className="h-4 w-4" />
-                              {personalInfo.location}
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <Building className="h-3 w-3 text-purple-600" />
+                                <span className="font-medium">{experience[0].position}</span>
+                                <span className="text-gray-400">at</span>
+                                <span>{experience[0].company}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-gray-500">
+                                <MapPin className="h-3 w-3" />
+                                {personalInfo.location}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Professional Summary */}
+                        <div className="mt-2">
+                          {candidate.summary ? (
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                              {highlightKeywords(
+                                candidate.summary.length > 280 
+                                  ? candidate.summary.substring(0, 280) + '...' 
+                                  : candidate.summary,
+                                matchedCriteria || [],
+                                candidate
+                              )}
+                              {candidate.summary.length > 280 && (
+                                <button
+                                  onClick={() => {
+                                    const userData = convertCandidateToUserData(result);
+                                    handleOpenProfilePanel(userData, candidate.id);
+                                  }}
+                                  className="text-purple-600 hover:text-purple-800 font-medium ml-1"
+                                >
+                                  Read more
+                                </button>
+                              )}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">
+                              No summary available. Click to view full profile.
                             </p>
                           )}
                         </div>
 
-                        {/* Experience Summary */}
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-600">
-                            <span
-                              className="font-medium cursor-pointer hover:text-purple-600 transition-colors"
-                              onClick={() => {
-                                const userData = convertCandidateToUserData(result);
-                                handleOpenProfilePanel(userData, candidate.id);
-                              }}
-                            >
-                              {personalInfo.fullName.split(' ')[0]}
-                            </span>
-                            {experience?.[0]?.company ? ` has been a ${experience[0].position} at ${experience[0].company}` : ' has relevant experience'}
-                            {experience?.[0]?.startDate && ` since ${new Date(experience[0].startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
-                            {experience && experience.length > 1 && experience[1].position && `, with prior experience as a ${experience[1].position}`}.
-                          </p>
-                        </div>
+                        {/* AI Analysis Display (only when analysis exists) */}
+                        {candidateAnalyses[candidate.id] && (
+                          <div className="mt-3">
+                            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 border border-purple-200">
+                              <div className="flex items-center gap-1 mb-2">
+                                <Sparkles className="h-4 w-4 text-purple-600" />
+                                <span className="text-xs font-semibold text-purple-700">AI Analysis</span>
+                                {(searchQuery || (filters && Object.keys(filters).some(key => filters[key] && typeof filters[key] === 'object' && Object.keys(filters[key]).length > 0))) && (
+                                  <span className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-full ml-1">
+                                    Search-Aware
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-purple-800 mb-2 leading-relaxed">
+                                {candidateAnalyses[candidate.id].summary}
+                              </p>
+                              {candidateAnalyses[candidate.id].keyHighlights.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {candidateAnalyses[candidate.id].keyHighlights.map((highlight, i) => (
+                                    <span 
+                                      key={i}
+                                      className="inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full"
+                                    >
+                                      {highlight}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+
 
                         {/* Skills */}
                         <div className="mt-3">
                           {skills && skills.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
-                              {skills.slice(0, 4).map((skill: string, i: number) => (
-                                <span key={i} className="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
-                                  {skill}
-                                </span>
-                              ))}
-                              {skills.length > 4 && (
-                                <span className="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-500 rounded">
-                                  +{skills.length - 4} more
-                                </span>
+                              {skills.slice(0, 8).map((skill: string, i: number) => {
+                                // Check if this skill is in matched criteria for highlighting
+                                const isMatched = matchedCriteria?.some(criteria => 
+                                  criteria.toLowerCase().includes(skill.toLowerCase()) ||
+                                  skill.toLowerCase().includes(criteria.toLowerCase())
+                                );
+                                
+                                return (
+                                  <span 
+                                    key={i} 
+                                    className={`inline-block px-2 py-1 text-xs font-medium rounded transition-colors ${
+                                      isMatched 
+                                        ? 'bg-purple-600 text-white' 
+                                        : 'bg-purple-100 text-purple-800'
+                                    }`}
+                                  >
+                                    {skill}
+                                  </span>
+                                );
+                              })}
+                              {skills.length > 8 && (
+                                <button
+                                  onClick={() => {
+                                    const userData = convertCandidateToUserData(result);
+                                    handleOpenProfilePanel(userData, candidate.id);
+                                  }}
+                                  className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                                >
+                                  +{skills.length - 8}
+                                </button>
                               )}
                             </div>
                           )}
@@ -2031,7 +2408,7 @@ const GlobalSearchResultsPage: React.FC = () => {
                   icon={Layers}
                   isExpanded={true}
                   hasActiveFilters={
-                    (filters.general?.minExperience && filters.general.minExperience !== '0') ||
+                    (filters.general?.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0') ||
                     (filters.general?.maxExperience && filters.general.maxExperience !== '') ||
                     (filters.general?.requiredContactInfo && filters.general.requiredContactInfo !== '') ||
                     (filters.general?.hideViewedProfiles && filters.general.hideViewedProfiles !== '') ||
@@ -2046,7 +2423,8 @@ const GlobalSearchResultsPage: React.FC = () => {
                       <div className="grid grid-cols-2 gap-3">
                         <input
                           type="number"
-                          value={tempFilters.general.minExperience}
+                          min="0"
+                          value={tempFilters.general.minExperience === '0' ? '' : tempFilters.general.minExperience}
                           onChange={(e) => setTempFilters(prev => ({
                             ...prev,
                             general: { ...prev.general, minExperience: e.target.value }
@@ -2056,6 +2434,7 @@ const GlobalSearchResultsPage: React.FC = () => {
                         />
                         <input
                           type="number"
+                          min="0"
                           value={tempFilters.general.maxExperience}
                           onChange={(e) => setTempFilters(prev => ({
                             ...prev,
