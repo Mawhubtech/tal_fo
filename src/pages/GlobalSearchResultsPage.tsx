@@ -6,7 +6,7 @@ import { useAddProspectsToProject } from '../hooks/useSourcingProjects';
 import { useShortlistExternalCandidate } from '../hooks/useShortlistExternal';
 import { useAuthContext } from '../contexts/AuthContext';
 import type { SearchFilters } from '../services/searchService';
-import { searchEnhanced, searchCandidatesExternalDirect } from '../services/searchService';
+import { searchEnhanced, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced, fetchCachedEnhancedResults } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProjectSelectionModal from '../components/ProjectSelectionModal';
@@ -399,6 +399,17 @@ const GlobalSearchResultsPage: React.FC = () => {
   const [hasNextPage, setHasNextPage] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [queryHash, setQueryHash] = useState<string | null>(null); // Store query hash for cache-based pagination
+  
+  // Debug queryHash changes
+  useEffect(() => {
+    console.log('🔑 QueryHash state changed to:', queryHash);
+    if (queryHash) {
+      console.log('✅ QueryHash is now available for pagination:', queryHash);
+    } else {
+      console.log('❌ QueryHash is null - pagination will use new search');
+    }
+  }, [queryHash]);
   // Track active shortlist calls to prevent duplicates (use ref to avoid React state delays)
   const activeShortlistCallsRef = useRef<Set<string>>(new Set());
   
@@ -476,6 +487,25 @@ const GlobalSearchResultsPage: React.FC = () => {
           console.log('GlobalSearchResults: Setting results array:', resultsToSet);
           setResults(resultsToSet);
           setIsLoading(false);
+          
+          // Extract queryHash from preloaded results for future pagination
+          console.log('🔍 Extracting queryHash from preloaded results...');
+          console.log('🔍 preloadedResults.metadata:', preloadedResults?.metadata);
+          console.log('🔍 preloadedResults.metadata.queryHash:', preloadedResults?.metadata?.queryHash);
+          
+          const preloadedQueryHash = preloadedResults?.metadata?.queryHash || 
+                                   preloadedResults?.queryHash || 
+                                   preloadedResults?.data?.metadata?.queryHash;
+          
+          if (preloadedQueryHash) {
+            console.log('🔑 Found queryHash in preloaded results, setting state:', preloadedQueryHash);
+            setQueryHash(preloadedQueryHash);
+            console.log('🔑 Preloaded queryHash state set for pagination:', preloadedQueryHash);
+          } else {
+            console.warn('⚠️ No queryHash found in preloaded results!');
+            console.warn('Available keys in preloadedResults:', Object.keys(preloadedResults || {}));
+            console.warn('Available keys in preloaded metadata:', Object.keys(preloadedResults?.metadata || {}));
+          }
           
           // Set pagination info if available
           if (preloadedResults.externalPagination) {
@@ -980,6 +1010,7 @@ const GlobalSearchResultsPage: React.FC = () => {
     
     if (resetResults) {
       setIsLoading(true);
+      setQueryHash(null); // Reset queryHash for new search
     } else {
       setIsLoadingMore(true);
     }
@@ -991,10 +1022,57 @@ const GlobalSearchResultsPage: React.FC = () => {
       // For external or combined search, try enhanced search first if available
       if (useEnhanced && (searchMode === 'external' || searchMode === 'combined') && query) {
         try {
-          console.log('GlobalSearchResults: Using enhanced search...');
-          searchResults = await searchEnhanced(query, searchMode === 'external' || searchMode === 'combined', { page: 1, limit: 10 });
+          const pageNumber = cursor ? parseInt(cursor) : 1;
+          
+          console.log('🔍 Enhanced Search Debug:', {
+            pageNumber,
+            cursor,
+            queryHash,
+            resetResults,
+            isLoadMore: !resetResults,
+            shouldUseCache: pageNumber > 1 && queryHash && !resetResults
+          });
+          
+          // Check if this is a pagination request and we have a queryHash
+          if (pageNumber > 1 && queryHash && !resetResults) {
+            console.log('✅ Using CACHE endpoint for page', pageNumber, 'with queryHash:', queryHash);
+            searchResults = await fetchCachedEnhancedResults(queryHash, { 
+              page: pageNumber, 
+              limit: 3 
+            });
+          } else {
+            console.log('✅ Using NEW SEARCH endpoint for page', pageNumber, 'reasons:', {
+              isFirstPage: pageNumber === 1,
+              noQueryHash: !queryHash,
+              isReset: resetResults
+            });
+            searchResults = await searchCandidatesExternalEnhanced(filters, query, { 
+              page: pageNumber, 
+              limit: 3 
+            });
+            
+            // Store queryHash from initial search for future pagination
+            console.log('🔍 Full search response for queryHash extraction:', searchResults);
+            console.log('🔍 searchResults.metadata:', searchResults?.metadata);
+            console.log('🔍 searchResults.metadata.queryHash:', searchResults?.metadata?.queryHash);
+            
+            // Try multiple possible locations for queryHash
+            const possibleQueryHash = searchResults?.metadata?.queryHash || 
+                                    searchResults?.queryHash || 
+                                    searchResults?.data?.metadata?.queryHash;
+            
+            if (possibleQueryHash) {
+              console.log('🔑 Found queryHash, setting state:', possibleQueryHash);
+              setQueryHash(possibleQueryHash);
+              console.log('🔑 State setQueryHash called with:', possibleQueryHash);
+            } else {
+              console.warn('⚠️ No queryHash found in any expected location!');
+              console.warn('Available keys in searchResults:', Object.keys(searchResults || {}));
+              console.warn('Available keys in metadata:', Object.keys(searchResults?.metadata || {}));
+            }
+          }
         } catch (enhancedError) {
-          console.warn('GlobalSearchResults: Enhanced search failed, using fallback:', enhancedError);
+          console.warn('GlobalSearchResults: Enhanced external search failed, using fallback:', enhancedError);
           // Fallback to standard search methods
           useEnhanced = false;
         }
@@ -1116,7 +1194,9 @@ const GlobalSearchResultsPage: React.FC = () => {
   // Handle pagination - load more results
   const handleNextPage = () => {
     if (hasNextPage && nextCursor && !isLoadingMore) {
-      console.log('GlobalSearchResults: Loading next page:', nextCursor, 'hasNextPage:', hasNextPage);
+      console.log(`GlobalSearchResults: Loading next page ${nextCursor} (${isEnhanced ? 'enhanced' : 'standard'} search)`);
+      console.log(`GlobalSearchResults: Current queryHash state:`, queryHash);
+      console.log(`GlobalSearchResults: Will use cache?`, !!queryHash && isEnhanced && parseInt(nextCursor) > 1);
       setIsLoadingMore(true);
       fetchResults(filters, searchQuery, searchMode, isEnhanced, nextCursor, false);
     } else {
@@ -1816,49 +1896,6 @@ const GlobalSearchResultsPage: React.FC = () => {
                             </p>
                           )}
                         </div>
-
-                        {/* Match Criteria */}
-                        {(matchCriteria || matchedCriteria) && (
-                          <div className="mb-3 p-3 bg-purple-100 rounded-lg border border-purple-200">
-                            <h4 className="text-sm font-medium text-purple-900 mb-2 flex items-center gap-1">
-                              <Search className="h-4 w-4" />
-                              Match Criteria
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {matchCriteria?.titleMatch && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
-                                  ✓ Job Title Match
-                                </span>
-                              )}
-                              {matchCriteria?.locationMatch && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
-                                  ✓ Location Match
-                                </span>
-                              )}
-                              {matchCriteria?.skillsMatch && matchCriteria.skillsMatch.length > 0 && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
-                                  <Code className="h-3 w-3 mr-1" />
-                                  {matchCriteria.skillsMatch.length} Skills: {matchCriteria.skillsMatch.slice(0, 2).join(', ')}
-                                  {matchCriteria.skillsMatch.length > 2 && ` +${matchCriteria.skillsMatch.length - 2} more`}
-                                </span>
-                              )}
-                              {matchedCriteria && Array.isArray(matchedCriteria) && matchedCriteria.length > 0 && (
-                                <>
-                                  {matchedCriteria.slice(0, 3).map((criteria, i) => (
-                                    <span key={i} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
-                                      ✓ {criteria}
-                                    </span>
-                                  ))}
-                                  {matchedCriteria.length > 3 && (
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-200 text-purple-800">
-                                      +{matchedCriteria.length - 3} more matches
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
 
                         {/* Experience Summary */}
                         <div className="mt-2">

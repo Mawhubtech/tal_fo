@@ -337,6 +337,113 @@ class SearchService {
     }
   }
 
+  async searchCandidatesExternalEnhanced(filters: SearchFilters | any, searchText?: string, pagination?: PaginationOptions): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      // Always limit enhanced search results to 3
+      queryParams.append('limit', '3');
+      
+      const url = `${this.baseURL}/candidates/external-enhanced${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      let enhancedPayload;
+      
+      // Check if filters are already in enhanced format (from convertEnhancedKeywordsToFilters)
+      if (filters && typeof filters === 'object' && 'mustFilters' in filters && 'shouldFilters' in filters) {
+        // Filters are already in enhanced format, use them directly
+        enhancedPayload = {
+          filters,
+          searchText: searchText || ''
+        };
+      } else {
+        // Filters are regular SearchFilters, transform to enhanced format
+        enhancedPayload = {
+          filters: {
+            mustFilters: filters, // Use the provided filters as must filters
+            shouldFilters: {}, // Empty should filters for now
+            searchText: searchText || '',
+            contextualHints: {
+              urgency: 'low',
+              flexibility: 'moderate', 
+              primaryFocus: 'technical',
+              isLocationAgnostic: false
+            }
+          },
+          searchText: searchText || ''
+        };
+      }
+
+      const response = await apiClient.post<SearchResponse>(url, enhancedPayload);
+
+      console.log('🚀 Enhanced external search response:', response.data);
+      console.log('🔍 Results count:', response.data?.results?.length || 0);
+      console.log('🔍 Response status:', response.status);
+      
+      // Log cache/cost information
+      const metadata = response.data?.metadata as any;
+      if (metadata?.costInfo) {
+        const costInfo = metadata.costInfo;
+        console.log(`💰 ${costInfo.message}`);
+        console.log(`📦 Source: ${costInfo.source} (${costInfo.coreSignalCreditsUsed} credits)`);
+      }
+      
+      // Log pagination info  
+      if (metadata?.pagination) {
+        const pag = metadata.pagination;
+        console.log(`📄 Page ${pag.currentPage} of ${pag.totalPages} (${pag.totalResults} total results)`);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ Enhanced external search failed:', error);
+      console.error('❌ Error details:', error.response?.data);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch cached enhanced search results for pagination (No new search query)
+   */
+  async fetchCachedEnhancedResults(queryHash: string, pagination?: PaginationOptions): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      // Always limit to 3 for enhanced search
+      queryParams.append('limit', '3');
+      
+      const url = `${this.baseURL}/candidates/external-enhanced/cache${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const cachePayload = {
+        queryHash: queryHash
+      };
+
+      console.log(`🔍 Fetching cached results for query hash: ${queryHash}`);
+      console.log(`📄 Requesting page ${pagination?.page || 1} (cache-only, no new search)`);
+
+      const response = await apiClient.post<SearchResponse>(url, cachePayload);
+
+      console.log('📦 Cached enhanced search response:', response.data);
+      console.log('🔍 Results count:', response.data?.results?.length || 0);
+      
+      // Log cost information
+      const metadata = response.data?.metadata as any;
+      if (metadata?.costInfo) {
+        console.log(`💰 ${metadata.costInfo.message}`);
+        console.log(`📦 Source: ${metadata.costInfo.source} (${metadata.costInfo.coreSignalCreditsUsed} credits)`);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ Cached enhanced search failed:', error);
+      console.error('❌ Error details:', error.response?.data);
+      throw error;
+    }
+  }
+
   /**
    * Get candidate by ID (using existing candidate service)
    */
@@ -394,6 +501,8 @@ export const extractEnhancedKeywords = (searchText: string) => searchService.ext
 export const convertEnhancedKeywordsToFilters = (keywords: any) => searchService.convertEnhancedKeywordsToFilters(keywords);
 export const searchEnhanced = (searchText: string, includeExternal?: boolean, pagination?: PaginationOptions) => searchService.searchEnhanced(searchText, includeExternal, pagination);
 export const searchCandidatesExternalDirect = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalDirect(filters, searchText, pagination);
+export const searchCandidatesExternalEnhanced = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalEnhanced(filters, searchText, pagination);
+export const fetchCachedEnhancedResults = (queryHash: string, pagination?: PaginationOptions) => searchService.fetchCachedEnhancedResults(queryHash, pagination);
 export const searchUsers = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchUsers(filters, searchText, pagination);
 export const searchCandidates = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidates(filters, searchText, pagination);
 export const getAllCandidates = () => searchService.getAllUsers();
