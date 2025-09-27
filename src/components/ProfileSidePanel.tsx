@@ -43,6 +43,8 @@ export interface Experience {
 export interface Education {
   degree: string;
   institution: string;
+  institutionName?: string; // Original institution name when URL is prioritized
+  institutionUrl?: string; // Institution URL from CoreSignal
   startDate?: string;
   endDate?: string;
   graduationDate?: string;

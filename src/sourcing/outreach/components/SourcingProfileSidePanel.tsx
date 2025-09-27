@@ -33,6 +33,8 @@ export interface Experience {
 export interface Education {
   degree: string;
   institution: string;
+  institutionName?: string; // Original institution name when URL is prioritized
+  institutionUrl?: string; // Institution URL from CoreSignal
   startDate?: string;
   endDate?: string;
   graduationDate?: string;
@@ -201,6 +203,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   // Refs for scroll-based tab switching
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const panelRef = useRef<HTMLDivElement>(null); // Ref for click-outside detection
   
   if (!userData || panelState === 'closed') {
     return null;
@@ -208,6 +211,25 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
 
   const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages, references, customFields } = userData;
 
+  // Click outside to close panel
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        // Close the panel when clicking outside
+        onStateChange('closed');
+      }
+    };
+
+    // Add listener since panel is rendered (not closed)
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onStateChange]);
+
+  // Removed debug logging - education links are now working
+  
   // Helper function to parse and normalize dates for sorting
   const parseDate = (dateValue: string | number | undefined): Date => {
     if (!dateValue) return new Date(0); // Very old date for missing dates
@@ -325,6 +347,8 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
     .filter(tab => tab.count > 0)
     .map((tab, index) => ({ ...tab, originalIndex: tab.index, index }));
   
+  // Removed debug logging
+  
   // Reset active tab if current tab is out of bounds
   useEffect(() => {
     if (activeTab >= profileTabs.length && profileTabs.length > 0) {
@@ -392,23 +416,51 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
   if (panelState === 'collapsed') {
     return (
-      <div className="fixed inset-y-0 right-0 w-full sm:w-2/3 md:w-1/2 lg:w-1/3 bg-white shadow-2xl z-50 flex">
+      <>
+        {/* Backdrop - clicking this will close the panel */}
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-25 z-40"
+          onClick={() => onStateChange('closed')}
+        />
+        
+        {/* Side Panel */}
+        <div 
+          ref={panelRef}
+          className="fixed inset-y-0 right-0 w-full sm:w-2/3 md:w-1/2 lg:w-1/3 bg-white shadow-2xl z-50 flex"
+        >
         {/* Profile Info Section - Full width in collapsed view */}
         <div className="flex-1 w-full flex flex-col">
           {/* Panel Header - Sticky */}
           <div className="sticky top-0 bg-white z-10">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">              <div className="flex items-center">
-                {personalInfo.avatar ? (
-                  <img 
-                    src={personalInfo.avatar} 
-                    alt={personalInfo.fullName}
-                    className="h-8 w-8 rounded-full mr-3 flex-shrink-0 object-cover"
-                  />
-                ) : (
-                  <div className="bg-purple-100 rounded-full h-8 w-8 flex items-center justify-center text-purple-600 text-sm font-semibold mr-3 flex-shrink-0">
-                    {personalInfo.fullName.charAt(0)}
-                  </div>
-                )}
+                {(() => {
+                  const [imageError, setImageError] = React.useState(false);
+                  
+                  if (personalInfo.avatar && !imageError) {
+                    return (
+                      <img 
+                        src={personalInfo.avatar} 
+                        alt={personalInfo.fullName}
+                        className="h-8 w-8 rounded-full mr-3 flex-shrink-0 object-cover"
+                        onError={() => setImageError(true)}
+                      />
+                    );
+                  } else {
+                    // Generate initials from full name
+                    const initials = personalInfo.fullName
+                      .split(' ')
+                      .map(name => name.charAt(0))
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2);
+                    
+                    return (
+                      <div className="bg-purple-100 rounded-full h-8 w-8 flex items-center justify-center text-purple-600 text-sm font-semibold mr-3 flex-shrink-0">
+                        {initials}
+                      </div>
+                    );
+                  }
+                })()}
                 <h3 className="text-md font-semibold text-gray-800">{personalInfo.fullName}</h3>
               </div>
               <div className="flex items-center">
@@ -651,8 +703,15 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
 
               {/* Education Tab */}
+              {/* Removed debug logging */}
               {profileTabs[activeTab]?.originalIndex === 1 && (
                 <div>
+                  {(() => {
+                    console.log('=== EDUCATION TAB RENDERING ===');
+                    console.log('sortedEducation:', sortedEducation);
+                    console.log('sortedEducation.length:', sortedEducation?.length);
+                    return null;
+                  })()}
                   {sortedEducation && sortedEducation.length > 0 ? (
                     <div className="space-y-4">
                       {sortedEducation.map((edu, index) => (
@@ -674,18 +733,40 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                                 
                                 {/* Institution with enhanced details */}
                                 <div className="mt-1">
-                                  {edu.institutionWebsite ? (
-                                    <a 
-                                      href={edu.institutionWebsite.startsWith('http') ? edu.institutionWebsite : `https://${edu.institutionWebsite}`}
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                    >
-                                      {edu.institution}
-                                    </a>
-                                  ) : (
-                                    <p className="text-sm text-gray-600">{edu.institution}</p>
-                                  )}
+                                  {/* Debug: Log education data to console */}
+                                  {/* Removed debug logging */}
+                                  {/* Check if institution field is a URL - simplified logic */}
+                                  {(() => {
+                                    const isURL = typeof edu.institution === 'string' && 
+                                      (edu.institution.startsWith('http://') || 
+                                       edu.institution.startsWith('https://') || 
+                                       edu.institution.includes('linkedin.com'));
+                                    
+                                    console.log('URL Check for:', edu.institution, 'Result:', isURL);
+                                    
+                                    if (isURL) {
+                                      const displayName = edu.institutionName || 
+                                        (edu.institution.includes('linkedin.com/school/') 
+                                          ? edu.institution.split('/school/')[1]?.replace(/-/g, ' ')?.replace(/\/$/, '') || 'LinkedIn School'
+                                          : edu.institution.replace('https://', '').replace('www.', '').split('/')[0]);
+                                      
+                                      return (
+                                        <a 
+                                          href={edu.institution.startsWith('http') ? edu.institution : `https://${edu.institution}`}
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                                        >
+                                          {displayName}
+                                          <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                      );
+                                    } else {
+                                      return (
+                                        <p className="text-sm text-gray-600">{edu.institution}</p>
+                                      );
+                                    }
+                                  })()}
                                   
                                   {/* Institution type */}
                                   {edu.institutionType && (
@@ -1192,12 +1273,24 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
           </div>
         </div>
       </div>
+    </>
     );
   }
 
   // Expanded state - full panel covering 2/3 of page width
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-4/5 md:w-3/4 lg:w-2/3 bg-white shadow-2xl z-50 flex">
+    <>
+      {/* Backdrop - clicking this will close the panel */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-25 z-40"
+        onClick={() => onStateChange('closed')}
+      />
+      
+      {/* Side Panel */}
+      <div 
+        ref={panelRef}
+        className="fixed inset-y-0 right-0 w-full sm:w-4/5 md:w-3/4 lg:w-2/3 bg-white shadow-2xl z-50 flex"
+      >
       {/* Profile Info Section - Responsive width based on candidate actions state */}
       <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'w-2/3'} flex flex-col border-r border-gray-200 transition-all duration-300 ease-in-out`}>
         {/* Panel Header - Sticky */}
@@ -1229,17 +1322,34 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
         {/* Profile Basic Info + Main Action Buttons */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-start">
-            {personalInfo.avatar ? (
-              <img 
-                src={personalInfo.avatar} 
-                alt={personalInfo.fullName}
-                className="h-12 w-12 rounded-full mr-4 flex-shrink-0 object-cover"
-              />
-            ) : (
-              <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold mr-4 flex-shrink-0">
-                {personalInfo.fullName.charAt(0)}
-              </div>
-            )}
+            {(() => {
+              const [imageError, setImageError] = React.useState(false);
+              
+              if (personalInfo.avatar && !imageError) {
+                return (
+                  <img 
+                    src={personalInfo.avatar} 
+                    alt={personalInfo.fullName}
+                    className="h-12 w-12 rounded-full mr-4 flex-shrink-0 object-cover"
+                    onError={() => setImageError(true)}
+                  />
+                );
+              } else {
+                // Generate initials from full name
+                const initials = personalInfo.fullName
+                  .split(' ')
+                  .map(name => name.charAt(0))
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+                
+                return (
+                  <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold mr-4 flex-shrink-0">
+                    {initials}
+                  </div>
+                );
+              }
+            })()}
             <div className="flex-1">
               <h2 className="text-xl font-semibold text-gray-900">{personalInfo.fullName}</h2>
               <div className="flex items-center text-sm text-gray-500 mt-0.5">
@@ -1427,7 +1537,38 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                             </div>
                             <div>
                               <h4 className="font-medium text-gray-900">{edu.degree}</h4>
-                              <p className="text-sm text-gray-600">{edu.institution}</p>
+                              {/* Make institution clickable if it's a URL */}
+                              {(() => {
+                                const isURL = typeof edu.institution === 'string' && 
+                                  (edu.institution.startsWith('http://') || 
+                                   edu.institution.startsWith('https://') || 
+                                   edu.institution.includes('linkedin.com'));
+                                
+                                // URL detection logic for clickable institution links
+                                
+                                if (isURL) {
+                                  const displayName = edu.institutionName || 
+                                    (edu.institution.includes('linkedin.com/school/') 
+                                      ? edu.institution.split('/school/')[1]?.replace(/-/g, ' ')?.replace(/\/$/, '') || 'LinkedIn School'
+                                      : edu.institution.replace('https://', '').replace('www.', '').split('/')[0]);
+                                  
+                                  return (
+                                    <a 
+                                      href={edu.institution.startsWith('http') ? edu.institution : `https://${edu.institution}`}
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                                    >
+                                      {displayName}
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  );
+                                } else {
+                                  return (
+                                    <p className="text-sm text-gray-600">{edu.institution}</p>
+                                  );
+                                }
+                              })()}
                               {edu.location && <p className="text-xs text-gray-500 mt-0.5">{edu.location}</p>}
                             </div>
                           </div>
@@ -2025,6 +2166,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
         )}
       </div>
     </div>
+    </>
   );
 };
 
