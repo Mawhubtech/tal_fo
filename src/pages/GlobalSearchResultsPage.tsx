@@ -1848,8 +1848,8 @@ const GlobalSearchResultsPage: React.FC = () => {
     setHasNextPage(false);
     setCurrentPage(1);
     
-    // Fetch results with new filters - always use external direct search for filter applications
-    await fetchResults(convertedFilters, tempSearchQuery, searchMode, false, undefined, true);
+    // Fetch results with new filters - use enhanced search for filter applications
+    await fetchResults(convertedFilters, tempSearchQuery, searchMode, true, undefined, true);
   };
 
   // AI Profile Analysis Handler

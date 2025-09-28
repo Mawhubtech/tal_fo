@@ -15,7 +15,7 @@ import BooleanSearchDialog from '../sourcing/search/components/BooleanSearchDial
 import JobDescriptionDialog from '../recruitment/components/JobDescriptionDialog';
 import AIEnhancementModal from './AIEnhancementModal';
 import { useAIQuery } from '../hooks/ai';
-import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect } from '../services/searchService';
+import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalEnhanced } from '../services/searchService';
 import BooleanSearchParser from '../services/booleanSearchParser';
 import type { SearchFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
@@ -136,10 +136,10 @@ Guidelines:
         
         console.log('CompactSearch: Parsed boolean query filters:', filters);
         
-        // Get rich search results using external direct search
+        // Get rich search results using external enhanced search
         if (searchMode === 'external' || searchMode === 'combined') {
           try {
-            searchResults = await searchCandidatesExternalDirect(filters, searchQuery, { page: 1, limit: 10 });
+            searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery, { page: 1, limit: 3 });
             console.log("Got boolean search results:", searchResults);
           } catch (searchError) {
             console.warn("Boolean search failed, will navigate without preloaded results:", searchError);
@@ -168,11 +168,11 @@ Guidelines:
           
           console.log("AI extracted enhanced filters:", filters);
           
-          // Get rich search results using external direct search
+          // Get rich search results using external enhanced search
           if (searchMode === 'external' || searchMode === 'combined') {
             try {
-              searchResults = await searchCandidatesExternalDirect(filters, searchQuery, { page: 1, limit: 10 });
-              console.log("Got rich search results from external search:", searchResults);
+              searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery, { page: 1, limit: 3 });
+              console.log("Got rich search results from external enhanced search:", searchResults);
             } catch (searchError) {
               console.warn("External search failed, will navigate without preloaded results:", searchError);
             }
@@ -204,7 +204,7 @@ Guidelines:
           // Try to get search results with fallback filters
           if (searchMode === 'external' || searchMode === 'combined') {
             try {
-              searchResults = await searchCandidatesExternalDirect(filters, searchQuery, { page: 1, limit: 10 });
+              searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery, { page: 1, limit: 3 });
               console.log("Got fallback search results:", searchResults);
             } catch (searchError) {
               console.warn("Fallback search also failed, will navigate without preloaded results:", searchError);
@@ -313,8 +313,8 @@ Guidelines:
       // Perform the actual search based on search mode
       if (searchMode === 'external' || searchMode === 'combined') {
         try {
-          // Use external search with the applied filters
-          searchResults = await searchCandidatesExternalDirect(filters, searchQuery || '', { page: 1, limit: 10 });
+          // Use external enhanced search with the applied filters
+          searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery || '', { page: 1, limit: 3 });
           console.log("CompactSearch: Got filtered search results:", searchResults);
           console.log("CompactSearch: Results count:", searchResults?.results?.length || 0);
         } catch (searchError) {
@@ -356,8 +356,8 @@ Guidelines:
       // Perform the actual search based on search mode
       if (searchMode === 'external' || searchMode === 'combined') {
         try {
-          // Use external search with the boolean query and filters
-          searchResults = await searchCandidatesExternalDirect(filters, query, { page: 1, limit: 10 });
+          // Use external enhanced search with the boolean query and filters
+          searchResults = await searchCandidatesExternalEnhanced(filters, query, { page: 1, limit: 3 });
           console.log("Got boolean search results:", searchResults);
         } catch (searchError) {
           console.warn("Boolean search failed, will navigate without preloaded results:", searchError);
@@ -399,8 +399,8 @@ Guidelines:
       // Perform the actual search based on search mode
       if (searchMode === 'external' || searchMode === 'combined') {
         try {
-          // Use external search with the job description query and filters
-          searchResults = await searchCandidatesExternalDirect(filters, query, { page: 1, limit: 10 });
+          // Use external enhanced search with the job description query and filters
+          searchResults = await searchCandidatesExternalEnhanced(filters, query, { page: 1, limit: 3 });
           console.log("Got job description search results:", searchResults);
         } catch (searchError) {
           console.warn("Job description search failed, will navigate without preloaded results:", searchError);
