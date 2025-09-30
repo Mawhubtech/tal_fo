@@ -196,68 +196,202 @@ const tabContentData: TabContentItem[] = [
 ];
 
 const TabFeatures: React.FC = () => {
-  const [activeTabId, setActiveTabId] = useState<string>(tabsData[0].id);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768); // md breakpoint
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  const activeContent = tabContentData.find(content => content.id === activeTabId) || tabContentData[0];
-
   return (
-    <section className="relative overflow-hidden bg-white py-24">
+    <section className="relative overflow-hidden bg-gray-50 py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-20">
+        <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             How TAL Supercharges Your Recruitment
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Explore our core features designed to help you find, engage, and hire top talent efficiently.
+            All-in-one platform with AI-powered features for modern recruitment teams.
           </p>
         </div>
 
-        <div className="md:flex md:gap-8 lg:gap-12">
-          {/* Sidebar Navigation */}
-          {!isMobile && (
-            <nav className="md:w-1/3 lg:w-1/4 md:sticky md:top-28 self-start mb-10 md:mb-0">
-              <ul className="space-y-3">
-                {tabsData.map((tab) => (
-                  <li key={tab.id}>
-                    <button
-                      onClick={() => {
-                        setActiveTabId(tab.id);
-                      }}
-                      className={`
-                        w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all duration-200 ease-in-out
-                        focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 border
-                        ${
-                          activeTabId === tab.id
-                            ? 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border-purple-200 shadow-sm'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-gray-100 hover:border-gray-200'
-                        }
-                      `}
-                    >
-                      <div className={`p-2 rounded-xl ${activeTabId === tab.id ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-gray-100'}`}>
-                        <tab.icon className={`w-5 h-5 ${activeTabId === tab.id ? 'text-purple-600' : 'text-gray-500'}`} />
-                      </div>
-                      <span className="font-semibold text-base">{tab.fullLabel}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
-
-          {/* Content Area */}
-          <main className={`md:w-2/3 lg:w-3/4 ${isMobile ? 'w-full' : ''} relative`}>
-            <div className="max-w-5xl mx-auto">
-              {activeContent.content}
+        {/* Bento Grid - All Features Displayed */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* AI Sourcing - Large Card (2 columns) */}
+          <div className="md:col-span-2 bg-white rounded-3xl shadow-xl border border-gray-200 p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                <Search className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">AI-Powered Sourcing</h3>
+                <p className="text-gray-600">Semantic search and AI resume analysis</p>
+              </div>
             </div>
-          </main>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
+                <h4 className="text-lg font-bold text-purple-700 mb-3">Semantic Search</h4>
+                <p className="text-sm text-gray-600 mb-4">Find talent by describing your ideal candidate in plain English.</p>
+                <div className="bg-white rounded-xl p-3 border border-purple-200 shadow-sm">
+                  <p className="text-xs leading-relaxed">
+                    "Find a <span className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded font-medium">senior PM</span> in <span className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded font-medium mx-1">London</span> with <span className="bg-green-100 text-green-700 px-1 py-0.5 rounded font-medium">fintech experience</span>"
+                  </p>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+                <h4 className="text-lg font-bold text-blue-700 mb-3">AI Resume Analysis</h4>
+                <p className="text-sm text-gray-600 mb-4">Beyond keywords - understand true potential.</p>
+                <div className="bg-white rounded-xl p-3 border border-blue-200 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&fit=crop&crop=faces" alt="Profile" className="w-8 h-8 rounded-full object-cover"/>
+                    <div>
+                      <p className="font-semibold text-xs text-gray-900">John Doe</p>
+                      <p className="text-xs text-gray-500">Python, AWS, Leadership</p>
+                      <p className="text-xs text-green-600 font-medium">Match Score: 85%</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Email Sequencing */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Smart Email Sequencing</h3>
+                <p className="text-sm text-gray-600">Personalized campaigns</p>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4 border border-green-200">
+              <div className="space-y-3">
+                <div className="p-2 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-xs font-medium text-green-800">Step 1: Initial Contact</p>
+                  <p className="text-xs text-green-600 mt-1">"Hi John, saw your work on..."</p>
+                </div>
+                <div className="p-2 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-xs font-medium text-green-800">Step 2: Follow-up</p>
+                  <p className="text-xs text-green-600 mt-1">"Just checking in..."</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-green-600 font-medium">47% Response Rate</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Candidate Pipeline */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                <Users className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Candidate Pipeline</h3>
+                <p className="text-sm text-gray-600">CRM management</p>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
+                  <p className="font-medium text-xs">Jane Smith</p>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Contacted</span>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
+                  <p className="font-medium text-xs">Robert Brown</p>
+                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Screening</span>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
+                  <p className="font-medium text-xs">Alice Green</p>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Interview</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ATS Workflow - Medium Card (2 columns) */}
+          <div className="md:col-span-2 bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                <ClipboardList className="w-5 h-5 text-slate-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">ATS Workflow</h3>
+                <p className="text-sm text-gray-600">Hiring pipeline management</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                {['Applied (12)', 'Screening (5)', 'Interview (3)', 'Offer (1)', 'Hired (0)'].map(stage => (
+                  <div key={stage} className="bg-white p-2.5 rounded-lg shadow-sm border border-slate-100">
+                    <h5 className="text-xs font-semibold text-slate-700 mb-1.5 truncate">{stage.split(' (')[0]}</h5>
+                    <p className="text-xs text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-full inline-block mb-1.5 font-medium">{stage.match(/\((.*)\)/)?.[1]}</p>
+                    <div className="space-y-1">
+                      <div className="text-xs p-1 bg-slate-50 rounded text-slate-600 truncate">Candidate A</div>
+                      <div className="text-xs p-1 bg-slate-50 rounded text-slate-600 truncate">Candidate B</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Talent Insights */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <LineChart className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Talent Insights</h3>
+                <p className="text-sm text-gray-600">Market analytics</p>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                <p className="text-xs text-gray-600 mb-1">Active Candidates</p>
+                <p className="text-lg font-bold text-purple-700">3,200+</p>
+                <p className="text-xs text-green-600">+12% growth</p>
+              </div>
+              
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                <p className="text-xs text-gray-600 mb-1">Avg. Time to Hire</p>
+                <p className="text-lg font-bold text-purple-700">32 days</p>
+                <p className="text-xs text-green-600">-8% faster</p>
+              </div>
+              
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                <p className="text-xs text-gray-600 mb-1">Top Skill Demand</p>
+                <p className="text-lg font-bold text-purple-700">AI/ML</p>
+                <p className="text-xs text-blue-600">High demand</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Performance Stats */}
+          <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-3xl shadow-xl text-white p-6">
+            <h3 className="text-lg font-bold mb-4">Performance Dashboard</h3>
+            <div className="space-y-3">
+              <div className="bg-white/20 rounded-xl p-3">
+                <p className="text-purple-100 text-xs mb-1">Total Placements</p>
+                <p className="text-xl font-bold">1,247</p>
+                <p className="text-purple-200 text-xs">This quarter</p>
+              </div>
+              
+              <div className="bg-white/20 rounded-xl p-3">
+                <p className="text-purple-100 text-xs mb-1">Success Rate</p>
+                <p className="text-xl font-bold">89%</p>
+                <p className="text-purple-200 text-xs">Above industry avg.</p>
+              </div>
+              
+              <div className="bg-white/20 rounded-xl p-3">
+                <p className="text-purple-100 text-xs mb-1">Time Saved</p>
+                <p className="text-xl font-bold">15hrs</p>
+                <p className="text-purple-200 text-xs">Per placement</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -9,6 +9,7 @@ export { default as SearchResults } from './search/pages/SearchResults';
 export { default as SearchResultsComponent } from './search/components/SearchResults';
 export { default as NaturalLanguageSearch } from './search/components/NaturalLanguageSearch';
 export { default as DataSourcesSearch } from './search/components/DataSourcesSearch';
+export { default as SearchFeaturesBento } from './search/components/SearchFeaturesBento';
 export { default as BooleanSearchDialog } from './search/components/BooleanSearchDialog';
 
 // Email pages
