@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Sparkles, Filter, FileText, ToggleRight } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
-import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect } from '../services/searchService';
+import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect, searchCandidatesDirectAI } from '../services/searchService';
 import BooleanSearchParser from '../services/booleanSearchParser';
 
 interface QuickSearchProps {
@@ -18,6 +18,7 @@ const QuickSearch: React.FC<QuickSearchProps> = ({ onSearchClick, className = ''
 
   const handleSearch = async () => {
     console.log('QuickSearch: Starting search with query:', searchQuery);
+    let usedSingleAICall = false;
     
     if (!searchQuery.trim()) {
       addToast({
@@ -79,36 +80,71 @@ const QuickSearch: React.FC<QuickSearchProps> = ({ onSearchClick, className = ''
           }
         });
       } else {
-        // Handle regular search queries
+        // Handle regular search queries with SINGLE AI call (optimized)
         try {
-          // Extract enhanced keywords with priority classification
-          keywords = await extractEnhancedKeywords(searchQuery);
-          
-          // Convert enhanced keywords to filters with must/should logic
-          filters = await convertEnhancedKeywordsToFilters(keywords);
-          
-          console.log("QuickSearch: Using enhanced keyword extraction with filters:", filters);
-          
-          // Now use the direct external search to get rich candidate data
-          searchResults = await searchCandidatesExternalDirect(filters, searchQuery, { page: 1, limit: 10 });
+          // Single AI call - combines keyword extraction, filter conversion, and query generation
+          try {
+            console.log("🚀 QuickSearch: Using optimized single AI call");
+            searchResults = await searchCandidatesDirectAI(searchQuery, {
+              urgency: 'high', // Quick search implies some urgency
+              flexibility: 'moderate', 
+              primaryFocus: 'balanced',
+              isLocationAgnostic: false,
+              balanceMode: 'recall_optimized'
+            }, { page: 1, limit: 10 });
+            console.log("✅ QuickSearch: Got results from single AI call:", searchResults);
+            
+            // Create mock filters for navigation compatibility
+            filters = {
+              mustFilters: {},
+              shouldFilters: {},
+              searchText: searchQuery
+            };
+            
+            usedSingleAICall = true;
+          } catch (searchError) {
+            console.warn("❌ QuickSearch: Single AI search failed, falling back to 3-step process:", searchError);
+            
+            // Fallback to original 3-step process
+            keywords = await extractEnhancedKeywords(searchQuery);
+            filters = await convertEnhancedKeywordsToFilters(keywords);
+            console.log("🔄 QuickSearch: Fallback - using enhanced keyword extraction with filters:", filters);
+            
+            searchResults = await searchCandidatesExternalDirect(filters, searchQuery, { page: 1, limit: 10 });
+          }
           
           console.log("QuickSearch: Got rich search results:", searchResults);
           
           // Navigate to global search results with the actual search results
-          navigate('/dashboard/search-results', {
-            state: {
-              query: searchQuery,
-              filters: filters,
-              searchMode: 'external',
-              isGlobalSearch: true,
-              fromQuickSearch: true,
-              isEnhanced: true,
-              criticalRequirements: keywords.criticalRequirements,
-              preferredCriteria: keywords.preferredCriteria,
-              contextualHints: keywords.contextualHints,
-              preloadedResults: searchResults // Pass the actual results
-            }
-          });
+          if (usedSingleAICall) {
+            navigate('/dashboard/search-results', {
+              state: {
+                query: searchQuery,
+                filters: filters,
+                searchMode: 'external',
+                isGlobalSearch: true,
+                fromQuickSearch: true,
+                isEnhanced: true,
+                singleCallOptimized: true,
+                preloadedResults: searchResults
+              }
+            });
+          } else {
+            navigate('/dashboard/search-results', {
+              state: {
+                query: searchQuery,
+                filters: filters,
+                searchMode: 'external',
+                isGlobalSearch: true,
+                fromQuickSearch: true,
+                isEnhanced: true,
+                criticalRequirements: keywords?.criticalRequirements,
+                preferredCriteria: keywords?.preferredCriteria,
+                contextualHints: keywords?.contextualHints,
+                preloadedResults: searchResults
+              }
+            });
+          }
         } catch (enhancedError) {
           console.warn('QuickSearch: Enhanced search failed, using fallback:', enhancedError);
           

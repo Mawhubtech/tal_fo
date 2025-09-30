@@ -214,13 +214,28 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   // Click outside to close panel
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+      // Add a small delay to prevent race conditions with other click handlers
+      setTimeout(() => {
+        const target = event.target as Node;
+        
+        // Ensure we have a valid target and panel ref
+        if (!target || !panelRef.current) return;
+        
+        // Don't close if clicking on elements within the panel
+        if (panelRef.current.contains(target)) return;
+        
+        // Don't close if clicking on modal elements, dropdowns, or other overlay elements
+        const clickedElement = target as Element;
+        if (clickedElement.closest('.modal, .dropdown, .tooltip, .popover, [role="dialog"], [role="menu"]')) {
+          return;
+        }
+        
         // Close the panel when clicking outside
         onStateChange('closed');
-      }
+      }, 10);
     };
 
-    // Add listener since panel is rendered (not closed)
+    // Add listener since panel is open (component only renders when not closed)
     document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
@@ -246,20 +261,25 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
     // Handle formats like "2023", "2023-05", "May 2023", "2023-05-15", etc.
     let parsedDate: Date;
     
-    // If it's just a year (4 digits)
+    // If it's just a year (4 digits) - use end of year for better sorting
     if (/^\d{4}$/.test(dateStr)) {
-      parsedDate = new Date(parseInt(dateStr), 11, 31); // December 31st of that year
+      const year = parseInt(dateStr);
+      // For years, use December 31st to ensure proper chronological sorting
+      parsedDate = new Date(year, 11, 31, 23, 59, 59); // End of year
     }
-    // If it's year-month format (YYYY-MM)
+    // If it's year-month format (YYYY-MM) - use end of month
     else if (/^\d{4}-\d{2}$/.test(dateStr)) {
       const [year, month] = dateStr.split('-');
-      parsedDate = new Date(parseInt(year), parseInt(month) - 1, 1); // First day of the month
+      const yearNum = parseInt(year);
+      const monthNum = parseInt(month) - 1; // JavaScript months are 0-indexed
+      // Use last day of the month for better sorting
+      parsedDate = new Date(yearNum, monthNum + 1, 0, 23, 59, 59); // Last day of month
     }
     // If it's a full ISO date (YYYY-MM-DD)
     else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       parsedDate = new Date(dateStr);
     }
-    // Try parsing other formats like "May 2023"
+    // Try parsing other formats like "May 2023", "2023-Q4", etc.
     else {
       parsedDate = new Date(dateStr);
     }
@@ -291,17 +311,30 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
 
   // Helper function to sort experience chronologically (most recent first)
   const sortedExperience = experience?.slice().sort((a, b) => {
-    const aEndDate = parseDate(a.endDate);
-    const bEndDate = parseDate(b.endDate);
+    // Get end dates - if no end date, assume it's current (ongoing)
+    const getEndDate = (exp: Experience) => {
+      if (exp.endDate) return parseDate(exp.endDate);
+      // If no end date provided, assume it's current/ongoing
+      return new Date();
+    };
+    
+    // Get start dates - fallback to very old date if missing
+    const getStartDate = (exp: Experience) => {
+      if (exp.startDate) return parseDate(exp.startDate);
+      return new Date(0); // Very old date for missing start dates
+    };
+    
+    const aEndDate = getEndDate(a);
+    const bEndDate = getEndDate(b);
     
     // Sort by end date descending (most recent first)
     if (aEndDate.getTime() !== bEndDate.getTime()) {
       return bEndDate.getTime() - aEndDate.getTime();
     }
     
-    // If end dates are the same, sort by start date descending
-    const aStartDate = parseDate(a.startDate);
-    const bStartDate = parseDate(b.startDate);
+    // If end dates are the same, sort by start date descending (most recent first)
+    const aStartDate = getStartDate(a);
+    const bStartDate = getStartDate(b);
     return bStartDate.getTime() - aStartDate.getTime();
   });
 
@@ -311,7 +344,15 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
     const getEndDate = (edu: Education) => {
       if (edu.endDate) return parseDate(edu.endDate);
       if (edu.graduationDate) return parseDate(edu.graduationDate);
+      if (edu.endYear) return parseDate(edu.endYear.toString());
       return new Date(); // Current date for ongoing education
+    };
+    
+    // Determine the start date for each education entry
+    const getStartDate = (edu: Education) => {
+      if (edu.startDate) return parseDate(edu.startDate);
+      if (edu.startYear) return parseDate(edu.startYear.toString());
+      return new Date(0); // Very old date for missing start dates
     };
     
     const aEndDate = getEndDate(a);
@@ -323,8 +364,8 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
     }
     
     // If end dates are the same, sort by start date descending
-    const aStartDate = parseDate(a.startDate);
-    const bStartDate = parseDate(b.startDate);
+    const aStartDate = getStartDate(a);
+    const bStartDate = getStartDate(b);
     return bStartDate.getTime() - aStartDate.getTime();
   });
 
@@ -427,6 +468,8 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
         <div 
           ref={panelRef}
           className="fixed inset-y-0 right-0 w-full sm:w-2/3 md:w-1/2 lg:w-1/3 bg-white shadow-2xl z-50 flex"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
         >
         {/* Profile Info Section - Full width in collapsed view */}
         <div className="flex-1 w-full flex flex-col">
@@ -619,7 +662,9 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 {profileTabs.map((tab) => (
                   <button
                     key={tab.name}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setActiveTab(tab.index);
                     }}
                     className={`${
@@ -1290,6 +1335,8 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
       <div 
         ref={panelRef}
         className="fixed inset-y-0 right-0 w-full sm:w-4/5 md:w-3/4 lg:w-2/3 bg-white shadow-2xl z-50 flex"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
       {/* Profile Info Section - Responsive width based on candidate actions state */}
       <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'w-2/3'} flex flex-col border-r border-gray-200 transition-all duration-300 ease-in-out`}>
@@ -1442,7 +1489,11 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               {profileTabs.map((tab) => (
                 <button
                   key={tab.name}
-                  onClick={() => setActiveTab(tab.index)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab(tab.index);
+                  }}
                   className={`${
                     activeTab === tab.index
                       ? 'border-purple-600 text-purple-700 font-semibold'
@@ -2013,7 +2064,11 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 {sideTabs.map((tab) => (
                   <button
                     key={tab.name}
-                    onClick={() => setActiveSideTab(tab.index)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setActiveSideTab(tab.index);
+                    }}
                     className={`${
                       activeSideTab === tab.index
                         ? 'border-purple-600 text-purple-700 font-semibold bg-white'

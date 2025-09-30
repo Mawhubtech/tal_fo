@@ -5,7 +5,6 @@ import {
   ToggleRight,
   Search as SearchIcon,
   Filter,
-  Sparkles,
   X,
   Plus,
   ChevronDown
@@ -13,9 +12,7 @@ import {
 import FilterDialog, { FilterState } from './FilterDialog';
 import BooleanSearchDialog from '../sourcing/search/components/BooleanSearchDialog';
 import JobDescriptionDialog from '../recruitment/components/JobDescriptionDialog';
-import AIEnhancementModal from './AIEnhancementModal';
-import { useAIQuery } from '../hooks/ai';
-import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalEnhanced } from '../services/searchService';
+import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalEnhanced, searchCandidatesDirectAI } from '../services/searchService';
 import BooleanSearchParser from '../services/booleanSearchParser';
 import type { SearchFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
@@ -43,18 +40,13 @@ const CompactSearchComponent = forwardRef<CompactSearchRef, CompactSearchCompone
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
-  const [isAIEnhancementModalOpen, setIsAIEnhancementModalOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external');
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
-  // AI query hook
-  const aiQuery = useAIQuery();
-
   useImperativeHandle(ref, () => ({
     clearSearch: () => {
       setSearchQuery('');
-      aiQuery.reset();
     }
   }));
 
@@ -71,36 +63,6 @@ const CompactSearchComponent = forwardRef<CompactSearchRef, CompactSearchCompone
       }
     }
   }, [location.state]);
-
-  const enhanceSearchWithAI = async () => {
-    if (!searchQuery.trim()) return;
-
-    try {
-      await aiQuery.query({
-        prompt: `Please enhance this recruitment search query: "${searchQuery}"`,
-        systemPrompt: `You are a recruitment expert. Enhance the user's search query to be more comprehensive and effective for finding candidates. 
-            
-Guidelines:
-- Keep the core intent but expand with relevant keywords and synonyms
-- Add industry-relevant terms and skills
-- Include alternative job titles and experience levels
-- Maintain the original language and tone
-- Make it 2-3x more detailed while staying focused
-- Don't add unrealistic requirements`,
-        model: 'gpt-4-turbo-preview',
-        max_tokens: 500
-      });
-    } catch (error) {
-      console.error('Error enhancing search with AI:', error);
-    }
-  };
-
-  // Effect to open modal when AI enhancement completes successfully
-  useEffect(() => {
-    if (aiQuery.data?.content && !aiQuery.loading && !aiQuery.error) {
-      setIsAIEnhancementModalOpen(true);
-    }
-  }, [aiQuery.data, aiQuery.loading, aiQuery.error]);
 
   // Main function for AI keyword extraction and direct search
   const handleAISearch = async () => {
@@ -158,40 +120,75 @@ Guidelines:
           }
         });
       } else {
-        // Handle regular search queries with enhanced keyword extraction
+        // Handle regular search queries with SINGLE AI call (optimized)
+        let singleAICallSucceeded = false;
         try {
-          // Extract enhanced keywords with priority classification
-          keywords = await extractEnhancedKeywords(searchQuery);
-          
-          // Convert enhanced keywords to filters with must/should logic
-          filters = await convertEnhancedKeywordsToFilters(keywords);
-          
-          console.log("AI extracted enhanced filters:", filters);
-          
-          // Get rich search results using external enhanced search
+          // Single AI call - combines keyword extraction, filter conversion, and query generation
           if (searchMode === 'external' || searchMode === 'combined') {
             try {
-              searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery, { page: 1, limit: 3 });
-              console.log("Got rich search results from external enhanced search:", searchResults);
+              console.log("🚀 Using optimized single AI call for search");
+              searchResults = await searchCandidatesDirectAI(searchQuery, {
+                urgency: 'medium',
+                flexibility: 'moderate', 
+                primaryFocus: 'balanced',
+                isLocationAgnostic: false, // Location is important when specified
+                balanceMode: 'recall_optimized' // Prioritize finding results
+              }, { page: 1, limit: 3 });
+              console.log("✅ Got search results from single AI call:", searchResults);
+              
+              // Create mock filters and keywords for navigation compatibility (since we bypassed filter extraction)
+              filters = {
+                mustFilters: {},
+                shouldFilters: {},
+                searchText: searchQuery
+              };
+              
+              // Create mock keywords to prevent navigation errors
+              keywords = {
+                criticalRequirements: [], // AI handled this internally
+                preferredCriteria: [], // AI handled this internally
+                contextualHints: {
+                  urgency: 'medium',
+                  flexibility: 'moderate',
+                  primaryFocus: 'balanced'
+                },
+                isEnhanced: true,
+                singleAICall: true // Flag to indicate this was optimized
+              };
+              
+              singleAICallSucceeded = true;
             } catch (searchError) {
-              console.warn("External search failed, will navigate without preloaded results:", searchError);
+              console.warn("❌ Single AI search failed, falling back to 3-step process:", searchError);
+              
+              // Fallback to original 3-step process if single AI call fails
+              keywords = await extractEnhancedKeywords(searchQuery);
+              filters = await convertEnhancedKeywordsToFilters(keywords);
+              console.log("🔄 Fallback - AI extracted enhanced filters:", filters);
+              
+              searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery, { page: 1, limit: 3 });
+              console.log("🔄 Fallback - Got results from 3-step process:", searchResults);
             }
           }
           
-          // Navigate to global search results with enhanced data and search results
-          navigate('/dashboard/search-results', {
-            state: {
-              query: searchQuery,
-              filters: filters,
-              searchMode: searchMode,
-              isGlobalSearch: true,
-              isEnhanced: true,
-              criticalRequirements: keywords.criticalRequirements,
-              preferredCriteria: keywords.preferredCriteria,
-              contextualHints: keywords.contextualHints,
-              preloadedResults: searchResults
-            }
-          });
+          // Navigate to global search results only if single AI call succeeded
+          if (singleAICallSucceeded) {
+            console.log("🎯 Single AI call succeeded - navigating with optimized results");
+            navigate('/dashboard/search-results', {
+              state: {
+                query: searchQuery,
+                filters: filters,
+                searchMode: searchMode,
+                isGlobalSearch: true,
+                isEnhanced: true,
+                singleAIOptimized: true, // Flag for optimized search
+                criticalRequirements: keywords.criticalRequirements,
+                preferredCriteria: keywords.preferredCriteria,
+                contextualHints: keywords.contextualHints,
+                preloadedResults: searchResults
+              }
+            });
+            return; // Exit early to prevent fallback execution
+          }
         } catch (enhancedError) {
           console.warn('Enhanced search failed, falling back to standard search:', enhancedError);
           
@@ -432,19 +429,6 @@ Guidelines:
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
-      {/* AI Error Display */}
-      {aiQuery.error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700">Error enhancing search: {aiQuery.error}</p>
-          <button 
-            onClick={aiQuery.reset}
-            className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
       <div className="p-6">
         {/* Title */}
         {showTitle && (
@@ -475,27 +459,12 @@ Guidelines:
                 <button 
                   onClick={() => {
                     setSearchQuery('');
-                    aiQuery.reset();
                   }}
                   className="text-gray-400 hover:text-gray-600 p-1 rounded-md transition-colors flex-shrink-0"
                   title="Clear search"
                 >
                   <X className="w-4 h-4" />
                 </button>
-              )}
-              {searchQuery.trim() && !aiQuery.loading && (
-                <button 
-                  onClick={enhanceSearchWithAI}
-                  className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-2 rounded-md transition-colors flex-shrink-0"
-                  title="Enhance with AI"
-                >
-                  <Sparkles className="w-4 h-4" />
-                </button>
-              )}
-              {aiQuery.loading && (
-                <div className="p-2 flex-shrink-0">
-                  <div className="w-4 h-4 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
-                </div>
               )}
             </div>
           </div>
@@ -588,20 +557,6 @@ Guidelines:
         onSearch={handleJobDescriptionSearch}
       />
 
-      {/* AI Enhancement Modal */}
-      <AIEnhancementModal
-        isOpen={isAIEnhancementModalOpen}
-        onClose={() => {
-          setIsAIEnhancementModalOpen(false);
-          aiQuery.reset();
-        }}
-        content={aiQuery.data?.content || ''}
-        onUseEnhancedQuery={(enhancedQuery) => {
-          setSearchQuery(enhancedQuery);
-          setIsAIEnhancementModalOpen(false);
-          aiQuery.reset();
-        }}
-      />
     </div>
   );
 });

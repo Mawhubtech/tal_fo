@@ -1,34 +1,90 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Eye, Plus, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, Filter, X, ChevronDown, ChevronUp, Layers, KeySquare, GraduationCap, Zap, Command, Briefcase, Globe, User } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Eye, Plus, Loader2, CheckCircle, MapPin, Building, Code, Search, Sparkles, Filter, X, ChevronDown, ChevronUp, Layers, KeySquare, GraduationCap, Zap, Command, Briefcase, Globe, User, Settings } from 'lucide-react';
 import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../hooks/useSearch';
 import { useAddProspectsToProject } from '../hooks/useSourcingProjects';
 import { useShortlistExternalCandidate } from '../hooks/useShortlistExternal';
 import { useProfileAnalysis } from '../hooks/useProfileAnalysis';
 import { useAuthContext } from '../contexts/AuthContext';
 import type { SearchFilters } from '../services/searchService';
-import { searchEnhanced, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced, fetchCachedEnhancedResults } from '../services/searchService';
+import { searchEnhanced, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced, fetchCachedEnhancedResults, fetchCachedAdvancedFiltersResults, searchCandidatesWithAdvancedFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProjectSelectionModal from '../components/ProjectSelectionModal';
 import SourcingProfileSidePanel, { type PanelState } from '../sourcing/outreach/components/SourcingProfileSidePanel';
 import type { UserStructuredData } from '../components/ProfileSidePanel';
-import { FilterState } from '../components/FilterDialog';
 
-// Helper function to create default FilterState
-const createDefaultFilterState = (): FilterState => ({
-  general: { minExperience: '', maxExperience: '', requiredContactInfo: '', hideViewedProfiles: '', onlyConnections: '' },
-  location: { currentLocations: [], pastLocations: [], radius: '25', timezone: false },
-  job: { titles: [], skills: [] },
-  company: { names: [], industries: [], size: '' },
-  funding: {},
-  skillsKeywords: { items: [], requirements: [] },
-  power: { isOpenToRemote: false, hasEmail: false, hasPhone: false },
-  likelyToSwitch: { likelihood: '', recentActivity: '' },
-  education: { schools: [], degrees: [], majors: [] },
-  languages: { items: [] },
-  boolean: { fullName: '', booleanString: '' },
-});
+import AdvancedFilterPanel, { type AdvancedFilters } from '../components/AdvancedFilterPanel';
+import { convertAdvancedFiltersToQuery, generateFilterSummary } from '../services/advancedFilterService';
+
+// Helper function to convert frontend AdvancedFilters to backend AdvancedFiltersDto format
+const convertAdvancedFiltersForAPI = (filters: AdvancedFilters): any => {
+  const converted: any = { ...filters };
+  
+  // Convert array fields to strings where backend expects strings
+  if (Array.isArray(converted.jobTitle)) {
+    converted.jobTitle = converted.jobTitle.join(', '); // Convert array to comma-separated string
+  }
+  
+  // For location fields, use "OR" logic format that AI can understand
+  if (Array.isArray(converted.locationRawAddress)) {
+    converted.locationRawAddress = converted.locationRawAddress.join(' OR '); // Use OR for multiple locations
+  }
+  
+  if (Array.isArray(converted.locationCountry)) {
+    converted.locationCountry = converted.locationCountry.join(' OR ');
+  }
+  
+  if (Array.isArray(converted.locationRegions)) {
+    converted.locationRegions = converted.locationRegions.join(' OR ');
+  }
+  
+  if (Array.isArray(converted.experienceCompany)) {
+    converted.experienceCompany = converted.experienceCompany.join(' OR '); // Use OR for multiple companies
+  }
+  
+  if (Array.isArray(converted.experienceLocation)) {
+    converted.experienceLocation = converted.experienceLocation.join(' OR '); // Use OR for multiple experience locations
+  }
+  
+  if (Array.isArray(converted.companyHqLocation)) {
+    converted.companyHqLocation = converted.companyHqLocation.join(' OR '); // Use OR for multiple HQ locations
+  }
+  
+  if (Array.isArray(converted.companyHqCountry)) {
+    converted.companyHqCountry = converted.companyHqCountry.join(' OR ');
+  }
+  
+  if (Array.isArray(converted.companyHqRegions)) {
+    converted.companyHqRegions = converted.companyHqRegions.join(' OR ');
+  }
+  
+  if (Array.isArray(converted.companyHqCity)) {
+    converted.companyHqCity = converted.companyHqCity.join(' OR ');
+  }
+  
+  // Convert skills to array if it's a string (backend expects array)
+  if (typeof converted.skills === 'string') {
+    converted.skills = converted.skills.split(',').map((s: string) => s.trim()).filter(Boolean);
+  }
+  
+  // Convert languages to array if it's a string (backend expects array)  
+  if (typeof converted.languages === 'string') {
+    converted.languages = converted.languages.split(',').map((s: string) => s.trim()).filter(Boolean);
+  }
+  
+  // Remove empty or undefined fields
+  Object.keys(converted).forEach(key => {
+    const value = converted[key];
+    if (value === undefined || value === null || value === '' || 
+        (Array.isArray(value) && value.length === 0) ||
+        (typeof value === 'object' && value !== null && !Array.isArray(value) && Object.keys(value).length === 0)) {
+      delete converted[key];
+    }
+  });
+  
+  return converted;
+};
 
 // Helper function to parse enhanced filters structure
 const parseEnhancedFilters = (filtersData: any): SearchFilters => {
@@ -96,78 +152,7 @@ const parseEnhancedFilters = (filtersData: any): SearchFilters => {
   return parsedFilters;
 };
 
-// Helper function to convert SearchFilters to FilterState
-const convertSearchFiltersToFilterState = (searchFilters: SearchFilters): FilterState => {
-  const defaultState = createDefaultFilterState();
-  
-  return {
-    general: {
-      minExperience: searchFilters.general?.minExperience || defaultState.general.minExperience,
-      maxExperience: searchFilters.general?.maxExperience || defaultState.general.maxExperience,
-      requiredContactInfo: searchFilters.general?.requiredContactInfo || defaultState.general.requiredContactInfo,
-      hideViewedProfiles: searchFilters.general?.hideViewedProfiles || defaultState.general.hideViewedProfiles,
-      onlyConnections: searchFilters.general?.onlyConnections || defaultState.general.onlyConnections,
-    },
-    location: {
-      currentLocations: searchFilters.location?.currentLocations || defaultState.location.currentLocations,
-      pastLocations: searchFilters.location?.pastLocations || defaultState.location.pastLocations,
-      radius: searchFilters.location?.radius || defaultState.location.radius,
-      timezone: searchFilters.location?.timezone || defaultState.location.timezone,
-    },
-    job: {
-      titles: searchFilters.job?.titles || defaultState.job.titles,
-      skills: searchFilters.job?.skills || defaultState.job.skills,
-    },
-    company: {
-      names: searchFilters.company?.names || defaultState.company.names,
-      industries: searchFilters.company?.industries || defaultState.company.industries,
-      size: searchFilters.company?.size || defaultState.company.size,
-    },
-    funding: searchFilters.funding || defaultState.funding,
-    skillsKeywords: {
-      items: searchFilters.skillsKeywords?.items || defaultState.skillsKeywords.items,
-      requirements: searchFilters.skillsKeywords?.requirements || defaultState.skillsKeywords.requirements,
-    },
-    power: {
-      isOpenToRemote: searchFilters.power?.isOpenToRemote || defaultState.power.isOpenToRemote,
-      hasEmail: searchFilters.power?.hasEmail || defaultState.power.hasEmail,
-      hasPhone: searchFilters.power?.hasPhone || defaultState.power.hasPhone,
-    },
-    likelyToSwitch: {
-      likelihood: searchFilters.likelyToSwitch?.likelihood || defaultState.likelyToSwitch.likelihood,
-      recentActivity: searchFilters.likelyToSwitch?.recentActivity || defaultState.likelyToSwitch.recentActivity,
-    },
-    education: {
-      schools: searchFilters.education?.schools || defaultState.education.schools,
-      degrees: searchFilters.education?.degrees || defaultState.education.degrees,
-      majors: searchFilters.education?.majors || defaultState.education.majors,
-    },
-    languages: {
-      items: searchFilters.languages?.items || defaultState.languages.items,
-    },
-    boolean: {
-      fullName: searchFilters.boolean?.fullName || defaultState.boolean.fullName,
-      booleanString: searchFilters.boolean?.booleanString || defaultState.boolean.booleanString,
-    },
-  };
-};
 
-// Helper function to convert FilterState back to SearchFilters
-const convertFilterStateToSearchFilters = (filterState: FilterState): SearchFilters => {
-  return {
-    general: filterState.general,
-    location: filterState.location,
-    job: filterState.job,
-    company: filterState.company,
-    funding: filterState.funding,
-    skillsKeywords: filterState.skillsKeywords,
-    power: filterState.power,
-    likelyToSwitch: filterState.likelyToSwitch,
-    education: filterState.education,
-    languages: filterState.languages,
-    boolean: filterState.boolean,
-  };
-};
 
 // Enhanced Filter Components
 interface ArrayFilterInputProps {
@@ -402,6 +387,16 @@ const GlobalSearchResultsPage: React.FC = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [queryHash, setQueryHash] = useState<string | null>(null); // Store query hash for cache-based pagination
   
+  // Advanced Filter State
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({});
+  const [isAdvancedFilterVisible, setIsAdvancedFilterVisible] = useState(false);
+  const [useAdvancedFilters, setUseAdvancedFilters] = useState(false);
+  
+  // Query visualization state
+  const [generatedQuery, setGeneratedQuery] = useState<any>(null);
+  const [convertedFilters, setConvertedFilters] = useState<any>(null);
+  const [lastSearchMetadata, setLastSearchMetadata] = useState<any>(null);
+
   // Debug queryHash changes
   useEffect(() => {
     console.log('🔑 QueryHash state changed to:', queryHash);
@@ -411,6 +406,33 @@ const GlobalSearchResultsPage: React.FC = () => {
       console.log('❌ QueryHash is null - pagination will use new search');
     }
   }, [queryHash]);
+
+  // 🔍 DEBUG: Track advancedFilters state changes
+  useEffect(() => {
+    console.log('🔍 AdvancedFilters State Changed @ ', new Date().toLocaleTimeString(), ':', advancedFilters);
+    console.log('🔍 AdvancedFilters Keys Count:', Object.keys(advancedFilters).length);
+    console.log('🔍 Location Fields in AdvancedFilters:', {
+      locationRawAddress: advancedFilters.locationRawAddress,
+      locationCountry: advancedFilters.locationCountry,
+      locationRegions: advancedFilters.locationRegions,
+      hasAnyLocation: !!(advancedFilters.locationRawAddress || advancedFilters.locationCountry || advancedFilters.locationRegions)
+    });
+    console.log('🔍 Other Fields in AdvancedFilters:', {
+      jobTitle: advancedFilters.jobTitle,
+      skills: advancedFilters.skills,
+      experienceTitle: advancedFilters.experienceTitle,
+      experienceDescription: advancedFilters.experienceDescription,
+      isWorking: advancedFilters.isWorking
+    });
+  }, [advancedFilters]);
+
+  // 🔍 DEBUG: Track main filters state changes (for sidebar)
+  useEffect(() => {
+    console.log('🔍 Main Filters State Changed (used by sidebar):', filters);
+    console.log('🔍 Location in Main Filters:', filters?.location?.currentLocations);
+    console.log('🔍 Job Titles in Main Filters:', filters?.job?.titles);
+    console.log('🔍 Skills in Main Filters:', filters?.job?.skills);
+  }, [filters]);
 
   // Helper function to highlight keywords in text with improved relevance
   const highlightKeywords = (text: string, keywords: string[] = [], candidate?: any) => {
@@ -625,10 +647,7 @@ const GlobalSearchResultsPage: React.FC = () => {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
   
-  // State for filters sidebar
-  const [showFiltersSidebar, setShowFiltersSidebar] = useState(false);
-  const [tempFilters, setTempFilters] = useState<FilterState>(createDefaultFilterState());
-  const [tempSearchQuery, setTempSearchQuery] = useState<string>('');
+
   
   // State for search criteria card expansion
   const [isSearchCriteriaExpanded, setIsSearchCriteriaExpanded] = useState(false);
@@ -719,6 +738,64 @@ const GlobalSearchResultsPage: React.FC = () => {
             console.warn('Available keys in preloaded metadata:', Object.keys(preloadedResults?.metadata || {}));
           }
           
+          // Extract generated query and metadata from preloaded results
+          let extractedQuery = null;
+          let extractedFilters = null;
+          
+          if (preloadedResults.generatedFilters) {
+            extractedQuery = preloadedResults.generatedFilters;
+          } else if (preloadedResults.generatedQuery) {
+            extractedQuery = preloadedResults.generatedQuery;
+          } else if (preloadedResults.metadata?.generatedFilters) {
+            extractedQuery = preloadedResults.metadata.generatedFilters;
+          } else if (preloadedResults.metadata?.generatedQuery) {
+            extractedQuery = preloadedResults.metadata.generatedQuery;
+          } else if (preloadedResults.metadata?.aiMetadata?.generatedFilters) {
+            extractedQuery = preloadedResults.metadata.aiMetadata.generatedFilters;
+          } else if (preloadedResults.metadata?.aiMetadata?.generatedQuery) {
+            extractedQuery = preloadedResults.metadata.aiMetadata.generatedQuery;
+          }
+          
+          // Extract converted filters
+          if (preloadedResults.convertedFilters) {
+            extractedFilters = preloadedResults.convertedFilters;
+          } else if (preloadedResults.metadata?.convertedFilters) {
+            extractedFilters = preloadedResults.metadata.convertedFilters;
+          }
+          
+          // Store the query if we found one
+          if (extractedQuery) {
+            setGeneratedQuery(extractedQuery);
+            console.log('🔍 Stored generated query from preloaded results:', extractedQuery);
+          }
+          
+          // Store the converted filters if we found them
+          if (extractedFilters) {
+            setConvertedFilters(extractedFilters);
+            console.log('🔄 Stored converted filters from preloaded results:', extractedFilters);
+          }
+          
+          // Store complete search metadata with AI information from preloaded results
+          if (preloadedResults.metadata) {
+            const metadata = {
+              aiModel: preloadedResults.metadata?.aiModel || preloadedResults.metadata?.aiMetadata?.model || preloadedResults.aiModel,
+              queryProcessingTime: preloadedResults.metadata?.queryProcessingTime || preloadedResults.queryProcessingTime,
+              confidence: preloadedResults.metadata?.confidence || preloadedResults.metadata?.aiMetadata?.confidence || preloadedResults.confidence,
+              explanation: preloadedResults.metadata?.aiMetadata?.explanation,
+              optimizations: preloadedResults.metadata?.aiMetadata?.optimizations,
+              originalQuery: query,
+              timestamp: new Date().toISOString(),
+              searchMode: searchMode,
+              useEnhanced: isEnhanced,
+              useAdvancedFilters: false, // preloaded results are from regular searches
+              queryGenerated: preloadedResults.metadata?.aiMetadata?.queryGenerated,
+              schemaAware: preloadedResults.metadata?.aiMetadata?.schemaAware,
+              searchType: 'preloaded-enhanced'
+            };
+            setLastSearchMetadata(metadata);
+            console.log('🔍 Stored search metadata from preloaded results:', metadata);
+          }
+
           // Set pagination info if available
           if (preloadedResults.externalPagination) {
             setNextCursor(preloadedResults.externalPagination.nextCursor);
@@ -769,20 +846,31 @@ const GlobalSearchResultsPage: React.FC = () => {
     };
   }, []);
 
-  // Sync tempFilters with current filters when filters change
-  useEffect(() => {
-    setTempFilters(convertSearchFiltersToFilterState(filters));
-  }, [filters]);
 
-  // Sync tempSearchQuery with current searchQuery when it changes
-  useEffect(() => {
-    setTempSearchQuery(searchQuery);
-  }, [searchQuery]);
 
-  // Memoized check for active filters
+  // Check if advanced filters have values
+  const hasAdvancedFilters = useMemo(() => {
+    return Object.keys(advancedFilters).some(key => {
+      const value = advancedFilters[key as keyof AdvancedFilters];
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      } else if (typeof value === 'object' && value !== null) {
+        return Object.values(value).some(v => {
+          if (typeof v === 'number') return v !== 0;
+          if (typeof v === 'string') return v !== '';
+          return v !== undefined && v !== null;
+        });
+      } else {
+        return value !== undefined && value !== '' && value !== null && value !== false;
+      }
+    });
+  }, [advancedFilters]);
+
+  // Memoized check for active filters (includes both regular and advanced filters)
   const hasActiveFilters = useMemo(() => {
     return !!(
       searchQuery ||
+      hasAdvancedFilters ||
       (filters.job?.titles && filters.job.titles.length > 0) ||
       (filters.job?.skills && filters.job.skills.length > 0) ||
       (filters.skillsKeywords?.items && filters.skillsKeywords.items.length > 0) ||
@@ -801,7 +889,7 @@ const GlobalSearchResultsPage: React.FC = () => {
       (filters.likelyToSwitch?.likelihood && filters.likelyToSwitch.likelihood.trim() !== '') ||
       (filters.boolean?.booleanString && filters.boolean.booleanString.trim() !== '')
     );
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, hasAdvancedFilters]);
 
   // Memoized filter badges for expandable display
   const allFilterBadges = useMemo(() => {
@@ -1186,6 +1274,115 @@ const GlobalSearchResultsPage: React.FC = () => {
       );
     }
 
+    // Advanced Filter badges
+    if (hasAdvancedFilters) {
+      // Job Title from Advanced Filters
+      if (advancedFilters.jobTitle) {
+        badges.push(
+          <div key="adv-job-title" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+            <Briefcase className="w-3 h-3 mr-1" />
+            <span className="font-medium mr-2">Job Title:</span>
+            <span>{advancedFilters.jobTitle}</span>
+          </div>
+        );
+      }
+
+      // Full Name from Advanced Filters
+      if (advancedFilters.fullName) {
+        badges.push(
+          <div key="adv-full-name" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+            <User className="w-3 h-3 mr-1" />
+            <span className="font-medium mr-2">Name:</span>
+            <span>{advancedFilters.fullName}</span>
+          </div>
+        );
+      }
+
+      // Skills from Advanced Filters
+      if (advancedFilters.skills && Array.isArray(advancedFilters.skills) && advancedFilters.skills.length > 0) {
+        if (isSearchCriteriaExpanded) {
+          advancedFilters.skills.forEach((skill, index) => {
+            badges.push(
+              <div key={`adv-skill-${index}`} className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                <Code className="w-3 h-3 mr-1" />
+                <span className="font-medium mr-2">Skill:</span>
+                <span>{skill}</span>
+              </div>
+            );
+          });
+        } else {
+          badges.push(
+            <div key="adv-skills" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+              <Code className="w-3 h-3 mr-1" />
+              <span className="font-medium mr-2">Skills:</span>
+              <span>{advancedFilters.skills.slice(0, 2).join(', ')}</span>
+              {advancedFilters.skills.length > 2 && (
+                <span className="ml-1">+{advancedFilters.skills.length - 2} more</span>
+              )}
+            </div>
+          );
+        }
+      } else if (advancedFilters.skills && typeof advancedFilters.skills === 'string') {
+        badges.push(
+          <div key="adv-skills-string" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+            <Code className="w-3 h-3 mr-1" />
+            <span className="font-medium mr-2">Skills:</span>
+            <span>{advancedFilters.skills}</span>
+          </div>
+        );
+      }
+
+      // Location from Advanced Filters
+      if (advancedFilters.locationRawAddress || advancedFilters.locationCountry || advancedFilters.locationRegions) {
+        const locationParts = [
+          advancedFilters.locationRawAddress,
+          advancedFilters.locationRegions,
+          advancedFilters.locationCountry
+        ].filter(Boolean);
+        
+        if (locationParts.length > 0) {
+          badges.push(
+            <div key="adv-location" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+              <MapPin className="w-3 h-3 mr-1" />
+              <span className="font-medium mr-2">Location:</span>
+              <span>{locationParts.join(', ')}</span>
+            </div>
+          );
+        }
+      }
+
+      // Experience from Advanced Filters
+      if (advancedFilters.experienceTitle || advancedFilters.experienceCompany) {
+        const experienceParts = [advancedFilters.experienceTitle, advancedFilters.experienceCompany].filter(Boolean);
+        badges.push(
+          <div key="adv-experience" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+            <Briefcase className="w-3 h-3 mr-1" />
+            <span className="font-medium mr-2">Experience:</span>
+            <span>{experienceParts.join(' at ')}</span>
+          </div>
+        );
+      }
+
+      // Education from Advanced Filters
+      if (advancedFilters.educationInstitution || advancedFilters.educationTitle || advancedFilters.educationMajor) {
+        const educationParts = [
+          advancedFilters.educationTitle,
+          advancedFilters.educationMajor,
+          advancedFilters.educationInstitution
+        ].filter(Boolean);
+        
+        if (educationParts.length > 0) {
+          badges.push(
+            <div key="adv-education" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+              <GraduationCap className="w-3 h-3 mr-1" />
+              <span className="font-medium mr-2">Education:</span>
+              <span>{educationParts.join(', ')}</span>
+            </div>
+          );
+        }
+      }
+    }
+
     return badges;
   }, [searchQuery, filters, isSearchCriteriaExpanded]);
 
@@ -1210,6 +1407,67 @@ const GlobalSearchResultsPage: React.FC = () => {
     return visible;
   }, [allFilterBadges, isSearchCriteriaExpanded]);
 
+  // Advanced Filter Handlers
+  const handleAdvancedFiltersChange = (newFilters: AdvancedFilters) => {
+    console.log('🔧 AdvancedFilterPanel called handleAdvancedFiltersChange with:', newFilters);
+    console.log('🔧 Previous advancedFilters state was:', advancedFilters);
+    console.log('🔧 Location fields in new filters:', {
+      locationRawAddress: newFilters.locationRawAddress,
+      locationCountry: newFilters.locationCountry,
+      locationRegions: newFilters.locationRegions
+    });
+    
+    // Always allow direct updates from the AdvancedFilterPanel
+    // This includes removing location filters when user clears them
+    setAdvancedFilters(newFilters);
+  };
+
+  const handleApplyAdvancedFilters = () => {
+    console.log('🎯 Applying Advanced Filters:', advancedFilters, 'with search query:', searchQuery);
+    setUseAdvancedFilters(true);
+    setIsAdvancedFilterVisible(false);
+    
+    // Reset pagination for new search
+    setCurrentPage(1);
+    setCurrentCursor(undefined);
+    setNextCursor(undefined);
+    setQueryHash(null);
+    
+    // Start fresh search with advanced filters and current search query
+    fetchResults({}, searchQuery, 'external', false, undefined, true);
+  };
+
+  const handleSearchQueryChange = (newQuery: string) => {
+    console.log('🔍 Search Query Changed from Advanced Filters:', newQuery);
+    setSearchQuery(newQuery);
+  };
+
+  const handleClearAdvancedFilters = () => {
+    console.log('🧹 Clearing Advanced Filters (intentional)');
+    // Force clear the advanced filters (bypass protection)
+    setAdvancedFilters({});
+    setUseAdvancedFilters(false);
+    
+    // Optionally restart search with cleared filters
+    if (searchQuery || Object.keys(filters).length > 0) {
+      // Reset pagination for new search
+      setCurrentPage(1);
+      setCurrentCursor(undefined);
+      setNextCursor(undefined);
+      setQueryHash(null);
+      
+      // Return to regular search
+      fetchResults(filters, searchQuery, searchMode, isEnhanced, undefined, true);
+    } else {
+      // Clear results if no other search criteria
+      setResults([]);
+    }
+  };
+
+  const toggleAdvancedFilters = () => {
+    setIsAdvancedFilterVisible(!isAdvancedFilterVisible);
+  };
+
   const fetchResults = async (
     filters: SearchFilters, 
     query?: string, 
@@ -1230,9 +1488,111 @@ const GlobalSearchResultsPage: React.FC = () => {
     try {
       const searchMode = mode || 'database';
       let searchResults: any;
+      let apiRequestPayload: any = null; // Store API request payload for later use
       
-      // For external or combined search, try enhanced search first if available
-      if (useEnhanced && (searchMode === 'external' || searchMode === 'combined') && query) {
+      // Check if we should use advanced filters instead of regular search
+      // Use advanced filters API if hasAdvancedFilters is true (automatically detects when filters are applied)
+      if (hasAdvancedFilters && Object.keys(advancedFilters).some(key => advancedFilters[key as keyof AdvancedFilters] !== undefined)) {
+        try {
+          console.log('🔧 Using Advanced Filters Search:', advancedFilters, 'with query:', query);
+          
+          const pageNumber = cursor ? parseInt(cursor) : 1;
+          
+          console.log('🔍 Advanced Filters Debug:', {
+            pageNumber,
+            cursor,
+            queryHash,
+            resetResults,
+            isLoadMore: !resetResults,
+            shouldUseCache: pageNumber > 1 && queryHash && !resetResults
+          });
+          
+          // Check if this is a pagination request and we have a queryHash
+          if (pageNumber > 1 && queryHash && !resetResults) {
+            console.log('✅ Using ADVANCED FILTERS CACHE endpoint for page', pageNumber, 'with queryHash:', queryHash);
+            searchResults = await fetchCachedAdvancedFiltersResults(queryHash, { 
+              page: pageNumber, 
+              limit: 3 
+            });
+          } else {
+            console.log('✅ Using NEW ADVANCED FILTERS SEARCH endpoint for page', pageNumber, 'reasons:', {
+              isFirstPage: pageNumber === 1,
+              noQueryHash: !queryHash,
+              isReset: resetResults
+            });
+            
+            // Store the original request filters for reference
+            const originalRequestFilters = { ...advancedFilters };
+            
+            // Convert frontend filters to backend format
+            const convertedFilters = convertAdvancedFiltersForAPI(advancedFilters);
+            console.log('🔄 Converted filters for API:', convertedFilters);
+            console.log('🔧 Advanced Filters API Payload:', JSON.stringify({ filters: convertedFilters, searchText: query || '' }, null, 2));
+            console.log('🔧 Original request filters:', originalRequestFilters);
+            
+            // Store the actual API request payload for later use in populating filters
+            apiRequestPayload = { filters: convertedFilters, searchText: query || '' };
+            
+            searchResults = await searchCandidatesWithAdvancedFilters(convertedFilters, query || '', { 
+              page: pageNumber, 
+              limit: 3 
+            });
+            
+            // Store queryHash from initial search for future pagination
+            console.log('🔍 Full advanced filters response for queryHash extraction:', searchResults);
+            console.log('🔍 searchResults.metadata:', searchResults?.metadata);
+            console.log('🔍 searchResults.metadata.queryHash:', searchResults?.metadata?.queryHash);
+            
+            // Try multiple possible locations for queryHash
+            const possibleQueryHash = searchResults?.metadata?.queryHash || 
+                                    searchResults?.queryHash || 
+                                    searchResults?.data?.metadata?.queryHash;
+            
+            if (possibleQueryHash) {
+              console.log('🔑 Found queryHash from advanced filters, setting state:', possibleQueryHash);
+              setQueryHash(possibleQueryHash);
+              console.log('🔑 State setQueryHash called with:', possibleQueryHash);
+            } else {
+              console.warn('⚠️ No queryHash found in advanced filters response!');
+              console.warn('Available keys in searchResults:', Object.keys(searchResults || {}));
+              console.warn('Available keys in metadata:', Object.keys(searchResults?.metadata || {}));
+            }
+          }
+          
+          console.log('🎯 Advanced Filters Search Results:', searchResults);
+          console.log('🎯 Advanced Filters Results Count:', searchResults?.results?.length || 0);
+          
+          // Debug: Check if we have the metadata.advancedFilters that we need
+          if (searchResults?.metadata?.advancedFilters) {
+            console.log('✅ SUCCESS: metadata.advancedFilters found in response:', searchResults.metadata.advancedFilters);
+            console.log('✅ Location data available:', {
+              locationRawAddress: searchResults.metadata.advancedFilters.locationRawAddress,
+              locationCountry: searchResults.metadata.advancedFilters.locationCountry,
+              locationRegions: searchResults.metadata.advancedFilters.locationRegions
+            });
+          } else {
+            console.log('❌ WARNING: metadata.advancedFilters NOT found in response - will use API request payload fallback');
+            console.log('❌ Available metadata keys:', Object.keys(searchResults?.metadata || {}));
+            console.log('❌ Will use original API request payload:', apiRequestPayload);
+            console.log('❌ This may indicate backend is not returning complete metadata.advancedFilters');
+          }
+        } catch (advancedError) {
+          console.error('❌ Advanced filters search failed:', advancedError);
+          console.error('❌ Advanced filters error details:', advancedError.response?.data);
+          addToast({
+            type: 'error',
+            title: 'Advanced Search Failed',
+            message: 'There was an error with the advanced search. Please try again or use regular search.'
+          });
+          // Don't fall back to regular search if advanced filters failed
+          setIsLoading(false);
+          setIsLoadingMore(false);
+          return;
+        }
+      }
+      
+      // For external or combined search, try enhanced search first if available (if not using advanced filters)
+      if (!hasAdvancedFilters && useEnhanced && (searchMode === 'external' || searchMode === 'combined') && query) {
         try {
           const pageNumber = cursor ? parseInt(cursor) : 1;
           
@@ -1290,8 +1650,8 @@ const GlobalSearchResultsPage: React.FC = () => {
         }
       }
       
-      // If enhanced search wasn't used or failed, use standard search methods
-      if (!useEnhanced || !searchResults) {
+      // If enhanced search wasn't used or failed, use standard search methods (but only if not using advanced filters)
+      if (!hasAdvancedFilters && (!useEnhanced || !searchResults)) {
         console.log('GlobalSearchResults: Using standard search...');
         
         // For external search, prefer our direct external search for richer data
@@ -1365,6 +1725,474 @@ const GlobalSearchResultsPage: React.FC = () => {
       } else {
         setNextCursor(undefined);
         setHasNextPage(false);
+      }
+
+      // Store generated query and metadata for visualization (from any search with AI data)
+      if (resetResults && searchResults) {
+        // Store generatedFilters/generatedQuery if available - try multiple locations
+        let extractedQuery = null;
+        let extractedFilters = null;
+        
+        if (searchResults.generatedFilters) {
+          extractedQuery = searchResults.generatedFilters;
+        } else if (searchResults.generatedQuery) {
+          extractedQuery = searchResults.generatedQuery;
+        } else if (searchResults.metadata?.generatedFilters) {
+          extractedQuery = searchResults.metadata.generatedFilters;
+        } else if (searchResults.metadata?.generatedQuery) {
+          extractedQuery = searchResults.metadata.generatedQuery;
+        } else if (searchResults.metadata?.aiMetadata?.generatedFilters) {
+          extractedQuery = searchResults.metadata.aiMetadata.generatedFilters;
+        } else if (searchResults.metadata?.aiMetadata?.generatedQuery) {
+          extractedQuery = searchResults.metadata.aiMetadata.generatedQuery;
+        }
+        
+        // Extract converted filters
+        if (searchResults.convertedFilters) {
+          extractedFilters = searchResults.convertedFilters;
+        } else if (searchResults.metadata?.convertedFilters) {
+          extractedFilters = searchResults.metadata.convertedFilters;
+        }
+        
+        // Always store the query if we found one, regardless of search type
+        if (extractedQuery) {
+          setGeneratedQuery(extractedQuery);
+          console.log('🔍 Stored generated query from', useAdvancedFilters ? 'advanced filters' : 'regular search', ':', extractedQuery);
+        }
+        
+        // Store the converted filters if we found them
+        if (extractedFilters) {
+          setConvertedFilters(extractedFilters);
+          console.log('🔄 Stored converted filters from', hasAdvancedFilters ? 'advanced filters' : 'regular search', ':', extractedFilters);
+          
+          // Update main filters state to show the converted filters for ANY search that returns them
+          if (resetResults && extractedFilters) {
+            const searchType = hasAdvancedFilters ? 'advanced search' : 'external AI direct search';
+            console.log(`🔄 Updating main filters state with converted filters from ${searchType}`);
+            
+            // Clear old filters and build new ones from converted filters
+            const newFilters: SearchFilters = {
+              general: { minExperience: '', maxExperience: '', requiredContactInfo: '', hideViewedProfiles: '', onlyConnections: '' },
+              location: { currentLocations: [], pastLocations: [], radius: '25', timezone: false },
+              job: { titles: [], skills: [] },
+              company: { names: [], industries: [], size: '' },
+              funding: {},
+              skillsKeywords: { items: [], requirements: [] },
+              power: { isOpenToRemote: false, hasEmail: false, hasPhone: false },
+              likelyToSwitch: { likelihood: '', recentActivity: '' },
+              education: { schools: [], degrees: [], majors: [] },
+              languages: { items: [] },
+              boolean: { fullName: '', booleanString: '' },
+            };
+            
+            // Map converted filters to the main filters structure
+            if (extractedFilters.jobTitle) {
+              newFilters.job!.titles = Array.isArray(extractedFilters.jobTitle) ? extractedFilters.jobTitle : [extractedFilters.jobTitle];
+            }
+            
+            if (extractedFilters.skills) {
+              newFilters.job!.skills = Array.isArray(extractedFilters.skills) ? extractedFilters.skills : [extractedFilters.skills];
+            }
+            
+            // Handle location information differently based on search type
+            if (hasAdvancedFilters) {
+              // For advanced filters, extract location information from multiple sources
+              let apiAdvancedFilters = searchResults.metadata?.advancedFilters || {};
+              let requestFilters = apiRequestPayload?.filters || {};
+              
+              console.log('🔄 Location extraction - API advanced filters:', apiAdvancedFilters);
+              console.log('🔄 Location extraction - Request filters:', requestFilters);
+              console.log('🔄 Location extraction - Original advanced filters:', advancedFilters);
+              
+              // Check multiple sources for location information (in order of preference)
+              const locationSources = [
+                apiAdvancedFilters.locationRawAddress,
+                requestFilters.locationRawAddress,
+                advancedFilters.locationRawAddress
+              ].filter(Boolean);
+              
+              if (locationSources.length > 0) {
+                const sourceLocation = locationSources[0]; // Use the first available source
+                const locations = Array.isArray(sourceLocation) 
+                  ? sourceLocation 
+                  : sourceLocation.split(' OR ').map(loc => loc.trim());
+                newFilters.location!.currentLocations = locations;
+                console.log('🔄 Setting location from source:', sourceLocation, '→ locations:', locations);
+              }
+              
+              // Handle country information
+              const countrySources = [
+                apiAdvancedFilters.locationCountry,
+                requestFilters.locationCountry,
+                advancedFilters.locationCountry
+              ].filter(Boolean);
+              
+              if (countrySources.length > 0) {
+                const sourceCountry = countrySources[0];
+                const countries = Array.isArray(sourceCountry) 
+                  ? sourceCountry 
+                  : sourceCountry.split(' OR ').map(loc => loc.trim());
+                // Add to current locations if not already there
+                newFilters.location!.currentLocations = [...(newFilters.location!.currentLocations || []), ...countries];
+                console.log('🔄 Adding country locations:', countries);
+              }
+              
+              // Handle regions information
+              const regionSources = [
+                apiAdvancedFilters.locationRegions,
+                requestFilters.locationRegions,
+                advancedFilters.locationRegions
+              ].filter(Boolean);
+              
+              if (regionSources.length > 0) {
+                const sourceRegions = regionSources[0];
+                const regions = Array.isArray(sourceRegions) 
+                  ? sourceRegions 
+                  : sourceRegions.split(' OR ').map(loc => loc.trim());
+                // Add to current locations if not already there
+                newFilters.location!.currentLocations = [...(newFilters.location!.currentLocations || []), ...regions];
+                console.log('🔄 Adding region locations:', regions);
+              }
+            } else {
+              // For regular external AI direct search, extract location from convertedFilters or original filters
+              if (extractedFilters.location) {
+                const locations = Array.isArray(extractedFilters.location) 
+                  ? extractedFilters.location 
+                  : [extractedFilters.location];
+                newFilters.location!.currentLocations = locations;
+              }
+              
+              // Also check original filters for location information
+              if (filters.location?.currentLocations && filters.location.currentLocations.length > 0) {
+                newFilters.location!.currentLocations = [...(newFilters.location!.currentLocations || []), ...filters.location.currentLocations];
+              }
+            }
+            
+            // Add other filter types from extracted filters
+            if (extractedFilters.company) {
+              newFilters.company!.names = Array.isArray(extractedFilters.company) ? extractedFilters.company : [extractedFilters.company];
+            }
+            
+            if (extractedFilters.industries) {
+              newFilters.company!.industries = Array.isArray(extractedFilters.industries) ? extractedFilters.industries : [extractedFilters.industries];
+            }
+            
+            // Remove duplicates from all arrays
+            if (newFilters.location!.currentLocations) {
+              newFilters.location!.currentLocations = Array.from(new Set(newFilters.location!.currentLocations));
+            }
+            if (newFilters.job!.titles) {
+              newFilters.job!.titles = Array.from(new Set(newFilters.job!.titles));
+            }
+            if (newFilters.job!.skills) {
+              newFilters.job!.skills = Array.from(new Set(newFilters.job!.skills));
+            }
+            if (newFilters.company!.names) {
+              newFilters.company!.names = Array.from(new Set(newFilters.company!.names));
+            }
+            if (newFilters.company!.industries) {
+              newFilters.company!.industries = Array.from(new Set(newFilters.company!.industries));
+            }
+            
+            console.log(`🔄 New filters state after ${searchType}:`, newFilters);
+            if (hasAdvancedFilters) {
+              console.log('🔄 API Advanced Filters from metadata:', searchResults.metadata?.advancedFilters);
+              console.log('🔄 Original Advanced Filters:', advancedFilters);
+            } else {
+              console.log('🔄 Original Regular Filters:', filters);
+            }
+            setFilters(newFilters);
+          }
+        }
+        
+        // CRITICAL: Always update main filters state from advancedFilters when using advanced search
+        // This ensures the filters sidebar shows the applied filters regardless of convertedFilters availability
+        if (hasAdvancedFilters && resetResults) {
+          console.log('🎯 SIDEBAR FIX: Updating main filters state from advancedFilters to populate sidebar');
+          console.log('🎯 Current advancedFilters for sidebar:', advancedFilters);
+          
+          // Create new filters state based on current advancedFilters
+          const sidebarFilters: SearchFilters = {
+            general: { minExperience: '', maxExperience: '', requiredContactInfo: '', hideViewedProfiles: '', onlyConnections: '' },
+            location: { currentLocations: [], pastLocations: [], radius: '25', timezone: false },
+            job: { titles: [], skills: [] },
+            company: { names: [], industries: [], size: '' },
+            funding: {},
+            skillsKeywords: { items: [], requirements: [] },
+            power: { isOpenToRemote: false, hasEmail: false, hasPhone: false },
+            likelyToSwitch: { likelihood: '', recentActivity: '' },
+            education: { schools: [], degrees: [], majors: [] },
+            languages: { items: [] },
+            boolean: { fullName: '', booleanString: '' },
+          };
+          
+          // Map advancedFilters to main filters structure for sidebar display
+          if (advancedFilters.jobTitle) {
+            sidebarFilters.job!.titles = Array.isArray(advancedFilters.jobTitle) ? advancedFilters.jobTitle : [advancedFilters.jobTitle];
+          }
+          
+          if (advancedFilters.skills) {
+            sidebarFilters.job!.skills = Array.isArray(advancedFilters.skills) ? advancedFilters.skills : [advancedFilters.skills];
+          }
+          
+          // CRITICAL: Map location fields from advancedFilters to sidebar
+          const locationParts = [];
+          if (advancedFilters.locationRawAddress) {
+            locationParts.push(advancedFilters.locationRawAddress);
+          }
+          if (advancedFilters.locationCountry) {
+            locationParts.push(advancedFilters.locationCountry);
+          }
+          if (advancedFilters.locationRegions) {
+            if (Array.isArray(advancedFilters.locationRegions)) {
+              locationParts.push(...advancedFilters.locationRegions);
+            } else {
+              locationParts.push(advancedFilters.locationRegions);
+            }
+          }
+          
+          if (locationParts.length > 0) {
+            // Flatten and deduplicate location parts
+            const flattenedLocations = locationParts.flatMap(part => 
+              typeof part === 'string' ? part.split(/[,|]/).map(s => s.trim()) : [part]
+            ).filter(Boolean);
+            
+            sidebarFilters.location!.currentLocations = Array.from(new Set(flattenedLocations));
+            console.log('🎯 SIDEBAR: Setting location for sidebar from advancedFilters:', sidebarFilters.location!.currentLocations);
+          }
+          
+          // Map other fields
+          if (advancedFilters.experienceCompany) {
+            sidebarFilters.company!.names = Array.isArray(advancedFilters.experienceCompany) 
+              ? advancedFilters.experienceCompany 
+              : [advancedFilters.experienceCompany];
+          }
+          
+          console.log('🎯 SIDEBAR: Final filters for sidebar display:', sidebarFilters);
+          setFilters(sidebarFilters);
+        }
+        
+        // Update advanced filters state with data from API request/response (for advanced search)
+        // Priority: 1. API response advancedFilters (PREFERRED - contains complete data from backend AI), 2. Original API request filters, 3. convertedFilters mapping
+        console.log('🔍 DEBUG: Checking if priority system should run:', {
+          hasAdvancedFilters,
+          resetResults,
+          shouldRun: hasAdvancedFilters && resetResults
+        });
+        
+        if (hasAdvancedFilters) {
+          let filtersToSet: AdvancedFilters | null = null;
+          
+          // First priority: ALWAYS use advancedFilters from API response metadata when available
+          // This contains the complete, processed filter data from the backend AI including location information
+          if (searchResults.metadata?.advancedFilters) {
+
+            filtersToSet = { ...searchResults.metadata.advancedFilters }; // Create a copy to avoid mutations
+          }
+          // Second priority: Use the original API request filters (what was actually sent)
+          // This is the most reliable source when metadata.advancedFilters is missing
+          else if (apiRequestPayload?.filters) {
+
+            
+            const requestFilters: AdvancedFilters = {};
+            
+            // Map the API request payload back to AdvancedFilters format
+            const reqFilters = apiRequestPayload.filters;
+            if (reqFilters.jobTitle) {
+              requestFilters.jobTitle = reqFilters.jobTitle;
+            }
+            if (reqFilters.skills) {
+              requestFilters.skills = reqFilters.skills;
+            }
+            if (reqFilters.experienceTitle) {
+              requestFilters.experienceTitle = reqFilters.experienceTitle;
+            }
+            if (reqFilters.experienceDescription) {
+              requestFilters.experienceDescription = reqFilters.experienceDescription;
+            }
+            if (reqFilters.experienceCompany) {
+              requestFilters.experienceCompany = reqFilters.experienceCompany;
+            }
+            if (reqFilters.isWorking !== undefined) {
+              requestFilters.isWorking = reqFilters.isWorking;
+            }
+            if (reqFilters.fullName) {
+              requestFilters.fullName = reqFilters.fullName;
+            }
+            
+            // CRITICAL: Enhanced location handling - ALWAYS preserve original advanced filter location info
+            // The API request payload should contain the exact location data that was sent
+            if (reqFilters.locationRawAddress) {
+              requestFilters.locationRawAddress = reqFilters.locationRawAddress;
+            } else if (advancedFilters.locationRawAddress) {
+              requestFilters.locationRawAddress = advancedFilters.locationRawAddress;
+            }
+            
+            if (reqFilters.locationCountry) {
+              requestFilters.locationCountry = reqFilters.locationCountry;
+            } else if (advancedFilters.locationCountry) {
+              requestFilters.locationCountry = advancedFilters.locationCountry;
+            }
+            
+            if (reqFilters.locationRegions) {
+              requestFilters.locationRegions = reqFilters.locationRegions;
+            } else if (advancedFilters.locationRegions) {
+              requestFilters.locationRegions = advancedFilters.locationRegions;
+            }
+            filtersToSet = requestFilters;
+          }
+          // Third priority: Map from convertedFilters if no other options available (LAST RESORT)
+          else if (extractedFilters) {
+            console.log('❌ PRIORITY 3: Mapping advancedFilters from convertedFilters (may miss location data):', extractedFilters);
+            console.log('❌ Warning: convertedFilters may not contain complete location information!');
+            console.log('❌ Original advancedFilters for location fallback:', advancedFilters);
+            const advancedFiltersFromConverted: AdvancedFilters = {};
+            
+            // Map convertedFilters back to advancedFilters format
+            if (extractedFilters.jobTitle) {
+              advancedFiltersFromConverted.jobTitle = extractedFilters.jobTitle;
+            }
+            if (extractedFilters.skills) {
+              advancedFiltersFromConverted.skills = extractedFilters.skills;
+            }
+            if (extractedFilters.experienceTitle) {
+              advancedFiltersFromConverted.experienceTitle = extractedFilters.experienceTitle;
+            }
+            if (extractedFilters.experienceDescription) {
+              advancedFiltersFromConverted.experienceDescription = extractedFilters.experienceDescription;
+            }
+            if (extractedFilters.experienceCompany) {
+              advancedFiltersFromConverted.experienceCompany = extractedFilters.experienceCompany;
+            }
+            if (extractedFilters.isWorking !== undefined) {
+              advancedFiltersFromConverted.isWorking = extractedFilters.isWorking;
+            }
+            
+            // Handle location fields - CRITICAL: Add fallback to original advancedFilters
+            if (extractedFilters.locationRawAddress) {
+              advancedFiltersFromConverted.locationRawAddress = extractedFilters.locationRawAddress;
+              console.log('✅ Found locationRawAddress in convertedFilters:', extractedFilters.locationRawAddress);
+            } else if (extractedFilters.location) {
+              advancedFiltersFromConverted.locationRawAddress = extractedFilters.location;
+              console.log('✅ Found location in convertedFilters, using as locationRawAddress:', extractedFilters.location);
+            } else if (advancedFilters.locationRawAddress) {
+              // CRITICAL: Use original location from advancedFilters as final fallback
+              advancedFiltersFromConverted.locationRawAddress = advancedFilters.locationRawAddress;
+              console.log('🔧 CRITICAL FALLBACK: Using original locationRawAddress from advancedFilters:', advancedFilters.locationRawAddress);
+            }
+            
+            if (extractedFilters.locationCountry) {
+              advancedFiltersFromConverted.locationCountry = extractedFilters.locationCountry;
+            } else if (advancedFilters.locationCountry) {
+              advancedFiltersFromConverted.locationCountry = advancedFilters.locationCountry;
+              console.log('🔧 FALLBACK: Using original locationCountry from advancedFilters:', advancedFilters.locationCountry);
+            }
+            
+            if (extractedFilters.locationRegions) {
+              advancedFiltersFromConverted.locationRegions = extractedFilters.locationRegions;
+            } else if (advancedFilters.locationRegions) {
+              advancedFiltersFromConverted.locationRegions = advancedFilters.locationRegions;
+              console.log('🔧 FALLBACK: Using original locationRegions from advancedFilters:', advancedFilters.locationRegions);
+            }
+            
+            // Handle company and other fields
+            if (extractedFilters.company) {
+              advancedFiltersFromConverted.experienceCompany = extractedFilters.company;
+            }
+            if (extractedFilters.fullName) {
+              advancedFiltersFromConverted.fullName = extractedFilters.fullName;
+            }
+            
+            filtersToSet = advancedFiltersFromConverted;
+          }
+          // Fourth priority: If we still don't have location data, use original advancedFilters (USER INPUT PRESERVATION)
+          else {
+            console.log('❌ PRIORITY 4: No filter data from API - preserving original user input');
+            console.log('❌ Using original advancedFilters to preserve user location input:', advancedFilters);
+            filtersToSet = { ...advancedFilters }; // Preserve original user input
+          }
+          
+          // Update the advancedFilters state if we have something to set
+          if (filtersToSet && Object.keys(filtersToSet).length > 0) {
+            console.log('🎯 FINAL: Setting advancedFilters state with:', filtersToSet);
+            console.log('🎯 Location fields to be set:', {
+              locationRawAddress: filtersToSet.locationRawAddress,
+              locationCountry: filtersToSet.locationCountry,
+              locationRegions: filtersToSet.locationRegions
+            });
+            console.log('🎯 This will populate the AdvancedFilterPanel with complete filter data from advanced-filters endpoint');
+            
+            // Final fallback: ensure location is preserved from original advancedFilters if missing
+            if (!filtersToSet.locationRawAddress && !filtersToSet.locationCountry && !filtersToSet.locationRegions) {
+              if (advancedFilters.locationRawAddress || advancedFilters.locationCountry || advancedFilters.locationRegions) {
+                console.log('🔧 Final fallback: adding missing location from original advancedFilters');
+                filtersToSet = {
+                  ...filtersToSet,
+                  locationRawAddress: filtersToSet.locationRawAddress || advancedFilters.locationRawAddress,
+                  locationCountry: filtersToSet.locationCountry || advancedFilters.locationCountry,
+                  locationRegions: filtersToSet.locationRegions || advancedFilters.locationRegions
+                };
+                console.log('🔧 Enhanced filtersToSet with location fallback:', filtersToSet);
+              }
+            }
+            
+            // 🚨 EMERGENCY FIX: If we still don't have location in filtersToSet but main filters has it, copy it over
+            const mainFiltersHasLocation = filters?.location?.currentLocations && filters.location.currentLocations.length > 0;
+            const advFiltersHasLocation = filtersToSet.locationRawAddress || filtersToSet.locationCountry || filtersToSet.locationRegions;
+            
+            if (mainFiltersHasLocation && !advFiltersHasLocation) {
+              filtersToSet = {
+                ...filtersToSet,
+                locationRawAddress: filters.location.currentLocations[0] // Take the first location
+              };
+            }
+            
+            console.log('🔍 DEBUG: About to call setAdvancedFilters with:', filtersToSet);
+            console.log('🔍 DEBUG: Location fields being set:', {
+              locationRawAddress: filtersToSet.locationRawAddress,
+              locationCountry: filtersToSet.locationCountry,
+              locationRegions: filtersToSet.locationRegions
+            });
+            setAdvancedFilters(filtersToSet);
+            console.log('🔍 DEBUG: setAdvancedFilters called - state should update shortly');
+          } else {
+            console.log('⚠️ WARNING: No filters to set from priority system - this might be why location is missing');
+            
+            // 🚨 LAST RESORT: If no filtersToSet but we have main filters location, create minimal filtersToSet
+            const mainFiltersHasLocation = filters?.location?.currentLocations && filters.location.currentLocations.length > 0;
+            if (mainFiltersHasLocation) {
+              console.log('🚨 LAST RESORT: Creating minimal advancedFilters from main filters location');
+              const emergencyFilters = {
+                ...advancedFilters, // Keep existing advanced filters
+                locationRawAddress: filters.location.currentLocations[0]
+              };
+              console.log('🚨 LAST RESORT: Setting emergency advancedFilters:', emergencyFilters);
+              setAdvancedFilters(emergencyFilters);
+            }
+          }
+        } else {
+          console.log('⚠️ WARNING: Priority system not running because hasAdvancedFilters is false');
+        }
+        
+        // Store complete search metadata with AI information
+        const metadata = {
+          aiModel: searchResults.metadata?.aiModel || searchResults.metadata?.aiMetadata?.model || searchResults.aiModel,
+          queryProcessingTime: searchResults.metadata?.queryProcessingTime || searchResults.queryProcessingTime,
+          confidence: searchResults.metadata?.confidence || searchResults.metadata?.aiMetadata?.confidence || searchResults.confidence,
+          explanation: searchResults.metadata?.aiMetadata?.explanation,
+          optimizations: searchResults.metadata?.aiMetadata?.optimizations,
+          originalQuery: query,
+          timestamp: new Date().toISOString(),
+          searchMode: searchMode,
+          useEnhanced: useEnhanced,
+          useAdvancedFilters: useAdvancedFilters,
+          queryGenerated: searchResults.metadata?.aiMetadata?.queryGenerated,
+          schemaAware: searchResults.metadata?.aiMetadata?.schemaAware,
+          searchType: useAdvancedFilters ? 'advanced-filters' : 'enhanced-external'
+        };
+        setLastSearchMetadata(metadata);
+        
+        console.log('🔍 Stored search metadata:', metadata);
       }
 
       if (resetResults) {
@@ -1823,34 +2651,7 @@ const GlobalSearchResultsPage: React.FC = () => {
     }
   };
 
-  // Filters sidebar handlers
-  const handleOpenFilters = () => {
-    setTempFilters(convertSearchFiltersToFilterState(filters));
-    setTempSearchQuery(searchQuery);
-    setShowFiltersSidebar(true);
-  };
 
-  const handleCloseFilters = () => {
-    setShowFiltersSidebar(false);
-    setTempFilters(createDefaultFilterState());
-    setTempSearchQuery('');
-  };
-
-  const handleApplyFilters = async () => {
-    const convertedFilters = convertFilterStateToSearchFilters(tempFilters);
-    setFilters(convertedFilters);
-    setSearchQuery(tempSearchQuery);
-    setShowFiltersSidebar(false);
-    
-    // Reset pagination and fetch new results
-    setCurrentCursor(undefined);
-    setNextCursor(undefined);
-    setHasNextPage(false);
-    setCurrentPage(1);
-    
-    // Fetch results with new filters - use enhanced search for filter applications
-    await fetchResults(convertedFilters, tempSearchQuery, searchMode, true, undefined, true);
-  };
 
   // AI Profile Analysis Handler
   const handleGenerateAnalysis = async (candidate: any) => {
@@ -1908,15 +2709,54 @@ const GlobalSearchResultsPage: React.FC = () => {
     );
   }
 
+  // � REAL-TIME EMERGENCY FIX: Ensure location data is present before rendering AdvancedFilterPanel
+  const getFixedAdvancedFilters = (): AdvancedFilters => {
+    const mainFiltersHasLocation = filters?.location?.currentLocations && filters.location.currentLocations.length > 0;
+    const advFiltersHasLocation = advancedFilters.locationRawAddress || advancedFilters.locationCountry || advancedFilters.locationRegions;
+    
+    // Only auto-fix if we have minimal filters (initial state), not when user has actively managed filters
+    const hasMinimalFilters = Object.keys(advancedFilters).length <= 3;
+    
+    if (mainFiltersHasLocation && !advFiltersHasLocation && hasAdvancedFilters && hasMinimalFilters) {
+      const fixedFilters = {
+        ...advancedFilters,
+        locationRawAddress: filters.location.currentLocations[0]
+      };
+      
+      // Update state for future renders
+      setAdvancedFilters(fixedFilters);
+      return fixedFilters;
+    }
+    
+    return advancedFilters;
+  };
+  
+  const fixedAdvancedFilters = getFixedAdvancedFilters();
+
+  // �🔍 DEBUG: Log what props are being passed to AdvancedFilterPanel
+
+
   return (
-    <> {/* Added React.Fragment to wrap main content and panel */}
-      <div className={`min-h-screen bg-gray-50 transition-all duration-300 ${
-        showFiltersSidebar ? 'ml-80' : ''
-      } ${
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Filters Sidebar */}
+      <AdvancedFilterPanel
+        filters={fixedAdvancedFilters}
+        onFiltersChange={handleAdvancedFiltersChange}
+        onApplyFilters={handleApplyAdvancedFilters}
+        onClearFilters={handleClearAdvancedFilters}
+        isVisible={isAdvancedFilterVisible}
+        onToggle={toggleAdvancedFilters}
+        searchQuery={searchQuery}
+        onSearchQueryChange={handleSearchQueryChange}
+        convertedFilters={convertedFilters}
+      />
+
+      {/* Main Content */}
+      <div className={`flex-1 transition-all duration-300 ${
         panelState === 'expanded' ? 'mr-[66.666667%] overflow-hidden' : 
         panelState === 'collapsed' ? 'mr-[33.333333%] overflow-hidden' : 
         ''
-      }`}>
+      } ${isAdvancedFilterVisible ? 'ml-80' : ''}`}>
         <div className="container mx-auto px-6 py-4">
           {/* Header */}
         <div className="flex items-center justify-between py-6 mb-4">
@@ -1940,15 +2780,25 @@ const GlobalSearchResultsPage: React.FC = () => {
                     Boolean Search
                   </span>
                 )}
+                {useAdvancedFilters && (
+                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    <Settings className="w-3 h-3 mr-1" />
+                    Advanced Filters Active
+                  </span>
+                )}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={handleOpenFilters}
-              className="inline-flex items-center px-4 py-2 text-sm bg-purple-600 text-white border border-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+              onClick={toggleAdvancedFilters}
+              className={`inline-flex items-center px-4 py-2 text-sm border rounded-lg transition-colors ${
+                isAdvancedFilterVisible
+                  ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
+                  : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50'
+              }`}
             >
-              <Filter className="w-4 h-4 mr-2" />
+              <Settings className="w-4 h-4 mr-2" />
               Edit Filters
             </button>
           </div>
@@ -1958,8 +2808,8 @@ const GlobalSearchResultsPage: React.FC = () => {
         {hasActiveFilters && (
           <div 
             className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer hover:border-purple-300 hover:bg-purple-50/30 transition-colors"
-            onClick={handleOpenFilters}
-            title="Click to edit search criteria"
+            onClick={toggleAdvancedFilters}
+            title="Click to edit filters"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -1994,6 +2844,8 @@ const GlobalSearchResultsPage: React.FC = () => {
 
           </div>
         )}
+
+
 
         {/* Project Requirement Notice */}
         <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -2361,337 +3213,7 @@ const GlobalSearchResultsPage: React.FC = () => {
         </>
       )}
 
-      {/* Filters Sidebar */}
-      {showFiltersSidebar && (
-        <>
-          {/* Overlay */}
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={handleCloseFilters}></div>
-          
-          {/* Sidebar */}
-          <div className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Search Filters</h2>
-                <p className="text-sm text-gray-500">Customize your search criteria</p>
-              </div>
-              <button
-                onClick={handleCloseFilters}
-                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {/* Search Query */}
-              <div className="mb-6 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <label className="block text-sm font-medium text-purple-700 mb-2">
-                  Search Keywords
-                </label>
-                <input
-                  type="text"
-                  value={tempSearchQuery}
-                  onChange={(e) => setTempSearchQuery(e.target.value)}
-                  placeholder="Enter keywords..."
-                  className="w-full px-3 py-2 border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Filter Sections */}
-              <div className="space-y-4">
-                
-                {/* General Filters */}
-                <ComprehensiveFilterSection
-                  title="Experience & General"
-                  icon={Layers}
-                  isExpanded={true}
-                  hasActiveFilters={
-                    (filters.general?.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0') ||
-                    (filters.general?.maxExperience && filters.general.maxExperience !== '') ||
-                    (filters.general?.requiredContactInfo && filters.general.requiredContactInfo !== '') ||
-                    (filters.general?.hideViewedProfiles && filters.general.hideViewedProfiles !== '') ||
-                    (filters.general?.onlyConnections && filters.general.onlyConnections !== '')
-                  }
-                >
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Years of Experience
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <input
-                          type="number"
-                          min="0"
-                          value={tempFilters.general.minExperience === '0' ? '' : tempFilters.general.minExperience}
-                          onChange={(e) => setTempFilters(prev => ({
-                            ...prev,
-                            general: { ...prev.general, minExperience: e.target.value }
-                          }))}
-                          placeholder="Min"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          value={tempFilters.general.maxExperience}
-                          onChange={(e) => setTempFilters(prev => ({
-                            ...prev,
-                            general: { ...prev.general, maxExperience: e.target.value }
-                          }))}
-                          placeholder="Max"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </ComprehensiveFilterSection>
-
-                {/* Job & Skills */}
-                <ComprehensiveFilterSection
-                  title="Job & Skills"
-                  icon={Briefcase}
-                  isExpanded={true}
-                  hasActiveFilters={
-                    (filters.job?.titles && filters.job.titles.length > 0) ||
-                    (filters.job?.skills && filters.job.skills.length > 0)
-                  }
-                >
-                  <div className="space-y-4">
-                    <ArrayFilterInput
-                      label="Job Titles"
-                      values={tempFilters.job.titles}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        job: { ...prev.job, titles: values }
-                      }))}
-                      placeholder="Add job title..."
-                    />
-                    <ArrayFilterInput
-                      label="Skills & Technologies"
-                      values={tempFilters.job.skills}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        job: { ...prev.job, skills: values }
-                      }))}
-                      placeholder="Add skill..."
-                    />
-                  </div>
-                </ComprehensiveFilterSection>
-
-                {/* Location */}
-                <ComprehensiveFilterSection
-                  title="Location"
-                  icon={MapPin}
-                  isExpanded={true}
-                  hasActiveFilters={
-                    (filters.location?.currentLocations && filters.location.currentLocations.length > 0) ||
-                    (filters.location?.pastLocations && filters.location.pastLocations.length > 0)
-                  }
-                >
-                  <div className="space-y-4">
-                    <ArrayFilterInput
-                      label="Current Locations"
-                      values={tempFilters.location.currentLocations}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        location: { ...prev.location, currentLocations: values }
-                      }))}
-                      placeholder="Add location..."
-                    />
-                    <ArrayFilterInput
-                      label="Past Locations"
-                      values={tempFilters.location.pastLocations}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        location: { ...prev.location, pastLocations: values }
-                      }))}
-                      placeholder="Add past location..."
-                    />
-                  </div>
-                </ComprehensiveFilterSection>
-
-                {/* Company & Industry */}
-                <ComprehensiveFilterSection
-                  title="Company & Industry"
-                  icon={Building}
-                  isExpanded={true}
-                  hasActiveFilters={
-                    (filters.company?.names && filters.company.names.length > 0) ||
-                    (filters.company?.industries && filters.company.industries.length > 0)
-                  }
-                >
-                  <div className="space-y-4">
-                    <ArrayFilterInput
-                      label="Company Names"
-                      values={tempFilters.company.names}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        company: { ...prev.company, names: values }
-                      }))}
-                      placeholder="Add company..."
-                    />
-                    <ArrayFilterInput
-                      label="Industries"
-                      values={tempFilters.company.industries}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        company: { ...prev.company, industries: values }
-                      }))}
-                      placeholder="Add industry..."
-                    />
-                  </div>
-                </ComprehensiveFilterSection>
-
-                {/* Skills & Keywords */}
-                <ComprehensiveFilterSection
-                  title="Additional Skills"
-                  icon={KeySquare}
-                  isExpanded={false}
-                >
-                  <div className="space-y-4">
-                    <ArrayFilterInput
-                      label="Skills & Keywords"
-                      values={tempFilters.skillsKeywords.items}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        skillsKeywords: { ...prev.skillsKeywords, items: values }
-                      }))}
-                      placeholder="Add keyword..."
-                    />
-                  </div>
-                </ComprehensiveFilterSection>
-
-                {/* Education */}
-                <ComprehensiveFilterSection
-                  title="Education"
-                  icon={GraduationCap}
-                  isExpanded={false}
-                >
-                  <div className="space-y-4">
-                    <ArrayFilterInput
-                      label="Schools & Universities"
-                      values={tempFilters.education.schools}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        education: { ...prev.education, schools: values }
-                      }))}
-                      placeholder="Add school..."
-                    />
-                    <ArrayFilterInput
-                      label="Degrees"
-                      values={tempFilters.education.degrees}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        education: { ...prev.education, degrees: values }
-                      }))}
-                      placeholder="Add degree..."
-                    />
-                    <ArrayFilterInput
-                      label="Fields of Study"
-                      values={tempFilters.education.majors}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        education: { ...prev.education, majors: values }
-                      }))}
-                      placeholder="Add field..."
-                    />
-                  </div>
-                </ComprehensiveFilterSection>
-
-                {/* Languages */}
-                <ComprehensiveFilterSection
-                  title="Languages"
-                  icon={Globe}
-                  isExpanded={false}
-                >
-                  <div className="space-y-4">
-                    <ArrayFilterInput
-                      label="Languages"
-                      values={tempFilters.languages.items}
-                      onChange={(values) => setTempFilters(prev => ({
-                        ...prev,
-                        languages: { ...prev.languages, items: values }
-                      }))}
-                      placeholder="Add language..."
-                    />
-                  </div>
-                </ComprehensiveFilterSection>
-
-                {/* Power Filters */}
-                <ComprehensiveFilterSection
-                  title="Power Filters"
-                  icon={Zap}
-                  isExpanded={false}
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={tempFilters.power.isOpenToRemote}
-                        onChange={(e) => setTempFilters(prev => ({
-                          ...prev,
-                          power: { ...prev.power, isOpenToRemote: e.target.checked }
-                        }))}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                      />
-                      <label className="ml-2 block text-sm text-gray-700">
-                        Open to Remote Work
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={tempFilters.power.hasEmail}
-                        onChange={(e) => setTempFilters(prev => ({
-                          ...prev,
-                          power: { ...prev.power, hasEmail: e.target.checked }
-                        }))}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                      />
-                      <label className="ml-2 block text-sm text-gray-700">
-                        Has Email Address
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={tempFilters.power.hasPhone}
-                        onChange={(e) => setTempFilters(prev => ({
-                          ...prev,
-                          power: { ...prev.power, hasPhone: e.target.checked }
-                        }))}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                      />
-                      <label className="ml-2 block text-sm text-gray-700">
-                        Has Phone Number
-                      </label>
-                    </div>
-                  </div>
-                </ComprehensiveFilterSection>
-
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-gray-200 p-4 flex gap-3">
-              <button
-                onClick={handleCloseFilters}
-                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleApplyFilters}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+   
 
       {/* Project Selection Modal */}
       <ProjectSelectionModal
@@ -2710,7 +3232,25 @@ const GlobalSearchResultsPage: React.FC = () => {
           fromQuickSearch: fromQuickSearch
         }}
       />
-    </>
+      
+      {/* Side Panel and Overlay */}
+      {panelState !== 'closed' && (
+        <>
+          {/* Overlay */}
+          {panelState === 'expanded' && (
+            <div className="fixed inset-0 bg-black bg-opacity-25 z-40"></div>
+          )}
+          {/* Panel */}
+          <SourcingProfileSidePanel
+            userData={selectedUserDataForPanel}
+            panelState={panelState}
+            onStateChange={handlePanelStateChange}
+            candidateId={selectedCandidateId || undefined}
+            projectId={undefined} // No project context in global search
+          />
+        </>
+      )}
+    </div>
   );
 };
 

@@ -5,7 +5,6 @@ import {
   ToggleRight,
   Search as SearchIcon,
   Filter,
-  Sparkles,
   X,
   AlertTriangle,
   Plus
@@ -13,9 +12,7 @@ import {
 import FilterDialog, { FilterState } from '../components/FilterDialog';
 import BooleanSearchDialog from '../sourcing/search/components/BooleanSearchDialog';
 import JobDescriptionDialog from '../recruitment/components/JobDescriptionDialog';
-import AIEnhancementModal from '../components/AIEnhancementModal';
-import { useAIQuery } from '../hooks/ai';
-import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced } from '../services/searchService';
+import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced, searchCandidatesDirectAI } from '../services/searchService';
 import BooleanSearchParser from '../services/booleanSearchParser';
 import type { SearchFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
@@ -39,7 +36,6 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
-  const [isAIEnhancementModalOpen, setIsAIEnhancementModalOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external'); // Default to external search
 
@@ -57,40 +53,14 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     }
   }, [location.state]);
 
-  // AI hook for search enhancement
-  const aiQuery = useAIQuery();
-
   // Expose clear functionality through ref
   useImperativeHandle(ref, () => ({
     clearSearch: () => {
       setSearchQuery('');
-      aiQuery.reset();
     }
   }));
 
   // Function to enhance search with AI
-  const enhanceSearchWithAI = async () => {
-    if (!searchQuery.trim()) return;
-
-    try {
-      await aiQuery.query({
-        prompt: `Enhance this job search query to be more specific and effective: "${searchQuery}"`,
-        systemPrompt: "You are a recruitment specialist. Help enhance job search queries to be more effective and specific.",
-        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-        max_tokens: 500
-      });
-    } catch (error) {
-      console.error('Error enhancing search with AI:', error);
-    }
-  };
-
-  // Effect to open modal when AI enhancement completes successfully
-  useEffect(() => {
-    if (aiQuery.data?.content && !aiQuery.loading && !aiQuery.error) {
-      setIsAIEnhancementModalOpen(true);
-    }
-  }, [aiQuery.data, aiQuery.loading, aiQuery.error]);
-
   // Main function for AI keyword extraction and direct search
   const handleAISearch = async () => {
     if (!searchQuery.trim()) return;
@@ -147,40 +117,74 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
           }
         });
       } else {
-        // Handle regular search queries with enhanced keyword extraction
+        // Handle regular search queries with SINGLE AI call (optimized)
         try {
-          // Extract enhanced keywords with priority classification
-          keywords = await extractEnhancedKeywords(searchQuery);
+          let usedSingleAICall = false;
           
-          // Convert enhanced keywords to filters with must/should logic
-          filters = await convertEnhancedKeywordsToFilters(keywords);
-          
-          console.log("AI extracted enhanced filters:", filters);
-          
-          // Get rich search results using external enhanced search
+          // Single AI call - combines keyword extraction, filter conversion, and query generation
           if (searchMode === 'external' || searchMode === 'combined') {
             try {
-              searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery, { page: 1, limit: 3 });
-              console.log("Got rich search results from external enhanced search:", searchResults);
+              console.log("🚀 Using optimized single AI call for search");
+              searchResults = await searchCandidatesDirectAI(searchQuery, {
+                urgency: 'medium',
+                flexibility: 'moderate', 
+                primaryFocus: 'balanced',
+                isLocationAgnostic: false,
+                balanceMode: 'recall_optimized'
+              }, { page: 1, limit: 3 });
+              console.log("✅ Got search results from single AI call:", searchResults);
+              
+              // Create mock filters for navigation compatibility
+              filters = {
+                mustFilters: {},
+                shouldFilters: {},
+                searchText: searchQuery
+              };
+              
+              usedSingleAICall = true;
             } catch (searchError) {
-              console.warn("External search failed, will navigate without preloaded results:", searchError);
+              console.warn("❌ Single AI search failed, falling back to 3-step process:", searchError);
+              
+              // Fallback to original 3-step process if single AI call fails
+              keywords = await extractEnhancedKeywords(searchQuery);
+              filters = await convertEnhancedKeywordsToFilters(keywords);
+              console.log("🔄 Fallback - AI extracted enhanced filters:", filters);
+              
+              searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery, { page: 1, limit: 3 });
+              console.log("🔄 Fallback - Got results from 3-step process:", searchResults);
             }
           }
           
           // Navigate to global search results with enhanced data and search results
-          navigate('/dashboard/search-results', {
-            state: {
-              query: searchQuery,
-              filters: filters,
-              searchMode: searchMode,
-              isGlobalSearch: true,
-              isEnhanced: true,
-              criticalRequirements: keywords.criticalRequirements,
-              preferredCriteria: keywords.preferredCriteria,
-              contextualHints: keywords.contextualHints,
-              preloadedResults: searchResults // Pass the actual results if we got them
-            }
-          });
+          if (usedSingleAICall) {
+            // Navigation for single AI call (no keywords object)
+            navigate('/dashboard/search-results', {
+              state: {
+                query: searchQuery,
+                filters: filters,
+                searchMode: searchMode,
+                isGlobalSearch: true,
+                isEnhanced: true,
+                singleCallOptimized: true,
+                preloadedResults: searchResults
+              }
+            });
+          } else {
+            // Navigation for 3-step fallback (has keywords object)
+            navigate('/dashboard/search-results', {
+              state: {
+                query: searchQuery,
+                filters: filters,
+                searchMode: searchMode,
+                isGlobalSearch: true,
+                isEnhanced: true,
+                criticalRequirements: keywords?.criticalRequirements,
+                preferredCriteria: keywords?.preferredCriteria,
+                contextualHints: keywords?.contextualHints,
+                preloadedResults: searchResults
+              }
+            });
+          }
         } catch (enhancedError) {
           console.warn('Enhanced search failed, falling back to standard search:', enhancedError);
           
@@ -448,19 +452,6 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
       <div className="flex justify-center items-start pt-20 min-h-screen">
         {/* Centered Search Section */}
         <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg border border-gray-200 p-8">
-          {/* AI Error Display */}
-          {aiQuery.error && (
-            <div className="w-full mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">Error enhancing search: {aiQuery.error}</p>
-              <button 
-                onClick={aiQuery.reset}
-                className="mt-1 text-xs text-red-600 hover:text-red-800 underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-
           {/* Logo and title */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -470,7 +461,6 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                 <button
                   onClick={() => {
                     setSearchQuery('');
-                    aiQuery.reset();
                   }}
                   className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                   title="Clear search and start fresh"
@@ -541,27 +531,12 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                   <button 
                     onClick={() => {
                       setSearchQuery('');
-                      aiQuery.reset();
                     }}
                     className="text-gray-400 hover:text-gray-600 p-1 rounded-md transition-colors"
                     title="Clear search"
                   >
                     <X className="w-4 h-4" />
                   </button>
-                )}
-                {searchQuery.trim() && !aiQuery.loading && (
-                  <button 
-                    onClick={enhanceSearchWithAI}
-                    className="bg-purple-100 hover:bg-purple-200 text-purple-700 p-2 rounded-md transition-colors"
-                    title="Enhance with AI"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                  </button>
-                )}
-                {aiQuery.loading && (
-                  <div className="p-2">
-                    <div className="w-4 h-4 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
                 )}
               </div>
             </div>
@@ -644,20 +619,6 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
         onSearch={handleJobDescriptionSearch}
       />
 
-      {/* AI Enhancement Modal */}
-      <AIEnhancementModal
-        isOpen={isAIEnhancementModalOpen}
-        onClose={() => {
-          setIsAIEnhancementModalOpen(false);
-          aiQuery.reset(); // Reset AI query state when modal is closed/cancelled
-        }}
-        content={aiQuery.data?.content || ''}
-        onUseEnhancedQuery={(enhancedQuery) => {
-          setSearchQuery(enhancedQuery);
-          setIsAIEnhancementModalOpen(false);
-          aiQuery.reset(); // Reset AI query state after using enhanced query
-        }}
-      />
     </div>
   );
 });

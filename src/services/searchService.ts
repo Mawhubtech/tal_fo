@@ -404,6 +404,44 @@ class SearchService {
   }
 
   /**
+   * Direct AI search - Single API call from raw text to results
+   * Consolidates keyword extraction, filter conversion, and AI query generation into one call
+   */
+  async searchCandidatesDirectAI(searchText: string, contextualHints?: any, pagination?: PaginationOptions): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      if (pagination?.limit) {
+        queryParams.append('limit', pagination.limit.toString());
+      }
+      
+      const url = `${this.baseURL}/candidates/external-ai-direct${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const directPayload = {
+        searchText,
+        contextualHints: contextualHints || {
+          urgency: 'medium',
+          flexibility: 'moderate',
+          primaryFocus: 'technical',
+          isLocationAgnostic: false
+        }
+      };
+
+      console.log('🚀 Direct AI search payload:', directPayload);
+      const response = await apiClient.post<SearchResponse>(url, directPayload);
+
+      console.log('🎯 Direct AI search response (single call):', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Direct AI search failed:', error);
+      console.error('❌ Error details:', error.response?.data);
+      throw error;
+    }
+  }
+
+  /**
    * Fetch cached enhanced search results for pagination (No new search query)
    */
   async fetchCachedEnhancedResults(queryHash: string, pagination?: PaginationOptions): Promise<SearchResponse> {
@@ -439,6 +477,47 @@ class SearchService {
       return response.data;
     } catch (error) {
       console.error('❌ Cached enhanced search failed:', error);
+      console.error('❌ Error details:', error.response?.data);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch cached advanced filters results for pagination (No new search query)
+   */
+  async fetchCachedAdvancedFiltersResults(queryHash: string, pagination?: PaginationOptions): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      // Always limit to 3 for advanced filters search
+      queryParams.append('limit', '3');
+      
+      const url = `${this.baseURL}/candidates/advanced-filters/cache${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const cachePayload = {
+        queryHash: queryHash
+      };
+
+      console.log(`🔍 Fetching cached advanced filters results for query hash: ${queryHash}`);
+      console.log(`📄 Requesting page ${pagination?.page || 1} (cache-only, no new search)`);
+
+      const response = await apiClient.post<SearchResponse>(url, cachePayload);
+
+      console.log('📦 Cached advanced filters search response:', response.data);
+      console.log('🔍 Results count:', response.data?.results?.length || 0);
+      
+      // Log cost information
+      const metadata = response.data?.metadata as any;
+      if (metadata?.costInfo) {
+        console.log(`💰 ${metadata.costInfo.message}`);
+        console.log(`📦 Source: ${metadata.costInfo.source} (${metadata.costInfo.coreSignalCreditsUsed} credits)`);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ Cached advanced filters search failed:', error);
       console.error('❌ Error details:', error.response?.data);
       throw error;
     }
@@ -508,6 +587,39 @@ class SearchService {
       throw error;
     }
   }
+
+  /**
+   * Search candidates using advanced filters based on CoreSignal schema
+   * Converts advanced filters to Elasticsearch query and executes search
+   */
+  async searchCandidatesWithAdvancedFilters(advancedFilters: any, searchText: string = '', pagination?: PaginationOptions): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      if (pagination?.limit) {
+        queryParams.append('limit', pagination.limit.toString());
+      }
+      
+      const url = `${this.baseURL}/candidates/advanced-filters${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const payload = {
+        filters: advancedFilters,
+        searchText: searchText || ''
+      };
+
+      console.log('🔧 Advanced filters search payload:', payload);
+      const response = await apiClient.post<SearchResponse>(url, payload);
+
+      console.log('🎯 Advanced filters search response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Advanced filters search failed:', error);
+      console.error('❌ Error details:', error.response?.data);
+      throw error;
+    }
+  }
 }
 export const searchService = new SearchService();
 
@@ -519,7 +631,9 @@ export const convertEnhancedKeywordsToFilters = (keywords: any) => searchService
 export const searchEnhanced = (searchText: string, includeExternal?: boolean, pagination?: PaginationOptions) => searchService.searchEnhanced(searchText, includeExternal, pagination);
 export const searchCandidatesExternalDirect = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalDirect(filters, searchText, pagination);
 export const searchCandidatesExternalEnhanced = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalEnhanced(filters, searchText, pagination);
+export const searchCandidatesDirectAI = (searchText: string, contextualHints?: any, pagination?: PaginationOptions) => searchService.searchCandidatesDirectAI(searchText, contextualHints, pagination);
 export const fetchCachedEnhancedResults = (queryHash: string, pagination?: PaginationOptions) => searchService.fetchCachedEnhancedResults(queryHash, pagination);
+export const fetchCachedAdvancedFiltersResults = (queryHash: string, pagination?: PaginationOptions) => searchService.fetchCachedAdvancedFiltersResults(queryHash, pagination);
 export const searchUsers = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchUsers(filters, searchText, pagination);
 export const searchCandidates = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidates(filters, searchText, pagination);
 export const getAllCandidates = () => searchService.getAllUsers();
@@ -528,3 +642,5 @@ export const shortlistExternalCandidate = (coreSignalId: number, candidateData: 
   searchService.shortlistExternalCandidate(coreSignalId, candidateData, createdBy);
 export const generateProfileAnalysis = (candidateData: any, searchContext?: { query?: string; filters?: SearchFilters }) => 
   searchService.generateProfileAnalysis(candidateData, searchContext);
+export const searchCandidatesWithAdvancedFilters = (advancedFilters: any, searchText: string = '', pagination?: PaginationOptions) => 
+  searchService.searchCandidatesWithAdvancedFilters(advancedFilters, searchText, pagination);
