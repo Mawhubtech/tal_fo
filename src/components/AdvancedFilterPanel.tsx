@@ -363,7 +363,10 @@ const BadgeInput: React.FC<BadgeInputProps> = ({
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <label className={`block text-sm font-medium mb-2 ${items.length > 0 ? 'text-purple-700' : 'text-gray-700'}`}>
+        {label}
+        {items.length > 0 && <span className="ml-2 text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">{items.length}</span>}
+      </label>
       
       {/* Items Badges */}
       {items.length > 0 && (
@@ -397,7 +400,11 @@ const BadgeInput: React.FC<BadgeInputProps> = ({
             onFocus={() => predefinedOptions && setShowDropdown(true)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
             placeholder={placeholder}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+              items.length > 0 
+                ? 'border-purple-400 bg-purple-50' 
+                : 'border-gray-300'
+            }`}
           />
           
           {/* Dropdown for predefined options */}
@@ -910,38 +917,54 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
     );
   };
 
-  const renderTextInput = (label: string, key: keyof AdvancedFilters, placeholder: string) => (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input
-        type="text"
-        value={filters[key] as string || ''}
-        onChange={(e) => updateFilter(key, e.target.value || undefined)}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
-      />
-    </div>
-  );
+  const renderTextInput = (label: string, key: keyof AdvancedFilters, placeholder: string) => {
+    const hasValue = Boolean(filters[key] && (filters[key] as string).trim());
+    return (
+      <div>
+        <label className={`block text-sm font-medium mb-1 ${hasValue ? 'text-purple-700' : 'text-gray-700'}`}>{label}</label>
+        <input
+          type="text"
+          value={filters[key] as string || ''}
+          onChange={(e) => updateFilter(key, e.target.value || undefined)}
+          placeholder={placeholder}
+          className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+            hasValue 
+              ? 'border-purple-400 bg-purple-50 text-purple-900' 
+              : 'border-gray-300'
+          }`}
+        />
+      </div>
+    );
+  };
 
   const renderRangeInput = (label: string, key: keyof AdvancedFilters, unit: string = '') => {
     const range = filters[key] as { min?: number; max?: number } || {};
+    const hasValue = Boolean(range.min !== undefined || range.max !== undefined);
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <label className={`block text-sm font-medium mb-1 ${hasValue ? 'text-purple-700' : 'text-gray-700'}`}>{label}</label>
         <div className="flex space-x-2">
           <input
             type="number"
             value={range.min || ''}
             onChange={(e) => updateRangeFilter(key, 'min', e.target.value ? parseInt(e.target.value) : undefined)}
             placeholder="Min"
-            className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+            className={`w-1/2 px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+              range.min !== undefined
+                ? 'border-purple-400 bg-purple-50 text-purple-900'
+                : 'border-gray-300'
+            }`}
           />
           <input
             type="number"
             value={range.max || ''}
             onChange={(e) => updateRangeFilter(key, 'max', e.target.value ? parseInt(e.target.value) : undefined)}
             placeholder="Max"
-            className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+            className={`w-1/2 px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+              range.max !== undefined
+                ? 'border-purple-400 bg-purple-50 text-purple-900'
+                : 'border-gray-300'
+            }`}
           />
         </div>
         {unit && <p className="text-xs text-gray-500 mt-1">{unit}</p>}
@@ -976,36 +999,58 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
     );
   };
 
-  const renderMultiSelect = (label: string, options: string[], key: keyof AdvancedFilters) => (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-      <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-        {options.map((option) => (
-          <label key={option} className="flex items-center space-x-2 py-1 hover:bg-gray-50 rounded px-1">
-            <input
-              type="checkbox"
-              checked={((filters[key] as string[]) || []).includes(option)}
-              onChange={() => toggleArrayFilter(key, option)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
-            />
-            <span className="text-sm text-gray-700">{option}</span>
-          </label>
-        ))}
+  const renderMultiSelect = (label: string, options: string[], key: keyof AdvancedFilters) => {
+    const selectedOptions = (filters[key] as string[]) || [];
+    const hasValue = selectedOptions.length > 0;
+    return (
+      <div>
+        <label className={`block text-sm font-medium mb-2 ${hasValue ? 'text-purple-700' : 'text-gray-700'}`}>
+          {label}
+          {hasValue && <span className="ml-2 text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">{selectedOptions.length}</span>}
+        </label>
+        <div className={`max-h-32 overflow-y-auto border rounded-md p-2 ${
+          hasValue ? 'border-purple-400 bg-purple-50' : 'border-gray-300'
+        }`}>
+          {options.map((option) => (
+            <label key={option} className={`flex items-center space-x-2 py-1 rounded px-1 ${
+              selectedOptions.includes(option) 
+                ? 'hover:bg-purple-100 bg-purple-100' 
+                : 'hover:bg-gray-50'
+            }`}>
+              <input
+                type="checkbox"
+                checked={selectedOptions.includes(option)}
+                onChange={() => toggleArrayFilter(key, option)}
+                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
+              />
+              <span className={`text-sm ${selectedOptions.includes(option) ? 'text-purple-900 font-medium' : 'text-gray-700'}`}>
+                {option}
+              </span>
+            </label>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderBooleanFilter = (label: string, key: keyof AdvancedFilters) => (
-    <div className="flex items-center space-x-2">
-      <input
-        type="checkbox"
-        checked={filters[key] as boolean || false}
-        onChange={(e) => updateFilter(key, e.target.checked || undefined)}
-        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
-      />
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-    </div>
-  );
+  const renderBooleanFilter = (label: string, key: keyof AdvancedFilters) => {
+    const isChecked = filters[key] as boolean || false;
+    return (
+      <div className={`flex items-center space-x-2 p-2 rounded-md ${
+        isChecked ? 'bg-purple-50 border border-purple-200' : ''
+      }`}>
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={(e) => updateFilter(key, e.target.checked || undefined)}
+          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
+        />
+        <label className={`text-sm font-medium ${isChecked ? 'text-purple-700' : 'text-gray-700'}`}>
+          {label}
+        </label>
+      </div>
+    );
+  };
 
 
 
@@ -1235,6 +1280,44 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
               {renderTextInput('Job Title', 'experienceTitle', 'e.g., Senior Developer')}
               {renderMultiTextInput('Company Name', 'experienceCompany', 'e.g., Google, Microsoft')}
               {renderTextInput('Company ID', 'experienceCompanyId', 'Specific company identifier')}
+              
+              <div className="border-t pt-3 mt-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Company Details</h4>
+                {renderTextInput('Industry', 'companyIndustry', 'e.g., Technology, Healthcare, Financial Services')}
+                {renderMultiSelect('Company Size', companySizes, 'companySizeRange')}
+                {renderMultiSelect('Company Type', companyTypes, 'companyType')}
+                {renderRangeInput('Annual Revenue', 'companyRevenue', 'USD')}
+                {renderMultiSelect('Revenue Currency', ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'], 'companyRevenueCurrency')}
+                {renderRangeInput('Employee Count', 'companyEmployeeCount', 'exact employee numbers')}
+                {renderTextInput('Founded Year', 'companyFounded', 'e.g., 2010')}
+                {renderRangeInput('Followers Count', 'companyFollowersCount', 'social media followers')}
+                {renderTextInput('Website', 'companyWebsite', 'e.g., https://company.com')}
+                {renderTextInput('Facebook URL', 'companyFacebookUrl', 'Company Facebook page')}
+                {renderTextInput('Twitter URL', 'companyTwitterUrl', 'Company Twitter handle')}
+                {renderTextInput('LinkedIn URL', 'companyLinkedInUrl', 'Company LinkedIn page')}
+                
+                <div className="border-t pt-3 mt-3">
+                  <h5 className="text-sm font-medium text-gray-700 mb-3">Company Headquarters</h5>
+                  {renderBadgeInput('HQ Location', 'companyHqLocation', 'Full headquarters address', commonCities, true)}
+                  {renderBadgeInput('HQ Country', 'companyHqCountry', 'Headquarters country', countries, true)}
+                  {renderBadgeInput('HQ Regions', 'companyHqRegions', 'Headquarters region', regions, true)}
+                  {renderBadgeInput('HQ City', 'companyHqCity', 'Headquarters city', commonCities, true)}
+                  {renderTextInput('HQ State', 'companyHqState', 'Headquarters state/province')}
+                </div>
+                
+                <div className="border-t pt-3 mt-3">
+                  <h5 className="text-sm font-medium text-gray-700 mb-3">Additional Company Data</h5>
+                  {renderTextInput('Last Updated', 'companyLastUpdated', 'Data freshness date')}
+                  {renderTextInput('Categories & Keywords', 'companyCategoriesKeywords', 'Company categories')}
+                  {renderMultiSelect('Stock Exchange', ['NYSE', 'NASDAQ', 'LSE', 'TSE', 'ASX'], 'companyStockExchange')}
+                  {renderTextInput('Stock Ticker', 'companyStockTicker', 'e.g., AAPL, GOOGL')}
+                  {renderBooleanFilter('B2B Company', 'companyIsB2B')}
+                  {renderRangeInput('Employee Growth Rate', 'companyEmployeeGrowthRate', '% yearly growth')}
+                  {renderTextInput('Last Funding Date', 'companyLastFundingDate', 'Latest funding round date')}
+                  {renderRangeInput('Last Funding Amount', 'companyLastFundingAmount', 'USD funding amount')}
+                </div>
+              </div>
+              
               {renderTextInput('Job Description', 'experienceDescription', 'Job description keywords')}
               {renderBadgeInput('Work Location', 'experienceLocation', 'Where they worked', commonCities, true)}
               {renderRangeInput('Position Duration', 'experienceDurationMonths', 'months at current/recent job')}
@@ -1242,21 +1325,29 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <label className={`block text-sm font-medium mb-1 ${filters.experienceDateFrom ? 'text-purple-700' : 'text-gray-700'}`}>Start Date</label>
                   <input
                     type="date"
                     value={filters.experienceDateFrom || ''}
                     onChange={(e) => updateFilter('experienceDateFrom', e.target.value || undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+                      filters.experienceDateFrom 
+                        ? 'border-purple-400 bg-purple-50 text-purple-900' 
+                        : 'border-gray-300'
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className={`block text-sm font-medium mb-1 ${filters.experienceDateTo ? 'text-purple-700' : 'text-gray-700'}`}>End Date</label>
                   <input
                     type="date"
                     value={filters.experienceDateTo || ''}
                     onChange={(e) => updateFilter('experienceDateTo', e.target.value || undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+                      filters.experienceDateTo 
+                        ? 'border-purple-400 bg-purple-50 text-purple-900' 
+                        : 'border-gray-300'
+                    }`}
                   />
                 </div>
               </div>
@@ -1284,48 +1375,6 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
-          </>
-        )}
-
-        {/* Company Information */}
-        {renderSection(
-          'Company Information',
-          <Building2 className="w-4 h-4 text-gray-600" />,
-          'company',
-          <>
-            {renderMultiSelect('Industry', industries, 'companyIndustry')}
-            {renderMultiSelect('Company Size', companySizes, 'companySizeRange')}
-            {renderMultiSelect('Company Type', companyTypes, 'companyType')}
-            {renderRangeInput('Annual Revenue', 'companyRevenue', 'USD')}
-            {renderMultiSelect('Revenue Currency', ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'], 'companyRevenueCurrency')}
-            {renderRangeInput('Employee Count', 'companyEmployeeCount', 'exact employee numbers')}
-            {renderTextInput('Founded Year', 'companyFounded', 'e.g., 2010')}
-            {renderRangeInput('Followers Count', 'companyFollowersCount', 'social media followers')}
-            {renderTextInput('Website', 'companyWebsite', 'e.g., https://company.com')}
-            {renderTextInput('Facebook URL', 'companyFacebookUrl', 'Company Facebook page')}
-            {renderTextInput('Twitter URL', 'companyTwitterUrl', 'Company Twitter handle')}
-            {renderTextInput('LinkedIn URL', 'companyLinkedInUrl', 'Company LinkedIn page')}
-            
-            <div className="border-t pt-3 mt-3">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Company Headquarters</h4>
-              {renderBadgeInput('HQ Location', 'companyHqLocation', 'Full headquarters address', commonCities, true)}
-              {renderBadgeInput('HQ Country', 'companyHqCountry', 'Headquarters country', countries, true)}
-              {renderBadgeInput('HQ Regions', 'companyHqRegions', 'Headquarters region', regions, true)}
-              {renderBadgeInput('HQ City', 'companyHqCity', 'Headquarters city', commonCities, true)}
-              {renderTextInput('HQ State', 'companyHqState', 'Headquarters state/province')}
-            </div>
-            
-            <div className="border-t pt-3 mt-3">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Company Data</h4>
-              {renderTextInput('Last Updated', 'companyLastUpdated', 'Data freshness date')}
-              {renderTextInput('Categories & Keywords', 'companyCategoriesKeywords', 'Company categories')}
-              {renderMultiSelect('Stock Exchange', ['NYSE', 'NASDAQ', 'LSE', 'TSE', 'ASX'], 'companyStockExchange')}
-              {renderTextInput('Stock Ticker', 'companyStockTicker', 'e.g., AAPL, GOOGL')}
-              {renderBooleanFilter('B2B Company', 'companyIsB2B')}
-              {renderRangeInput('Employee Growth Rate', 'companyEmployeeGrowthRate', '% yearly growth')}
-              {renderTextInput('Last Funding Date', 'companyLastFundingDate', 'Latest funding round date')}
-              {renderRangeInput('Last Funding Amount', 'companyLastFundingAmount', 'USD funding amount')}
             </div>
           </>
         )}
@@ -1370,21 +1419,29 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
             
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Issue Date</label>
+                <label className={`block text-sm font-medium mb-1 ${filters.certificationDateFrom ? 'text-purple-700' : 'text-gray-700'}`}>Issue Date</label>
                 <input
                   type="date"
                   value={filters.certificationDateFrom || ''}
                   onChange={(e) => updateFilter('certificationDateFrom', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+                    filters.certificationDateFrom 
+                      ? 'border-purple-400 bg-purple-50 text-purple-900' 
+                      : 'border-gray-300'
+                  }`}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                <label className={`block text-sm font-medium mb-1 ${filters.certificationDateTo ? 'text-purple-700' : 'text-gray-700'}`}>Expiry Date</label>
                 <input
                   type="date"
                   value={filters.certificationDateTo || ''}
                   onChange={(e) => updateFilter('certificationDateTo', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+                    filters.certificationDateTo 
+                      ? 'border-purple-400 bg-purple-50 text-purple-900' 
+                      : 'border-gray-300'
+                  }`}
                 />
               </div>
             </div>
@@ -1425,12 +1482,16 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
             {renderTextInput('Award Issuer', 'awardIssuer', 'Issuing organization')}
             {renderTextInput('Award Description', 'awardDescription', 'Award details')}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Award Date</label>
+              <label className={`block text-sm font-medium mb-1 ${filters.awardDate ? 'text-purple-700' : 'text-gray-700'}`}>Award Date</label>
               <input
                 type="date"
                 value={filters.awardDate || ''}
                 onChange={(e) => updateFilter('awardDate', e.target.value || undefined)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+                  filters.awardDate 
+                    ? 'border-purple-400 bg-purple-50 text-purple-900' 
+                    : 'border-gray-300'
+                }`}
               />
             </div>
             
@@ -1482,21 +1543,29 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
             
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <label className={`block text-sm font-medium mb-1 ${filters.organizationDateFrom ? 'text-purple-700' : 'text-gray-700'}`}>Start Date</label>
                 <input
                   type="date"
                   value={filters.organizationDateFrom || ''}
                   onChange={(e) => updateFilter('organizationDateFrom', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+                    filters.organizationDateFrom 
+                      ? 'border-purple-400 bg-purple-50 text-purple-900' 
+                      : 'border-gray-300'
+                  }`}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <label className={`block text-sm font-medium mb-1 ${filters.organizationDateTo ? 'text-purple-700' : 'text-gray-700'}`}>End Date</label>
                 <input
                   type="date"
                   value={filters.organizationDateTo || ''}
                   onChange={(e) => updateFilter('organizationDateTo', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none ${
+                    filters.organizationDateTo 
+                      ? 'border-purple-400 bg-purple-50 text-purple-900' 
+                      : 'border-gray-300'
+                  }`}
                 />
               </div>
             </div>
