@@ -49,7 +49,6 @@ const Integrations: React.FC = () => {
       icon: Database,
       preview: (
         <div className="grid grid-cols-5 gap-4">
-          <img src="https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.iconsdb.com%2Fgreen-icons%2Fhouse-icon.html&psig=AOvVaw1LZN6sHEdTRuk1JIyUzx3T&ust=1748443201782000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCMiCwtHww40DFQAAAAAdAAAAABAE" className="w-10 h-10" alt="Greenhouse" />
           <img src="https://www.lever.co/favicon.ico" className="w-10 h-10" alt="Lever" />
           <img src="https://www.workday.com/favicon.ico" className="w-10 h-10" alt="Workday" />
           <img src="https://www.salesforce.com/favicon.ico" className="w-10 h-10" alt="Salesforce" />
