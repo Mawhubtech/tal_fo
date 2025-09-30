@@ -397,7 +397,7 @@ const BadgeInput: React.FC<BadgeInputProps> = ({
             onFocus={() => predefinedOptions && setShowDropdown(true)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
             placeholder={placeholder}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
           />
           
           {/* Dropdown for predefined options */}
@@ -918,7 +918,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
         value={filters[key] as string || ''}
         onChange={(e) => updateFilter(key, e.target.value || undefined)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
       />
     </div>
   );
@@ -934,14 +934,14 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
             value={range.min || ''}
             onChange={(e) => updateRangeFilter(key, 'min', e.target.value ? parseInt(e.target.value) : undefined)}
             placeholder="Min"
-            className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
           />
           <input
             type="number"
             value={range.max || ''}
             onChange={(e) => updateRangeFilter(key, 'max', e.target.value ? parseInt(e.target.value) : undefined)}
             placeholder="Max"
-            className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
           />
         </div>
         {unit && <p className="text-xs text-gray-500 mt-1">{unit}</p>}
@@ -986,7 +986,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
               type="checkbox"
               checked={((filters[key] as string[]) || []).includes(option)}
               onChange={() => toggleArrayFilter(key, option)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
             />
             <span className="text-sm text-gray-700">{option}</span>
           </label>
@@ -1001,7 +1001,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
         type="checkbox"
         checked={filters[key] as boolean || false}
         onChange={(e) => updateFilter(key, e.target.checked || undefined)}
-        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 focus:outline-none"
       />
       <label className="text-sm font-medium text-gray-700">{label}</label>
     </div>
@@ -1101,7 +1101,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                 value={value}
                 onChange={(e) => updateMultiTextValue(index, e.target.value)}
                 placeholder={`${placeholder} ${index + 1}`}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               />
               {displayValues.length > 1 && (
                 <button
@@ -1165,7 +1165,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                 onChange={(e) => onSearchQueryChange?.(e.target.value)}
                 placeholder="Enter your search query here..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none focus:outline-none"
               />
               <p className="text-xs text-gray-500 mt-1">
                 This is the main search text that will be processed by AI to generate the query.
@@ -1247,7 +1247,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                     type="date"
                     value={filters.experienceDateFrom || ''}
                     onChange={(e) => updateFilter('experienceDateFrom', e.target.value || undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1256,7 +1256,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                     type="date"
                     value={filters.experienceDateTo || ''}
                     onChange={(e) => updateFilter('experienceDateTo', e.target.value || undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1375,7 +1375,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                   type="date"
                   value={filters.certificationDateFrom || ''}
                   onChange={(e) => updateFilter('certificationDateFrom', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 />
               </div>
               <div>
@@ -1384,7 +1384,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                   type="date"
                   value={filters.certificationDateTo || ''}
                   onChange={(e) => updateFilter('certificationDateTo', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -1430,7 +1430,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                 type="date"
                 value={filters.awardDate || ''}
                 onChange={(e) => updateFilter('awardDate', e.target.value || undefined)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
               />
             </div>
             
@@ -1487,7 +1487,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                   type="date"
                   value={filters.organizationDateFrom || ''}
                   onChange={(e) => updateFilter('organizationDateFrom', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 />
               </div>
               <div>
@@ -1496,7 +1496,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                   type="date"
                   value={filters.organizationDateTo || ''}
                   onChange={(e) => updateFilter('organizationDateTo', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
                 />
               </div>
             </div>
