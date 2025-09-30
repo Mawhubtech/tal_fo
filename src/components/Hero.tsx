@@ -11,7 +11,7 @@ const Hero: React.FC = () => {
     "Job Seekers", 
     "TA Agencies",
     "HR Teams",
-    "Talent Leaders"
+    "Leaders"
   ];
 
   useEffect(() => {
@@ -29,72 +29,76 @@ const Hero: React.FC = () => {
 
   return (
     <section className="relative overflow-hidden min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-purple-50">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Geometric shapes */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-gradient-to-r from-blue-200 to-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-pulse animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-pink-100 to-purple-100 rounded-full mix-blend-multiply filter blur-2xl opacity-40 animate-pulse animation-delay-4000"></div>
-      </div>
-
       {/* Main Content */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className={`transition-all duration-1000 delay-200 transform ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
-          {/* Badge */}
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-slate-900 to-gray-800 text-white rounded-full px-6 py-2 text-xs font-medium mb-8 shadow-sm border border-gray-700/50 backdrop-blur-sm">
-            <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-            <span className="tracking-wider uppercase">The Future of Talent Acquisition</span>
-          </div>
-
           {/* Main Headline */}
-          <h1 className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tight text-gray-900 mb-8 leading-tight">
-            Built for{' '}
-            <span className="relative inline-block">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-6 leading-tight max-w-6xl mx-auto">
+            <span className="whitespace-nowrap">Built for{' '}</span>
+            <span className="relative inline-block whitespace-nowrap">
               <span 
                 key={currentWordIndex}
-                className="bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent animate-fadeInScale"
+                className="bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent animate-fadeInScale"
               >
                 {cyclingWords[currentWordIndex]}
               </span>
-              <div className="absolute -inset-2 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-indigo-600/20 blur-lg opacity-60 animate-pulse"></div>
             </span>
+            <span className="italic text-gray-700 whitespace-nowrap"> everywhere</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto mb-12 leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
             The AI-powered platform that transforms how you find, engage, and hire talent. 
             <span className="text-purple-600 font-semibold"> Connect with 800M+ professionals worldwide.</span>
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Button 
               variant="primary" 
               size="lg" 
-              className="group bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 shadow-xl hover:shadow-2xl px-8 py-4"
+              className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-8 py-3 text-base font-medium transition-colors"
             >
               Start Free Trial
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button 
               variant="outline" 
               size="lg" 
-              className="border-2 border-gray-300 hover:border-purple-500 hover:text-purple-600 transition-all duration-200 px-8 py-4"
+              className="!bg-transparent !border-2 !border-gray-300 !text-gray-700 hover:!border-gray-400 hover:!text-gray-800 !bg-none rounded-full px-8 py-3 text-base font-medium transition-all duration-200"
             >
-              Watch Demo
+              Contact Sales
             </Button>
           </div>
 
-          {/* Social Proof */}
+          {/* Search Input Box */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="relative bg-white rounded-2xl shadow-lg border border-purple-200 p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <input 
+                    type="text" 
+                    placeholder="Find AI Research Scientists in New York working at companies with 5,000 or more employees"
+                    className="w-full text-lg text-gray-600 placeholder-gray-400 bg-transparent border-none outline-none"
+                  />
+                </div>
+                <button className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition-colors">
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Company Logos */}
           <div className="text-center">
-            <p className="text-sm text-gray-500 mb-4">Trusted by 10,000+ companies worldwide</p>
-            <div className="flex items-center justify-center gap-8 opacity-60">
-              <div className="text-2xl font-bold text-gray-400">Microsoft</div>
-              <div className="text-2xl font-bold text-gray-400">Google</div>
-              <div className="text-2xl font-bold text-gray-400">Amazon</div>
-              <div className="text-2xl font-bold text-gray-400">Meta</div>
+            <div className="flex items-center justify-center flex-wrap gap-8 md:gap-12 opacity-60">
+              <div className="text-xl md:text-2xl font-bold text-gray-400">American Express</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-400">Spotify</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-400">Palo Alto</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-400">Elastic</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-400">Autodesk</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-400">Amplitude</div>
             </div>
           </div>
         </div>

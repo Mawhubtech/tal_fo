@@ -58,7 +58,7 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center space-x-6">
             <Link to="/" className="flex items-center group">
               {/* Text logo using ROMA font */}
               <span 
@@ -68,25 +68,28 @@ const Navbar: React.FC = () => {
                 TAL
               </span>
             </Link>
+            <div className="hidden md:flex items-center space-x-6">
+              <span className="text-gray-300 text-xl">|</span>
+              <a href="/pricing" className={`transition-colors text-lg font-semibold ${linkTextColor}`}>
+                Pricing
+              </a>
+              <Link 
+                to="/jobs" 
+                className={`transition-colors text-lg font-semibold ${linkTextColor}`}
+              >
+                Jobs
+              </Link>
+            </div>
           </div>          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="/pricing" className={`transition-colors text-base font-medium ${linkTextColor}`}>
-              Pricing
-            </a>
-            <Link 
-              to="/jobs" 
-              className={`transition-colors text-base font-medium ${linkTextColor}`}
-            >
-              Jobs
-            </Link>
             <Link 
               to="/request-demo" 
-              className={primaryButtonClasses}
+              className={outlineButtonClasses}
             >
               Request a demo
             </Link>            <button 
               onClick={handleOpenUserTypeModal} 
-              className={outlineButtonClasses}
+              className={primaryButtonClasses}
             >
               Sign in
             </button>
@@ -117,12 +120,12 @@ const Navbar: React.FC = () => {
             </Link>
             <Link 
               to="/request-demo" 
-              className={`block w-full text-center rounded-full px-5 py-2.5 text-base font-medium transition-colors ${primaryButtonClasses}`}
+              className={`block w-full text-center rounded-full px-5 py-2.5 text-base font-medium transition-colors ${outlineButtonClasses}`}
             >
               Request a demo
             </Link>            <button 
               onClick={handleOpenUserTypeModal} 
-              className={`block w-full text-center rounded-full px-5 py-2.5 text-base font-medium transition-colors ${outlineButtonClasses}`}
+              className={`block w-full text-center rounded-full px-5 py-2.5 text-base font-medium transition-colors ${primaryButtonClasses}`}
             >
               Sign in
             </button>
