@@ -90,17 +90,7 @@ const Hero: React.FC = () => {
             </div>
           </div>
 
-          {/* Company Logos */}
-          <div className="text-center">
-            <div className="flex items-center justify-center flex-wrap gap-8 md:gap-12 opacity-60">
-              <div className="text-xl md:text-2xl font-bold text-gray-400">American Express</div>
-              <div className="text-xl md:text-2xl font-bold text-gray-400">Spotify</div>
-              <div className="text-xl md:text-2xl font-bold text-gray-400">Palo Alto</div>
-              <div className="text-xl md:text-2xl font-bold text-gray-400">Elastic</div>
-              <div className="text-xl md:text-2xl font-bold text-gray-400">Autodesk</div>
-              <div className="text-xl md:text-2xl font-bold text-gray-400">Amplitude</div>
-            </div>
-          </div>
+
         </div>
       </div>
 
