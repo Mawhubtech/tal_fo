@@ -19,6 +19,7 @@ import {
   FileText,
   Plus
 } from 'lucide-react';
+import { convertAIQueryToAdvancedFilters } from '../utils/aiQueryParser';
 
 export interface AdvancedFilters {
   // Basic Info
@@ -53,7 +54,7 @@ export interface AdvancedFilters {
   isWorking?: boolean;
   
   // Experience Details
-  experienceTitle?: string;
+  experienceTitle?: string | string[];
   experienceCompany?: string | string[];
   experienceCompanyId?: string;
   experienceDescription?: string;
@@ -272,7 +273,7 @@ interface AdvancedFilterPanelProps {
   onToggle: () => void;
   searchQuery?: string;
   onSearchQueryChange?: (query: string) => void;
-  convertedFilters?: any;
+  generatedQuery?: any;
 }
 
 interface BadgeInputProps {
@@ -452,20 +453,29 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
   onToggle,
   searchQuery = '',
   onSearchQueryChange,
-  convertedFilters
+  generatedQuery
 }) => {
   const [activeSection, setActiveSection] = useState<string | null>('basic');
   
-  // Track if filters have been manually modified to prevent convertedFilters from overriding user input
+  // Track if filters have been manually modified to prevent AI parsing from overriding user input
   const [hasUserInput, setHasUserInput] = useState(false);
   
-  // Populate filters when convertedFilters are available (only if user hasn't made manual changes)
+  // Populate filters when AI query is available (only if user hasn't made manual changes)
   React.useEffect(() => {
-    if (convertedFilters && !hasUserInput) {
-      console.log('🔄 Populating filters with converted data:', convertedFilters);
-      onFiltersChange(convertedFilters);
+    if (hasUserInput) return; // Don't override user input
+    
+    // Use AI Query Parser to convert generatedQuery directly to AdvancedFilters
+    if (generatedQuery) {
+      console.log('🎯 AdvancedFilterPanel: Using AI Query Parser for generatedQuery:', generatedQuery);
+      const aiParsedFilters = convertAIQueryToAdvancedFilters(generatedQuery);
+      console.log('🎯 AdvancedFilterPanel: AI Parsed Filters:', aiParsedFilters);
+      
+      if (Object.keys(aiParsedFilters).length > 0) {
+        console.log('🔄 Populating filters with AI-parsed data');
+        onFiltersChange(aiParsedFilters);
+      }
     }
-  }, [convertedFilters, onFiltersChange, hasUserInput]);
+  }, [generatedQuery, onFiltersChange, hasUserInput]);
 
   // Check if a section has active filters
   const hasActiveFilters = (sectionKey: string): boolean => {
@@ -600,7 +610,11 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
         if (filters.firstName) count++;
         if (filters.middleName) count++;
         if (filters.lastName) count++;
-        if (Array.isArray(filters.jobTitle) ? filters.jobTitle.length > 0 : filters.jobTitle) count++;
+        if (Array.isArray(filters.jobTitle)) {
+          count += filters.jobTitle.length; // Count each job title individually
+        } else if (filters.jobTitle) {
+          count++;
+        }
         if (filters.headline) count++;
         if (filters.description) count++;
         if (filters.jobDescription) count++;
@@ -611,12 +625,28 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
         if (filters.publicProfileId) count++;
         break;
       case 'location':
-        if (Array.isArray(filters.locationRawAddress) ? filters.locationRawAddress.length > 0 : filters.locationRawAddress) count++;
-        if (Array.isArray(filters.locationCountry) ? filters.locationCountry.length > 0 : filters.locationCountry) count++;
-        if (Array.isArray(filters.locationRegions) ? filters.locationRegions.length > 0 : filters.locationRegions) count++;
+        if (Array.isArray(filters.locationRawAddress)) {
+          count += filters.locationRawAddress.length;
+        } else if (filters.locationRawAddress) {
+          count++;
+        }
+        if (Array.isArray(filters.locationCountry)) {
+          count += filters.locationCountry.length;
+        } else if (filters.locationCountry) {
+          count++;
+        }
+        if (Array.isArray(filters.locationRegions)) {
+          count += filters.locationRegions.length;
+        } else if (filters.locationRegions) {
+          count++;
+        }
         break;
       case 'skills':
-        if (Array.isArray(filters.skills) ? filters.skills.length > 0 : filters.skills) count++;
+        if (Array.isArray(filters.skills)) {
+          count += filters.skills.length;
+        } else if (filters.skills) {
+          count++;
+        }
         break;
       case 'workExperience':
         if (filters.totalExperienceMonths?.min || filters.totalExperienceMonths?.max) count++;
@@ -624,11 +654,23 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
         if (filters.department?.length) count++;
         if (filters.isDecisionMaker !== undefined) count++;
         if (filters.isWorking !== undefined) count++;
-        if (filters.experienceTitle) count++;
-        if (Array.isArray(filters.experienceCompany) ? filters.experienceCompany.length > 0 : filters.experienceCompany) count++;
+        if (Array.isArray(filters.experienceTitle)) {
+          count += filters.experienceTitle.length;
+        } else if (filters.experienceTitle) {
+          count++;
+        }
+        if (Array.isArray(filters.experienceCompany)) {
+          count += filters.experienceCompany.length;
+        } else if (filters.experienceCompany) {
+          count++;
+        }
         if (filters.experienceCompanyId) count++;
         if (filters.experienceDescription) count++;
-        if (Array.isArray(filters.experienceLocation) ? filters.experienceLocation.length > 0 : filters.experienceLocation) count++;
+        if (Array.isArray(filters.experienceLocation)) {
+          count += filters.experienceLocation.length;
+        } else if (filters.experienceLocation) {
+          count++;
+        }
         if (filters.experienceDurationMonths?.min || filters.experienceDurationMonths?.max) count++;
         if (filters.experienceDuration) count++;
         if (filters.experienceDateFrom) count++;
@@ -651,10 +693,26 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
         if (filters.companyFacebookUrl) count++;
         if (filters.companyTwitterUrl) count++;
         if (filters.companyLinkedInUrl) count++;
-        if (Array.isArray(filters.companyHqLocation) ? filters.companyHqLocation.length > 0 : filters.companyHqLocation) count++;
-        if (Array.isArray(filters.companyHqCountry) ? filters.companyHqCountry.length > 0 : filters.companyHqCountry) count++;
-        if (Array.isArray(filters.companyHqRegions) ? filters.companyHqRegions.length > 0 : filters.companyHqRegions) count++;
-        if (Array.isArray(filters.companyHqCity) ? filters.companyHqCity.length > 0 : filters.companyHqCity) count++;
+        if (Array.isArray(filters.companyHqLocation)) {
+          count += filters.companyHqLocation.length;
+        } else if (filters.companyHqLocation) {
+          count++;
+        }
+        if (Array.isArray(filters.companyHqCountry)) {
+          count += filters.companyHqCountry.length;
+        } else if (filters.companyHqCountry) {
+          count++;
+        }
+        if (Array.isArray(filters.companyHqRegions)) {
+          count += filters.companyHqRegions.length;
+        } else if (filters.companyHqRegions) {
+          count++;
+        }
+        if (Array.isArray(filters.companyHqCity)) {
+          count += filters.companyHqCity.length;
+        } else if (filters.companyHqCity) {
+          count++;
+        }
         if (filters.companyHqState) count++;
         if (filters.companyLastUpdated) count++;
         if (filters.companyCategoriesKeywords) count++;
@@ -1070,12 +1128,9 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
       displayValues = [];
     }
     
-    // Always ensure at least one empty field for input
-    if (displayValues.length === 0) {
-      displayValues = [''];
-    } else if (displayValues[displayValues.length - 1].trim() !== '') {
-      displayValues.push('');
-    }
+    // For job titles, separate existing values (to show as badges) from empty input
+    const existingValues = displayValues.filter(val => val.trim() !== '');
+    const hasExistingValues = existingValues.length > 0;
 
     const updateMultiTextValue = (index: number, value: string) => {
       const newValues = [...displayValues];
@@ -1092,6 +1147,44 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
         finalValues = nonEmptyValues[0];
       } else {
         finalValues = nonEmptyValues;
+      }
+
+      setHasUserInput(true);
+      onFiltersChange({
+        ...filters,
+        [key]: finalValues
+      });
+    };
+
+    const removeBadgeValue = (valueToRemove: string) => {
+      const newValues = existingValues.filter(val => val !== valueToRemove);
+      
+      let finalValues: string | string[] | undefined;
+      if (newValues.length === 0) {
+        finalValues = undefined;
+      } else if (newValues.length === 1) {
+        finalValues = newValues[0];
+      } else {
+        finalValues = newValues;
+      }
+
+      setHasUserInput(true);
+      onFiltersChange({
+        ...filters,
+        [key]: finalValues
+      });
+    };
+
+    const addNewValue = (newValue: string) => {
+      if (!newValue.trim()) return;
+      
+      const updatedValues = [...existingValues, newValue.trim()];
+      
+      let finalValues: string | string[] | undefined;
+      if (updatedValues.length === 1) {
+        finalValues = updatedValues[0];
+      } else {
+        finalValues = updatedValues;
       }
 
       setHasUserInput(true);
@@ -1134,6 +1227,72 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
         [key]: currentArray.length === 0 ? [''] : currentArray
       });
     };
+
+    // For job titles, industries, experience titles, and experience companies show badges for existing values
+    if (key === 'jobTitle' || key === 'companyIndustry' || key === 'experienceTitle' || key === 'experienceCompany') {
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+          <div className="space-y-3">
+            {/* Show existing job titles as badges */}
+            {hasExistingValues && (
+              <div className="flex flex-wrap gap-2">
+                {existingValues.map((value, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full border border-purple-200"
+                  >
+                    <span>{value}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeBadgeValue(value)}
+                      className="ml-1 text-purple-600 hover:text-purple-800 hover:bg-purple-200 rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            
+            {/* Add new job title input */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                placeholder={placeholder}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    const target = e.target as HTMLInputElement;
+                    addNewValue(target.value);
+                    target.value = '';
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+                  addNewValue(input.value);
+                  input.value = '';
+                }}
+                className="px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // For other fields, use the original input-based approach
+    // Always ensure at least one empty field for input
+    if (displayValues.length === 0) {
+      displayValues = [''];
+    } else if (displayValues[displayValues.length - 1].trim() !== '') {
+      displayValues.push('');
+    }
 
     return (
       <div>
@@ -1277,13 +1436,13 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
             
             <div className="border-t pt-3 mt-3">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Current/Recent Position Details</h4>
-              {renderTextInput('Job Title', 'experienceTitle', 'e.g., Senior Developer')}
+              {renderMultiTextInput('Job Title', 'experienceTitle', 'e.g., Senior Developer')}
               {renderMultiTextInput('Company Name', 'experienceCompany', 'e.g., Google, Microsoft')}
               {renderTextInput('Company ID', 'experienceCompanyId', 'Specific company identifier')}
               
               <div className="border-t pt-3 mt-3">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Company Details</h4>
-                {renderTextInput('Industry', 'companyIndustry', 'e.g., Technology, Healthcare, Financial Services')}
+                {renderMultiTextInput('Industry', 'companyIndustry', 'e.g., Technology, Healthcare, Financial Services')}
                 {renderMultiSelect('Company Size', companySizes, 'companySizeRange')}
                 {renderMultiSelect('Company Type', companyTypes, 'companyType')}
                 {renderRangeInput('Annual Revenue', 'companyRevenue', 'USD')}

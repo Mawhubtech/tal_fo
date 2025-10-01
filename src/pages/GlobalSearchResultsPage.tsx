@@ -16,6 +16,8 @@ import type { UserStructuredData } from '../components/ProfileSidePanel';
 
 import AdvancedFilterPanel, { type AdvancedFilters } from '../components/AdvancedFilterPanel';
 import { convertAdvancedFiltersToQuery, generateFilterSummary } from '../services/advancedFilterService';
+import AISearchCriteriaDisplay from '../components/AISearchCriteriaDisplay';
+import { convertAIQueryToAdvancedFilters } from '../utils/aiQueryParser';
 
 // Helper function to convert frontend AdvancedFilters to backend AdvancedFiltersDto format
 const convertAdvancedFiltersForAPI = (filters: AdvancedFilters): any => {
@@ -394,7 +396,7 @@ const GlobalSearchResultsPage: React.FC = () => {
   
   // Query visualization state
   const [generatedQuery, setGeneratedQuery] = useState<any>(null);
-  const [convertedFilters, setConvertedFilters] = useState<any>(null);
+  const [isAICriteriaExpanded, setIsAICriteriaExpanded] = useState(false);
   const [lastSearchMetadata, setLastSearchMetadata] = useState<any>(null);
 
   // Debug queryHash changes
@@ -769,11 +771,7 @@ const GlobalSearchResultsPage: React.FC = () => {
             console.log('🔍 Stored generated query from preloaded results:', extractedQuery);
           }
           
-          // Store the converted filters if we found them
-          if (extractedFilters) {
-            setConvertedFilters(extractedFilters);
-            console.log('🔄 Stored converted filters from preloaded results:', extractedFilters);
-          }
+
           
           // Store complete search metadata with AI information from preloaded results
           if (preloadedResults.metadata) {
@@ -892,520 +890,10 @@ const GlobalSearchResultsPage: React.FC = () => {
   }, [searchQuery, filters, hasAdvancedFilters]);
 
   // Memoized filter badges for expandable display
-  const allFilterBadges = useMemo(() => {
-    const badges = [];
-    
-    // Search Query
-    if (searchQuery) {
-      badges.push(
-        <div key="search-query" className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-          <span className="font-medium mr-2">Keywords:</span>
-          <span>"{searchQuery}"</span>
-        </div>
-      );
-    }
-
-    // Job Titles Filter
-    if (filters.job?.titles && filters.job.titles.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each job title as individual badge
-        filters.job.titles.forEach((title, index) => {
-          badges.push(
-            <div key={`job-title-${index}`} className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-              <span className="font-medium mr-2">Job Title:</span>
-              <span>{title}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="job-titles" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-            <span className="font-medium mr-2">Job Titles:</span>
-            <span>{filters.job.titles.slice(0, 2).join(', ')}</span>
-            {filters.job.titles.length > 2 && (
-              <span className="ml-1">+{filters.job.titles.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Skills Filter
-    if (filters.job?.skills && filters.job.skills.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each skill as individual badge
-        filters.job.skills.forEach((skill, index) => {
-          badges.push(
-            <div key={`job-skill-${index}`} className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-              <Code className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Skill:</span>
-              <span>{skill}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="job-skills" className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-            <Code className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Skills:</span>
-            <span>{filters.job.skills.slice(0, 2).join(', ')}</span>
-            {filters.job.skills.length > 2 && (
-              <span className="ml-1">+{filters.job.skills.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Skills Keywords Filter
-    if (filters.skillsKeywords?.items && filters.skillsKeywords.items.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each keyword as individual badge
-        filters.skillsKeywords.items.forEach((keyword, index) => {
-          badges.push(
-            <div key={`skill-keyword-${index}`} className="inline-flex items-center px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm">
-              <Code className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Keyword:</span>
-              <span>{keyword}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="skill-keywords" className="inline-flex items-center px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm">
-            <Code className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Skill Keywords:</span>
-            <span>{filters.skillsKeywords.items.slice(0, 2).join(', ')}</span>
-            {filters.skillsKeywords.items.length > 2 && (
-              <span className="ml-1">+{filters.skillsKeywords.items.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Location Filter
-    if (filters.location?.currentLocations && filters.location.currentLocations.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each location as individual badge
-        filters.location.currentLocations.forEach((location, index) => {
-          badges.push(
-            <div key={`current-location-${index}`} className="inline-flex items-center px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
-              <MapPin className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Location:</span>
-              <span>{location}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="current-locations" className="inline-flex items-center px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
-            <MapPin className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Current Location:</span>
-            <span>{filters.location.currentLocations.slice(0, 2).join(', ')}</span>
-            {filters.location.currentLocations.length > 2 && (
-              <span className="ml-1">+{filters.location.currentLocations.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Past Locations Filter
-    if (filters.location?.pastLocations && filters.location.pastLocations.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each past location as individual badge
-        filters.location.pastLocations.forEach((location, index) => {
-          badges.push(
-            <div key={`past-location-${index}`} className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm">
-              <MapPin className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Past Location:</span>
-              <span>{location}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="past-locations" className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm">
-            <MapPin className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Past Location:</span>
-            <span>{filters.location.pastLocations.slice(0, 2).join(', ')}</span>
-            {filters.location.pastLocations.length > 2 && (
-              <span className="ml-1">+{filters.location.pastLocations.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Company Filter
-    if (filters.company?.names && filters.company.names.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each company as individual badge
-        filters.company.names.forEach((company, index) => {
-          badges.push(
-            <div key={`company-name-${index}`} className="inline-flex items-center px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full text-sm">
-              <Building className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Company:</span>
-              <span>{company}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="company-names" className="inline-flex items-center px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full text-sm">
-            <Building className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Companies:</span>
-            <span>{filters.company.names.slice(0, 2).join(', ')}</span>
-            {filters.company.names.length > 2 && (
-              <span className="ml-1">+{filters.company.names.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Industries Filter
-    if (filters.company?.industries && filters.company.industries.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each industry as individual badge
-        filters.company.industries.forEach((industry, index) => {
-          badges.push(
-            <div key={`company-industry-${index}`} className="inline-flex items-center px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm">
-              <Building className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Industry:</span>
-              <span>{industry}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="company-industries" className="inline-flex items-center px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm">
-            <Building className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Industries:</span>
-            <span>{filters.company.industries.slice(0, 2).join(', ')}</span>
-            {filters.company.industries.length > 2 && (
-              <span className="ml-1">+{filters.company.industries.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Experience Filter
-    if ((filters.general?.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0') || filters.general?.maxExperience) {
-      badges.push(
-        <div key="experience" className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-          <span className="font-medium mr-2">Experience:</span>
-          <span>
-            {filters.general.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0' && `${filters.general.minExperience}+ years`}
-            {filters.general.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0' && filters.general.maxExperience && ' - '}
-            {filters.general.maxExperience && `max ${filters.general.maxExperience} years`}
-          </span>
-        </div>
-      );
-    }
-
-    // Education - Schools Filter
-    if (filters.education?.schools && filters.education.schools.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each school as individual badge
-        filters.education.schools.forEach((school, index) => {
-          badges.push(
-            <div key={`education-school-${index}`} className="inline-flex items-center px-3 py-1 bg-pink-100 text-pink-800 rounded-full text-sm">
-              <GraduationCap className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">School:</span>
-              <span>{school}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="education-schools" className="inline-flex items-center px-3 py-1 bg-pink-100 text-pink-800 rounded-full text-sm">
-            <GraduationCap className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Schools:</span>
-            <span>{filters.education.schools.slice(0, 2).join(', ')}</span>
-            {filters.education.schools.length > 2 && (
-              <span className="ml-1">+{filters.education.schools.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Education - Degrees Filter
-    if (filters.education?.degrees && filters.education.degrees.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each degree as individual badge
-        filters.education.degrees.forEach((degree, index) => {
-          badges.push(
-            <div key={`education-degree-${index}`} className="inline-flex items-center px-3 py-1 bg-rose-100 text-rose-800 rounded-full text-sm">
-              <GraduationCap className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Degree:</span>
-              <span>{degree}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="education-degrees" className="inline-flex items-center px-3 py-1 bg-rose-100 text-rose-800 rounded-full text-sm">
-            <GraduationCap className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Degrees:</span>
-            <span>{filters.education.degrees.slice(0, 2).join(', ')}</span>
-            {filters.education.degrees.length > 2 && (
-              <span className="ml-1">+{filters.education.degrees.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Education - Majors Filter
-    if (filters.education?.majors && filters.education.majors.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each major as individual badge
-        filters.education.majors.forEach((major, index) => {
-          badges.push(
-            <div key={`education-major-${index}`} className="inline-flex items-center px-3 py-1 bg-fuchsia-100 text-fuchsia-800 rounded-full text-sm">
-              <GraduationCap className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Major:</span>
-              <span>{major}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="education-majors" className="inline-flex items-center px-3 py-1 bg-fuchsia-100 text-fuchsia-800 rounded-full text-sm">
-            <GraduationCap className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Majors:</span>
-            <span>{filters.education.majors.slice(0, 2).join(', ')}</span>
-            {filters.education.majors.length > 2 && (
-              <span className="ml-1">+{filters.education.majors.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Languages Filter
-    if (filters.languages?.items && filters.languages.items.length > 0) {
-      if (isSearchCriteriaExpanded) {
-        // Show each language as individual badge
-        filters.languages.items.forEach((language, index) => {
-          badges.push(
-            <div key={`language-${index}`} className="inline-flex items-center px-3 py-1 bg-violet-100 text-violet-800 rounded-full text-sm">
-              <Globe className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Language:</span>
-              <span>{language}</span>
-            </div>
-          );
-        });
-      } else {
-        // Collapsed view - show combined
-        badges.push(
-          <div key="languages" className="inline-flex items-center px-3 py-1 bg-violet-100 text-violet-800 rounded-full text-sm">
-            <Globe className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Languages:</span>
-            <span>{filters.languages.items.slice(0, 2).join(', ')}</span>
-            {filters.languages.items.length > 2 && (
-              <span className="ml-1">+{filters.languages.items.length - 2} more</span>
-            )}
-          </div>
-        );
-      }
-    }
-
-    // Company Size Filter
-    if (filters.company?.size && filters.company.size.trim() !== '') {
-      badges.push(
-        <div key="company-size" className="inline-flex items-center px-3 py-1 bg-slate-100 text-slate-800 rounded-full text-sm">
-          <Building className="w-3 h-3 mr-1" />
-          <span className="font-medium mr-2">Company Size:</span>
-          <span>{filters.company.size}</span>
-        </div>
-      );
-    }
-
-    // Power Filters
-    if (filters.power?.isOpenToRemote || filters.power?.hasEmail || filters.power?.hasPhone) {
-      badges.push(
-        <div key="power-requirements" className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
-          <Zap className="w-3 h-3 mr-1" />
-          <span className="font-medium mr-2">Requirements:</span>
-          <span>
-            {[
-              filters.power.isOpenToRemote && 'Remote',
-              filters.power.hasEmail && 'Email',
-              filters.power.hasPhone && 'Phone'
-            ].filter(Boolean).join(', ')}
-          </span>
-        </div>
-      );
-    }
-
-    // Likely to Switch Filter
-    if (filters.likelyToSwitch?.likelihood && filters.likelyToSwitch.likelihood.trim() !== '') {
-      badges.push(
-        <div key="switch-likelihood" className="inline-flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">
-          <span className="font-medium mr-2">Switch Likelihood:</span>
-          <span>{filters.likelyToSwitch.likelihood}</span>
-        </div>
-      );
-    }
-
-    // Boolean Search Filter
-    if (filters.boolean?.booleanString && filters.boolean.booleanString.trim() !== '') {
-      badges.push(
-        <div key="boolean-search" className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
-          <Command className="w-3 h-3 mr-1" />
-          <span className="font-medium mr-2">Boolean:</span>
-          <span>"{filters.boolean.booleanString.slice(0, 30)}{filters.boolean.booleanString.length > 30 ? '...' : ''}"</span>
-        </div>
-      );
-    }
-
-    // Advanced Filter badges
-    if (hasAdvancedFilters) {
-      // Job Title from Advanced Filters
-      if (advancedFilters.jobTitle) {
-        badges.push(
-          <div key="adv-job-title" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-            <Briefcase className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Job Title:</span>
-            <span>{advancedFilters.jobTitle}</span>
-          </div>
-        );
-      }
-
-      // Full Name from Advanced Filters
-      if (advancedFilters.fullName) {
-        badges.push(
-          <div key="adv-full-name" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-            <User className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Name:</span>
-            <span>{advancedFilters.fullName}</span>
-          </div>
-        );
-      }
-
-      // Skills from Advanced Filters
-      if (advancedFilters.skills && Array.isArray(advancedFilters.skills) && advancedFilters.skills.length > 0) {
-        if (isSearchCriteriaExpanded) {
-          advancedFilters.skills.forEach((skill, index) => {
-            badges.push(
-              <div key={`adv-skill-${index}`} className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-                <Code className="w-3 h-3 mr-1" />
-                <span className="font-medium mr-2">Skill:</span>
-                <span>{skill}</span>
-              </div>
-            );
-          });
-        } else {
-          badges.push(
-            <div key="adv-skills" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-              <Code className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Skills:</span>
-              <span>{advancedFilters.skills.slice(0, 2).join(', ')}</span>
-              {advancedFilters.skills.length > 2 && (
-                <span className="ml-1">+{advancedFilters.skills.length - 2} more</span>
-              )}
-            </div>
-          );
-        }
-      } else if (advancedFilters.skills && typeof advancedFilters.skills === 'string') {
-        badges.push(
-          <div key="adv-skills-string" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-            <Code className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Skills:</span>
-            <span>{advancedFilters.skills}</span>
-          </div>
-        );
-      }
-
-      // Location from Advanced Filters
-      if (advancedFilters.locationRawAddress || advancedFilters.locationCountry || advancedFilters.locationRegions) {
-        const locationParts = [
-          advancedFilters.locationRawAddress,
-          advancedFilters.locationRegions,
-          advancedFilters.locationCountry
-        ].filter(Boolean);
-        
-        if (locationParts.length > 0) {
-          badges.push(
-            <div key="adv-location" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-              <MapPin className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Location:</span>
-              <span>{locationParts.join(', ')}</span>
-            </div>
-          );
-        }
-      }
-
-      // Experience from Advanced Filters
-      if (advancedFilters.experienceTitle || advancedFilters.experienceCompany) {
-        const experienceParts = [advancedFilters.experienceTitle, advancedFilters.experienceCompany].filter(Boolean);
-        badges.push(
-          <div key="adv-experience" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-            <Briefcase className="w-3 h-3 mr-1" />
-            <span className="font-medium mr-2">Experience:</span>
-            <span>{experienceParts.join(' at ')}</span>
-          </div>
-        );
-      }
-
-      // Education from Advanced Filters
-      if (advancedFilters.educationInstitution || advancedFilters.educationTitle || advancedFilters.educationMajor) {
-        const educationParts = [
-          advancedFilters.educationTitle,
-          advancedFilters.educationMajor,
-          advancedFilters.educationInstitution
-        ].filter(Boolean);
-        
-        if (educationParts.length > 0) {
-          badges.push(
-            <div key="adv-education" className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-              <GraduationCap className="w-3 h-3 mr-1" />
-              <span className="font-medium mr-2">Education:</span>
-              <span>{educationParts.join(', ')}</span>
-            </div>
-          );
-        }
-      }
-    }
-
-    return badges;
-  }, [searchQuery, filters, isSearchCriteriaExpanded]);
+ 
 
   // Show limited badges when collapsed (first 4), all when expanded
-  const visibleFilterBadges = useMemo(() => {
-    const maxCollapsed = 4;
-    if (isSearchCriteriaExpanded) {
-      return allFilterBadges;
-    }
-    
-    const visible = allFilterBadges.slice(0, maxCollapsed);
-    const remaining = allFilterBadges.length - maxCollapsed;
-    
-    if (remaining > 0) {
-      visible.push(
-        <div key="more-filters" className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-          <span>+{remaining} more filter{remaining !== 1 ? 's' : ''}</span>
-        </div>
-      );
-    }
-    
-    return visible;
-  }, [allFilterBadges, isSearchCriteriaExpanded]);
+
 
   // Advanced Filter Handlers
   const handleAdvancedFiltersChange = (newFilters: AdvancedFilters) => {
@@ -1760,10 +1248,9 @@ const GlobalSearchResultsPage: React.FC = () => {
           console.log('🔍 Stored generated query from', useAdvancedFilters ? 'advanced filters' : 'regular search', ':', extractedQuery);
         }
         
-        // Store the converted filters if we found them
+        // Store the extracted filters for potential use
         if (extractedFilters) {
-          setConvertedFilters(extractedFilters);
-          console.log('🔄 Stored converted filters from', hasAdvancedFilters ? 'advanced filters' : 'regular search', ':', extractedFilters);
+          console.log('🔄 Found extracted filters from', hasAdvancedFilters ? 'advanced filters' : 'regular search', ':', extractedFilters);
           
           // Update main filters state to show the converted filters for ANY search that returns them
           if (resetResults && extractedFilters) {
@@ -1983,13 +1470,30 @@ const GlobalSearchResultsPage: React.FC = () => {
         if (hasAdvancedFilters) {
           let filtersToSet: AdvancedFilters | null = null;
           
-          // First priority: ALWAYS use advancedFilters from API response metadata when available
+          // HIGHEST PRIORITY: Use AI Query Parser to convert generatedQuery directly to AdvancedFilters
+          // This bypasses the legacy convertedFilters system and directly parses the AI-generated Elasticsearch query
+          if (extractedQuery) {
+            console.log('🎯 PRIORITY 1: Using AI Query Parser to convert generatedQuery to AdvancedFilters');
+            console.log('🎯 AI Query to parse:', extractedQuery);
+            
+            const aiParsedFilters = convertAIQueryToAdvancedFilters(extractedQuery);
+            console.log('🎯 AI Parsed Filters:', aiParsedFilters);
+            
+            // Merge with any existing advanced filters to preserve user input
+            filtersToSet = {
+              ...advancedFilters, // Preserve existing user input
+              ...aiParsedFilters  // Override with AI-parsed data
+            };
+            
+            console.log('🎯 Final merged filters (preserving user input + AI parsing):', filtersToSet);
+          }
+          // Second priority: ALWAYS use advancedFilters from API response metadata when available
           // This contains the complete, processed filter data from the backend AI including location information
-          if (searchResults.metadata?.advancedFilters) {
+          else if (searchResults.metadata?.advancedFilters) {
 
             filtersToSet = { ...searchResults.metadata.advancedFilters }; // Create a copy to avoid mutations
           }
-          // Second priority: Use the original API request filters (what was actually sent)
+          // Third priority: Use the original API request filters (what was actually sent)
           // This is the most reliable source when metadata.advancedFilters is missing
           else if (apiRequestPayload?.filters) {
 
@@ -2041,71 +1545,7 @@ const GlobalSearchResultsPage: React.FC = () => {
             }
             filtersToSet = requestFilters;
           }
-          // Third priority: Map from convertedFilters if no other options available (LAST RESORT)
-          else if (extractedFilters) {
-            console.log('❌ PRIORITY 3: Mapping advancedFilters from convertedFilters (may miss location data):', extractedFilters);
-            console.log('❌ Warning: convertedFilters may not contain complete location information!');
-            console.log('❌ Original advancedFilters for location fallback:', advancedFilters);
-            const advancedFiltersFromConverted: AdvancedFilters = {};
-            
-            // Map convertedFilters back to advancedFilters format
-            if (extractedFilters.jobTitle) {
-              advancedFiltersFromConverted.jobTitle = extractedFilters.jobTitle;
-            }
-            if (extractedFilters.skills) {
-              advancedFiltersFromConverted.skills = extractedFilters.skills;
-            }
-            if (extractedFilters.experienceTitle) {
-              advancedFiltersFromConverted.experienceTitle = extractedFilters.experienceTitle;
-            }
-            if (extractedFilters.experienceDescription) {
-              advancedFiltersFromConverted.experienceDescription = extractedFilters.experienceDescription;
-            }
-            if (extractedFilters.experienceCompany) {
-              advancedFiltersFromConverted.experienceCompany = extractedFilters.experienceCompany;
-            }
-            if (extractedFilters.isWorking !== undefined) {
-              advancedFiltersFromConverted.isWorking = extractedFilters.isWorking;
-            }
-            
-            // Handle location fields - CRITICAL: Add fallback to original advancedFilters
-            if (extractedFilters.locationRawAddress) {
-              advancedFiltersFromConverted.locationRawAddress = extractedFilters.locationRawAddress;
-              console.log('✅ Found locationRawAddress in convertedFilters:', extractedFilters.locationRawAddress);
-            } else if (extractedFilters.location) {
-              advancedFiltersFromConverted.locationRawAddress = extractedFilters.location;
-              console.log('✅ Found location in convertedFilters, using as locationRawAddress:', extractedFilters.location);
-            } else if (advancedFilters.locationRawAddress) {
-              // CRITICAL: Use original location from advancedFilters as final fallback
-              advancedFiltersFromConverted.locationRawAddress = advancedFilters.locationRawAddress;
-              console.log('🔧 CRITICAL FALLBACK: Using original locationRawAddress from advancedFilters:', advancedFilters.locationRawAddress);
-            }
-            
-            if (extractedFilters.locationCountry) {
-              advancedFiltersFromConverted.locationCountry = extractedFilters.locationCountry;
-            } else if (advancedFilters.locationCountry) {
-              advancedFiltersFromConverted.locationCountry = advancedFilters.locationCountry;
-              console.log('🔧 FALLBACK: Using original locationCountry from advancedFilters:', advancedFilters.locationCountry);
-            }
-            
-            if (extractedFilters.locationRegions) {
-              advancedFiltersFromConverted.locationRegions = extractedFilters.locationRegions;
-            } else if (advancedFilters.locationRegions) {
-              advancedFiltersFromConverted.locationRegions = advancedFilters.locationRegions;
-              console.log('🔧 FALLBACK: Using original locationRegions from advancedFilters:', advancedFilters.locationRegions);
-            }
-            
-            // Handle company and other fields
-            if (extractedFilters.company) {
-              advancedFiltersFromConverted.experienceCompany = extractedFilters.company;
-            }
-            if (extractedFilters.fullName) {
-              advancedFiltersFromConverted.fullName = extractedFilters.fullName;
-            }
-            
-            filtersToSet = advancedFiltersFromConverted;
-          }
-          // Fourth priority: If we still don't have location data, use original advancedFilters (USER INPUT PRESERVATION)
+          // Fourth priority: If we still don't have filter data, use original advancedFilters (USER INPUT PRESERVATION)
           else {
             console.log('❌ PRIORITY 4: No filter data from API - preserving original user input');
             console.log('❌ Using original advancedFilters to preserve user location input:', advancedFilters);
@@ -2748,7 +2188,7 @@ const GlobalSearchResultsPage: React.FC = () => {
         onToggle={toggleAdvancedFilters}
         searchQuery={searchQuery}
         onSearchQueryChange={handleSearchQueryChange}
-        convertedFilters={convertedFilters}
+        generatedQuery={generatedQuery}
       />
 
       {/* Main Content */}
@@ -2804,48 +2244,19 @@ const GlobalSearchResultsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Search Keywords and Filters Display */}
-        {hasActiveFilters && (
-          <div 
-            className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer hover:border-purple-300 hover:bg-purple-50/30 transition-colors"
+ 
+
+        {/* AI Generated Search Criteria Display */}
+        {generatedQuery && (
+          <AISearchCriteriaDisplay
+            generatedQuery={generatedQuery}
+            searchText={searchQuery}
+            className="mb-6"
+            collapsible={true}
+            defaultExpanded={true}
             onClick={toggleAdvancedFilters}
-            title="Click to edit filters"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <Search className="w-5 h-5 text-gray-500" />
-                <h4 className="text-sm font-medium text-gray-900">Search Criteria</h4>
-                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Click to edit</span>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering the parent div's onClick
-                  setIsSearchCriteriaExpanded(!isSearchCriteriaExpanded);
-                }}
-                className="inline-flex items-center px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-              >
-                {isSearchCriteriaExpanded ? (
-                  <>
-                    <ChevronUp className="w-4 h-4 mr-1" />
-                    Show Less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4 mr-1" />
-                    Show All
-                  </>
-                )}
-              </button>
-            </div>
-            
-            <div className="flex flex-wrap gap-3">
-              {visibleFilterBadges}
-            </div>
-
-          </div>
+          />
         )}
-
-
 
         {/* Project Requirement Notice */}
         <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
