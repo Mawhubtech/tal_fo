@@ -1228,8 +1228,8 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
       });
     };
 
-    // For job titles, industries, experience titles, and experience companies show badges for existing values
-    if (key === 'jobTitle' || key === 'companyIndustry' || key === 'experienceTitle' || key === 'experienceCompany') {
+    // For job titles, industries, experience titles, experience companies, and skills show badges for existing values
+    if (key === 'jobTitle' || key === 'companyIndustry' || key === 'experienceTitle' || key === 'experienceCompany' || key === 'skills') {
       return (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -1418,7 +1418,7 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
           <Award className="w-4 h-4 text-gray-600" />,
           'skills',
           <>
-            {renderBadgeInput('Skills', 'skills', 'Type a skill and press Enter or click +', undefined, true)}
+            {renderMultiTextInput('Skills', 'skills', 'e.g., JavaScript, Python, React')}
           </>
         )}
 

@@ -67,7 +67,12 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
    */
   function addCriteria(field: string, value: any, type: SearchCriteria['type'] = 'secondary') {
     const mapping = FIELD_MAPPING[field];
-    if (!mapping) return;
+    if (!mapping) {
+      console.log('⚠️ No mapping found for field:', field);
+      return;
+    }
+    
+    console.log('📝 Adding criteria:', { field, value, type, mapping });
 
     // Format value based on type
     let formattedValue: string | number | string[];
@@ -114,18 +119,61 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
     const query = item.multi_match.query;
     const fields = item.multi_match.fields || [];
 
-    // For job titles, use the primary field (job_title)
-    const primaryField = fields.find((f: string) => cleanFieldName(f) === 'job_title');
-    if (primaryField) {
+    // Clean fields to check for matches
+    const cleanedFields = fields.map((f: string) => cleanFieldName(f));
+    
+    // Debug logging
+    console.log('🔍 Processing multi_match:', { query, fields, cleanedFields, type });
+
+    // For job titles, use the primary field (job_title, headline, generated_headline)
+    const hasJobTitleField = cleanedFields.some((f: string) => 
+      f === 'job_title' || f === 'headline' || f === 'generated_headline'
+    );
+    if (hasJobTitleField) {
       addCriteria('job_title', query, type);
       return;
     }
 
-    // For skills, use the skills field
-    const skillsField = fields.find((f: string) => cleanFieldName(f) === 'skills');
-    if (skillsField) {
-      addCriteria('skills', query, type);
-      return;
+    // For skills, check if skills field is present and determine if this is a skills-focused query
+    const hasSkillsField = cleanedFields.some((f: string) => f === 'skills');
+    if (hasSkillsField) {
+      // Find the skills field and check its boost
+      const skillsField = fields.find((f: string) => cleanFieldName(f) === 'skills');
+      const skillsFieldIndex = fields.findIndex((f: string) => cleanFieldName(f) === 'skills');
+      
+      console.log('🎯 Skills field detected:', { skillsField, skillsFieldIndex, query, fields });
+      
+      // Priority 1: If skills field exists and has high boost (^3 or higher), treat as skills query
+      if (skillsField && (skillsField.includes('^3') || skillsField.includes('^4') || skillsField.includes('^5'))) {
+        console.log('✅ Adding as skills criteria (high boost):', query);
+        addCriteria('skills', query, type);
+        return;
+      }
+      
+      // Priority 2: If skills is the first field, treat as skills query
+      if (skillsFieldIndex === 0) {
+        console.log('✅ Adding as skills criteria (first position):', query);
+        addCriteria('skills', query, type);
+        return;
+      }
+      
+      // Priority 3: If query looks like a skill (short technical terms, etc.) and skills field is present
+      const queryText = query.toLowerCase();
+      const skillKeywords = ['javascript', 'python', 'react', 'java', 'sql', 'aws', 'azure', 'docker', 'kubernetes', 'api', 'rest', 'graphql', 'node', 'angular', 'vue', 'html', 'css', 'git', 'ci/cd', 'devops', 'agile', 'scrum'];
+      const isLikelySkill = queryText.length <= 30 && (
+        skillKeywords.some(keyword => queryText.includes(keyword)) ||
+        /^[A-Z]{2,}$/.test(query) || // Acronyms like DCM, API, etc.
+        queryText.includes('programming') ||
+        queryText.includes('development') ||
+        queryText.includes('framework') ||
+        queryText.includes('technology')
+      );
+      
+      if (isLikelySkill) {
+        console.log('✅ Adding as skills criteria (skill-like query):', query);
+        addCriteria('skills', query, type);
+        return;
+      }
     }
 
     // For other fields, use the first mapped field
@@ -380,11 +428,13 @@ export function convertAIQueryToAdvancedFilters(aiQuery: any): any {
 
       case 'skills':
         if (criterion.label === 'Skills' || criterion.label === 'Description') {
+          console.log('🎯 Converting skills criterion to advancedFilters:', criterion);
           if (!advancedFilters.skills) {
             advancedFilters.skills = [];
           }
           const skills = Array.isArray(criterion.value) ? criterion.value : [criterion.value];
           advancedFilters.skills = [...(advancedFilters.skills || []), ...skills];
+          console.log('✅ Updated advancedFilters.skills:', advancedFilters.skills);
         }
         break;
 
