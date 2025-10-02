@@ -106,6 +106,39 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
   }
 
   /**
+   * Helper function to get the boost value from a field (e.g., "skills^3" -> 3)
+   */
+  function getBoostValue(field: string): number {
+    const boostMatch = field.match(/\^(\d+)$/);
+    return boostMatch ? parseInt(boostMatch[1]) : 1; // Default boost is 1
+  }
+
+  /**
+   * Helper function to find the highest priority field based on boost scores and field importance
+   */
+  function getHighestPriorityField(fields: string[]): string | null {
+    if (!fields || fields.length === 0) return null;
+    
+    let highestBoostField = null;
+    let highestBoost = 0;
+    
+    // Extract boost values from all fields and find the highest one
+    for (const field of fields) {
+      const cleanField = cleanFieldName(field);
+      const boost = getBoostValue(field);
+      
+      if (boost > highestBoost || 
+          (boost === highestBoost && cleanField === 'skills') || // Prioritize skills on equal boost
+          (boost === highestBoost && !highestBoostField)) {
+        highestBoost = boost;
+        highestBoostField = cleanField;
+      }
+    }
+    
+    return highestBoostField;
+  }
+
+  /**
    * Process multi_match queries
    */
   function processMultiMatch(item: any, type: SearchCriteria['type'] = 'secondary') {
@@ -118,22 +151,7 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
     const cleanedFields = fields.map((f: string) => cleanFieldName(f));
 
     // Determine field priority based on boost values and field order
-    let highestBoostField = null;
-    let highestBoost = 0;
-    
-    // Extract boost values from all fields and find the highest one
-    for (const field of fields) {
-      const cleanField = cleanFieldName(field);
-      const boostMatch = field.match(/\^(\d+)$/);
-      const boost = boostMatch ? parseInt(boostMatch[1]) : 1; // Default boost is 1
-      
-      if (boost > highestBoost || 
-          (boost === highestBoost && cleanField === 'skills') || // Prioritize skills on equal boost
-          (boost === highestBoost && !highestBoostField)) {
-        highestBoost = boost;
-        highestBoostField = cleanField;
-      }
-    }
+    const highestBoostField = getHighestPriorityField(fields);
     
     // If highest boost field is skills, treat as skills query
     if (highestBoostField === 'skills') {
@@ -185,7 +203,14 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
       return;
     }
 
-    // For other fields, use the first mapped field
+    // For other fields, prioritize by boost score and use the highest boost mapped field
+    const prioritizedField = getHighestPriorityField(fields);
+    if (prioritizedField && FIELD_MAPPING[prioritizedField]) {
+      addCriteria(prioritizedField, query, type);
+      return;
+    }
+    
+    // Final fallback: use the first mapped field
     for (const field of fields) {
       const cleanField = cleanFieldName(field);
       if (FIELD_MAPPING[cleanField]) {
@@ -246,16 +271,27 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
             addCriteria(field, value, type);
           });
         } else if (nestedItem.multi_match) {
-          // For nested multi_match, prefix fields with path
+          // For nested multi_match, prefix fields with path and prioritize by boost
           const fields = nestedItem.multi_match.fields || [];
           const query = nestedItem.multi_match.query;
           
-          for (const field of fields) {
-            const fullField = field.startsWith(path) ? field : `${path}.${field}`;
-            const cleanField = cleanFieldName(fullField);
-            if (FIELD_MAPPING[cleanField]) {
-              addCriteria(cleanField, query, type);
-              break;
+          // Create full field names with path prefix
+          const fullFields = fields.map((field: string) => {
+            return field.startsWith(path) ? field : `${path}.${field}`;
+          });
+          
+          // Find the highest priority field
+          const prioritizedField = getHighestPriorityField(fullFields);
+          if (prioritizedField && FIELD_MAPPING[prioritizedField]) {
+            addCriteria(prioritizedField, query, type);
+          } else {
+            // Fallback: use the first mapped field
+            for (const field of fullFields) {
+              const cleanField = cleanFieldName(field);
+              if (FIELD_MAPPING[cleanField]) {
+                addCriteria(cleanField, query, type);
+                break;
+              }
             }
           }
         }
@@ -287,6 +323,20 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
             addCriteria(field, value, type);
           }
         });
+      } else if (shouldItem.multi_match) {
+        // Handle multi_match in bool.should with boost prioritization
+        const fields = shouldItem.multi_match.fields || [];
+        const query = shouldItem.multi_match.query;
+        
+        if (fields.length > 0 && query) {
+          // Use boost-aware field selection
+          const selectedField = getHighestPriorityField(fields);
+          if (['city', 'country', 'location_raw_address'].includes(selectedField)) {
+            locationValues.push(query);
+          } else {
+            addCriteria(selectedField, query, type);
+          }
+        }
       }
     });
 

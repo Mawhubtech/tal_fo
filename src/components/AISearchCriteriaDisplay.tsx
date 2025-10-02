@@ -85,20 +85,24 @@ export default function AISearchCriteriaDisplay({
 
   // Extract criteria from AI query
   const criteria = React.useMemo(() => {
+    let allCriteria: SearchCriteria[] = [];
+    
     // Try multiple possible data structures based on API response format
     if (generatedQuery?.query?.bool) {
       // Direct query.bool structure
-      return extractSearchCriteriaFromAIQuery(generatedQuery.query.bool);
+      allCriteria = extractSearchCriteriaFromAIQuery(generatedQuery.query.bool);
     } else if (generatedQuery?.bool) {
       // Direct bool structure
-      return extractSearchCriteriaFromAIQuery(generatedQuery.bool);
+      allCriteria = extractSearchCriteriaFromAIQuery(generatedQuery.bool);
     } else if (generatedQuery) {
       // Check if generatedQuery itself is a bool structure
       if (generatedQuery.must || generatedQuery.should || generatedQuery.filter) {
-        return extractSearchCriteriaFromAIQuery(generatedQuery);
+        allCriteria = extractSearchCriteriaFromAIQuery(generatedQuery);
       }
     }
-    return [];
+    
+    // Filter out system criteria (Currently Working, Active Profiles, etc.)
+    return allCriteria.filter(criterion => criterion.category !== 'system');
   }, [generatedQuery]);
 
   if (criteria.length === 0) {
