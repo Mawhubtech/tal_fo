@@ -154,133 +154,6 @@ const parseEnhancedFilters = (filtersData: any): SearchFilters => {
   return parsedFilters;
 };
 
-
-
-// Enhanced Filter Components
-interface ArrayFilterInputProps {
-  label: string;
-  values: string[];
-  onChange: (values: string[]) => void;
-  placeholder: string;
-}
-
-const ArrayFilterInput: React.FC<ArrayFilterInputProps> = ({ label, values, onChange, placeholder }) => {
-  const [inputValue, setInputValue] = useState('');
-
-  const handleAdd = () => {
-    const trimmedValue = inputValue.trim();
-    if (trimmedValue && !values.includes(trimmedValue)) {
-      onChange([...values, trimmedValue]);
-      setInputValue('');
-    }
-  };
-
-  const handleRemove = (valueToRemove: string) => {
-    onChange(values.filter(value => value !== valueToRemove));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAdd();
-    }
-  };
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-      <div className="flex gap-2 mb-3">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder={placeholder}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
-        <button
-          onClick={handleAdd}
-          disabled={!inputValue.trim()}
-          className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-300 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
-      
-      {values.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {values.map((value, index) => (
-            <div key={`${value}-${index}`} className="flex items-center bg-purple-50 border border-purple-200 rounded-md px-3 py-1.5 text-sm">
-              <span className="text-purple-800">{value}</span>
-              <button
-                onClick={() => handleRemove(value)}
-                className="ml-2 text-purple-600 hover:text-purple-800 transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface ComprehensiveFilterSectionProps {
-  title: string;
-  icon: React.ComponentType<any>;
-  isExpanded: boolean;
-  children: React.ReactNode;
-  hasActiveFilters?: boolean;
-}
-
-const ComprehensiveFilterSection: React.FC<ComprehensiveFilterSectionProps> = ({ 
-  title, 
-  icon: Icon, 
-  isExpanded: defaultExpanded = true, 
-  children,
-  hasActiveFilters = false
-}) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-
-  return (
-    <div className={`border rounded-lg overflow-hidden ${
-      hasActiveFilters ? 'border-purple-300 bg-purple-50/30' : 'border-gray-200'
-    }`}>
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={`w-full flex items-center justify-between p-3 transition-colors ${
-          hasActiveFilters 
-            ? 'bg-purple-50 hover:bg-purple-100' 
-            : 'bg-gray-50 hover:bg-gray-100'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <Icon className={`w-4 h-4 ${
-            hasActiveFilters ? 'text-purple-600' : 'text-gray-600'
-          }`} />
-          <span className={`text-sm font-medium ${
-            hasActiveFilters ? 'text-purple-700' : 'text-gray-700'
-          }`}>
-            {title}
-          </span>
-          {hasActiveFilters && (
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-          )}
-        </div>
-        {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-      </button>
-      {isExpanded && (
-        <div className={`p-4 border-t ${
-          hasActiveFilters ? 'border-purple-200' : 'border-gray-200'
-        }`}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
-
 // Filter Section Component (Legacy - keeping for compatibility)
 interface FilterSectionProps {
   title: string;
@@ -290,75 +163,6 @@ interface FilterSectionProps {
   placeholder: string;
 }
 
-const FilterSection: React.FC<FilterSectionProps> = ({ title, items, onAdd, onRemove, placeholder }) => {
-  const [inputValue, setInputValue] = useState('');
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  const handleAdd = () => {
-    if (inputValue.trim()) {
-      onAdd(inputValue.trim());
-      setInputValue('');
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleAdd();
-    }
-  };
-
-  return (
-    <div>
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full text-left mb-2"
-      >
-        <label className="block text-sm font-medium text-gray-700">{title}</label>
-        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
-      
-      {isExpanded && (
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={placeholder}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-            <button
-              onClick={handleAdd}
-              className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-          
-          {items.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {items.map((item, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 rounded-md text-sm"
-                >
-                  {item}
-                  <button
-                    onClick={() => onRemove(index)}
-                    className="ml-1 text-gray-500 hover:text-red-500 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // We'll need to create a simplified version of the search results for global use
 const GlobalSearchResultsPage: React.FC = () => {
@@ -399,42 +203,11 @@ const GlobalSearchResultsPage: React.FC = () => {
   const [isAICriteriaExpanded, setIsAICriteriaExpanded] = useState(false);
   const [lastSearchMetadata, setLastSearchMetadata] = useState<any>(null);
 
-  // Debug queryHash changes
-  useEffect(() => {
-    console.log('🔑 QueryHash state changed to:', queryHash);
-    if (queryHash) {
-      console.log('✅ QueryHash is now available for pagination:', queryHash);
-    } else {
-      console.log('❌ QueryHash is null - pagination will use new search');
-    }
-  }, [queryHash]);
 
-  // 🔍 DEBUG: Track advancedFilters state changes
-  useEffect(() => {
-    console.log('🔍 AdvancedFilters State Changed @ ', new Date().toLocaleTimeString(), ':', advancedFilters);
-    console.log('🔍 AdvancedFilters Keys Count:', Object.keys(advancedFilters).length);
-    console.log('🔍 Location Fields in AdvancedFilters:', {
-      locationRawAddress: advancedFilters.locationRawAddress,
-      locationCountry: advancedFilters.locationCountry,
-      locationRegions: advancedFilters.locationRegions,
-      hasAnyLocation: !!(advancedFilters.locationRawAddress || advancedFilters.locationCountry || advancedFilters.locationRegions)
-    });
-    console.log('🔍 Other Fields in AdvancedFilters:', {
-      jobTitle: advancedFilters.jobTitle,
-      skills: advancedFilters.skills,
-      experienceTitle: advancedFilters.experienceTitle,
-      experienceDescription: advancedFilters.experienceDescription,
-      isWorking: advancedFilters.isWorking
-    });
-  }, [advancedFilters]);
 
-  // 🔍 DEBUG: Track main filters state changes (for sidebar)
-  useEffect(() => {
-    console.log('🔍 Main Filters State Changed (used by sidebar):', filters);
-    console.log('🔍 Location in Main Filters:', filters?.location?.currentLocations);
-    console.log('🔍 Job Titles in Main Filters:', filters?.job?.titles);
-    console.log('🔍 Skills in Main Filters:', filters?.job?.skills);
-  }, [filters]);
+
+
+
 
   // Helper function to highlight keywords in text with improved relevance
   const highlightKeywords = (text: string, keywords: string[] = [], candidate?: any) => {
@@ -671,7 +444,7 @@ const GlobalSearchResultsPage: React.FC = () => {
 
   // Handle state from search page
   useEffect(() => {
-    console.log('GlobalSearchResults: Loading with state:', location.state);
+ 
     
     if (location.state) {
       const { 
@@ -711,29 +484,24 @@ const GlobalSearchResultsPage: React.FC = () => {
         
         // If we have preloaded results from QuickSearch, use them directly
         if (preloadedResults) {
-          console.log('GlobalSearchResults: Using preloaded results:', preloadedResults);
-          console.log('GlobalSearchResults: Preloaded results type:', typeof preloadedResults);
-          console.log('GlobalSearchResults: Preloaded results.results:', preloadedResults.results);
-          console.log('GlobalSearchResults: Preloaded results.results length:', preloadedResults.results?.length || 0);
+
           
           const resultsToSet = preloadedResults.results || [];
-          console.log('GlobalSearchResults: Setting results array:', resultsToSet);
+
           setResults(resultsToSet);
           setIsLoading(false);
           
           // Extract queryHash from preloaded results for future pagination
-          console.log('🔍 Extracting queryHash from preloaded results...');
-          console.log('🔍 preloadedResults.metadata:', preloadedResults?.metadata);
-          console.log('🔍 preloadedResults.metadata.queryHash:', preloadedResults?.metadata?.queryHash);
+
           
           const preloadedQueryHash = preloadedResults?.metadata?.queryHash || 
                                    preloadedResults?.queryHash || 
                                    preloadedResults?.data?.metadata?.queryHash;
           
           if (preloadedQueryHash) {
-            console.log('🔑 Found queryHash in preloaded results, setting state:', preloadedQueryHash);
+
             setQueryHash(preloadedQueryHash);
-            console.log('🔑 Preloaded queryHash state set for pagination:', preloadedQueryHash);
+
           } else {
             console.warn('⚠️ No queryHash found in preloaded results!');
             console.warn('Available keys in preloadedResults:', Object.keys(preloadedResults || {}));
@@ -768,7 +536,7 @@ const GlobalSearchResultsPage: React.FC = () => {
           // Store the query if we found one
           if (extractedQuery) {
             setGeneratedQuery(extractedQuery);
-            console.log('🔍 Stored generated query from preloaded results:', extractedQuery);
+
           }
           
 
@@ -791,7 +559,7 @@ const GlobalSearchResultsPage: React.FC = () => {
               searchType: 'preloaded-enhanced'
             };
             setLastSearchMetadata(metadata);
-            console.log('🔍 Stored search metadata from preloaded results:', metadata);
+
           }
 
           // Set pagination info if available
@@ -804,11 +572,11 @@ const GlobalSearchResultsPage: React.FC = () => {
             const currentPageNum = preloadedResults.page || 1;
             const totalPagesNum = preloadedResults.totalPages || 1;
             const hasMorePages = currentPageNum < totalPagesNum;
-            console.log('GlobalSearchResults: Preloaded standard pagination - page:', currentPageNum, 'of', totalPagesNum, 'hasMore:', hasMorePages);
+            
             setHasNextPage(hasMorePages);
             setNextCursor(hasMorePages ? (currentPageNum + 1).toString() : undefined);
             setCurrentPage(currentPageNum);
-            console.log('GlobalSearchResults: Preloaded set hasNextPage:', hasMorePages, 'nextCursor:', hasMorePages ? (currentPageNum + 1).toString() : undefined);
+            
           }
         } else if (query) {
           // Only fetch results if we have a query and no preloaded results
@@ -831,7 +599,7 @@ const GlobalSearchResultsPage: React.FC = () => {
         }, 1000); // Small delay to ensure UI state is ready
       }
     } else {
-      console.log('GlobalSearchResults: No state found, redirecting to search');
+
       // Navigate back to global search if no state
       navigate('/dashboard/search');
     }
@@ -865,29 +633,7 @@ const GlobalSearchResultsPage: React.FC = () => {
   }, [advancedFilters]);
 
   // Memoized check for active filters (includes both regular and advanced filters)
-  const hasActiveFilters = useMemo(() => {
-    return !!(
-      searchQuery ||
-      hasAdvancedFilters ||
-      (filters.job?.titles && filters.job.titles.length > 0) ||
-      (filters.job?.skills && filters.job.skills.length > 0) ||
-      (filters.skillsKeywords?.items && filters.skillsKeywords.items.length > 0) ||
-      (filters.location?.currentLocations && filters.location.currentLocations.length > 0) ||
-      (filters.location?.pastLocations && filters.location.pastLocations.length > 0) ||
-      (filters.company?.names && filters.company.names.length > 0) ||
-      (filters.company?.industries && filters.company.industries.length > 0) ||
-      (filters.general?.minExperience && filters.general.minExperience !== '' && filters.general.minExperience !== '0') ||
-      (filters.general?.maxExperience && filters.general.maxExperience !== '') ||
-      (filters.education?.schools && filters.education.schools.length > 0) ||
-      (filters.education?.degrees && filters.education.degrees.length > 0) ||
-      (filters.education?.majors && filters.education.majors.length > 0) ||
-      (filters.languages?.items && filters.languages.items.length > 0) ||
-      (filters.company?.size && filters.company.size.trim() !== '') ||
-      (filters.power?.isOpenToRemote || filters.power?.hasEmail || filters.power?.hasPhone) ||
-      (filters.likelyToSwitch?.likelihood && filters.likelyToSwitch.likelihood.trim() !== '') ||
-      (filters.boolean?.booleanString && filters.boolean.booleanString.trim() !== '')
-    );
-  }, [searchQuery, filters, hasAdvancedFilters]);
+
 
   // Memoized filter badges for expandable display
  
@@ -982,18 +728,11 @@ const GlobalSearchResultsPage: React.FC = () => {
       // Use advanced filters API if hasAdvancedFilters is true (automatically detects when filters are applied)
       if (hasAdvancedFilters && Object.keys(advancedFilters).some(key => advancedFilters[key as keyof AdvancedFilters] !== undefined)) {
         try {
-          console.log('🔧 Using Advanced Filters Search:', advancedFilters, 'with query:', query);
+        
           
           const pageNumber = cursor ? parseInt(cursor) : 1;
           
-          console.log('🔍 Advanced Filters Debug:', {
-            pageNumber,
-            cursor,
-            queryHash,
-            resetResults,
-            isLoadMore: !resetResults,
-            shouldUseCache: pageNumber > 1 && queryHash && !resetResults
-          });
+          
           
           // Check if this is a pagination request and we have a queryHash
           if (pageNumber > 1 && queryHash && !resetResults) {
@@ -1009,14 +748,11 @@ const GlobalSearchResultsPage: React.FC = () => {
               isReset: resetResults
             });
             
-            // Store the original request filters for reference
-            const originalRequestFilters = { ...advancedFilters };
+    
             
             // Convert frontend filters to backend format
             const convertedFilters = convertAdvancedFiltersForAPI(advancedFilters);
-            console.log('🔄 Converted filters for API:', convertedFilters);
-            console.log('🔧 Advanced Filters API Payload:', JSON.stringify({ filters: convertedFilters, searchText: query || '' }, null, 2));
-            console.log('🔧 Original request filters:', originalRequestFilters);
+          
             
             // Store the actual API request payload for later use in populating filters
             apiRequestPayload = { filters: convertedFilters, searchText: query || '' };
@@ -1027,9 +763,7 @@ const GlobalSearchResultsPage: React.FC = () => {
             });
             
             // Store queryHash from initial search for future pagination
-            console.log('🔍 Full advanced filters response for queryHash extraction:', searchResults);
-            console.log('🔍 searchResults.metadata:', searchResults?.metadata);
-            console.log('🔍 searchResults.metadata.queryHash:', searchResults?.metadata?.queryHash);
+          
             
             // Try multiple possible locations for queryHash
             const possibleQueryHash = searchResults?.metadata?.queryHash || 
@@ -1037,9 +771,9 @@ const GlobalSearchResultsPage: React.FC = () => {
                                     searchResults?.data?.metadata?.queryHash;
             
             if (possibleQueryHash) {
-              console.log('🔑 Found queryHash from advanced filters, setting state:', possibleQueryHash);
+              
               setQueryHash(possibleQueryHash);
-              console.log('🔑 State setQueryHash called with:', possibleQueryHash);
+             
             } else {
               console.warn('⚠️ No queryHash found in advanced filters response!');
               console.warn('Available keys in searchResults:', Object.keys(searchResults || {}));
@@ -1047,23 +781,9 @@ const GlobalSearchResultsPage: React.FC = () => {
             }
           }
           
-          console.log('🎯 Advanced Filters Search Results:', searchResults);
-          console.log('🎯 Advanced Filters Results Count:', searchResults?.results?.length || 0);
+     
           
-          // Debug: Check if we have the metadata.advancedFilters that we need
-          if (searchResults?.metadata?.advancedFilters) {
-            console.log('✅ SUCCESS: metadata.advancedFilters found in response:', searchResults.metadata.advancedFilters);
-            console.log('✅ Location data available:', {
-              locationRawAddress: searchResults.metadata.advancedFilters.locationRawAddress,
-              locationCountry: searchResults.metadata.advancedFilters.locationCountry,
-              locationRegions: searchResults.metadata.advancedFilters.locationRegions
-            });
-          } else {
-            console.log('❌ WARNING: metadata.advancedFilters NOT found in response - will use API request payload fallback');
-            console.log('❌ Available metadata keys:', Object.keys(searchResults?.metadata || {}));
-            console.log('❌ Will use original API request payload:', apiRequestPayload);
-            console.log('❌ This may indicate backend is not returning complete metadata.advancedFilters');
-          }
+          
         } catch (advancedError) {
           console.error('❌ Advanced filters search failed:', advancedError);
           console.error('❌ Advanced filters error details:', advancedError.response?.data);
@@ -1084,37 +804,23 @@ const GlobalSearchResultsPage: React.FC = () => {
         try {
           const pageNumber = cursor ? parseInt(cursor) : 1;
           
-          console.log('🔍 Enhanced Search Debug:', {
-            pageNumber,
-            cursor,
-            queryHash,
-            resetResults,
-            isLoadMore: !resetResults,
-            shouldUseCache: pageNumber > 1 && queryHash && !resetResults
-          });
+      
           
           // Check if this is a pagination request and we have a queryHash
           if (pageNumber > 1 && queryHash && !resetResults) {
-            console.log('✅ Using CACHE endpoint for page', pageNumber, 'with queryHash:', queryHash);
+            
             searchResults = await fetchCachedEnhancedResults(queryHash, { 
               page: pageNumber, 
               limit: 3 
             });
           } else {
-            console.log('✅ Using NEW SEARCH endpoint for page', pageNumber, 'reasons:', {
-              isFirstPage: pageNumber === 1,
-              noQueryHash: !queryHash,
-              isReset: resetResults
-            });
+            
             searchResults = await searchCandidatesExternalEnhanced(filters, query, { 
               page: pageNumber, 
               limit: 3 
             });
             
-            // Store queryHash from initial search for future pagination
-            console.log('🔍 Full search response for queryHash extraction:', searchResults);
-            console.log('🔍 searchResults.metadata:', searchResults?.metadata);
-            console.log('🔍 searchResults.metadata.queryHash:', searchResults?.metadata?.queryHash);
+      
             
             // Try multiple possible locations for queryHash
             const possibleQueryHash = searchResults?.metadata?.queryHash || 
@@ -1122,9 +828,9 @@ const GlobalSearchResultsPage: React.FC = () => {
                                     searchResults?.data?.metadata?.queryHash;
             
             if (possibleQueryHash) {
-              console.log('🔑 Found queryHash, setting state:', possibleQueryHash);
+             
               setQueryHash(possibleQueryHash);
-              console.log('🔑 State setQueryHash called with:', possibleQueryHash);
+             
             } else {
               console.warn('⚠️ No queryHash found in any expected location!');
               console.warn('Available keys in searchResults:', Object.keys(searchResults || {}));
@@ -1140,12 +846,12 @@ const GlobalSearchResultsPage: React.FC = () => {
       
       // If enhanced search wasn't used or failed, use standard search methods (but only if not using advanced filters)
       if (!hasAdvancedFilters && (!useEnhanced || !searchResults)) {
-        console.log('GlobalSearchResults: Using standard search...');
+      
         
         // For external search, prefer our direct external search for richer data
         if (searchMode === 'external') {
           try {
-            console.log('GlobalSearchResults: Using direct external search for richer data...');
+          
             // Calculate page number from cursor or use 1 for initial search
             const pageNumber = cursor ? parseInt(cursor) : 1;
             searchResults = await searchCandidatesExternalDirect(filters, query, { 
@@ -1180,8 +886,7 @@ const GlobalSearchResultsPage: React.FC = () => {
         }
       }
       
-      console.log('🔍 GlobalSearchResults: Raw searchResults:', searchResults);
-      console.log('🔍 GlobalSearchResults: Type of searchResults:', typeof searchResults);
+ 
       
       // Handle the response structure from backend
       let newResults: any[] = [];
@@ -1206,10 +911,10 @@ const GlobalSearchResultsPage: React.FC = () => {
         const currentPageNum = searchResults.page || 1;
         const totalPagesNum = searchResults.totalPages || 1;
         const hasMorePages = currentPageNum < totalPagesNum;
-        console.log('GlobalSearchResults: Standard pagination - page:', currentPageNum, 'of', totalPagesNum, 'hasMore:', hasMorePages);
+        
         setHasNextPage(hasMorePages);
         setNextCursor(hasMorePages ? (currentPageNum + 1).toString() : undefined);
-        console.log('GlobalSearchResults: Set hasNextPage:', hasMorePages, 'nextCursor:', hasMorePages ? (currentPageNum + 1).toString() : undefined);
+        
       } else {
         setNextCursor(undefined);
         setHasNextPage(false);
@@ -1245,17 +950,17 @@ const GlobalSearchResultsPage: React.FC = () => {
         // Always store the query if we found one, regardless of search type
         if (extractedQuery) {
           setGeneratedQuery(extractedQuery);
-          console.log('🔍 Stored generated query from', useAdvancedFilters ? 'advanced filters' : 'regular search', ':', extractedQuery);
+         
         }
         
         // Store the extracted filters for potential use
         if (extractedFilters) {
-          console.log('🔄 Found extracted filters from', hasAdvancedFilters ? 'advanced filters' : 'regular search', ':', extractedFilters);
+         
           
           // Update main filters state to show the converted filters for ANY search that returns them
           if (resetResults && extractedFilters) {
             const searchType = hasAdvancedFilters ? 'advanced search' : 'external AI direct search';
-            console.log(`🔄 Updating main filters state with converted filters from ${searchType}`);
+         
             
             // Clear old filters and build new ones from converted filters
             const newFilters: SearchFilters = {
@@ -1287,9 +992,7 @@ const GlobalSearchResultsPage: React.FC = () => {
               let apiAdvancedFilters = searchResults.metadata?.advancedFilters || {};
               let requestFilters = apiRequestPayload?.filters || {};
               
-              console.log('🔄 Location extraction - API advanced filters:', apiAdvancedFilters);
-              console.log('🔄 Location extraction - Request filters:', requestFilters);
-              console.log('🔄 Location extraction - Original advanced filters:', advancedFilters);
+            
               
               // Check multiple sources for location information (in order of preference)
               const locationSources = [
@@ -1304,7 +1007,7 @@ const GlobalSearchResultsPage: React.FC = () => {
                   ? sourceLocation 
                   : sourceLocation.split(' OR ').map(loc => loc.trim());
                 newFilters.location!.currentLocations = locations;
-                console.log('🔄 Setting location from source:', sourceLocation, '→ locations:', locations);
+        
               }
               
               // Handle country information
@@ -1321,7 +1024,7 @@ const GlobalSearchResultsPage: React.FC = () => {
                   : sourceCountry.split(' OR ').map(loc => loc.trim());
                 // Add to current locations if not already there
                 newFilters.location!.currentLocations = [...(newFilters.location!.currentLocations || []), ...countries];
-                console.log('🔄 Adding country locations:', countries);
+              
               }
               
               // Handle regions information
@@ -1338,7 +1041,7 @@ const GlobalSearchResultsPage: React.FC = () => {
                   : sourceRegions.split(' OR ').map(loc => loc.trim());
                 // Add to current locations if not already there
                 newFilters.location!.currentLocations = [...(newFilters.location!.currentLocations || []), ...regions];
-                console.log('🔄 Adding region locations:', regions);
+             
               }
             } else {
               // For regular external AI direct search, extract location from convertedFilters or original filters
@@ -1381,13 +1084,7 @@ const GlobalSearchResultsPage: React.FC = () => {
               newFilters.company!.industries = Array.from(new Set(newFilters.company!.industries));
             }
             
-            console.log(`🔄 New filters state after ${searchType}:`, newFilters);
-            if (hasAdvancedFilters) {
-              console.log('🔄 API Advanced Filters from metadata:', searchResults.metadata?.advancedFilters);
-              console.log('🔄 Original Advanced Filters:', advancedFilters);
-            } else {
-              console.log('🔄 Original Regular Filters:', filters);
-            }
+         
             setFilters(newFilters);
           }
         }
@@ -1395,8 +1092,6 @@ const GlobalSearchResultsPage: React.FC = () => {
         // CRITICAL: Always update main filters state from advancedFilters when using advanced search
         // This ensures the filters sidebar shows the applied filters regardless of convertedFilters availability
         if (hasAdvancedFilters && resetResults) {
-          console.log('🎯 SIDEBAR FIX: Updating main filters state from advancedFilters to populate sidebar');
-          console.log('🎯 Current advancedFilters for sidebar:', advancedFilters);
           
           // Create new filters state based on current advancedFilters
           const sidebarFilters: SearchFilters = {
@@ -1445,7 +1140,7 @@ const GlobalSearchResultsPage: React.FC = () => {
             ).filter(Boolean);
             
             sidebarFilters.location!.currentLocations = Array.from(new Set(flattenedLocations));
-            console.log('🎯 SIDEBAR: Setting location for sidebar from advancedFilters:', sidebarFilters.location!.currentLocations);
+           
           }
           
           // Map other fields
@@ -1455,17 +1150,13 @@ const GlobalSearchResultsPage: React.FC = () => {
               : [advancedFilters.experienceCompany];
           }
           
-          console.log('🎯 SIDEBAR: Final filters for sidebar display:', sidebarFilters);
+
           setFilters(sidebarFilters);
         }
         
         // Update advanced filters state with data from API request/response (for advanced search)
         // Priority: 1. API response advancedFilters (PREFERRED - contains complete data from backend AI), 2. Original API request filters, 3. convertedFilters mapping
-        console.log('🔍 DEBUG: Checking if priority system should run:', {
-          hasAdvancedFilters,
-          resetResults,
-          shouldRun: hasAdvancedFilters && resetResults
-        });
+   
         
         if (hasAdvancedFilters) {
           let filtersToSet: AdvancedFilters | null = null;
@@ -1473,11 +1164,10 @@ const GlobalSearchResultsPage: React.FC = () => {
           // HIGHEST PRIORITY: Use AI Query Parser to convert generatedQuery directly to AdvancedFilters
           // This bypasses the legacy convertedFilters system and directly parses the AI-generated Elasticsearch query
           if (extractedQuery) {
-            console.log('🎯 PRIORITY 1: Using AI Query Parser to convert generatedQuery to AdvancedFilters');
-            console.log('🎯 AI Query to parse:', extractedQuery);
+  
             
             const aiParsedFilters = convertAIQueryToAdvancedFilters(extractedQuery);
-            console.log('🎯 AI Parsed Filters:', aiParsedFilters);
+          
             
             // Merge with any existing advanced filters to preserve user input
             filtersToSet = {
@@ -1485,7 +1175,7 @@ const GlobalSearchResultsPage: React.FC = () => {
               ...aiParsedFilters  // Override with AI-parsed data
             };
             
-            console.log('🎯 Final merged filters (preserving user input + AI parsing):', filtersToSet);
+            
           }
           // Second priority: ALWAYS use advancedFilters from API response metadata when available
           // This contains the complete, processed filter data from the backend AI including location information
@@ -1547,21 +1237,13 @@ const GlobalSearchResultsPage: React.FC = () => {
           }
           // Fourth priority: If we still don't have filter data, use original advancedFilters (USER INPUT PRESERVATION)
           else {
-            console.log('❌ PRIORITY 4: No filter data from API - preserving original user input');
-            console.log('❌ Using original advancedFilters to preserve user location input:', advancedFilters);
+
             filtersToSet = { ...advancedFilters }; // Preserve original user input
           }
           
           // Update the advancedFilters state if we have something to set
           if (filtersToSet && Object.keys(filtersToSet).length > 0) {
-            console.log('🎯 FINAL: Setting advancedFilters state with:', filtersToSet);
-            console.log('🎯 Location fields to be set:', {
-              locationRawAddress: filtersToSet.locationRawAddress,
-              locationCountry: filtersToSet.locationCountry,
-              locationRegions: filtersToSet.locationRegions
-            });
-            console.log('🎯 This will populate the AdvancedFilterPanel with complete filter data from advanced-filters endpoint');
-            
+   
             // Final fallback: ensure location is preserved from original advancedFilters if missing
             if (!filtersToSet.locationRawAddress && !filtersToSet.locationCountry && !filtersToSet.locationRegions) {
               if (advancedFilters.locationRawAddress || advancedFilters.locationCountry || advancedFilters.locationRegions) {
@@ -1587,26 +1269,21 @@ const GlobalSearchResultsPage: React.FC = () => {
               };
             }
             
-            console.log('🔍 DEBUG: About to call setAdvancedFilters with:', filtersToSet);
-            console.log('🔍 DEBUG: Location fields being set:', {
-              locationRawAddress: filtersToSet.locationRawAddress,
-              locationCountry: filtersToSet.locationCountry,
-              locationRegions: filtersToSet.locationRegions
-            });
+      
             setAdvancedFilters(filtersToSet);
-            console.log('🔍 DEBUG: setAdvancedFilters called - state should update shortly');
+      
           } else {
             console.log('⚠️ WARNING: No filters to set from priority system - this might be why location is missing');
             
             // 🚨 LAST RESORT: If no filtersToSet but we have main filters location, create minimal filtersToSet
             const mainFiltersHasLocation = filters?.location?.currentLocations && filters.location.currentLocations.length > 0;
             if (mainFiltersHasLocation) {
-              console.log('🚨 LAST RESORT: Creating minimal advancedFilters from main filters location');
+
               const emergencyFilters = {
                 ...advancedFilters, // Keep existing advanced filters
                 locationRawAddress: filters.location.currentLocations[0]
               };
-              console.log('🚨 LAST RESORT: Setting emergency advancedFilters:', emergencyFilters);
+              
               setAdvancedFilters(emergencyFilters);
             }
           }
@@ -1632,12 +1309,12 @@ const GlobalSearchResultsPage: React.FC = () => {
         };
         setLastSearchMetadata(metadata);
         
-        console.log('🔍 Stored search metadata:', metadata);
+    
       }
 
       if (resetResults) {
         // For new search, replace all results
-        console.log('GlobalSearchResults: Setting new results:', newResults.length);
+       
         setResults(newResults);
         setCurrentPage(1);
       } else {
@@ -1648,7 +1325,7 @@ const GlobalSearchResultsPage: React.FC = () => {
             const id = r.candidate?.id || r.id;
             return id && !existingIds.has(id);
           });
-          console.log(`GlobalSearchResults: Appending ${uniqueNewResults.length} new results (${newResults.length - uniqueNewResults.length} duplicates filtered)`);
+         
           return [...prev, ...uniqueNewResults];
         });
         setCurrentPage(prev => prev + 1);
@@ -1674,9 +1351,7 @@ const GlobalSearchResultsPage: React.FC = () => {
   // Handle pagination - load more results
   const handleNextPage = () => {
     if (hasNextPage && nextCursor && !isLoadingMore) {
-      console.log(`GlobalSearchResults: Loading next page ${nextCursor} (${isEnhanced ? 'enhanced' : 'standard'} search)`);
-      console.log(`GlobalSearchResults: Current queryHash state:`, queryHash);
-      console.log(`GlobalSearchResults: Will use cache?`, !!queryHash && isEnhanced && parseInt(nextCursor) > 1);
+
       setIsLoadingMore(true);
       fetchResults(filters, searchQuery, searchMode, isEnhanced, nextCursor, false);
     } else {
@@ -1805,16 +1480,7 @@ const GlobalSearchResultsPage: React.FC = () => {
       console.log('🚫 AUTO-SHORTLIST BLOCKED: Duplicate call detected for', callKey);
       return;
     }
-    
-    console.log('🔄 AUTO-SHORTLIST START:', {
-      candidateId: candidate.id,
-      candidateName: candidate.fullName || candidate.candidateName,
-      projectId,
-      callKey,
-      searchMode,
-      coreSignalId: candidate.coreSignalId,
-      source: candidate.source
-    });
+
     
     // Mark this call as active
     activeShortlistCallsRef.current.add(callKey);
@@ -1828,7 +1494,7 @@ const GlobalSearchResultsPage: React.FC = () => {
 
       // Step 1: If external source candidate, save to database first
       if (isExternalSourceCandidate && (candidate.coreSignalId || candidate.id)) {
-        console.log('💾 AUTO-SHORTLIST: Saving external candidate to database...');
+       
         try {
           const coreSignalId = candidate.coreSignalId || candidate.id;
           const shortlistResult = await shortlistExternalMutation.mutateAsync({
@@ -1837,7 +1503,7 @@ const GlobalSearchResultsPage: React.FC = () => {
             createdBy: user?.id || ''
           });
 
-          console.log('💾 AUTO-SHORTLIST: External candidate save result:', shortlistResult);
+      
 
           // Extract candidate ID regardless of success status (for existing candidates)
           candidateIdForProspects = shortlistResult.candidateId || shortlistResult.existingCandidateId || candidate.id;
@@ -1874,11 +1540,7 @@ const GlobalSearchResultsPage: React.FC = () => {
       }
 
       // Step 2: Add candidate to prospects
-      console.log('📋 AUTO-SHORTLIST: Adding candidate to project prospects...', {
-        projectId,
-        candidateIdForProspects,
-        searchId: undefined
-      });
+  
       
       try {
         const prospectResult = await addProspectsToProjectMutation.mutateAsync({
@@ -1887,7 +1549,7 @@ const GlobalSearchResultsPage: React.FC = () => {
           searchId: undefined, // No search ID for auto-shortlisting from project creation
         });
         
-        console.log('📋 AUTO-SHORTLIST: Project prospect addition result:', prospectResult);
+        
 
         addToast({
           type: 'success',
@@ -1895,7 +1557,7 @@ const GlobalSearchResultsPage: React.FC = () => {
           message: `${candidate.fullName || candidate.candidateName || 'Candidate'} has been ${isExternalSourceCandidate ? 'saved to your database and ' : ''}added to your project!`
         });
         
-        console.log('✅ AUTO-SHORTLIST: Successfully completed for candidate:', candidate.id);
+  
         
         // Close the project modal if it was open
         setShowProjectModal(false);
@@ -1963,19 +1625,11 @@ const GlobalSearchResultsPage: React.FC = () => {
     
     // Prevent duplicate calls for the same candidate-project combination
     if (activeShortlistCallsRef.current.has(callKey)) {
-      console.log('🚫 MANUAL-SHORTLIST BLOCKED: Duplicate call detected for', callKey);
+
       return;
     }
 
-    console.log('🔄 MANUAL-SHORTLIST START:', {
-      candidateId: selectedCandidate.id,
-      candidateName: selectedCandidate.fullName || selectedCandidate.candidateName,
-      projectId,
-      callKey,
-      searchMode,
-      coreSignalId: selectedCandidate.coreSignalId,
-      source: selectedCandidate.source
-    });
+
 
     // Mark this call as active
     activeShortlistCallsRef.current.add(callKey);
@@ -1998,7 +1652,7 @@ const GlobalSearchResultsPage: React.FC = () => {
             createdBy: user?.id || ''
           });
 
-          console.log('💾 MANUAL-SHORTLIST: External candidate save result:', shortlistResult);
+          
 
           // Extract candidate ID regardless of success status (for existing candidates)
           candidateIdForProspects = shortlistResult.candidateId || shortlistResult.existingCandidateId || selectedCandidate.id;
@@ -2035,11 +1689,7 @@ const GlobalSearchResultsPage: React.FC = () => {
       }
 
       // Step 2: Add candidate to the selected project
-      console.log('📋 MANUAL-SHORTLIST: Adding candidate to project prospects...', {
-        projectId,
-        candidateIdForProspects,
-        searchId: undefined
-      });
+
       
       try {
         const prospectResult = await addProspectsToProjectMutation.mutateAsync({
@@ -2048,7 +1698,7 @@ const GlobalSearchResultsPage: React.FC = () => {
           searchId: undefined // No search ID for global search
         });
         
-        console.log('📋 MANUAL-SHORTLIST: Project prospect addition result:', prospectResult);
+      
 
         addToast({
           type: 'success',
@@ -2056,7 +1706,7 @@ const GlobalSearchResultsPage: React.FC = () => {
           message: `${selectedCandidate.fullName || 'Candidate'} has been ${isExternalSourceCandidate ? 'saved to your database and ' : ''}added to the project successfully.`
         });
 
-        console.log('✅ MANUAL-SHORTLIST: Successfully completed for candidate:', selectedCandidate.id);
+    
 
         setShowProjectModal(false);
         setSelectedCandidate(null);
