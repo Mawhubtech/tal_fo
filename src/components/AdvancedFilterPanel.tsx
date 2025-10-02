@@ -466,12 +466,9 @@ const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
     
     // Use AI Query Parser to convert generatedQuery directly to AdvancedFilters
     if (generatedQuery) {
-      console.log('🎯 AdvancedFilterPanel: Using AI Query Parser for generatedQuery:', generatedQuery);
       const aiParsedFilters = convertAIQueryToAdvancedFilters(generatedQuery);
-      console.log('🎯 AdvancedFilterPanel: AI Parsed Filters:', aiParsedFilters);
       
       if (Object.keys(aiParsedFilters).length > 0) {
-        console.log('🔄 Populating filters with AI-parsed data');
         onFiltersChange(aiParsedFilters);
       }
     }

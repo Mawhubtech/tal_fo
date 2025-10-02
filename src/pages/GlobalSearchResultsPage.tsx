@@ -642,19 +642,13 @@ const GlobalSearchResultsPage: React.FC = () => {
 
 
   // Advanced Filter Handlers
-  const handleAdvancedFiltersChange = (newFilters: AdvancedFilters) => {
+  const handleAdvancedFiltersChange = React.useCallback((newFilters: AdvancedFilters) => {
     console.log('🔧 AdvancedFilterPanel called handleAdvancedFiltersChange with:', newFilters);
-    console.log('🔧 Previous advancedFilters state was:', advancedFilters);
-    console.log('🔧 Location fields in new filters:', {
-      locationRawAddress: newFilters.locationRawAddress,
-      locationCountry: newFilters.locationCountry,
-      locationRegions: newFilters.locationRegions
-    });
     
     // Always allow direct updates from the AdvancedFilterPanel
     // This includes removing location filters when user clears them
     setAdvancedFilters(newFilters);
-  };
+  }, []);
 
   const handleApplyAdvancedFilters = () => {
     console.log('🎯 Applying Advanced Filters:', advancedFilters, 'with search query:', searchQuery);
