@@ -263,12 +263,27 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
     const nestedQuery = item.nested.query;
     const path = item.nested.path;
 
-    if (nestedQuery.bool?.should) {
-      nestedQuery.bool.should.forEach((nestedItem: any) => {
+    // Helper function to process items in must/should arrays
+    const processNestedItems = (items: any[]) => {
+      items.forEach((nestedItem: any) => {
         if (nestedItem.match) {
           Object.entries(nestedItem.match).forEach(([field, matchData]: [string, any]) => {
             const value = matchData.query || matchData;
-            addCriteria(field, value, type);
+            // Map experience.company_industry to industry category
+            if (field === 'experience.company_industry') {
+              const criteriaKey = `Experience Industry:${JSON.stringify(value)}`;
+              if (!seenCriteria.has(criteriaKey)) {
+                seenCriteria.add(criteriaKey);
+                criteria.push({
+                  label: 'Industry',
+                  value: value,
+                  type,
+                  category: 'industry',
+                });
+              }
+            } else {
+              addCriteria(field, value, type);
+            }
           });
         } else if (nestedItem.multi_match) {
           // For nested multi_match, prefix fields with path and prioritize by boost
@@ -296,10 +311,35 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
           }
         }
       });
-    } else if (nestedQuery.match) {
+    };
+
+    // Process both must and should clauses within nested queries
+    if (nestedQuery.bool?.must) {
+      processNestedItems(nestedQuery.bool.must);
+    }
+    if (nestedQuery.bool?.should) {
+      processNestedItems(nestedQuery.bool.should);
+    }
+    
+    // Handle direct match queries (not wrapped in bool)
+    if (nestedQuery.match) {
       Object.entries(nestedQuery.match).forEach(([field, matchData]: [string, any]) => {
         const value = matchData.query || matchData;
-        addCriteria(field, value, type);
+        // Map experience.company_industry to industry category
+        if (field === 'experience.company_industry') {
+          const criteriaKey = `Experience Industry:${JSON.stringify(value)}`;
+          if (!seenCriteria.has(criteriaKey)) {
+            seenCriteria.add(criteriaKey);
+            criteria.push({
+              label: 'Industry',
+              value: value,
+              type,
+              category: 'industry',
+            });
+          }
+        } else {
+          addCriteria(field, value, type);
+        }
       });
     }
   }

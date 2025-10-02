@@ -91,7 +91,7 @@ const QuickSearch: React.FC<QuickSearchProps> = ({ onSearchClick, className = ''
               primaryFocus: 'balanced',
               isLocationAgnostic: false,
               balanceMode: 'recall_optimized'
-            }, { page: 1, limit: 10 });
+            }, { page: 1, limit: 10 }, true); // disableCache: true for fresh results
             console.log("✅ QuickSearch: Got results from single AI call:", searchResults);
             
             // Create mock filters for navigation compatibility

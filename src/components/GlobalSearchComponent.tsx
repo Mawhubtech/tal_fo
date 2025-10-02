@@ -131,7 +131,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                 primaryFocus: 'balanced',
                 isLocationAgnostic: false,
                 balanceMode: 'recall_optimized'
-              }, { page: 1, limit: 3 });
+              }, { page: 1, limit: 3 }, true); // disableCache: true for fresh results
               console.log("✅ Got search results from single AI call:", searchResults);
               
               // Create mock filters for navigation compatibility

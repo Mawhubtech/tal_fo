@@ -407,7 +407,7 @@ class SearchService {
    * Direct AI search - Single API call from raw text to results
    * Consolidates keyword extraction, filter conversion, and AI query generation into one call
    */
-  async searchCandidatesDirectAI(searchText: string, contextualHints?: any, pagination?: PaginationOptions): Promise<SearchResponse> {
+  async searchCandidatesDirectAI(searchText: string, contextualHints?: any, pagination?: PaginationOptions, disableCache?: boolean): Promise<SearchResponse> {
     try {
       const queryParams = new URLSearchParams();
       if (pagination?.page) {
@@ -415,6 +415,10 @@ class SearchService {
       }
       if (pagination?.limit) {
         queryParams.append('limit', pagination.limit.toString());
+      }
+      // Add disableCache parameter (default to true during development/testing)
+      if (disableCache !== false) {
+        queryParams.append('disableCache', 'true');
       }
       
       const url = `${this.baseURL}/candidates/external-ai-direct${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
@@ -430,6 +434,7 @@ class SearchService {
       };
 
       console.log('🚀 Direct AI search payload:', directPayload);
+      console.log('🔧 Cache disabled:', disableCache !== false);
       const response = await apiClient.post<SearchResponse>(url, directPayload);
 
       console.log('🎯 Direct AI search response (single call):', response.data);
@@ -631,7 +636,7 @@ export const convertEnhancedKeywordsToFilters = (keywords: any) => searchService
 export const searchEnhanced = (searchText: string, includeExternal?: boolean, pagination?: PaginationOptions) => searchService.searchEnhanced(searchText, includeExternal, pagination);
 export const searchCandidatesExternalDirect = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalDirect(filters, searchText, pagination);
 export const searchCandidatesExternalEnhanced = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalEnhanced(filters, searchText, pagination);
-export const searchCandidatesDirectAI = (searchText: string, contextualHints?: any, pagination?: PaginationOptions) => searchService.searchCandidatesDirectAI(searchText, contextualHints, pagination);
+export const searchCandidatesDirectAI = (searchText: string, contextualHints?: any, pagination?: PaginationOptions, disableCache?: boolean) => searchService.searchCandidatesDirectAI(searchText, contextualHints, pagination, disableCache);
 export const fetchCachedEnhancedResults = (queryHash: string, pagination?: PaginationOptions) => searchService.fetchCachedEnhancedResults(queryHash, pagination);
 export const fetchCachedAdvancedFiltersResults = (queryHash: string, pagination?: PaginationOptions) => searchService.fetchCachedAdvancedFiltersResults(queryHash, pagination);
 export const searchUsers = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchUsers(filters, searchText, pagination);

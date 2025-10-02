@@ -133,7 +133,7 @@ const CompactSearchComponent = forwardRef<CompactSearchRef, CompactSearchCompone
                 primaryFocus: 'balanced',
                 isLocationAgnostic: false, // Location is important when specified
                 balanceMode: 'recall_optimized' // Prioritize finding results
-              }, { page: 1, limit: 3 });
+              }, { page: 1, limit: 3 }, true); // disableCache: true for fresh results
               console.log("✅ Got search results from single AI call:", searchResults);
               
               // Create mock filters and keywords for navigation compatibility (since we bypassed filter extraction)
