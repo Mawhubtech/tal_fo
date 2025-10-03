@@ -22,12 +22,55 @@ export interface PersonalInfo {
 export interface Experience {
   position: string;
   company: string;
+  companyId?: number;
+  companyUrl?: string;
   startDate: string;
   endDate?: string;
+  startYear?: number;
+  startMonth?: number;
+  endYear?: number;
+  endMonth?: number;
+  duration?: string;
+  durationMonths?: number;
   location?: string;
   description?: string;
+  department?: string;
+  managementLevel?: string;
   responsibilities?: string[];
   achievements?: string[];
+  technologies?: string[];
+  
+  // Company details with URLs and social media
+  companySize?: number;
+  companySizeRange?: string;
+  companyIndustry?: string;
+  companyWebsite?: string;
+  companyType?: string;
+  companyFounded?: string;
+  companyFollowersCount?: number;
+  companyFacebookUrl?: string[];
+  companyTwitterUrl?: string[];
+  companyLinkedinUrl?: string;
+  companyLocationHq?: {
+    fullAddress?: string;
+    country?: string;
+    regions?: string[];
+    countryIso2?: string;
+    countryIso3?: string;
+    city?: string;
+    state?: string;
+    street?: string;
+    zipcode?: string;
+  };
+  companyLastUpdated?: string;
+  companyCategoriesAndKeywords?: string[];
+  companyStockTicker?: any[];
+  companyIsB2b?: boolean;
+  companyAnnualRevenue?: number;
+  companyAnnualRevenueCurrency?: string;
+  companyEmployeesCountChangeYearlyPercentage?: number;
+  companyLastFundingRoundAnnouncedDate?: string;
+  companyLastFundingRoundAmountRaised?: number;
 }
 
 export interface Education {
@@ -696,28 +739,106 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                   {sortedExperience && sortedExperience.length > 0 ? (
                     <div className="space-y-5">
                       {sortedExperience.map((exp, index) => (
-                        <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== experience.length - 1 ? "mb-4" : ""}`}>
-                          <div className="flex justify-between items-start">
-                            <div className="flex">
-                              <div className="mr-3 mt-1">
-                                <Briefcase className="h-5 w-5 text-purple-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-gray-900">{exp.position}</h4>
-                                <p className="text-sm text-gray-600">{exp.company}</p>
-                                {exp.location && <p className="text-xs text-gray-500 mt-0.5">{exp.location}</p>}
+                        <div key={index} className="border-b border-gray-100 pb-4 mb-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-start gap-2">
+                                <Briefcase className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-gray-900 text-sm">{exp.position}</h4>
+                                  <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                    <span className="text-sm text-gray-600">{exp.company}</span>
+                                    
+                                    {/* Company URLs inline with company name */}
+                                    {(exp.companyWebsite || exp.companyLinkedinUrl || 
+                                      (exp.companyFacebookUrl && exp.companyFacebookUrl.length > 0) || 
+                                      (exp.companyTwitterUrl && exp.companyTwitterUrl.length > 0)) && (
+                                      <div className="flex items-center gap-2">
+                                        {exp.companyWebsite && (
+                                          <a
+                                            href={exp.companyWebsite.startsWith('http') ? exp.companyWebsite : `https://${exp.companyWebsite}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                                            title="Company Website"
+                                          >
+                                            <Globe className="h-3.5 w-3.5" />
+                                          </a>
+                                        )}
+                                        {exp.companyLinkedinUrl && (
+                                          <a
+                                            href={exp.companyLinkedinUrl.startsWith('http') ? exp.companyLinkedinUrl : `https://${exp.companyLinkedinUrl}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-700 hover:text-blue-900 transition-colors"
+                                            title="LinkedIn"
+                                          >
+                                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                            </svg>
+                                          </a>
+                                        )}
+                                        {exp.companyFacebookUrl && exp.companyFacebookUrl.length > 0 && (
+                                          <a
+                                            href={exp.companyFacebookUrl[0].startsWith('http') ? exp.companyFacebookUrl[0] : `https://${exp.companyFacebookUrl[0]}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                                            title="Facebook"
+                                          >
+                                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                            </svg>
+                                          </a>
+                                        )}
+                                        {exp.companyTwitterUrl && exp.companyTwitterUrl.length > 0 && (
+                                          <a
+                                            href={exp.companyTwitterUrl[0].startsWith('http') ? exp.companyTwitterUrl[0] : `https://${exp.companyTwitterUrl[0]}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sky-500 hover:text-sky-700 transition-colors"
+                                            title="Twitter"
+                                          >
+                                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                              <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                                            </svg>
+                                          </a>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Compact company metadata */}
+                                  <div className="flex items-center gap-2 flex-wrap mt-1.5 text-xs text-gray-500">
+                                    {exp.location && <span>📍 {exp.location}</span>}
+                                    {exp.companyIndustry && <span>• {exp.companyIndustry}</span>}
+                                    {exp.companySizeRange && <span>• 👥 {exp.companySizeRange}</span>}
+                                    {exp.companyLocationHq?.fullAddress && <span>• 🏢 {exp.companyLocationHq.fullAddress}</span>}
+                                  </div>
+                                  
+                                  {/* Keywords inline */}
+                                  {exp.companyCategoriesAndKeywords && exp.companyCategoriesAndKeywords.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                      {exp.companyCategoriesAndKeywords.map((keyword, i) => (
+                                        <span key={i} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
+                                          {keyword}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
+                            <div className="text-xs text-gray-500 text-right whitespace-nowrap">
                               {formatDateForDisplay(exp.startDate)} - {formatDateForDisplay(exp.endDate) || 'Present'}
                             </div>
                           </div>
-                          {exp.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
+                          {exp.description && <p className="mt-2 text-xs text-gray-700 leading-relaxed">{exp.description}</p>}
                           
                           {exp.responsibilities && exp.responsibilities.length > 0 && (
-                            <div className="mt-3">
-                              <h5 className="text-xs font-medium mb-1">Responsibilities:</h5>
-                              <ul className="list-disc list-inside pl-2 space-y-1">
+                            <div className="mt-2">
+                              <h5 className="text-xs font-medium text-gray-700 mb-1">Responsibilities:</h5>
+                              <ul className="list-disc list-inside pl-2 space-y-0.5">
                                 {exp.responsibilities.map((resp, i) => (
                                   <li key={i} className="text-xs text-gray-600">{resp}</li>
                                 ))}
@@ -726,9 +847,9 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                           )}
                           
                           {exp.achievements && exp.achievements.length > 0 && (
-                            <div className="mt-3">
-                              <h5 className="text-xs font-medium mb-1">Key Achievements:</h5>
-                              <ul className="list-disc list-inside pl-2 space-y-1">
+                            <div className="mt-2">
+                              <h5 className="text-xs font-medium text-gray-700 mb-1">Achievements:</h5>
+                              <ul className="list-disc list-inside pl-2 space-y-0.5">
                                 {exp.achievements.map((ach, i) => (
                                   <li key={i} className="text-xs text-gray-600">{ach}</li>
                                 ))}
@@ -1521,30 +1642,109 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
             {profileTabs[activeTab]?.originalIndex === 0 && (
               <div>
                 {sortedExperience && sortedExperience.length > 0 ? (
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     {sortedExperience.map((exp, index) => (
-                      <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== sortedExperience.length - 1 ? "mb-4" : ""}`}>
-                        <div className="flex justify-between items-start">
-                          <div className="flex">
-                            <div className="mr-3 mt-1">
-                              <Briefcase className="h-5 w-5 text-purple-600" />
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">{exp.position}</h4>
-                              <p className="text-sm text-gray-600">{exp.company}</p>
-                              {exp.location && <p className="text-xs text-gray-500 mt-0.5">{exp.location}</p>}
+                      <div key={index} className="border-b border-gray-100 pb-4 mb-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-start gap-2">
+                              <Briefcase className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900 text-sm">{exp.position}</h4>
+                                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                  <span className="text-sm text-gray-600">{exp.company}</span>
+                                  
+                                  {/* Company URLs inline with company name */}
+                                  {(exp.companyWebsite || exp.companyLinkedinUrl || 
+                                    (exp.companyFacebookUrl && exp.companyFacebookUrl.length > 0) || 
+                                    (exp.companyTwitterUrl && exp.companyTwitterUrl.length > 0)) && (
+                                    <div className="flex items-center gap-2">
+                                      {exp.companyWebsite && (
+                                        <a
+                                          href={exp.companyWebsite.startsWith('http') ? exp.companyWebsite : `https://${exp.companyWebsite}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                                          title="Company Website"
+                                        >
+                                          <Globe className="h-3.5 w-3.5" />
+                                        </a>
+                                      )}
+                                      {exp.companyLinkedinUrl && (
+                                        <a
+                                          href={exp.companyLinkedinUrl.startsWith('http') ? exp.companyLinkedinUrl : `https://${exp.companyLinkedinUrl}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-700 hover:text-blue-900 transition-colors"
+                                          title="LinkedIn"
+                                        >
+                                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                          </svg>
+                                        </a>
+                                      )}
+                                      {exp.companyFacebookUrl && exp.companyFacebookUrl.length > 0 && (
+                                        <a
+                                          href={exp.companyFacebookUrl[0].startsWith('http') ? exp.companyFacebookUrl[0] : `https://${exp.companyFacebookUrl[0]}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                                          title="Facebook"
+                                        >
+                                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                          </svg>
+                                        </a>
+                                      )}
+                                      {exp.companyTwitterUrl && exp.companyTwitterUrl.length > 0 && (
+                                        <a
+                                          href={exp.companyTwitterUrl[0].startsWith('http') ? exp.companyTwitterUrl[0] : `https://${exp.companyTwitterUrl[0]}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-sky-500 hover:text-sky-700 transition-colors"
+                                          title="Twitter"
+                                        >
+                                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                                          </svg>
+                                        </a>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Compact company metadata */}
+                                <div className="flex items-center gap-2 flex-wrap mt-1.5 text-xs text-gray-500">
+                                  {exp.location && <span>📍 {exp.location}</span>}
+                                  {exp.companyIndustry && <span>• {exp.companyIndustry}</span>}
+                                  {exp.companySizeRange && <span>• 👥 {exp.companySizeRange}</span>}
+                                  {exp.companyLocationHq?.fullAddress && <span>• 🏢 {exp.companyLocationHq.fullAddress}</span>}
+                                </div>
+                                
+                                {/* Keywords inline */}
+                                {exp.companyCategoriesAndKeywords && exp.companyCategoriesAndKeywords.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {exp.companyCategoriesAndKeywords.map((keyword, i) => (
+                                      <span key={i} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
+                                        {keyword}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
+                          <div className="text-xs text-gray-500 text-right whitespace-nowrap">
                             {formatDateForDisplay(exp.startDate)} - {formatDateForDisplay(exp.endDate) || 'Present'}
                           </div>
                         </div>
-                        {exp.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
+                        
+                        {exp.description && <p className="mt-2 text-xs text-gray-700 leading-relaxed">{exp.description}</p>}
                         
                         {exp.responsibilities && exp.responsibilities.length > 0 && (
-                          <div className="mt-3">
-                            <h5 className="text-xs font-medium mb-1">Responsibilities:</h5>
-                            <ul className="list-disc list-inside pl-2 space-y-1">
+                          <div className="mt-2">
+                            <h5 className="text-xs font-medium text-gray-700 mb-1">Responsibilities:</h5>
+                            <ul className="list-disc list-inside pl-2 space-y-0.5">
                               {exp.responsibilities.map((resp, i) => (
                                 <li key={i} className="text-xs text-gray-600">{resp}</li>
                               ))}
@@ -1553,9 +1753,9 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                         )}
                         
                         {exp.achievements && exp.achievements.length > 0 && (
-                          <div className="mt-3">
-                            <h5 className="text-xs font-medium mb-1">Key Achievements:</h5>
-                            <ul className="list-disc list-inside pl-2 space-y-1">
+                          <div className="mt-2">
+                            <h5 className="text-xs font-medium text-gray-700 mb-1">Achievements:</h5>
+                            <ul className="list-disc list-inside pl-2 space-y-0.5">
                               {exp.achievements.map((ach, i) => (
                                 <li key={i} className="text-xs text-gray-600">{ach}</li>
                               ))}
