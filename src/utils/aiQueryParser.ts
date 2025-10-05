@@ -29,13 +29,15 @@ const FIELD_MAPPING: Record<string, { label: string; category: SearchCriteria['c
   industry: { label: 'Industry', category: 'industry' },
   company_industry: { label: 'Company Industry', category: 'industry' },
   company_name: { label: 'Company', category: 'industry' },
+  company_categories_and_keywords: { label: 'Company Keywords', category: 'industry' },
   
   // Experience fields
   total_experience_duration_months: { label: 'Total Experience', category: 'experience' },
   'experience.title': { label: 'Experience Title', category: 'experience' },
   'experience.description': { label: 'Experience Description', category: 'experience' },
   'experience.company_name': { label: 'Experience Company', category: 'experience' },
-  'experience.company_industry': { label: 'Experience Industry', category: 'experience' },
+  'experience.company_industry': { label: 'Experience Industry', category: 'industry' },
+  'experience.company_categories_and_keywords': { label: 'Company Keywords', category: 'industry' },
   
   // System fields
   is_working: { label: 'Currently Working', category: 'system' },
@@ -264,7 +266,7 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
     const path = item.nested.path;
 
     // Helper function to process items in must/should arrays
-    const processNestedItems = (items: any[]) => {
+    const processNestedItems = (items: any[], itemType: SearchCriteria['type'] = type) => {
       items.forEach((nestedItem: any) => {
         if (nestedItem.match) {
           Object.entries(nestedItem.match).forEach(([field, matchData]: [string, any]) => {
@@ -277,12 +279,12 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
                 criteria.push({
                   label: 'Industry',
                   value: value,
-                  type,
+                  type: itemType,
                   category: 'industry',
                 });
               }
             } else {
-              addCriteria(field, value, type);
+              addCriteria(field, value, itemType);
             }
           });
         } else if (nestedItem.multi_match) {
@@ -298,16 +300,51 @@ export function extractSearchCriteriaFromAIQuery(aiQuery: any): SearchCriteria[]
           // Find the highest priority field
           const prioritizedField = getHighestPriorityField(fullFields);
           if (prioritizedField && FIELD_MAPPING[prioritizedField]) {
-            addCriteria(prioritizedField, query, type);
+            addCriteria(prioritizedField, query, itemType);
           } else {
             // Fallback: use the first mapped field
             for (const field of fullFields) {
               const cleanField = cleanFieldName(field);
               if (FIELD_MAPPING[cleanField]) {
-                addCriteria(cleanField, query, type);
+                addCriteria(cleanField, query, itemType);
                 break;
               }
             }
+          }
+        } else if (nestedItem.bool) {
+          // Handle nested bool queries (e.g., bool.should within bool.must)
+          if (nestedItem.bool.should) {
+            // Collect all industry values from should clauses
+            const industryValues: string[] = [];
+            nestedItem.bool.should.forEach((shouldItem: any) => {
+              if (shouldItem.match) {
+                Object.entries(shouldItem.match).forEach(([field, matchData]: [string, any]) => {
+                  const value = matchData.query || matchData;
+                  if (field === 'experience.company_industry') {
+                    industryValues.push(value);
+                  } else {
+                    addCriteria(field, value, itemType);
+                  }
+                });
+              }
+            });
+            
+            // Add consolidated industry filter
+            if (industryValues.length > 0) {
+              const criteriaKey = `Industry:${JSON.stringify(industryValues)}`;
+              if (!seenCriteria.has(criteriaKey)) {
+                seenCriteria.add(criteriaKey);
+                criteria.push({
+                  label: 'Industry',
+                  value: industryValues.length === 1 ? industryValues[0] : industryValues,
+                  type: itemType,
+                  category: 'industry',
+                });
+              }
+            }
+          }
+          if (nestedItem.bool.must) {
+            processNestedItems(nestedItem.bool.must, itemType);
           }
         }
       });
