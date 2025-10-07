@@ -8,7 +8,7 @@ import type { SearchFilters, ExtractedKeywords } from '../../services/searchServ
 interface JobDescriptionDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSearch?: (query: string, filters: SearchFilters) => void;
+  onSearch?: (jobDescription: string) => void; // Simplified to just pass job description
 }
 
 const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onClose, onSearch }) => {
@@ -197,9 +197,9 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
     };
   };
 
-  // Function to handle search execution
+  // Function to handle search execution - simplified to just pass job description
   const handleSearchWithCriteria = async () => {
-    console.log('handleSearchWithCriteria called', { extractedKeywords, onSearch, jobDescription });
+    console.log('handleSearchWithCriteria called with job description');
     
     if (!onSearch) {
       console.log('No onSearch function provided');
@@ -211,39 +211,8 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
       return;
     }
     
-    let filters: SearchFilters;
-    let searchQuery: string;
-    
-    if (extractedKeywords) {
-      // Use extracted keywords following the same flow as normal search
-      console.log('Using extracted keywords for search:', extractedKeywords);
-      
-      // Convert keywords to filters using the backend service (same as normal search)
-      try {
-        filters = await convertKeywordsToFilters(extractedKeywords);
-        console.log('Converted to filters:', filters);
-      } catch (error) {
-        console.error('Error converting keywords to filters:', error);
-        // Fallback to manual conversion
-        filters = convertCriteriaToFilters(extractedKeywords);
-      }
-      
-      // Create a brief search query from keywords
-      const keywordList = [
-        ...(extractedKeywords.skills || []).slice(0, 3),
-        ...(extractedKeywords.jobTitles || []).slice(0, 2),
-        ...(extractedKeywords.keywords || []).slice(0, 2)
-      ];
-      searchQuery = keywordList.join(', ');
-    } else {
-      // Fallback: Extract keywords first if not already done
-      console.log('No extracted keywords found, extracting now...');
-      await extractSearchCriteria();
-      return; // Will be called again once keywords are extracted
-    }
-    
-    console.log('Calling onSearch with:', { searchQuery, filters });
-    onSearch(searchQuery, filters);
+    console.log('Calling onSearch with job description');
+    onSearch(jobDescription);
     onClose();
   };
 
@@ -266,9 +235,9 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
               <button 
                 className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-md text-sm flex items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
                 onClick={handleSearchWithCriteria}
-                disabled={!jobDescription.trim() || !onSearch || isExtractingKeywords}
+                disabled={!jobDescription.trim() || !onSearch}
               >
-                {isExtractingKeywords ? 'Processing...' : (extractedKeywords ? 'Search with Keywords →' : 'Save & Search →')}
+                {extractedKeywords ? 'Search Now →' : 'Search Now →'}
               </button>
               <button 
                 onClick={onClose} 
@@ -294,7 +263,7 @@ const JobDescriptionDialog: React.FC<JobDescriptionDialogProps> = ({ isOpen, onC
                   className="text-xs text-green-700 hover:text-green-800 underline"
                   onClick={handleSearchWithCriteria}
                 >
-                  Search with Keywords
+                  Search Now
                 </button>
                 <button
                   className="text-xs text-green-600 hover:text-green-700 underline"

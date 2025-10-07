@@ -37,14 +37,6 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
   const databaseSearch = useSearch();
   const externalSourceSearch = useExternalSourceSearch();
   const combinedSearch = useCombinedSearch();
-
-  // Redirect to projects page if no projectId (global search no longer supported)
-  useEffect(() => {
-    if (!projectId) {
-      navigate('/dashboard/sourcing/projects', { replace: true });
-      return;
-    }
-  }, [projectId, navigate]);
   
   const [searchQuery, setSearchQuery] = useState('');  
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
@@ -236,20 +228,20 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
     }
   };
 
-  // Handle boolean search from dialog
-  const handleBooleanSearch = async (query: string, filters: SearchFilters) => {
+  // Handle boolean search from dialog - simplified for new single-step AI approach
+  const handleBooleanSearch = async (booleanQuery: string) => {
     setIsSearching(true);
     try {
-      // Create search record on backend
-      const createdSearch = await createSearchRecord(query, filters, 'boolean');
+      // For backward compatibility with old project-based routing
+      // In practice, users should use global search now
+      console.warn('Using legacy boolean search - consider using global search instead');
       
-      // Navigate to project search results with search mode
+      // Just navigate with the boolean query
       navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
         state: {
-          query: query,
-          filters: filters,
-          searchId: (createdSearch as any).id,
-          searchMode: searchMode
+          query: booleanQuery,
+          searchMode: searchMode,
+          isBooleanSearch: true
         }
       });
     } catch (error) {
@@ -263,21 +255,21 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
     }
   };
 
-  // Handle job description search
-  const handleJobDescriptionSearch = async (query: string, filters: SearchFilters) => {
-    console.log('handleJobDescriptionSearch called with:', { query, filters });
+  // Handle job description search - simplified for new single-step AI approach
+  const handleJobDescriptionSearch = async (jobDescription: string) => {
+    console.log('handleJobDescriptionSearch called with:', { jobDescription });
     setIsSearching(true);
     try {
-      // Create search record on backend
-      const createdSearch = await createSearchRecord(query, filters, 'ai_assisted');
+      // For backward compatibility with old project-based routing
+      // In practice, users should use global search now
+      console.warn('Using legacy job description search - consider using global search instead');
       
-      // Navigate to project search results with search mode
+      // Just navigate with the job description
       navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
         state: {
-          query: query,
-          filters: filters,
-          searchId: (createdSearch as any).id,
-          searchMode: searchMode
+          query: jobDescription,
+          searchMode: searchMode,
+          isJobDescriptionSearch: true
         }
       });
     } catch (error) {

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, HelpCircle, BookOpen, CheckCircle, AlertTriangle } from 'lucide-react';
-import type { SearchFilters } from '../../../services/searchService';
 import BooleanSearchParser from '../../../services/booleanSearchParser';
 
 interface BooleanSearchDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSearch?: (query: string, filters: SearchFilters) => void;
+  onSearch?: (booleanQuery: string) => void;
 }
 
 const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClose, onSearch }) => {
@@ -56,25 +55,9 @@ const BooleanSearchDialog: React.FC<BooleanSearchDialogProps> = ({ isOpen, onClo
   const handleSearch = () => {
     if (!booleanExpression.trim() || !onSearch || !validation.isValid) return;
 
-    try {
-      // Parse the boolean query
-      const parsedQuery = BooleanSearchParser.parseQuery(booleanExpression);
-      
-      // Convert to search filters
-      const filters = BooleanSearchParser.convertToSearchFilters(parsedQuery);
-      
-      // Add the raw boolean expression as a fallback
-      filters.skillsKeywords = {
-        ...filters.skillsKeywords,
-        items: [...(filters.skillsKeywords?.items || []), booleanExpression]
-      };
-
-      onSearch(booleanExpression, filters);
-      onClose();
-    } catch (error) {
-      console.error('Error parsing boolean query:', error);
-      setValidation({ isValid: false, errors: ['Failed to parse query. Please check syntax.'] });
-    }
+    // Simply pass the boolean query string - backend AI will parse it
+    onSearch(booleanExpression);
+    onClose();
   };
 
   const insertExample = (example: string) => {

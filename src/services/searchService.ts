@@ -82,10 +82,18 @@ export interface SearchResponse {
   limit: number;
   totalPages: number;
   source?: string;
+  generatedFilters?: any; // AI-generated filters from the search
+  convertedFilters?: any; // Converted filters for frontend use
   metadata?: {
     localTotal?: number;
     externalTotal?: number;
     duplicatesRemoved?: number;
+    aiEnhanced?: boolean;
+    enhancedSearch?: boolean;
+    singleCallOptimized?: boolean;
+    aiMetadata?: any;
+    cacheStats?: any;
+    queryHash?: string;
   };
 }
 
@@ -447,6 +455,96 @@ class SearchService {
   }
 
   /**
+   * Search candidates from job description using single AI call (direct processing)
+   * This replaces the old 3-step process with a single optimized call
+   */
+  async searchCandidatesFromJobDescription(jobDescription: string, contextualHints?: any, pagination?: PaginationOptions, disableCache?: boolean): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      if (pagination?.limit) {
+        queryParams.append('limit', pagination.limit.toString());
+      }
+      // Add disableCache parameter (default to true during development/testing)
+      if (disableCache !== false) {
+        queryParams.append('disableCache', 'true');
+      }
+      
+      const url = `${this.baseURL}/candidates/job-description-ai-direct${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const jobDescPayload = {
+        jobDescription,
+        contextualHints: contextualHints || {
+          urgency: 'medium',
+          flexibility: 'flexible',
+          primaryFocus: 'comprehensive',
+          isLocationAgnostic: false,
+          balanceMode: 'recall_optimized',
+          searchType: 'job_description'
+        }
+      };
+
+      console.log('🚀 Job Description AI Direct search payload:', jobDescPayload);
+      console.log('🔧 Cache disabled:', disableCache !== false);
+      const response = await apiClient.post<SearchResponse>(url, jobDescPayload);
+
+      console.log('🎯 Job Description AI Direct search response (single call):', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Job Description AI Direct search failed:', error);
+      console.error('❌ Error details:', error.response?.data);
+      throw error;
+    }
+  }
+
+  /**
+   * Search candidates from Boolean query using single AI call (direct processing)
+   * Parses Boolean operators (AND, OR, NOT) and generates optimized Elasticsearch query
+   */
+  async searchCandidatesFromBooleanQuery(booleanQuery: string, contextualHints?: any, pagination?: PaginationOptions, disableCache?: boolean): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (pagination?.page) {
+        queryParams.append('page', pagination.page.toString());
+      }
+      if (pagination?.limit) {
+        queryParams.append('limit', pagination.limit.toString());
+      }
+      // Add disableCache parameter (default to true during development/testing)
+      if (disableCache !== false) {
+        queryParams.append('disableCache', 'true');
+      }
+      
+      const url = `${this.baseURL}/candidates/boolean-ai-direct${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const booleanPayload = {
+        booleanQuery,
+        contextualHints: contextualHints || {
+          urgency: 'high',
+          flexibility: 'strict',
+          primaryFocus: 'precision',
+          isLocationAgnostic: false,
+          balanceMode: 'precision_optimized',
+          searchType: 'boolean_query'
+        }
+      };
+
+      console.log('🚀 Boolean AI Direct search payload:', booleanPayload);
+      console.log('🔧 Cache disabled:', disableCache !== false);
+      const response = await apiClient.post<SearchResponse>(url, booleanPayload);
+
+      console.log('🎯 Boolean AI Direct search response (single call):', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Boolean AI Direct search failed:', error);
+      console.error('❌ Error details:', error.response?.data);
+      throw error;
+    }
+  }
+
+  /**
    * Fetch cached enhanced search results for pagination (No new search query)
    */
   async fetchCachedEnhancedResults(queryHash: string, pagination?: PaginationOptions): Promise<SearchResponse> {
@@ -637,6 +735,8 @@ export const searchEnhanced = (searchText: string, includeExternal?: boolean, pa
 export const searchCandidatesExternalDirect = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalDirect(filters, searchText, pagination);
 export const searchCandidatesExternalEnhanced = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchCandidatesExternalEnhanced(filters, searchText, pagination);
 export const searchCandidatesDirectAI = (searchText: string, contextualHints?: any, pagination?: PaginationOptions, disableCache?: boolean) => searchService.searchCandidatesDirectAI(searchText, contextualHints, pagination, disableCache);
+export const searchCandidatesFromJobDescription = (jobDescription: string, contextualHints?: any, pagination?: PaginationOptions, disableCache?: boolean) => searchService.searchCandidatesFromJobDescription(jobDescription, contextualHints, pagination, disableCache);
+export const searchCandidatesFromBooleanQuery = (booleanQuery: string, contextualHints?: any, pagination?: PaginationOptions, disableCache?: boolean) => searchService.searchCandidatesFromBooleanQuery(booleanQuery, contextualHints, pagination, disableCache);
 export const fetchCachedEnhancedResults = (queryHash: string, pagination?: PaginationOptions) => searchService.fetchCachedEnhancedResults(queryHash, pagination);
 export const fetchCachedAdvancedFiltersResults = (queryHash: string, pagination?: PaginationOptions) => searchService.fetchCachedAdvancedFiltersResults(queryHash, pagination);
 export const searchUsers = (filters: SearchFilters, searchText?: string, pagination?: PaginationOptions) => searchService.searchUsers(filters, searchText, pagination);

@@ -1902,19 +1902,6 @@ const GlobalSearchResultsPage: React.FC = () => {
           />
         )}
 
-        {/* Project Requirement Notice */}
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <h4 className="text-sm font-medium text-amber-800 mb-1">Project Required for Shortlisting</h4>
-              <p className="text-sm text-amber-700">
-                To shortlist candidates, you'll need to create or select a sourcing project. This helps organize your prospects and manage your recruitment pipeline.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Results */}
         <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
           {results.length === 0 ? (

@@ -207,14 +207,6 @@ const SearchResultsPage: React.FC = () => {
   const minOrder = availableStages.length > 0 ? Math.min(...availableStages.map(s => s.order)) : 0;
   const orderOffset = minOrder === 0 ? 1 : 0;
 
-  // Redirect to projects page if no projectId (global search no longer supported)
-  useEffect(() => {
-    if (!projectId) {
-      navigate('/dashboard/sourcing/projects', { replace: true });
-      return;
-    }
-  }, [projectId, navigate]);
-
   useEffect(() => {
     if (location.state) {
       const { query, filters, searchId: stateSearchId, searchMode: stateSearchMode } = location.state;

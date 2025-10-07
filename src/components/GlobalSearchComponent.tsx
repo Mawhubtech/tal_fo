@@ -5,14 +5,12 @@ import {
   ToggleRight,
   Search as SearchIcon,
   Filter,
-  X,
-  AlertTriangle,
-  Plus
+  X
 } from 'lucide-react';
-import FilterDialog, { FilterState } from '../components/FilterDialog';
+import AdvancedFilterPanel, { type AdvancedFilters } from '../components/AdvancedFilterPanel';
 import BooleanSearchDialog from '../sourcing/search/components/BooleanSearchDialog';
 import JobDescriptionDialog from '../recruitment/components/JobDescriptionDialog';
-import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced, searchCandidatesDirectAI } from '../services/searchService';
+import { extractEnhancedKeywords, convertEnhancedKeywordsToFilters, extractKeywords, convertKeywordsToFilters, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced, searchCandidatesDirectAI, searchCandidatesFromJobDescription, searchCandidatesFromBooleanQuery, searchCandidatesWithAdvancedFilters } from '../services/searchService';
 import BooleanSearchParser from '../services/booleanSearchParser';
 import type { SearchFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
@@ -33,11 +31,12 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
   const combinedSearch = useCombinedSearch();
   
   const [searchQuery, setSearchQuery] = useState('');  
-  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [isAdvancedFilterPanelVisible, setIsAdvancedFilterPanelVisible] = useState(false);
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external'); // Default to external search
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({});
 
   // Handle state from other pages
   useEffect(() => {
@@ -253,100 +252,111 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     }
   };
 
-  // Convert FilterState to SearchFilters format
-  const convertFilterStateToSearchFilters = (filterState: FilterState): SearchFilters => {
-    const searchFilters: SearchFilters = {};
-
-    // Convert location
-    if (filterState.location.currentLocations.length > 0) {
-      searchFilters.location = {
-        currentLocations: filterState.location.currentLocations
-      };
+  // Helper function to convert frontend AdvancedFilters to backend format
+  const convertAdvancedFiltersForAPI = (filters: AdvancedFilters): any => {
+    const converted: any = { ...filters };
+    
+    // Convert array fields to strings where backend expects strings
+    if (Array.isArray(converted.jobTitle)) {
+      converted.jobTitle = converted.jobTitle.join(', ');
     }
-
-    // Convert job
-    if (filterState.job.titles.length > 0 || filterState.job.skills.length > 0) {
-      searchFilters.job = {};
-      if (filterState.job.titles.length > 0) {
-        searchFilters.job.titles = filterState.job.titles;
+    
+    // For location fields, use "OR" logic format that AI can understand
+    if (Array.isArray(converted.locationRawAddress)) {
+      converted.locationRawAddress = converted.locationRawAddress.join(' OR ');
+    }
+    
+    if (Array.isArray(converted.locationCountry)) {
+      converted.locationCountry = converted.locationCountry.join(' OR ');
+    }
+    
+    if (Array.isArray(converted.locationRegions)) {
+      converted.locationRegions = converted.locationRegions.join(' OR ');
+    }
+    
+    if (Array.isArray(converted.experienceCompany)) {
+      converted.experienceCompany = converted.experienceCompany.join(' OR ');
+    }
+    
+    if (Array.isArray(converted.experienceLocation)) {
+      converted.experienceLocation = converted.experienceLocation.join(' OR ');
+    }
+    
+    if (Array.isArray(converted.companyHqLocation)) {
+      converted.companyHqLocation = converted.companyHqLocation.join(' OR ');
+    }
+    
+    if (Array.isArray(converted.companyHqCountry)) {
+      converted.companyHqCountry = converted.companyHqCountry.join(' OR ');
+    }
+    
+    if (Array.isArray(converted.companyHqRegions)) {
+      converted.companyHqRegions = converted.companyHqRegions.join(' OR ');
+    }
+    
+    if (Array.isArray(converted.companyHqCity)) {
+      converted.companyHqCity = converted.companyHqCity.join(' OR ');
+    }
+    
+    // Convert skills to array if it's a string
+    if (typeof converted.skills === 'string') {
+      converted.skills = converted.skills.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+    
+    // Convert languages to array if it's a string
+    if (typeof converted.languages === 'string') {
+      converted.languages = converted.languages.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+    
+    // Remove empty or undefined fields
+    Object.keys(converted).forEach(key => {
+      const value = converted[key];
+      if (value === undefined || value === null || value === '' || 
+          (Array.isArray(value) && value.length === 0) ||
+          (typeof value === 'object' && value !== null && !Array.isArray(value) && Object.keys(value).length === 0)) {
+        delete converted[key];
       }
-      if (filterState.job.skills.length > 0) {
-        searchFilters.job.skills = filterState.job.skills;
-      }
-    }
-
-    // Convert company
-    if (filterState.company.names.length > 0 || filterState.company.industries.length > 0) {
-      searchFilters.company = {};
-      if (filterState.company.names.length > 0) {
-        searchFilters.company.names = filterState.company.names;
-      }
-      if (filterState.company.industries.length > 0) {
-        searchFilters.company.industries = filterState.company.industries;
-      }
-    }
-
-    // Convert skills/keywords
-    if (filterState.skillsKeywords.items.length > 0) {
-      searchFilters.skillsKeywords = {
-        items: filterState.skillsKeywords.items
-      };
-    }
-
-    // Convert education
-    if (filterState.education.schools.length > 0) {
-      searchFilters.education = {
-        schools: filterState.education.schools
-      };
-    }
-
-    // Convert general filters
-    const generalFilters: any = {};
-    if (filterState.general.minExperience && filterState.general.minExperience !== 'any') {
-      generalFilters.minExperience = parseInt(filterState.general.minExperience);
-    }
-    if (filterState.general.maxExperience && filterState.general.maxExperience !== 'any') {
-      generalFilters.maxExperience = parseInt(filterState.general.maxExperience);
-    }
-    if (Object.keys(generalFilters).length > 0) {
-      searchFilters.general = generalFilters;
-    }
-
-    return searchFilters;
+    });
+    
+    return converted;
   };
 
-  // Handle filter application from dialog
-  const handleApplyFilters = async (filterState: FilterState) => {
+  // Handle filter changes from advanced filter panel
+  const handleAdvancedFiltersChange = (newFilters: AdvancedFilters) => {
+    console.log('🔧 AdvancedFilterPanel called handleAdvancedFiltersChange with:', newFilters);
+    setAdvancedFilters(newFilters);
+  };
+
+  // Handle applying advanced filters
+  const handleApplyFilters = async () => {
+    console.log('🎯 Applying Advanced Filters:', advancedFilters, 'with search query:', searchQuery);
+    setIsAdvancedFilterPanelVisible(false);
     setIsSearching(true);
-    setIsFilterDialogOpen(false);
     
     try {
-      // Convert FilterState to SearchFilters format
-      const filters = convertFilterStateToSearchFilters(filterState);
-      console.log('GlobalSearchComponent: Converted filters:', filters);
+      // Convert filters for API
+      const convertedFilters = convertAdvancedFiltersForAPI(advancedFilters);
+      console.log('GlobalSearchComponent: Converted advanced filters for API:', convertedFilters);
       
       let searchResults;
       
-      // Perform the actual search based on search mode
-      if (searchMode === 'external' || searchMode === 'combined') {
-        try {
-          // Use external enhanced search with the applied filters
-          searchResults = await searchCandidatesExternalEnhanced(filters, searchQuery || '', { page: 1, limit: 3 });
-          console.log("GlobalSearchComponent: Got filtered search results:", searchResults);
-          console.log("GlobalSearchComponent: Results count:", searchResults?.results?.length || 0);
-        } catch (searchError) {
-          console.warn("Filter search failed, will navigate without preloaded results:", searchError);
-        }
+      // Use advanced filters search endpoint
+      try {
+        searchResults = await searchCandidatesWithAdvancedFilters(convertedFilters, searchQuery || '', { page: 1, limit: 3 });
+        console.log("GlobalSearchComponent: Got advanced filter search results:", searchResults);
+        console.log("GlobalSearchComponent: Results count:", searchResults?.results?.length || 0);
+      } catch (searchError) {
+        console.warn("Advanced filter search failed, will navigate without preloaded results:", searchError);
       }
       
       // Navigate to global search results with preloaded data
       navigate('/dashboard/search-results', {
         state: {
           query: searchQuery,
-          filters: filters,
+          advancedFilters: advancedFilters, // Pass the original filters
           searchMode: searchMode,
           isGlobalSearch: true,
-          isFilterSearch: true,
+          isAdvancedFilterSearch: true,
           preloadedResults: searchResults
         }
       });
@@ -362,34 +372,49 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     }
   };
 
-  // Handle boolean search from dialog
-  const handleBooleanSearch = async (query: string, filters: SearchFilters) => {
+  // Handle clearing advanced filters
+  const handleClearAdvancedFilters = () => {
+    console.log('🧹 Clearing Advanced Filters');
+    setAdvancedFilters({});
+  };
+
+  // Toggle advanced filter panel visibility
+  const toggleAdvancedFilters = () => {
+    setIsAdvancedFilterPanelVisible(!isAdvancedFilterPanelVisible);
+  };
+
+  // Handle boolean search using single-step AI direct approach
+  const handleBooleanSearch = async (booleanQuery: string) => {
+    console.log('handleBooleanSearch called with Boolean query');
     setIsSearching(true);
     setIsBooleanDialogOpen(false);
     
     try {
-      let searchResults;
+      // Extract a concise summary from the Boolean query for display
+      const querySummary = extractBooleanQuerySummary(booleanQuery);
+      console.log('📝 Boolean Query Summary:', querySummary);
       
-      // Perform the actual search based on search mode
-      if (searchMode === 'external' || searchMode === 'combined') {
-        try {
-          // Use external enhanced search with the boolean query and filters
-          searchResults = await searchCandidatesExternalEnhanced(filters, query, { page: 1, limit: 3 });
-          console.log("Got boolean search results from enhanced search:", searchResults);
-        } catch (searchError) {
-          console.warn("Boolean search failed, will navigate without preloaded results:", searchError);
-        }
-      }
+      // Use the new single-step Boolean AI search
+      const searchResults = await searchCandidatesFromBooleanQuery(booleanQuery, {
+        urgency: 'high',
+        flexibility: 'strict', // Boolean searches are precise
+        primaryFocus: 'precision',
+        searchType: 'boolean_query'
+      }, { page: 1, limit: 3 });
       
-      // Navigate to global search results with preloaded data
+      console.log('🎯 Boolean AI search results:', searchResults);
+      
+      // Navigate to search results with Boolean query data
       navigate('/dashboard/search-results', {
         state: {
-          query: query,
-          filters: filters,
+          query: querySummary, // Display concise summary
+          originalQuery: booleanQuery, // Keep original for reference
           searchMode: searchMode,
           isGlobalSearch: true,
           isBooleanSearch: true,
-          preloadedResults: searchResults
+          singleCallOptimized: true,
+          preloadedResults: searchResults,
+          metadata: searchResults.metadata
         }
       });
     } catch (error) {
@@ -404,39 +429,73 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     }
   };
 
-  // Handle job description search
-  const handleJobDescriptionSearch = async (query: string, filters: SearchFilters) => {
-    console.log('handleJobDescriptionSearch called with:', { query, filters });
+  // Extract concise summary from Boolean query for UI display
+  const extractBooleanQuerySummary = (booleanQuery: string): string => {
+    try {
+      // Remove parentheses and operators for cleaner display
+      const cleanQuery = booleanQuery
+        .replace(/[()]/g, '') // Remove parentheses
+        .replace(/\s+(AND|OR|NOT)\s+/gi, ', ') // Replace operators with commas
+        .replace(/\s*-\s*/g, ' NOT ') // Keep NOT for clarity
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      
+      // Limit length for display
+      if (cleanQuery.length > 100) {
+        return cleanQuery.substring(0, 97) + '...';
+      }
+      
+      return cleanQuery;
+    } catch (error) {
+      console.error('Error extracting Boolean query summary:', error);
+      return booleanQuery; // Fallback to original
+    }
+  };
+
+  // Handle job description search using single-step AI direct approach
+  const handleJobDescriptionSearch = async (jobDescription: string) => {
+    console.log('handleJobDescriptionSearch called with job description');
     setIsSearching(true);
     setIsJobDescriptionDialogOpen(false);
     
     try {
-      let searchResults;
+      // Use the new single-step job description AI direct search
+      const searchResults = await searchCandidatesFromJobDescription(
+        jobDescription,
+        {
+          urgency: 'medium',
+          flexibility: 'highly_flexible',
+          primaryFocus: 'comprehensive',
+          isLocationAgnostic: false,
+          balanceMode: 'recall_optimized',
+          searchType: 'job_description',
+          skillMatchingMode: 'flexible',
+          useSkillVariations: true
+        },
+        { page: 1, limit: 3 },
+        true // disable cache
+      );
+
+      console.log("✅ Got job description search results (single-step):", searchResults);
       
-      // Perform the actual search based on search mode
-      if (searchMode === 'external' || searchMode === 'combined') {
-        try {
-          // Use external enhanced search with the job description query and filters
-          searchResults = await searchCandidatesExternalEnhanced(filters, query, { page: 1, limit: 3 });
-          console.log("Got job description search results from enhanced search:", searchResults);
-        } catch (searchError) {
-          console.warn("Job description search failed, will navigate without preloaded results:", searchError);
-        }
-      }
+      // Create a concise summary of the job description for display
+      const jobDescriptionSummary = extractJobDescriptionSummary(jobDescription);
       
       // Navigate to global search results with preloaded data
       navigate('/dashboard/search-results', {
         state: {
-          query: query,
-          filters: filters,
-          searchMode: searchMode,
+          query: jobDescriptionSummary, // Use summary instead of full description
+          fullJobDescription: jobDescription, // Store full description for reference
+          filters: searchResults.convertedFilters || {},
+          searchMode: 'external',
           isGlobalSearch: true,
           isJobDescriptionSearch: true,
-          preloadedResults: searchResults
+          preloadedResults: searchResults,
+          generatedFilters: searchResults.generatedFilters
         }
       });
     } catch (error) {
-      console.error('Error with job description search:', error);
+      console.error('❌ Error with job description search:', error);
       addToast({
         type: 'error',
         title: 'Search Failed',
@@ -445,6 +504,47 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  // Helper function to extract a concise summary from job description
+  const extractJobDescriptionSummary = (jobDescription: string): string => {
+    // Try to extract the job title from markdown format
+    const titleMatch = jobDescription.match(/\*\*Job Title:\s*(.+?)\*\*/);
+    if (titleMatch) {
+      const title = titleMatch[1].trim();
+      
+      // Try to extract location
+      const locationMatch = jobDescription.match(/\*\*Location:\*\*\s*(.+?)[\n*]/);
+      const location = locationMatch ? locationMatch[1].trim() : '';
+      
+      // Try to extract key skills from the description
+      const skillMatches = jobDescription.match(/\b(React|Node\.js|JavaScript|TypeScript|Python|Java|\.NET|AWS|Azure|GCP)\b/gi);
+      const uniqueSkills = skillMatches ? [...new Set(skillMatches.slice(0, 3))] : [];
+      
+      // Build summary
+      let summary = title;
+      if (uniqueSkills.length > 0) {
+        summary += ` with ${uniqueSkills.join(', ')}`;
+      }
+      if (location) {
+        summary += ` in ${location}`;
+      }
+      
+      return summary;
+    }
+    
+    // Fallback: Extract first meaningful line or first 150 characters
+    const lines = jobDescription.split('\n').filter(line => line.trim().length > 0);
+    const firstLine = lines[0] || '';
+    
+    // Remove markdown formatting
+    const cleanLine = firstLine.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+    
+    if (cleanLine.length > 150) {
+      return cleanLine.substring(0, 147) + '...';
+    }
+    
+    return cleanLine || 'Job Description Search';
   };
 
   return (
@@ -472,37 +572,8 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
               {!searchQuery.trim() && <div></div>} {/* Spacer when no clear button */}
             </div>
             <p className="text-gray-500 text-sm">
-              Search across all talent databases without creating a project.
+              Search across all talent databases and discover top talent.
             </p>
-          </div>
-
-          {/* Project Notice */}
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-amber-800 mb-1">Project Required for Shortlisting</h4>
-                <p className="text-sm text-amber-700 mb-3">
-                  You can search and view candidate profiles globally. When you find candidates to shortlist, 
-                  you'll be prompted to create or select a project to organize your prospects.
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => navigate('/dashboard/sourcing/projects/create')}
-                    className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create Project Now
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard/sourcing/projects')}
-                    className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    View My Projects
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
           
           {/* Who are you looking for section */}
@@ -587,7 +658,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
               
               <button
                 className="flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-4 py-2 rounded-lg transition-colors"
-                onClick={() => setIsFilterDialogOpen(true)}
+                onClick={toggleAdvancedFilters}
                 title="Advanced Filters"
               >
                 <Filter className="w-4 h-4" />
@@ -598,11 +669,16 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
         </div>
       </div>
 
-      {/* Filter Dialog */}
-      <FilterDialog
-        isOpen={isFilterDialogOpen}
-        onClose={() => setIsFilterDialogOpen(false)}
+      {/* Advanced Filter Panel */}
+      <AdvancedFilterPanel
+        filters={advancedFilters}
+        onFiltersChange={handleAdvancedFiltersChange}
         onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearAdvancedFilters}
+        isVisible={isAdvancedFilterPanelVisible}
+        onToggle={toggleAdvancedFilters}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
       />
       
       {/* Boolean Search Dialog */}

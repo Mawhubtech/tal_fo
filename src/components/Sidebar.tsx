@@ -105,14 +105,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             </Link>
           )}
 
-          {/* Sourcing Section - single menu item, renamed from Projects */}
+          {/* Sourcing Section - redirects to global search */}
           {hasPermission(SIDEBAR_PERMISSIONS.SOURCING_ACCESS) && (
             <Link 
-              to="/dashboard/sourcing/projects" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/sourcing/projects') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              to="/dashboard/search" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? "Sourcing" : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/sourcing/projects') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/search') ? '#7e22ce' : '#9ca3af' }}>
                 <Target className="w-4 h-4" />
               </div>
               {isExpanded && "Sourcing"}
