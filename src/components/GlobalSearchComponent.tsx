@@ -35,8 +35,47 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
   const [isBooleanDialogOpen, setIsBooleanDialogOpen] = useState(false);
   const [isJobDescriptionDialogOpen, setIsJobDescriptionDialogOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchLoadingMessage, setSearchLoadingMessage] = useState('');
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [searchMode, setSearchMode] = useState<'database' | 'external' | 'combined'>('external'); // Default to external search
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({});
+
+  // Loading messages to cycle through
+  const loadingMessages = [
+    'Analyzing query with AI...',
+    'Generating intelligent filters...',
+    'Searching candidate databases...',
+    'Processing results...',
+    'Matching profiles...',
+    'Ranking candidates...',
+  ];
+
+  // Cycle through loading messages
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isSearching) {
+      setCurrentMessageIndex(0);
+      setSearchLoadingMessage(loadingMessages[0]);
+      
+      interval = setInterval(() => {
+        setCurrentMessageIndex((prevIndex) => {
+          const nextIndex = (prevIndex + 1) % loadingMessages.length;
+          setSearchLoadingMessage(loadingMessages[nextIndex]);
+          return nextIndex;
+        });
+      }, 3000); // Change message every 3 seconds
+    } else {
+      setSearchLoadingMessage('');
+      setCurrentMessageIndex(0);
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isSearching]);
 
   // Handle state from other pages
   useEffect(() => {
@@ -59,7 +98,6 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     }
   }));
 
-  // Function to enhance search with AI
   // Main function for AI keyword extraction and direct search
   const handleAISearch = async () => {
     if (!searchQuery.trim()) return;
@@ -146,6 +184,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
               
               // Fallback to original 3-step process if single AI call fails
               keywords = await extractEnhancedKeywords(searchQuery);
+              
               filters = await convertEnhancedKeywordsToFilters(keywords);
               console.log("🔄 Fallback - AI extracted enhanced filters:", filters);
               
@@ -588,7 +627,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                 <SearchIcon className="w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Software Engineers with 5+ yrs of experience at fintech companies..."
+                  placeholder={isSearching && searchLoadingMessage ? searchLoadingMessage : "Software Engineers with 5+ yrs of experience at fintech companies..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400"
@@ -597,8 +636,9 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                       handleAISearch();
                     }
                   }}
+                  disabled={isSearching}
                 />
-                {searchQuery.trim() && (
+                {searchQuery.trim() && !isSearching && (
                   <button 
                     onClick={() => {
                       setSearchQuery('');
@@ -608,6 +648,9 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                   >
                     <X className="w-4 h-4" />
                   </button>
+                )}
+                {isSearching && (
+                  <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
                 )}
               </div>
             </div>
@@ -623,7 +666,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
               {isSearching ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Searching...
+                  {searchLoadingMessage || 'Searching...'}
                 </>
               ) : (
                 <>
