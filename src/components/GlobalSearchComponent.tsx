@@ -64,7 +64,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
           setSearchLoadingMessage(loadingMessages[nextIndex]);
           return nextIndex;
         });
-      }, 3000); // Change message every 3 seconds
+      }, 2500); // Change message every 2.5 seconds
     } else {
       setSearchLoadingMessage('');
       setCurrentMessageIndex(0);
@@ -590,12 +590,12 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     <div className="min-h-screen bg-gray-50">
       <div className="flex justify-center items-start pt-20 min-h-screen">
         {/* Centered Search Section */}
-        <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg border border-gray-200 p-8">
+        <div className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border-2 border-purple-400 p-8">
           {/* Logo and title */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-between mb-4">
               <div></div> {/* Spacer */}
-              <h1 className="text-2xl font-bold text-gray-900">Global Talent Search</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Talent Search</h1>
               {searchQuery.trim() && (
                 <button
                   onClick={() => {
@@ -627,7 +627,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                 <SearchIcon className="w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder={isSearching && searchLoadingMessage ? searchLoadingMessage : "Software Engineers with 5+ yrs of experience at fintech companies..."}
+                  placeholder="Software Engineers with 5+ yrs of experience at fintech companies..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400"
@@ -649,32 +649,32 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                     <X className="w-4 h-4" />
                   </button>
                 )}
-                {isSearching && (
-                  <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                )}
+                {/* Small search button next to input */}
+                <button 
+                  onClick={handleAISearch}
+                  disabled={!searchQuery.trim() || isSearching}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                  title="Search candidates"
+                >
+                  <SearchIcon className="w-4 h-4" />
+                  Search
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Search Button */}
-          <div className="w-full mb-6">
-            <button 
-              onClick={handleAISearch}
-              disabled={!searchQuery.trim() || isSearching}
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-4 rounded-lg text-lg font-medium transition-colors flex items-center justify-center gap-3"
-            >
-              {isSearching ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  {searchLoadingMessage || 'Searching...'}
-                </>
-              ) : (
-                <>
-                  <SearchIcon className="w-5 h-5" />
-                  Search Candidates
-                </>
-              )}
-            </button>
+          {/* Loading Status Display */}
+          <div className="w-full mb-3">
+            {isSearching ? (
+              <div className="text-center py-2">
+                <div className="flex items-center justify-center gap-3 mb-1">
+                  <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-lg font-bold text-purple-600">
+                    {searchLoadingMessage || 'Searching...'}
+                  </span>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* Action buttons */}
