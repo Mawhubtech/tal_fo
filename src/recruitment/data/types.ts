@@ -76,6 +76,17 @@ export interface Job {
     lastName: string;
     email: string;
   };
+  applications?: Array<{
+    id: string;
+    candidateId: string;
+    candidate?: {
+      id: string;
+      fullName: string;
+      email: string;
+      sourceId?: string;
+      source?: string;
+    };
+  }>;
   // Legacy fields for compatibility with existing frontend code
   applicants?: number; // Maps to applicantsCount
   postedDate?: string; // Computed from createdAt

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages, Send, MessageCircle, User, Calendar, Save, Edit3, Trash2, AlertCircle, CheckCircle2, XCircle, Eye, MapPin, DollarSign, Building, Star, TrendingUp, Target } from 'lucide-react'; // Ensure these icons are installed
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, ArrowRight, Award, FileBadge2, Heart, Mail, Phone, Languages, Send, MessageCircle, User, Calendar, Save, Edit3, Trash2, AlertCircle, CheckCircle2, XCircle, Eye, MapPin, DollarSign, Building, Star, TrendingUp, Target, Settings, CheckCircle, Loader2 } from 'lucide-react'; // Ensure these icons are installed
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './ProfileSidePanel.css';
@@ -38,6 +38,48 @@ export interface Experience {
   description?: string;
   responsibilities?: string[];
   achievements?: string[];
+  technologies?: string[];
+  metadata?: {
+    // Job classification
+    department?: string;
+    managementLevel?: string;
+    duration?: string;
+    durationMonths?: number;
+    
+    // Company details
+    companyId?: number;
+    companySize?: number;
+    companySizeRange?: string;
+    companyIndustry?: string;
+    companyType?: string;
+    companyWebsite?: string;
+    companyFounded?: number;
+    companyFollowersCount?: number;
+    
+    // Company location
+    companyLocationHq?: {
+      fullAddress?: string;
+      country?: string;
+      regions?: string[];
+    };
+    
+    // Company financials
+    companyAnnualRevenue?: number;
+    companyAnnualRevenueCurrency?: string;
+    companyEmployeesCountChangeYearlyPercentage?: number;
+    
+    // Company social media
+    companyLinkedinUrl?: string;
+    companyFacebookUrl?: string[];
+    companyTwitterUrl?: string[];
+    
+    // Company focus areas
+    companyCategoriesAndKeywords?: string[];
+    
+    // Data source info
+    source?: string;
+    enrichedAt?: string;
+  };
 }
 
 export interface Education {
@@ -175,13 +217,15 @@ interface ProfileSidePanelProps {
   onStateChange: (state: PanelState) => void;
   isLoading?: boolean;
   candidateId?: string; // Add candidateId prop for API calls
+  onShortlist?: () => void; // Add shortlist handler prop
+  isShortlisting?: boolean; // Add shortlisting state prop
 }
 
-const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false, candidateId }) => {
+const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false, candidateId, onShortlist, isShortlisting = false }) => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs - default to Communication tab
-  const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(false); // For collapsing candidate actions - default to expanded
+  const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(true); // For collapsing candidate actions - default to collapsed
   
   // Email composition state
   const [emailSubject, setEmailSubject] = useState('');
@@ -224,6 +268,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
+  // Refs for auto-scroll tab switching
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const sectionRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+
   // Load notes when component mounts or candidateId changes
   useEffect(() => {
     if (candidateId && panelState !== 'closed') {
@@ -231,6 +279,98 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
       loadEmailHistory();
     }
   }, [candidateId, panelState]);
+
+  // Compute profile tabs (before early return for loading state)
+  const sortedExperience = React.useMemo(() => {
+    return userData?.experience?.slice().sort((a, b) => {
+      const aEndDate = a.endDate ? new Date(a.endDate) : new Date();
+      const bEndDate = b.endDate ? new Date(b.endDate) : new Date();
+      if (aEndDate.getTime() !== bEndDate.getTime()) {
+        return bEndDate.getTime() - aEndDate.getTime();
+      }
+      const aStartDate = new Date(a.startDate);
+      const bStartDate = new Date(b.startDate);
+      return bStartDate.getTime() - aStartDate.getTime();
+    });
+  }, [userData?.experience]);
+
+  const allProfileTabs = React.useMemo(() => [
+    { name: 'Experience', icon: Briefcase, index: 0, count: sortedExperience?.length || 0, data: sortedExperience },
+    { name: 'Education', icon: GraduationCap, index: 1, count: userData?.education?.length || 0, data: userData?.education },
+    { name: 'Skills', icon: Zap, index: 2, count: userData?.skills?.length || 0, data: userData?.skills },
+    { name: 'Projects', icon: FolderOpen, index: 3, count: userData?.projects?.length || 0, data: userData?.projects },
+    { name: 'Certifications', icon: FileBadge2, index: 4, count: userData?.certifications?.length || 0, data: userData?.certifications },
+    { name: 'Awards', icon: Award, index: 5, count: userData?.awards?.length || 0, data: userData?.awards },
+    { name: 'Languages', icon: Languages, index: 6, count: userData?.languages?.length || 0, data: userData?.languages },
+    { name: 'Interests', icon: Heart, index: 7, count: userData?.interests?.length || 0, data: userData?.interests },
+    { name: 'References', icon: Mail, index: 8, count: userData?.references?.length || 0, data: userData?.references },
+    { name: 'Custom Fields', icon: FileText, index: 9, count: userData?.customFields?.length || 0, data: userData?.customFields },
+  ], [userData, sortedExperience]);
+
+  const profileTabs = React.useMemo(() => 
+    allProfileTabs
+      .filter(tab => tab.count > 0)
+      .map((tab, index) => ({ ...tab, originalIndex: tab.index, index })),
+    [allProfileTabs]
+  );
+
+  // Reset active tab if current tab is out of bounds
+  useEffect(() => {
+    if (activeTab >= profileTabs.length && profileTabs.length > 0) {
+      setActiveTab(0);
+    }
+  }, [profileTabs.length, activeTab]);
+
+  // Auto-switch tabs based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!scrollContainerRef.current || profileTabs.length === 0) return;
+      
+      const scrollContainer = scrollContainerRef.current;
+      const scrollTop = scrollContainer.scrollTop;
+      const containerHeight = scrollContainer.clientHeight;
+      
+      // Find which section is most visible
+      let newActiveTab = 0;
+      let maxVisibility = 0;
+      
+      sectionRefs.current.forEach((section, index) => {
+        if (section && index < profileTabs.length) {
+          const rect = section.getBoundingClientRect();
+          const containerRect = scrollContainer.getBoundingClientRect();
+          
+          const sectionTop = rect.top - containerRect.top;
+          const sectionBottom = rect.bottom - containerRect.top;
+          
+          // Calculate how much of the section is visible
+          const visibleTop = Math.max(0, sectionTop);
+          const visibleBottom = Math.min(containerHeight, sectionBottom);
+          const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+          const sectionHeight = rect.height;
+          
+          const visibility = sectionHeight > 0 ? visibleHeight / sectionHeight : 0;
+          
+          if (visibility > maxVisibility && visibility > 0.3) { // 30% threshold
+            maxVisibility = visibility;
+            newActiveTab = index;
+          }
+        }
+      });
+      
+      setActiveTab(newActiveTab);
+    };
+    
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      // Initial check
+      handleScroll();
+      
+      return () => {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [profileTabs.length]);
 
   const loadNotes = async () => {
     if (!candidateId) return;
@@ -604,21 +744,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     });
   };
 
-  // Helper function to sort experience chronologically (most recent first)
-  const sortedExperience = experience?.slice().sort((a, b) => {
-    const aEndDate = parseDate(a.endDate);
-    const bEndDate = parseDate(b.endDate);
-    
-    // Sort by end date descending (most recent first)
-    if (aEndDate.getTime() !== bEndDate.getTime()) {
-      return bEndDate.getTime() - aEndDate.getTime();
-    }
-    
-    // If end dates are the same, sort by start date descending
-    const aStartDate = parseDate(a.startDate);
-    const bStartDate = parseDate(b.startDate);
-    return bStartDate.getTime() - aStartDate.getTime();
-  });
+  // Sorting is now done in useMemo hooks above (before early return)
 
   // Helper function to sort education chronologically (most recent first)
   const sortedEducation = education?.slice().sort((a, b) => {
@@ -644,18 +770,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
   });
 
   // Main profile tabs for the 2/3 section
-  const profileTabs = [
-    { name: 'Experience', icon: Briefcase, index: 0, count: sortedExperience?.length || 0 },
-    { name: 'Education', icon: GraduationCap, index: 1, count: sortedEducation?.length || 0 },
-    { name: 'Skills', icon: Zap, index: 2, count: skills?.length || 0 },
-    { name: 'Projects', icon: FolderOpen, index: 3, count: projects?.length || 0 },
-    { name: 'Certifications', icon: FileBadge2, index: 4, count: certifications?.length || 0 },
-    { name: 'Awards', icon: Award, index: 5, count: awards?.length || 0 },
-    { name: 'Languages', icon: Languages, index: 6, count: languages?.length || 0 },
-    { name: 'Interests', icon: Heart, index: 7, count: interests?.length || 0 },
-    { name: 'References', icon: Mail, index: 8, count: references?.length || 0 },
-    { name: 'Custom Fields', icon: FileText, index: 9, count: customFields?.length || 0 },
-  ];
+  // (Now computed earlier with useMemo before the early return)
 
   // Side panel tabs for the 1/3 section (candidate management)
   const sideTabs = [
@@ -671,7 +786,8 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
         <div className="flex-1 w-full flex flex-col">
           {/* Panel Header - Sticky */}
           <div className="sticky top-0 bg-white z-10">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">              <div className="flex items-center">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center">
                 {personalInfo.avatar ? (
                   <img 
                     src={personalInfo.avatar} 
@@ -686,6 +802,21 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                 <h3 className="text-md font-semibold text-gray-800">{personalInfo.fullName}</h3>
               </div>
               <div className="flex items-center">
+                {onShortlist && (
+                  <Button
+                    variant="primary"
+                    onClick={onShortlist}
+                    disabled={isShortlisting}
+                    className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 disabled:bg-gray-400 disabled:border-gray-400 flex items-center text-xs p-2 rounded-md mr-2"
+                    aria-label="Shortlist Candidate"
+                  >
+                    {isShortlisting ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <CheckCircle size={16} />
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   onClick={() => onStateChange('expanded')}
@@ -706,26 +837,35 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             </div>
           </div>
 
-          {/* Profile Basic Info + Main Action Buttons */}
-          <div className="p-6 border-b border-gray-200">
+          {/* Profile Basic Info */}
+          <div className="p-4 border-b border-gray-200">
             <div className="flex items-start">
-              <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold mr-4 flex-shrink-0">
-                {personalInfo.fullName.charAt(0)}
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-gray-900">{personalInfo.fullName}</h2>
-                <div className="flex items-center text-sm text-gray-500 mt-0.5">
-                  {personalInfo.location}
+              {personalInfo.avatar ? (
+                <img 
+                  src={personalInfo.avatar} 
+                  alt={personalInfo.fullName}
+                  className="h-10 w-10 rounded-full mr-3 flex-shrink-0 object-cover"
+                />
+              ) : (
+                <div className="bg-purple-100 rounded-full h-10 w-10 flex items-center justify-center text-purple-600 text-lg font-semibold mr-3 flex-shrink-0">
+                  {personalInfo.fullName.charAt(0)}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900 truncate">{personalInfo.fullName}</h2>
+                <div className="flex items-center text-xs text-gray-500 mt-0.5">
+                  <span className="truncate">{personalInfo.location}</span>
                   {personalInfo.github && (
                     <>
-                      <span className="mx-1.5">·</span>
+                      <span className="mx-1">·</span>
                       <a
                         href={personalInfo.github.startsWith('http') ? personalInfo.github : `https://${personalInfo.github}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-500 hover:text-purple-600 flex items-center"
                         title="GitHub Profile"
-                      >                        <Github size={16} />
+                      >
+                        <Github size={14} />
                       </a>
                     </>
                   )}
@@ -733,14 +873,14 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               </div>
             </div>
             
-            {/* Contact Information */}
-            <div className="mt-4 space-y-3">
+            {/* Contact Information - Compact */}
+            <div className="mt-3 space-y-2">
               {personalInfo.email && (
-                <div className="flex items-center text-sm">
-                  <Mail className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <div className="flex items-center text-xs">
+                  <Mail className="w-3 h-3 text-gray-400 mr-1.5 flex-shrink-0" />
                   <a 
                     href={`mailto:${personalInfo.email}`}
-                    className="text-gray-700 hover:text-purple-600 transition-colors"
+                    className="text-gray-700 hover:text-purple-600 transition-colors truncate"
                   >
                     {personalInfo.email}
                   </a>
@@ -748,8 +888,8 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               )}
               
               {personalInfo.phone && (
-                <div className="flex items-center text-sm">
-                  <Phone className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <div className="flex items-center text-xs">
+                  <Phone className="w-3 h-3 text-gray-400 mr-1.5 flex-shrink-0" />
                   <a 
                     href={`tel:${personalInfo.phone}`}
                     className="text-gray-700 hover:text-purple-600 transition-colors"
@@ -760,22 +900,25 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               )}
               
               {personalInfo.linkedIn && (
-                <div className="flex items-center text-sm">
-                  <Globe className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <div className="flex items-center text-xs">
                   <a 
                     href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-700 hover:text-purple-600 transition-colors truncate"
+                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
+                    title="View LinkedIn Profile"
                   >
-                    LinkedIn Profile
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                    LinkedIn
                   </a>
                 </div>
               )}
               
               {personalInfo.website && personalInfo.website.trim() && (
-                <div className="flex items-center text-sm">
-                  <ExternalLink className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <div className="flex items-center text-xs">
+                  <ExternalLink className="w-3 h-3 text-gray-400 mr-1.5 flex-shrink-0" />
                   <a 
                     href={personalInfo.website.startsWith('http') ? personalInfo.website : `https://${personalInfo.website}`}
                     target="_blank"
@@ -787,40 +930,53 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                 </div>
               )}
             </div>
-          </div> 
+          </div>
 
-          {/* Scrollable Content Area - Collapsed view with tabs */}
-          <div className="flex-1 overflow-y-auto">
-            {/* AI-Powered Spotlight (Using Summary) */}
-            {summary && (
-              <div className="p-6 border-b border-gray-100">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">AI-Powered Spotlight</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
-              </div>
-            )}
+          {/* AI-Powered Spotlight - Fixed, non-scrolling */}
+          {summary && (
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">AI-Powered Spotlight</h3>
+              <p className="text-xs text-gray-700 leading-relaxed">{summary}</p>
+            </div>
+          )}
 
-            {/* Tabs Navigation */}
-            <div className="border-b border-gray-200">
-              <nav className="flex px-6 overflow-x-auto" aria-label="Tabs" style={{ 
+          {/* Scrollable Content Area with Tabs */}
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto flex flex-col">
+            {/* Tabs Navigation - Sticky */}
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
+              <nav className="flex px-4 overflow-x-auto" aria-label="Tabs" style={{ 
                 scrollbarWidth: 'thin',
                 scrollbarColor: '#e5e7eb #f9fafb'
               }}>
                 {profileTabs.map((tab) => (
                   <button
                     key={tab.name}
-                    onClick={() => setActiveTab(tab.index)}
+                    onClick={() => {
+                      setActiveTab(tab.index);
+                      // Scroll to the section using scrollIntoView
+                      setTimeout(() => {
+                        const sectionElement = sectionRefs.current[tab.index];
+                        if (sectionElement) {
+                          sectionElement.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start',
+                            inline: 'nearest'
+                          });
+                        }
+                      }, 50);
+                    }}
                     className={`${
                       activeTab === tab.index
-                        ? 'border-purple-500 text-purple-600 font-semibold'
+                        ? 'border-purple-600 text-purple-700 font-semibold'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-3 px-1 border-b-2 text-xs flex items-center gap-1 mr-4 flex-shrink-0`}
+                    } whitespace-nowrap py-2 px-2 border-b-2 text-xs flex items-center gap-1 mr-3 flex-shrink-0`}
                   >
                     <tab.icon className="w-3.5 h-3.5" />
                     {tab.name}
                     {tab.count > 0 && (
                       <span className={`${
                         activeTab === tab.index ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
-                      } py-0.5 px-1.5 rounded-full text-xs font-medium`}>
+                      } py-0.5 px-1 rounded-full text-xs font-medium`}>
                         {tab.count}
                       </span>
                     )}
@@ -829,500 +985,235 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               </nav>
             </div>
 
-            {/* Tab Content - Compact view for collapsed state */}
-            <div className="flex-1 overflow-y-auto p-4">
+            {/* Tab Content - All sections rendered */}
+            <div className="flex-1 p-4">
               {/* Experience Tab */}
-              {activeTab === 0 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 0) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 0)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Briefcase className="h-4 w-4 text-purple-600" />
+                    Experience
+                  </h3>
                   {sortedExperience && sortedExperience.length > 0 ? (
-                    <div className="space-y-5">
+                    <div className="space-y-3">
                       {sortedExperience.map((exp, index) => (
-                        <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== experience.length - 1 ? "mb-4" : ""}`}>
-                          <div className="flex justify-between items-start">
-                            <div className="flex">
-                              <div className="mr-3 mt-1">
-                                <Briefcase className="h-5 w-5 text-purple-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-gray-900">{exp.position}</h4>
-                                <p className="text-sm text-gray-600">{exp.company}</p>
-                                {exp.location && <p className="text-xs text-gray-500 mt-0.5">{exp.location}</p>}
-                              </div>
+                        <div key={index} className="bg-white rounded border border-gray-100 p-3">
+                          <div className="flex justify-between items-start mb-1.5">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 text-xs truncate">{exp.position}</h4>
+                              <p className="text-xs text-gray-600 truncate">{exp.company}</p>
                             </div>
                             <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
                               {formatDateForDisplay(exp.startDate)} - {formatDateForDisplay(exp.endDate) || 'Present'}
                             </div>
                           </div>
-                          {exp.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
-                          
-                          {exp.responsibilities && exp.responsibilities.length > 0 && (
-                            <div className="mt-3">
-                              <h5 className="text-xs font-medium mb-1">Responsibilities:</h5>
-                              <ul className="list-disc list-inside pl-2 space-y-1">
-                                {exp.responsibilities.map((resp, i) => (
-                                  <li key={i} className="text-xs text-gray-600">{resp}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          
-                          {exp.achievements && exp.achievements.length > 0 && (
-                            <div className="mt-3">
-                              <h5 className="text-xs font-medium mb-1">Key Achievements:</h5>
-                              <ul className="list-disc list-inside pl-2 space-y-1">
-                                {exp.achievements.map((ach, i) => (
-                                  <li key={i} className="text-xs text-gray-600">{ach}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          {exp.location && <p className="text-xs text-gray-500">{exp.location}</p>}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No experience information available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No experience information</p>
                   )}
                 </div>
               )}
 
               {/* Education Tab */}
-              {activeTab === 1 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 1) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 1)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <GraduationCap className="h-4 w-4 text-purple-600" />
+                    Education
+                  </h3>
                   {sortedEducation && sortedEducation.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {sortedEducation.map((edu, index) => (
-                        <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== sortedEducation.length - 1 ? "mb-4" : ""}`}>
-                          <div className="flex justify-between items-start">
-                            <div className="flex">
-                              <div className="mr-3 mt-1">
-                                <GraduationCap className="h-5 w-5 text-blue-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-gray-900">{edu.degree}</h4>
-                                <p className="text-sm text-gray-600">{edu.institution}</p>
-                                {edu.location && <p className="text-xs text-gray-500 mt-0.5">{edu.location}</p>}
-                              </div>
-                            </div>
-                            <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
-                              {edu.startDate && edu.endDate ? `${formatDateForDisplay(edu.startDate)} - ${formatDateForDisplay(edu.endDate)}` : 
-                               edu.graduationDate ? formatDateForDisplay(edu.graduationDate) :
-                               edu.startDate ? `${formatDateForDisplay(edu.startDate)} - Present` : ''}
-                            </div>
-                          </div>
-                          {edu.major && <p className="text-xs text-gray-600 mt-1 ml-8">Major: {edu.major}</p>}
-                          {edu.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{edu.description}</p>}
-                          
-                          {edu.courses && edu.courses.length > 0 && (
-                            <div className="mt-3">
-                              <h5 className="text-xs font-medium mb-1">Relevant Courses:</h5>
-                              <div className="flex flex-wrap gap-1">
-                                {edu.courses.map((course, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                                    {course}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {edu.honors && edu.honors.length > 0 && (
-                            <div className="mt-3">
-                              <h5 className="text-xs font-medium mb-1">Honors & Awards:</h5>
-                              <ul className="list-disc list-inside pl-2 space-y-1">
-                                {edu.honors.map((honor, i) => (
-                                  <li key={i} className="text-xs text-gray-600">{honor}</li>
-                                ))}
-                              </ul>
-                            </div>
+                        <div key={index} className="bg-white rounded border border-gray-100 p-3">
+                          <h4 className="font-medium text-gray-900 text-xs">{edu.degree}</h4>
+                          <p className="text-xs text-gray-600">{edu.institution}</p>
+                          {edu.graduationDate && (
+                            <p className="text-xs text-gray-500 mt-1">{formatDateForDisplay(edu.graduationDate)}</p>
                           )}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No education information available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No education information</p>
                   )}
                 </div>
               )}
 
               {/* Skills Tab */}
-              {activeTab === 2 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 2) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 2)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Zap className="h-4 w-4 text-purple-600" />
+                    Skills
+                  </h3>
                   {skills && skills.length > 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                      <div className="flex items-center mb-3">
-                        <Zap className="h-5 w-5 text-yellow-500 mr-2" />
-                        <h3 className="text-md font-medium text-gray-800">Professional Skills</h3>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {skills.map((skill, index) => (
-                          <span key={index} className="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-full text-sm font-medium flex items-center">
-                            <Zap className="h-3.5 w-3.5 mr-1 text-purple-600" />
-                            {typeof skill === 'string' ? skill : skill.name}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {skills.map((skill, index) => (
+                        <span key={index} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                          {typeof skill === 'string' ? skill : skill.name}
+                        </span>
+                      ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Zap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No skills information available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No skills information</p>
                   )}
                 </div>
-              )}              {/* Projects Tab */}
-              {activeTab === 3 && (
-                <div>
+              )}
+
+              {/* Projects Tab */}
+              {profileTabs.some(tab => tab.originalIndex === 3) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 3)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <FolderOpen className="h-4 w-4 text-purple-600" />
+                    Projects
+                  </h3>
                   {projects && projects.length > 0 ? (
-                    <div className="space-y-4">
-                      {projects.slice(0, 2).map((project, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                          <div className="flex justify-between items-start">
-                            <div className="flex">
-                              <div className="mr-3 mt-0.5">
-                                {project.name.toLowerCase().includes('web') ? (
-                                  <Globe className="h-5 w-5 text-blue-600" />
-                                ) : project.name.toLowerCase().includes('mobile') || project.name.toLowerCase().includes('app') ? (
-                                  <Smartphone className="h-5 w-5 text-indigo-600" />
-                                ) : project.name.toLowerCase().includes('data') || project.name.toLowerCase().includes('analytics') ? (
-                                  <BarChart className="h-5 w-5 text-emerald-600" />
-                                ) : project.name.toLowerCase().includes('ai') || project.name.toLowerCase().includes('ml') ? (
-                                  <Cpu className="h-5 w-5 text-red-600" />
-                                ) : (
-                                  <Code2 className="h-5 w-5 text-purple-600" />
-                                )}
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-gray-900 text-sm">{project.name}</h4>
-                                {project.date && <div className="text-xs text-gray-500">{project.date}</div>}
-                              </div>
-                            </div>
-                          </div>
+                    <div className="space-y-3">
+                      {projects.map((project, index) => (
+                        <div key={index} className="bg-white rounded border border-gray-100 p-3">
+                          <h4 className="font-medium text-gray-900 text-xs">{project.name}</h4>
                           {project.description && (
-                            <p className="mt-2 text-xs text-gray-700 leading-relaxed line-clamp-2 ml-8">{project.description}</p>
-                          )}
-                          {project.technologies && project.technologies.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1 ml-8">
-                              {project.technologies.slice(0, 3).map((tech, i) => (
-                                <span key={i} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs flex items-center">
-                                  <span className="w-1 h-1 bg-green-700 rounded-full mr-1"></span>
-                                  {tech}
-                                </span>
-                              ))}
-                              {project.technologies.length > 3 && (
-                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs flex items-center">
-                                  <span className="w-1 h-1 bg-gray-600 rounded-full mr-1"></span>
-                                  +{project.technologies.length - 3}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {project.url && (
-                            <div className="mt-2 ml-8">
-                              <a 
-                                href={project.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-purple-600 hover:text-purple-800 text-xs flex items-center gap-1"
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                                <span>View Project</span>
-                              </a>
-                            </div>
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{project.description}</p>
                           )}
                         </div>
                       ))}
-                      {projects.length > 2 && (
-                        <button
-                          onClick={() => onStateChange('expanded')}
-                          className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2 flex items-center"
-                        >
-                          View all {projects.length} projects
-                          <ArrowRight className="ml-1 h-4 w-4" />
-                        </button>
-                      )}
                     </div>
                   ) : (
-                    <div className="text-center py-6">
-                      <FolderOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">No projects information</p>
-                    </div>                  )}
+                    <p className="text-xs text-gray-500">No projects information</p>
+                  )}
                 </div>
               )}
 
               {/* Certifications Tab */}
-              {activeTab === 4 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 4) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 4)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <FileBadge2 className="h-4 w-4 text-purple-600" />
+                    Certifications
+                  </h3>
                   {certifications && certifications.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {certifications.map((cert, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                          <div className="flex items-start">
-                            <div className="mr-3 mt-1">
-                              <FileBadge2 className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-900">{cert.name}</h4>
-                              <p className="text-sm text-gray-600">{cert.issuer}</p>
-                              <div className="text-xs text-gray-500 mt-1">
-                                Issued: {new Date(cert.dateIssued).toLocaleDateString()}
-                                {cert.expirationDate && (
-                                  <span> • Expires: {new Date(cert.expirationDate).toLocaleDateString()}</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                        <div key={index} className="bg-white rounded border border-gray-100 p-3">
+                          <h4 className="font-medium text-gray-900 text-xs">{cert.name}</h4>
+                          <p className="text-xs text-gray-600">{cert.issuer}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <FileBadge2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No certifications available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No certifications</p>
                   )}
                 </div>
               )}
 
               {/* Awards Tab */}
-              {activeTab === 5 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 5) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 5)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Award className="h-4 w-4 text-purple-600" />
+                    Awards
+                  </h3>
                   {awards && awards.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {awards.map((award, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                          <div className="flex items-start">
-                            <div className="mr-3 mt-1">
-                              <Award className="h-5 w-5 text-yellow-600" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-900">{award.name}</h4>
-                              <p className="text-sm text-gray-600">{award.issuer}</p>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {new Date(award.date).toLocaleDateString()}
-                              </div>
-                              {award.description && (
-                                <p className="text-sm text-gray-700 mt-2 leading-relaxed">{award.description}</p>
-                              )}
-                            </div>
-                          </div>
+                        <div key={index} className="bg-white rounded border border-gray-100 p-3">
+                          <h4 className="font-medium text-gray-900 text-xs">{award.name}</h4>
+                          <p className="text-xs text-gray-600">{award.issuer}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Award className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No awards available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No awards</p>
                   )}
                 </div>
               )}
 
               {/* Languages Tab */}
-              {activeTab === 6 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 6) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 6)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Languages className="h-4 w-4 text-purple-600" />
+                    Languages
+                  </h3>
                   {languages && languages.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {languages.map((language, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                          <div className="flex items-start">
-                            <div className="mr-3 mt-1">
-                              <Languages className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-900">{language.language}</h4>
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                  {language.proficiency}
-                                </span>
-                                {language.isNative && (
-                                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                                    Native
-                                  </span>
-                                )}
-                              </div>
-                              {(language.speakingLevel || language.writingLevel || language.readingLevel) && (
-                                <div className="mt-2 space-y-1">
-                                  {language.speakingLevel && (
-                                    <div className="text-xs text-gray-600">
-                                      <span className="font-medium">Speaking:</span> {language.speakingLevel}
-                                    </div>
-                                  )}
-                                  {language.writingLevel && (
-                                    <div className="text-xs text-gray-600">
-                                      <span className="font-medium">Writing:</span> {language.writingLevel}
-                                    </div>
-                                  )}
-                                  {language.readingLevel && (
-                                    <div className="text-xs text-gray-600">
-                                      <span className="font-medium">Reading:</span> {language.readingLevel}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              {language.certificationName && (
-                                <div className="mt-2 text-xs text-gray-600">
-                                  <span className="font-medium">Certification:</span> {language.certificationName}
-                                  {language.certificationScore && (
-                                    <span> (Score: {language.certificationScore})</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                        <div key={index} className="bg-white rounded border border-gray-100 p-3">
+                          <h4 className="font-medium text-gray-900 text-xs">{language.language}</h4>
+                          <p className="text-xs text-gray-600">{language.proficiency}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Languages className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No languages information available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No languages</p>
                   )}
                 </div>
               )}
 
               {/* Interests Tab */}
-              {activeTab === 7 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 7) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 7)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Heart className="h-4 w-4 text-purple-600" />
+                    Interests
+                  </h3>
                   {interests && interests.length > 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                      <div className="flex items-center mb-3">
-                        <Heart className="h-5 w-5 text-red-500 mr-2" />
-                        <h3 className="text-md font-medium text-gray-800">Personal Interests</h3>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {interests.map((interest, index) => (
-                          <span key={index} className="px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-sm font-medium flex items-center">
-                            <Heart className="h-3.5 w-3.5 mr-1 text-red-500" />
-                            {typeof interest === 'string' ? interest : interest.name}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {interests.map((interest, index) => (
+                        <span key={index} className="px-2 py-1 bg-red-50 text-red-700 rounded text-xs font-medium">
+                          {typeof interest === 'string' ? interest : interest.name}
+                        </span>
+                      ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Heart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No interests information available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No interests</p>
                   )}
                 </div>
               )}
 
               {/* References Tab */}
-              {activeTab === 8 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 8) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 8)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Mail className="h-4 w-4 text-purple-600" />
+                    References
+                  </h3>
                   {references && references.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {references.map((reference, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center">
-                              <Mail className="h-5 w-5 text-blue-600 mr-2" />
-                              <h3 className="text-md font-medium text-gray-800">{reference.name}</h3>
-                            </div>
-                            {reference.status && (
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                reference.status === 'verified' ? 'bg-green-100 text-green-800' :
-                                reference.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
-                                reference.status === 'available' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {reference.status}
-                              </span>
-                            )}
-                          </div>
-                          <div className="space-y-2 text-sm text-gray-600">
-                            <div className="flex items-center">
-                              <span className="font-medium mr-2">Position:</span>
-                              <span>{reference.position}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <span className="font-medium mr-2">Company:</span>
-                              <span>{reference.company}</span>
-                            </div>
-                            <div className="flex items-center">
-                              <span className="font-medium mr-2">Email:</span>
-                              <span className="text-blue-600">{reference.email}</span>
-                            </div>
-                            {reference.phone && (
-                              <div className="flex items-center">
-                                <span className="font-medium mr-2">Phone:</span>
-                                <span>{reference.phone}</span>
-                              </div>
-                            )}
-                            {reference.relationship && (
-                              <div className="flex items-center">
-                                <span className="font-medium mr-2">Relationship:</span>
-                                <span>{reference.relationship}</span>
-                              </div>
-                            )}
-                            {reference.yearsKnown && (
-                              <div className="flex items-center">
-                                <span className="font-medium mr-2">Years Known:</span>
-                                <span>{reference.yearsKnown} years</span>
-                              </div>
-                            )}
-                          </div>
+                        <div key={index} className="bg-white rounded border border-gray-100 p-3">
+                          <h4 className="font-medium text-gray-900 text-xs">{reference.name}</h4>
+                          <p className="text-xs text-gray-600">{reference.position}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Mail className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No references information available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No references</p>
                   )}
                 </div>
               )}
 
               {/* Custom Fields Tab */}
-              {activeTab === 9 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 9) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 9)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-purple-600" />
+                    Custom Fields
+                  </h3>
                   {customFields && customFields.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {customFields.map((field, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                          <div className="flex items-center mb-2">
-                            <FileText className="h-5 w-5 text-purple-600 mr-2" />
-                            <h3 className="text-md font-medium text-gray-800">{field.fieldName}</h3>
-                            {field.isRequired && (
-                              <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded">
-                                Required
-                              </span>
-                            )}
-                          </div>
-                          <div className="space-y-2 text-sm text-gray-600">
-                            <div className="flex items-center">
-                              <span className="font-medium mr-2">Type:</span>
-                              <span className="capitalize">{field.fieldType}</span>
-                            </div>
-                            {field.fieldValue && (
-                              <div className="flex items-start">
-                                <span className="font-medium mr-2">Value:</span>
-                                <span className="flex-1">{field.fieldValue}</span>
-                              </div>
-                            )}
-                            {field.fieldDescription && (
-                              <div className="flex items-start">
-                                <span className="font-medium mr-2">Description:</span>
-                                <span className="flex-1 text-gray-500">{field.fieldDescription}</span>
-                              </div>
-                            )}
-                          </div>
+                        <div key={index} className="bg-white rounded border border-gray-100 p-3">
+                          <h4 className="font-medium text-gray-900 text-xs">{field.fieldName}</h4>
+                          <p className="text-xs text-gray-600">{field.fieldValue}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No custom fields available</p>
-                    </div>
+                    <p className="text-xs text-gray-500">No custom fields</p>
                   )}
                 </div>
               )}
@@ -1344,14 +1235,44 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             <div className="flex items-center">
               <Button 
                 variant="ghost" 
-                onClick={() => onStateChange('collapsed')} 
-                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 flex items-center text-sm p-2 rounded-md mr-1"
+                onClick={() => onStateChange('closed')} 
+                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 flex items-center text-sm p-2 rounded-md mr-2"
               >
-                <ChevronRight size={20} />
-                 <span className="ml-1 font-medium">Collapse</span>
+                <ChevronLeft size={18} className="mr-1" /> Back to Search
               </Button>
-            </div>            <Button variant="ghost" onClick={() => onStateChange('closed')} className="text-gray-600 hover:text-gray-800 hover:bg-gray-100 flex items-center text-sm p-2 rounded-md">
-              <X size={18} className="mr-1" /> Back to Search
+              <Button
+                variant="primary"
+                onClick={() => setIsCandidateActionsCollapsed(!isCandidateActionsCollapsed)}
+                className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 flex items-center text-sm p-2 rounded-md mr-2"
+              >
+                <Settings size={18} className="mr-1" /> Actions
+              </Button>
+              {onShortlist && (
+                <Button
+                  variant="primary"
+                  onClick={onShortlist}
+                  disabled={isShortlisting}
+                  className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 disabled:bg-gray-400 disabled:border-gray-400 flex items-center text-sm p-2 rounded-md mr-2"
+                >
+                  {isShortlisting ? (
+                    <>
+                      <Loader2 size={18} className="mr-1 animate-spin" /> Adding...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={18} className="mr-1" /> Shortlist
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+            <Button 
+              variant="primary" 
+              onClick={() => onStateChange('collapsed')} 
+              className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 flex items-center text-sm p-2 rounded-md"
+            >
+              <ChevronRight size={20} />
+              <span className="ml-1 font-medium">Collapse</span>
             </Button>
           </div>
         </div>
@@ -1419,14 +1340,17 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             
             {personalInfo.linkedIn && (
               <div className="flex items-center text-sm">
-                <Globe className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
                 <a 
                   href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-700 hover:text-purple-600 transition-colors truncate"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm font-medium"
+                  title="View LinkedIn Profile"
                 >
-                  LinkedIn Profile
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                  LinkedIn
                 </a>
               </div>
             )}
@@ -1447,17 +1371,18 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           </div>
         </div>
         
-        {/* Scrollable Content Area - Tabbed Experience, Education, Skills, Projects */}
-        <div className="flex-1 overflow-y-auto">          {/* AI-Powered Spotlight (Using Summary) */}
-          {summary && (
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">AI-Powered Spotlight</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
-            </div>
-          )}
+        {/* AI-Powered Spotlight (Using Summary) - Fixed, non-scrolling */}
+        {summary && (
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">AI-Powered Spotlight</h3>
+            <p className="text-sm text-gray-700 leading-relaxed">{summary}</p>
+          </div>
+        )}
 
-          {/* Tabs Navigation */}
-          <div className="border-b border-gray-200">
+        {/* Scrollable Content Area - Tabbed Experience, Education, Skills, Projects */}
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto flex flex-col">
+          {/* Tabs Navigation - Sticky */}
+          <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
             <nav className="flex px-6 overflow-x-auto" aria-label="Tabs" style={{ 
               scrollbarWidth: 'thin',
               scrollbarColor: '#e5e7eb #f9fafb'
@@ -1465,7 +1390,20 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               {profileTabs.map((tab) => (
                 <button
                   key={tab.name}
-                  onClick={() => setActiveTab(tab.index)}
+                  onClick={() => {
+                    setActiveTab(tab.index);
+                    // Scroll to the section using scrollIntoView
+                    setTimeout(() => {
+                      const sectionElement = sectionRefs.current[tab.index];
+                      if (sectionElement) {
+                        sectionElement.scrollIntoView({ 
+                          behavior: 'smooth', 
+                          block: 'start',
+                          inline: 'nearest'
+                        });
+                      }
+                    }, 50);
+                  }}
                   className={`${
                     activeTab === tab.index
                       ? 'border-purple-600 text-purple-700 font-semibold'
@@ -1487,35 +1425,163 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 p-6">
+            {/* EXPANDED VIEW - AUTO SCROLL ENABLED */}
             {/* Experience Tab */}
-            {activeTab === 0 && (
-              <div>
+            {profileTabs.some(tab => tab.originalIndex === 0) && (
+              <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 0)] = el)} className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-purple-600" />
+                  Experience
+                </h3>
                 {sortedExperience && sortedExperience.length > 0 ? (
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     {sortedExperience.map((exp, index) => (
-                      <div key={index} className={`bg-white rounded-lg shadow-sm border border-gray-100 p-4 ${index !== sortedExperience.length - 1 ? "mb-4" : ""}`}>
+                      <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
                         <div className="flex justify-between items-start">
-                          <div className="flex">
+                          <div className="flex flex-1">
                             <div className="mr-3 mt-1">
                               <Briefcase className="h-5 w-5 text-purple-600" />
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <h4 className="font-medium text-gray-900">{exp.position}</h4>
-                              <p className="text-sm text-gray-600">{exp.company}</p>
-                              {exp.location && <p className="text-xs text-gray-500 mt-0.5">{exp.location}</p>}
+                              
+                              {/* Company with social media links */}
+                              <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                <p className="text-sm text-gray-600">{exp.company}</p>
+                                {exp.metadata && (exp.metadata.companyWebsite || exp.metadata.companyLinkedinUrl || exp.metadata.companyFacebookUrl || exp.metadata.companyTwitterUrl) && (
+                                  <div className="flex items-center gap-1">
+                                    {exp.metadata.companyWebsite && (
+                                      <a
+                                        href={exp.metadata.companyWebsite.startsWith('http') ? exp.metadata.companyWebsite : `https://${exp.metadata.companyWebsite}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-gray-600 hover:text-purple-600"
+                                        title="Company Website"
+                                      >
+                                        <Globe className="h-3.5 w-3.5" />
+                                      </a>
+                                    )}
+                                    {exp.metadata.companyLinkedinUrl && (
+                                      <a
+                                        href={exp.metadata.companyLinkedinUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800"
+                                        title="LinkedIn"
+                                      >
+                                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                          <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"></path>
+                                        </svg>
+                                      </a>
+                                    )}
+                                    {exp.metadata.companyFacebookUrl && exp.metadata.companyFacebookUrl.length > 0 && (
+                                      <a
+                                        href={exp.metadata.companyFacebookUrl[0]}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-500 hover:text-blue-700"
+                                        title="Facebook"
+                                      >
+                                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                        </svg>
+                                      </a>
+                                    )}
+                                    {exp.metadata.companyTwitterUrl && exp.metadata.companyTwitterUrl.length > 0 && (
+                                      <a
+                                        href={exp.metadata.companyTwitterUrl[0]}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sky-500 hover:text-sky-700"
+                                        title="Twitter"
+                                      >
+                                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                          <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                                        </svg>
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Compact company metadata */}
+                              <div className="flex items-center gap-2 flex-wrap mt-1.5 text-xs text-gray-500">
+                                {exp.location && <span>📍 {exp.location}</span>}
+                                {exp.metadata?.companyIndustry && <span>• {exp.metadata.companyIndustry}</span>}
+                                {exp.metadata?.companySizeRange && <span>• 👥 {exp.metadata.companySizeRange}</span>}
+                                {exp.metadata?.companyLocationHq?.fullAddress && <span>• 🏢 {exp.metadata.companyLocationHq.fullAddress}</span>}
+                              </div>
+                              
+                              {/* Department and management level badges */}
+                              {exp.metadata && (exp.metadata.department || exp.metadata.managementLevel) && (
+                                <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                                  {exp.metadata.department && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-200">
+                                      {exp.metadata.department}
+                                    </span>
+                                  )}
+                                  {exp.metadata.managementLevel && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-50 text-purple-700 border border-purple-200">
+                                      {exp.metadata.managementLevel}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Company financials and growth - compact inline */}
+                              {exp.metadata && (exp.metadata.companyAnnualRevenue || exp.metadata.companyEmployeesCountChangeYearlyPercentage) && (
+                                <div className="flex items-center gap-2 flex-wrap mt-2 text-xs">
+                                  {exp.metadata.companyAnnualRevenue && (
+                                    <span className="text-gray-600">
+                                      💰 {exp.metadata.companyAnnualRevenueCurrency} {exp.metadata.companyAnnualRevenue.toLocaleString()}
+                                    </span>
+                                  )}
+                                  {exp.metadata.companyEmployeesCountChangeYearlyPercentage !== undefined && (
+                                    <span className={`font-medium ${exp.metadata.companyEmployeesCountChangeYearlyPercentage > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      📈 {exp.metadata.companyEmployeesCountChangeYearlyPercentage > 0 ? '+' : ''}
+                                      {exp.metadata.companyEmployeesCountChangeYearlyPercentage.toFixed(1)}% YoY
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Keywords inline */}
+                              {exp.metadata?.companyCategoriesAndKeywords && exp.metadata.companyCategoriesAndKeywords.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {exp.metadata.companyCategoriesAndKeywords.slice(0, 6).map((keyword, i) => (
+                                    <span key={i} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
+                                      {keyword}
+                                    </span>
+                                  ))}
+                                  {exp.metadata.companyCategoriesAndKeywords.length > 6 && (
+                                    <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                      +{exp.metadata.companyCategoriesAndKeywords.length - 6}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="text-xs text-gray-500 text-right whitespace-nowrap pl-2">
                             {formatDateForDisplay(exp.startDate)} - {formatDateForDisplay(exp.endDate) || 'Present'}
+                            {exp.metadata?.duration && (
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                {exp.metadata.duration}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        {exp.description && <p className="mt-3 text-sm text-gray-700 leading-relaxed">{exp.description}</p>}
+                        
+                        {/* Only show description if it's NOT auto-generated from metadata (for backward compatibility with manually added experiences) */}
+                        {exp.description && !exp.metadata?.source && (
+                          <p className="mt-2 text-xs text-gray-700 leading-relaxed">{exp.description}</p>
+                        )}
                         
                         {exp.responsibilities && exp.responsibilities.length > 0 && (
-                          <div className="mt-3">
-                            <h5 className="text-xs font-medium mb-1">Responsibilities:</h5>
-                            <ul className="list-disc list-inside pl-2 space-y-1">
+                          <div className="mt-2">
+                            <h5 className="text-xs font-medium text-gray-700 mb-1">Responsibilities:</h5>
+                            <ul className="list-disc list-inside pl-2 space-y-0.5">
                               {exp.responsibilities.map((resp, i) => (
                                 <li key={i} className="text-xs text-gray-600">{resp}</li>
                               ))}
@@ -1524,13 +1590,26 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                         )}
                         
                         {exp.achievements && exp.achievements.length > 0 && (
-                          <div className="mt-3">
-                            <h5 className="text-xs font-medium mb-1">Key Achievements:</h5>
-                            <ul className="list-disc list-inside pl-2 space-y-1">
+                          <div className="mt-2">
+                            <h5 className="text-xs font-medium text-gray-700 mb-1">Achievements:</h5>
+                            <ul className="list-disc list-inside pl-2 space-y-0.5">
                               {exp.achievements.map((ach, i) => (
                                 <li key={i} className="text-xs text-gray-600">{ach}</li>
                               ))}
                             </ul>
+                          </div>
+                        )}
+                        
+                        {exp.technologies && exp.technologies.length > 0 && (
+                          <div className="mt-2">
+                            <h5 className="text-xs font-medium text-gray-700 mb-1">Technologies:</h5>
+                            <div className="flex flex-wrap gap-1">
+                              {exp.technologies.map((tech, i) => (
+                                <span key={i} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1546,8 +1625,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             )}
 
             {/* Education Tab */}
-            {activeTab === 1 && (
-              <div>
+            {profileTabs.some(tab => tab.originalIndex === 1) && (
+              <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 1)] = el)} className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-purple-600" />
+                  Education
+                </h3>
                 {sortedEducation && sortedEducation.length > 0 ? (
                   <div className="space-y-4">
                     {sortedEducation.map((edu, index) => (
@@ -1608,8 +1691,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             )}
 
             {/* Skills Tab */}
-            {activeTab === 2 && (
-              <div>
+            {profileTabs.some(tab => tab.originalIndex === 2) && (
+              <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 2)] = el)} className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-purple-600" />
+                  Skills
+                </h3>
                 {skills && skills.length > 0 ? (
                   <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
                     <div className="flex items-center mb-3">
@@ -1635,8 +1722,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             )}
 
             {/* Projects Tab */}
-            {activeTab === 3 && (
-              <div>
+            {profileTabs.some(tab => tab.originalIndex === 3) && (
+              <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 3)] = el)} className="mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-purple-600" />
+                  Projects
+                </h3>
                 {projects && projects.length > 0 ? (
                   <div className="space-y-4">
                     {projects.map((project, index) => (
@@ -1701,8 +1792,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
             )}
 
               {/* Certifications Tab */}
-              {activeTab === 4 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 4) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 4)] = el)} className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <FileBadge2 className="h-5 w-5 text-purple-600" />
+                    Certifications
+                  </h3>
                   {certifications && certifications.length > 0 ? (
                     <div className="space-y-4">
                       {certifications.map((cert, index) => (
@@ -1735,8 +1830,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               )}
 
               {/* Awards Tab */}
-              {activeTab === 5 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 5) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 5)] = el)} className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <Award className="h-5 w-5 text-purple-600" />
+                    Awards
+                  </h3>
                   {awards && awards.length > 0 ? (
                     <div className="space-y-4">
                       {awards.map((award, index) => (
@@ -1769,8 +1868,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               )}
 
               {/* Languages Tab */}
-              {activeTab === 6 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 6) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 6)] = el)} className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <Languages className="h-5 w-5 text-purple-600" />
+                    Languages
+                  </h3>
                   {languages && languages.length > 0 ? (
                     <div className="space-y-4">
                       {languages.map((language, index) => (
@@ -1833,8 +1936,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               )}
 
               {/* Interests Tab */}
-              {activeTab === 7 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 7) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 7)] = el)} className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <Heart className="h-5 w-5 text-purple-600" />
+                    Interests
+                  </h3>
                   {interests && interests.length > 0 ? (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
                       <div className="flex items-center mb-3">
@@ -1860,8 +1967,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               )}
 
               {/* References Tab */}
-              {activeTab === 8 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 8) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 8)] = el)} className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-purple-600" />
+                    References
+                  </h3>
                   {references && references.length > 0 ? (
                     <div className="space-y-4">
                       {references.map((reference, index) => (
@@ -1927,8 +2038,12 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               )}
 
               {/* Custom Fields Tab */}
-              {activeTab === 9 && (
-                <div>
+              {profileTabs.some(tab => tab.originalIndex === 9) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 9)] = el)} className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-purple-600" />
+                    Custom Fields
+                  </h3>
                   {customFields && customFields.length > 0 ? (
                     <div className="space-y-4">
                       {customFields.map((field, index) => (

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2 } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
 import AddCandidateModal from '../../components/AddCandidateModal';
 import BulkImportModal from '../../components/BulkImportModal';
+import JobSelectionModal from '../../components/JobSelectionModal';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
 import { CreateCandidateDto } from '../../types/candidate.types';
 import { useCandidates, useCandidate, useCandidateStats, useUpdateCandidateStatus, useCreateCandidate, useUpdateCandidate, useDeleteCandidate } from '../../hooks/useCandidates';
+import { useCreateJobApplicationWithPipeline } from '../../hooks/useJobApplications';
 import { useQueryClient } from '@tanstack/react-query';
 import { getAvatarUrl } from '../../utils/fileUtils';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -83,6 +85,10 @@ const CandidatesPage: React.FC = () => {
     candidate: EnhancedCandidate | null;
   }>({ isOpen: false, candidate: null });
 
+  // State for shortlisting
+  const [isShortlisting, setIsShortlisting] = useState(false);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+
   // React Query hooks for data fetching
   const candidatesQuery = useCandidates({
     page: currentPage,
@@ -103,6 +109,7 @@ const CandidatesPage: React.FC = () => {
   const createCandidateMutation = useCreateCandidate();
   const updateCandidateMutation = useUpdateCandidate();
   const deleteCandidateMutation = useDeleteCandidate();
+  const createJobApplicationMutation = useCreateJobApplicationWithPipeline();
   
   // Use items instead of data.items for compatibility with the transformed response
   const candidates = Array.isArray(candidatesQuery.data?.items) ? candidatesQuery.data.items : [];
@@ -122,6 +129,31 @@ const CandidatesPage: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [openDropdownId]);
+
+  // Disable body scrolling when profile panel is open
+  useEffect(() => {
+    if (panelState !== 'closed') {
+      // Save the current scroll position
+      const scrollY = window.scrollY;
+      
+      // Disable scrolling
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      
+      return () => {
+        // Re-enable scrolling
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [panelState]);
   
   // Effect to transform complete candidate data when fetched
   useEffect(() => {
@@ -150,6 +182,8 @@ const CandidatesPage: React.FC = () => {
               description: exp.description || '',
               responsibilities: exp.responsibilities || [],
               achievements: exp.achievements || [],
+              technologies: exp.technologies || [],
+              metadata: exp.metadata || undefined, // Include CoreSignal metadata
             }))
           : [],
         // Transform skillMappings to skills array
@@ -326,6 +360,47 @@ const CandidatesPage: React.FC = () => {
       // Keep the modal open on error
       // setDeleteConfirmation({ isOpen: false, candidate: null });
     }
+  };
+
+  // Handler for shortlisting candidate
+  const handleShortlistCandidate = () => {
+    if (!selectedCandidateId) return;
+    setShowProjectModal(true);
+  };
+
+  // Handler for adding candidate to a job
+  const handleJobSelected = async (jobId: string) => {
+    if (!selectedCandidateId) {
+      throw new Error('No candidate selected');
+    }
+
+    try {
+      setIsShortlisting(true);
+      
+      // Create job application for the existing candidate
+      await createJobApplicationMutation.mutateAsync({
+        candidateId: selectedCandidateId,
+        jobId: jobId,
+      });
+
+      // Close modal on success
+      setShowProjectModal(false);
+      
+      // Show success notification (you can add toast here if you have a toast system)
+      console.log('Candidate successfully added to job');
+    } catch (error) {
+      console.error('Error adding candidate to job:', error);
+      throw error; // Re-throw to let JobSelectionModal handle the error
+    } finally {
+      setIsShortlisting(false);
+    }
+  };
+
+  // Handler for "Add to Database" button (not needed for existing candidates)
+  // This is here for compatibility with JobSelectionModal
+  const handleAddToDatabase = () => {
+    console.log('Candidate is already in database');
+    setShowProjectModal(false);
   };
 
   // Function to cancel delete
@@ -950,6 +1025,8 @@ const CandidatesPage: React.FC = () => {
             onStateChange={handlePanelStateChange}
             isLoading={selectedCandidateQuery.isLoading}
             candidateId={selectedCandidateId}
+            onShortlist={handleShortlistCandidate}
+            isShortlisting={isShortlisting}
           />        </>
       )}      {/* Add Candidate Modal */}
       <AddCandidateModal
@@ -995,6 +1072,19 @@ const CandidatesPage: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['candidateStats'] });
           setIsBulkImportModalOpen(false);
         }}
+      />
+
+      {/* Job Selection Modal */}
+      <JobSelectionModal
+        isOpen={showProjectModal}
+        onClose={() => {
+          setShowProjectModal(false);
+        }}
+        candidate={selectedCandidateQuery.data}
+        onJobSelected={handleJobSelected}
+        onAddToDatabase={handleAddToDatabase}
+        isLoading={isShortlisting || createJobApplicationMutation.isPending}
+        showAddToDatabase={false}
       />
     </React.Fragment>
   );

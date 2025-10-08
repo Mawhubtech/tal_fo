@@ -6,11 +6,13 @@ import { useAddProspectsToProject } from '../hooks/useSourcingProjects';
 import { useShortlistExternalCandidate } from '../hooks/useShortlistExternal';
 import { useProfileAnalysis } from '../hooks/useProfileAnalysis';
 import { useAuthContext } from '../contexts/AuthContext';
+import { useCreateJobApplicationWithPipeline } from '../hooks/useJobApplications';
+import { useCreateCandidate } from '../hooks/useCandidates';
 import type { SearchFilters } from '../services/searchService';
 import { searchEnhanced, searchCandidatesExternalDirect, searchCandidatesExternalEnhanced, fetchCachedEnhancedResults, fetchCachedAdvancedFiltersResults, searchCandidatesWithAdvancedFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
-import ProjectSelectionModal from '../components/ProjectSelectionModal';
+import JobSelectionModal from '../components/JobSelectionModal';
 import SourcingProfileSidePanel, { type PanelState } from '../sourcing/outreach/components/SourcingProfileSidePanel';
 import type { UserStructuredData } from '../components/ProfileSidePanel';
 
@@ -438,6 +440,8 @@ const GlobalSearchResultsPage: React.FC = () => {
   const addProspectsToProjectMutation = useAddProspectsToProject();
   const shortlistExternalMutation = useShortlistExternalCandidate();
   const profileAnalysis = useProfileAnalysis();
+  const createJobApplicationMutation = useCreateJobApplicationWithPipeline();
+  const createCandidateMutation = useCreateCandidate();
   
   // Get current user context
   const { user } = useAuthContext();
@@ -1612,6 +1616,202 @@ const GlobalSearchResultsPage: React.FC = () => {
     setShowProjectModal(true);
   };
 
+  // Handler for adding candidate directly to database (without job)
+  const handleAddToDatabase = async () => {
+    if (!selectedCandidate) return;
+
+    try {
+      setShortlistingCandidates(prev => ({ ...prev, [selectedCandidate.id]: true }));
+
+      // Determine if this is an external source candidate
+      const isExternalSourceCandidate = searchMode === 'external' || (searchMode === 'combined' && selectedCandidate.source === 'coresignal') || selectedCandidate.coreSignalId;
+
+      if (isExternalSourceCandidate) {
+        // Get the actual coreSignalId - prioritize top-level field from backend
+        let actualCoreSignalId = selectedCandidate.coreSignalId;
+        
+        // Parse notes to get the full CoreSignal data (for backward compatibility and enrichment data)
+        let fullCandidateData = { ...selectedCandidate };
+        if (selectedCandidate.notes) {
+          try {
+            const notesData = typeof selectedCandidate.notes === 'string' 
+              ? JSON.parse(selectedCandidate.notes) 
+              : selectedCandidate.notes;
+            fullCandidateData = { ...selectedCandidate, ...notesData };
+            // Fallback to notes coreSignalId only if top-level field is missing
+            if (!actualCoreSignalId && notesData.coreSignalId) {
+              actualCoreSignalId = notesData.coreSignalId;
+            }
+          } catch (e) {
+            console.warn('Could not parse candidate notes:', e);
+          }
+        }
+        
+        // Validate we have a coreSignalId
+        if (!actualCoreSignalId) {
+          console.error('No coreSignalId found for external candidate:', selectedCandidate);
+          throw new Error('Cannot save external candidate without coreSignalId');
+        }
+        
+        console.log('[handleAddToDatabase] Saving external candidate with coreSignalId:', actualCoreSignalId);
+        
+        const shortlistResult = await shortlistExternalMutation.mutateAsync({
+          coreSignalId: actualCoreSignalId,
+          candidateData: fullCandidateData,
+          createdBy: user?.id || ''
+        });
+
+        if (shortlistResult.success) {
+          addToast({
+            type: 'success',
+            title: 'Candidate Added to Database',
+            message: shortlistResult.message,
+            duration: 3000
+          });
+        } else if (shortlistResult.existingCandidateId) {
+          addToast({
+            type: 'info',
+            title: 'Candidate Already Exists',
+            message: shortlistResult.message,
+            duration: 3000
+          });
+        }
+      } else {
+        // For internal candidates, they're already in the database
+        addToast({
+          type: 'info',
+          title: 'Candidate Already in Database',
+          message: `${selectedCandidate.fullName || 'Candidate'} is already in your database.`,
+          duration: 3000
+        });
+      }
+
+      setShowProjectModal(false);
+      setSelectedCandidate(null);
+    } catch (error) {
+      console.error('Error adding candidate to database:', error);
+      addToast({
+        type: 'error',
+        title: 'Failed to Add Candidate',
+        message: error instanceof Error ? error.message : 'Failed to add candidate to database. Please try again.',
+        duration: 7000
+      });
+    } finally {
+      setShortlistingCandidates(prev => ({ ...prev, [selectedCandidate.id]: false }));
+    }
+  };
+
+  // Handler for adding candidate to a job
+  const handleJobSelected = async (jobId: string) => {
+    if (!selectedCandidate) {
+      throw new Error('No candidate selected');
+    }
+    
+    const callKey = `${selectedCandidate.id}-${jobId}`;
+    
+    // Prevent duplicate calls
+    if (activeShortlistCallsRef.current.has(callKey)) {
+      throw new Error('Request already in progress');
+    }
+
+    activeShortlistCallsRef.current.add(callKey);
+
+    try {
+      // Determine if this is an external source candidate
+      const isExternalSourceCandidate = searchMode === 'external' || (searchMode === 'combined' && selectedCandidate.source === 'coresignal') || selectedCandidate.coreSignalId;
+      let candidateIdForApplication = selectedCandidate.id;
+
+      // Step 1: If external source candidate, save to database first
+      if (isExternalSourceCandidate) {
+        // Get the actual coreSignalId - prioritize top-level field from backend
+        let actualCoreSignalId = selectedCandidate.coreSignalId;
+        
+        // Parse notes to get the full CoreSignal data (for backward compatibility and enrichment data)
+        let fullCandidateData = { ...selectedCandidate };
+        if (selectedCandidate.notes) {
+          try {
+            const notesData = typeof selectedCandidate.notes === 'string' 
+              ? JSON.parse(selectedCandidate.notes) 
+              : selectedCandidate.notes;
+            fullCandidateData = { ...selectedCandidate, ...notesData };
+            // Fallback to notes coreSignalId only if top-level field is missing
+            if (!actualCoreSignalId && notesData.coreSignalId) {
+              actualCoreSignalId = notesData.coreSignalId;
+            }
+          } catch (e) {
+            console.warn('Could not parse candidate notes:', e);
+          }
+        }
+        
+        // Validate we have a coreSignalId
+        if (!actualCoreSignalId) {
+          console.error('No coreSignalId found for external candidate:', selectedCandidate);
+          throw new Error('Cannot save external candidate without coreSignalId');
+        }
+        
+        console.log('[handleJobSelected] Saving external candidate with coreSignalId:', actualCoreSignalId);
+        
+        const shortlistResult = await shortlistExternalMutation.mutateAsync({
+          coreSignalId: actualCoreSignalId,
+          candidateData: fullCandidateData,
+          createdBy: user?.id || ''
+        });
+
+        // Extract candidate ID
+        candidateIdForApplication = shortlistResult.candidateId || shortlistResult.existingCandidateId || selectedCandidate.id;
+
+        if (shortlistResult.success && !shortlistResult.existingCandidateId) {
+          addToast({
+            type: 'success',
+            title: 'Candidate Saved',
+            message: shortlistResult.message,
+            duration: 2000
+          });
+        }
+      }
+
+      // Step 2: Create job application with pipeline
+      await createJobApplicationMutation.mutateAsync({
+        jobId,
+        candidateId: candidateIdForApplication,
+        status: 'Applied',
+        appliedDate: new Date().toISOString(),
+      });
+
+      addToast({
+        type: 'success',
+        title: 'Added to Job',
+        message: `${selectedCandidate.fullName || 'Candidate'} has been added to the job successfully.`,
+        duration: 3000
+      });
+
+    } catch (error: any) {
+      console.error('Error adding candidate to job:', error);
+      
+      if (error?.response?.status === 409 || error?.message?.includes('already applied')) {
+        addToast({
+          type: 'info',
+          title: 'Already Applied',
+          message: `${selectedCandidate.fullName || 'Candidate'} has already applied to this job.`,
+          duration: 3000
+        });
+      } else if (error?.message === 'Request already in progress') {
+        // Silent - don't show duplicate request errors
+        throw error;
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Failed to Add to Job',
+          message: error instanceof Error ? error.message : 'Failed to add candidate to the job. Please try again.',
+          duration: 5000
+        });
+        throw error;
+      }
+    } finally {
+      activeShortlistCallsRef.current.delete(callKey);
+    }
+  };
+
   const handleProjectSelected = async (projectId: string) => {
     if (!selectedCandidate) return;
     
@@ -2319,22 +2519,17 @@ const GlobalSearchResultsPage: React.FC = () => {
 
    
 
-      {/* Project Selection Modal */}
-      <ProjectSelectionModal
+      {/* Job Selection Modal */}
+      <JobSelectionModal
         isOpen={showProjectModal}
         onClose={() => {
           setShowProjectModal(false);
           setSelectedCandidate(null);
         }}
         candidate={selectedCandidate}
-        onProjectSelected={handleProjectSelected}
-        searchState={{
-          query: searchQuery,
-          filters: filters,
-          searchMode: searchMode,
-          isGlobalSearch: true,
-          fromQuickSearch: fromQuickSearch
-        }}
+        onJobSelected={handleJobSelected}
+        onAddToDatabase={handleAddToDatabase}
+        isLoading={shortlistingCandidates[selectedCandidate?.id] || createJobApplicationMutation.isPending}
       />
       
       {/* Side Panel and Overlay */}

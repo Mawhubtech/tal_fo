@@ -91,7 +91,7 @@ export const useCreateJobApplicationWithPipeline = () => {
         // Prepare application data with pipeline information
         const applicationData: CreateJobApplicationData = {
           ...data,
-          stage: 'Application', // Default stage
+          stage: 'Application', // Default stage (valid backend enum value)
         };
 
         // Set pipeline information if available
@@ -105,13 +105,38 @@ export const useCreateJobApplicationWithPipeline = () => {
           applicationData.currentPipelineStageName = firstStage.name;
           applicationData.stageEnteredAt = new Date().toISOString();
           
-          // Use the pipeline stage name instead of generic 'Application'
-          applicationData.stage = firstStage.name as any;
+          // Map pipeline stage name to valid backend stage enum
+          // Backend expects: Application, Screening, Interview, Decision, Offer, Hired
+          const stageMapping: Record<string, string> = {
+            'Unassigned': 'Application',
+            'Applied': 'Application',
+            'Application': 'Application',
+            'Screening': 'Screening',
+            'Phone Screen': 'Screening',
+            'Initial Screen': 'Screening',
+            'Interview': 'Interview',
+            'Phone Interview': 'Interview',
+            'Technical Interview': 'Interview',
+            'Final Interview': 'Interview',
+            'On-site Interview': 'Interview',
+            'Decision': 'Decision',
+            'Review': 'Decision',
+            'Assessment': 'Decision',
+            'Offer': 'Offer',
+            'Offer Extended': 'Offer',
+            'Hired': 'Hired',
+            'Onboarding': 'Hired',
+          };
+
+          // Use mapped stage or default to 'Application'
+          const mappedStage = stageMapping[firstStage.name] || 'Application';
+          applicationData.stage = mappedStage as any;
 
           console.log('[useCreateJobApplicationWithPipeline] Setting pipeline stage:', {
             pipelineId: job.pipeline.id,
             stageId: firstStage.id,
-            stageName: firstStage.name,
+            pipelineStageName: firstStage.name,
+            mappedBackendStage: mappedStage,
             stageOrder: firstStage.order,
             totalStages: sortedStages.length
           });
