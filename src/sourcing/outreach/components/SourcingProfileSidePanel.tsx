@@ -1,8 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, Award, FileBadge2, Heart, Mail, Phone, Languages, Settings } from 'lucide-react'; // Ensure these icons are installed
+import { X, Github, Plus, Briefcase, FolderOpen, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileText, Clock, GraduationCap, Zap, Globe, Smartphone, BarChart, Cpu, Code2, ExternalLink, Award, FileBadge2, Heart, Mail, Phone, Languages, Settings, Loader2, Send } from 'lucide-react'; // Ensure these icons are installed
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import Button from '../../../components/Button'; // Adjust path to your Button component if necessary
 import CandidateProspectsManager from '../../../components/CandidateProspectsManager';
 import CandidateNotes from './CandidateNotes';
+import { emailApiService, SendCandidateEmailDto } from '../../../services/emailApiService';
+import { useToast } from '../../../contexts/ToastContext';
+
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
 // Define interfaces for type safety - ADD 'export' HERE
@@ -236,12 +241,28 @@ interface ProfileSidePanelProps {
   onStateChange: (state: PanelState) => void;
   candidateId?: string; // Add optional candidateId prop for prospects management
   projectId?: string; // Add optional projectId prop for project-scoped operations
+  onShortlist?: () => void; // Add shortlist handler prop
+  isShortlisting?: boolean; // Add shortlisting state prop
+  onGmailError?: () => void; // Callback when Gmail connection error occurs
 }
 
-const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, candidateId, projectId }) => {
+const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, candidateId, projectId, onShortlist, isShortlisting = false, onGmailError }) => {
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs
   const [isCandidateActionsCollapsed, setIsCandidateActionsCollapsed] = useState(true); // For collapsing candidate actions - hidden by default
+  
+  // Keywords expansion state - track which experience cards have expanded keywords
+  const [expandedKeywords, setExpandedKeywords] = useState<Set<number>>(new Set());
+  
+  // Email composition state
+  const [isComposingEmail, setIsComposingEmail] = useState(false);
+  const [emailTo, setEmailTo] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  
+  // Toast context
+  const { addToast } = useToast();
   
   // Refs for scroll-based tab switching
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -287,6 +308,124 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   }, [onStateChange]);
 
   // Removed debug logging - education links are now working
+  
+  // Send email function
+  const sendEmail = async (emailData: { to: string; subject: string; body: string; candidateName: string }) => {
+    try {
+      if (!candidateId) {
+        throw new Error('Candidate ID is required to send email');
+      }
+
+      // Convert plain text to nicely formatted HTML email
+      const textContent = emailData.body
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+
+      // Create a professional HTML email template
+      const htmlBody = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${emailData.subject}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 30px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600; letter-spacing: -0.5px;">
+                TAL Recruitment
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Body Content -->
+          <tr>
+            <td style="padding: 40px; color: #333333; font-size: 16px; line-height: 1.6;">
+              ${textContent}
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0 0 10px 0; color: #6c757d; font-size: 14px; line-height: 1.5;">
+                Best regards,<br>
+                <strong style="color: #495057;">TAL Recruitment Team</strong>
+              </p>
+              <p style="margin: 10px 0 0 0; color: #adb5bd; font-size: 12px; line-height: 1.4;">
+                This email was sent via TAL - Talent Acquisition Platform
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `.trim();
+
+      const emailRequest: SendCandidateEmailDto = {
+        candidateId,
+        to: emailData.to,
+        subject: emailData.subject,
+        body: emailData.body, // Plain text version
+        htmlBody: htmlBody, // Professional HTML version
+      };
+
+      await emailApiService.sendCandidateEmail(emailRequest);
+      return true;
+    } catch (error: any) {
+      console.error('Failed to send email:', error);
+      console.log('DEBUG - Error details:', {
+        status: error?.response?.status,
+        message: error?.response?.data?.message,
+        fullError: error?.response?.data
+      });
+      
+      // Check for Gmail connection expired error (401 with specific message)
+      if (error?.response?.status === 401) {
+        const errorMessage = error.response?.data?.message || '';
+        console.log('DEBUG - 401 error detected, message:', errorMessage);
+        if (errorMessage.includes('Gmail') || errorMessage.includes('reconnect')) {
+          console.log('DEBUG - Gmail error detected! Calling onGmailError callback');
+          // Call parent callback to close panel and show modal
+          if (onGmailError) {
+            onGmailError();
+          }
+          // Throw error so it can be caught by onClick handler
+          throw error;
+        }
+      }
+      
+      // Fallback to opening email client if API fails for other reasons
+      const subject = encodeURIComponent(emailData.subject);
+      const body = encodeURIComponent(emailData.body.replace(/<[^>]*>/g, '')); // Strip HTML for mailto
+      window.open(`mailto:${emailData.to}?subject=${subject}&body=${body}`, '_self');
+      throw error;
+    }
+  };
+  
+  // Toggle keywords expansion for a specific experience card
+  const toggleKeywordsExpansion = (index: number) => {
+    setExpandedKeywords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
   
   // Helper function to parse and normalize dates for sorting
   const parseDate = (dateValue: string | number | undefined): Date => {
@@ -494,7 +633,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   // Side panel tabs for the 1/3 section (candidate management)
   const sideTabs = [
 	  { name: 'Prospects', icon: Briefcase, index: 0, count: 0 },
-    { name: 'Sequences', icon: FolderOpen, index: 1, count: 0 },
+    { name: 'Communication', icon: Mail, index: 1, count: 0 },
     { name: 'Notes', icon: FileText, index: 2, count: 0 },
     { name: 'Activity', icon: Clock, index: 3, count: 0 },
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
@@ -507,10 +646,10 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
           onClick={() => onStateChange('closed')}
         />
         
-        {/* Side Panel */}
+        {/* Side Panel - Dynamic width based on actions panel state */}
         <div 
           ref={panelRef}
-          className="fixed inset-y-0 right-0 w-full sm:w-2/3 md:w-1/2 lg:w-1/3 bg-white shadow-2xl z-50 flex"
+          className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-full sm:w-2/3 md:w-1/2 lg:w-1/3' : 'w-full sm:w-4/5 md:w-3/4 lg:w-2/3'} bg-white shadow-2xl z-50 flex transition-all duration-300 ease-in-out`}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -816,14 +955,30 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                                     {exp.companyLocationHq?.fullAddress && <span>• 🏢 {exp.companyLocationHq.fullAddress}</span>}
                                   </div>
                                   
-                                  {/* Keywords inline */}
+                                  {/* Keywords inline - Show limited keywords with "show more" */}
                                   {exp.companyCategoriesAndKeywords && exp.companyCategoriesAndKeywords.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-2">
-                                      {exp.companyCategoriesAndKeywords.map((keyword, i) => (
-                                        <span key={i} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
-                                          {keyword}
-                                        </span>
-                                      ))}
+                                    <div className="mt-2">
+                                      <div className="flex flex-wrap gap-1">
+                                        {(expandedKeywords.has(index) 
+                                          ? exp.companyCategoriesAndKeywords 
+                                          : exp.companyCategoriesAndKeywords.slice(0, 3)
+                                        ).map((keyword, i) => (
+                                          <span key={i} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
+                                            {keyword}
+                                          </span>
+                                        ))}
+                                        {exp.companyCategoriesAndKeywords.length > 3 && (
+                                          <button
+                                            onClick={() => toggleKeywordsExpansion(index)}
+                                            className="px-1.5 py-0.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded text-xs font-medium transition-colors"
+                                          >
+                                            {expandedKeywords.has(index) 
+                                              ? 'Show less' 
+                                              : `+${exp.companyCategoriesAndKeywords.length - 3} more`
+                                            }
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1437,20 +1592,33 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
             <div className='flex items-center justify-between gap-2 bg-white/20 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-4 py-4 max-w-md w-full'>
                 <button
                   onClick={() => {
-                    // TODO: Implement add to job functionality
-                    console.log('Add to job clicked');
+                    if (onShortlist) {
+                      onShortlist();
+                    }
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                  disabled={isShortlisting || !onShortlist}
+                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                   title="Add to Job"
                 >
-                  <Plus className="h-4 w-4 flex-shrink-0" />
-                  <span className="hidden md:inline whitespace-nowrap">Add to Job</span>
+                  {isShortlisting ? (
+                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4 flex-shrink-0" />
+                  )}
+                  <span className="hidden md:inline whitespace-nowrap">
+                    {isShortlisting ? 'Adding...' : 'Add to Job'}
+                  </span>
                 </button>
                 
                 <button
                   onClick={() => {
-                    // TODO: Implement send email functionality
-                    console.log('Send email clicked');
+                    // Switch to Communication tab and open email composer (stay in collapsed view)
+                    setIsCandidateActionsCollapsed(false); // Open actions panel
+                    setActiveSideTab(1); // Communication tab
+                    setIsComposingEmail(true);
+                    setEmailTo(personalInfo.email || ''); // Initialize with candidate email or empty
+                    setEmailSubject(`Regarding your profile - ${personalInfo.fullName}`);
+                    setEmailBody(`Hi ${personalInfo.fullName.split(' ')[0]},\n\nI hope this email finds you well. I came across your profile and would like to discuss potential opportunities.\n\nBest regards`);
                   }}
                   className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
                   title="Send Email"
@@ -1461,8 +1629,9 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 
                 <button
                   onClick={() => {
-                    // TODO: Implement add notes functionality
-                    console.log('Add notes clicked');
+                    // Switch to Notes tab and open actions panel
+                    setIsCandidateActionsCollapsed(false); // Open actions panel
+                    setActiveSideTab(2); // Notes tab
                   }}
                   className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
                   title="Add Notes"
@@ -1472,6 +1641,248 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </button>
             </div>
           </div>
+        </div>
+
+        {/* Candidate Actions Section - Right Side (shown when not collapsed) */}
+        <div className={`${isCandidateActionsCollapsed ? 'w-0 overflow-hidden' : 'w-1/2'} bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out`}>
+          {!isCandidateActionsCollapsed && (
+            <>
+              {/* Actions Header */}
+              <div className="p-4 border-b border-gray-200 bg-white">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-800">Candidate Actions</h3>
+                  <button
+                    onClick={() => setIsCandidateActionsCollapsed(true)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Close actions panel"
+                  >
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Side Tabs Navigation */}
+              <div className="border-b border-gray-200 bg-white">
+                <nav className="flex" aria-label="Side Tabs">
+                  {sideTabs.map((tab) => (
+                    <button
+                      key={tab.name}
+                      onClick={() => setActiveSideTab(tab.index)}
+                      className={`${
+                        activeSideTab === tab.index
+                          ? 'border-purple-500 text-purple-600 font-semibold'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      } whitespace-nowrap py-2 px-3 border-b-2 text-xs flex items-center gap-1`}
+                    >
+                      <tab.icon className="w-3 h-3" />
+                      {tab.name}
+                      {tab.count > 0 && (
+                        <span className={`${
+                          activeSideTab === tab.index ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+                        } py-0.5 px-1 rounded text-xs font-medium`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              {/* Side Tab Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {/* Communication Tab */}
+                {activeSideTab === 1 && (
+                  <div className="space-y-4">
+                    {!isComposingEmail ? (
+                      <>
+                        {/* Email Composition Header */}
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+                              <Mail className="w-4 h-4 text-blue-500 mr-2" />
+                              Email Communication
+                            </h4>
+                            <button
+                              onClick={() => {
+                                setIsComposingEmail(true);
+                                setEmailTo(personalInfo.email || ''); // Initialize with candidate email or empty
+                                setEmailSubject(`Regarding your profile - ${personalInfo.fullName}`);
+                                setEmailBody(`Hi ${personalInfo.fullName.split(' ')[0]},\n\nI hope this email finds you well. I came across your profile and would like to discuss potential opportunities.\n\nBest regards`);
+                              }}
+                              className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Compose
+                            </button>
+                          </div>
+                          
+                          <p className="text-xs text-gray-500">Start a conversation with {personalInfo.fullName}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Email Composition Form - Compact */}
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-sm font-semibold text-gray-800">Compose Email</h4>
+                            <button
+                              onClick={() => setIsComposingEmail(false)}
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">To</label>
+                              <input
+                                type="email"
+                                value={emailTo}
+                                onChange={(e) => setEmailTo(e.target.value)}
+                                placeholder="Enter email address"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Subject</label>
+                              <input
+                                type="text"
+                                value={emailSubject}
+                                onChange={(e) => setEmailSubject(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Email subject"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Message</label>
+                              <textarea
+                                value={emailBody}
+                                onChange={(e) => setEmailBody(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                rows={8}
+                                placeholder="Type your message..."
+                              />
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  if (!emailTo.trim()) {
+                                    addToast({
+                                      type: 'error',
+                                      title: 'No Email',
+                                      message: 'Please enter an email address',
+                                    });
+                                    return;
+                                  }
+                                  
+                                  if (!emailSubject.trim() || !emailBody.trim()) {
+                                    addToast({
+                                      type: 'error',
+                                      title: 'Incomplete Form',
+                                      message: 'Please fill in all fields',
+                                    });
+                                    return;
+                                  }
+                                  
+                                  setIsSendingEmail(true);
+                                  try {
+                                    await sendEmail({
+                                      to: emailTo,
+                                      subject: emailSubject,
+                                      body: emailBody,
+                                      candidateName: personalInfo.fullName,
+                                    });
+                                    
+                                    addToast({
+                                      type: 'success',
+                                      title: 'Email Sent',
+                                      message: `Email sent successfully to ${personalInfo.fullName}`,
+                                    });
+                                    
+                                    setIsComposingEmail(false);
+                                    setEmailSubject('');
+                                    setEmailBody('');
+                                    setEmailTo('');
+                                  } catch (error: any) {
+                                    // Check if this is a Gmail reconnection error - don't show toast, modal will appear
+                                    if (error?.response?.status === 401 && 
+                                        (error.response?.data?.message?.includes('Gmail') || 
+                                         error.response?.data?.message?.includes('reconnect'))) {
+                                      // Gmail modal will be shown by sendEmail function, don't show error toast
+                                      return;
+                                    }
+                                    
+                                    addToast({
+                                      type: 'error',
+                                      title: 'Email Failed',
+                                      message: 'Failed to send email',
+                                    });
+                                  } finally {
+                                    setIsSendingEmail(false);
+                                  }
+                                }}
+                                disabled={isSendingEmail || !emailTo || !emailSubject || !emailBody}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              >
+                                {isSendingEmail ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Sending...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Send className="w-4 h-4" />
+                                    <span>Send Email</span>
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => setIsComposingEmail(false)}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Notes Tab */}
+                {activeSideTab === 2 && candidateId && (
+                  <CandidateNotes 
+                    candidateId={candidateId} 
+                    candidateName={personalInfo?.fullName}
+                  />
+                )}
+                {activeSideTab === 2 && !candidateId && (
+                  <div className="p-4 text-center text-gray-500">
+                    <p>Candidate ID not available for notes management.</p>
+                  </div>
+                )}
+
+                {/* Other Tabs - Show Message to Expand */}
+                {activeSideTab !== 1 && activeSideTab !== 2 && (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-500 mb-3">Expand panel for full features</p>
+                    <button
+                      onClick={() => onStateChange('expanded')}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors flex items-center gap-2 mx-auto"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Expand Panel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>
@@ -1756,14 +2167,30 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                                   {exp.companyLocationHq?.fullAddress && <span>• 🏢 {exp.companyLocationHq.fullAddress}</span>}
                                 </div>
                                 
-                                {/* Keywords inline */}
+                                {/* Keywords inline - Show limited keywords with "show more" */}
                                 {exp.companyCategoriesAndKeywords && exp.companyCategoriesAndKeywords.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {exp.companyCategoriesAndKeywords.map((keyword, i) => (
-                                      <span key={i} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
-                                        {keyword}
-                                      </span>
-                                    ))}
+                                  <div className="mt-2">
+                                    <div className="flex flex-wrap gap-1">
+                                      {(expandedKeywords.has(index) 
+                                        ? exp.companyCategoriesAndKeywords 
+                                        : exp.companyCategoriesAndKeywords.slice(0, 3)
+                                      ).map((keyword, i) => (
+                                        <span key={i} className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
+                                          {keyword}
+                                        </span>
+                                      ))}
+                                      {exp.companyCategoriesAndKeywords.length > 3 && (
+                                        <button
+                                          onClick={() => toggleKeywordsExpansion(index)}
+                                          className="px-1.5 py-0.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded text-xs font-medium transition-colors"
+                                        >
+                                          {expandedKeywords.has(index) 
+                                            ? 'Show less' 
+                                            : `+${exp.companyCategoriesAndKeywords.length - 3} more`
+                                          }
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -2338,36 +2765,153 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* Sequences Tab */}
+              {/* Communication Tab */}
               {activeSideTab === 1 && (
                 <div className="space-y-4">
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-gray-900">Email Sequences</h4>
-                      <Button variant="primary" size="sm" className="text-xs bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700">
-                        <Plus className="w-3 h-3 mr-1" />
-                        Add to Sequence
-                      </Button>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      <p>No active sequences for this candidate.</p>
-                      <p className="mt-2">Create automated email campaigns to nurture this candidate through your recruitment process.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">Available Sequences</h4>
-                    <div className="space-y-2">
-                      <div className="p-3 border border-gray-100 rounded-lg hover:border-purple-200 cursor-pointer transition-colors">
-                        <div className="font-medium text-sm">Initial Outreach</div>
-                        <div className="text-xs text-gray-500">3 emails • 5 day intervals</div>
+                  {!isComposingEmail ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-900">Email Communication</h4>
+                        <Button 
+                          variant="primary" 
+                          size="sm" 
+                          className="text-xs bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+                          onClick={() => {
+                            setIsComposingEmail(true);
+                            setEmailTo(personalInfo.email || ''); // Initialize with candidate email or empty
+                            setEmailSubject(`Regarding your profile - ${personalInfo.fullName}`);
+                            setEmailBody(`Hi ${personalInfo.fullName.split(' ')[0]},\n\nI hope this email finds you well. I came across your profile and would like to discuss potential opportunities.\n\nBest regards`);
+                          }}
+                        >
+                          <Send className="w-3 h-3 mr-1" />
+                          Compose Email
+                        </Button>
                       </div>
-                      <div className="p-3 border border-gray-100 rounded-lg hover:border-purple-200 cursor-pointer transition-colors">
-                        <div className="font-medium text-sm">Follow-up Series</div>
-                        <div className="text-xs text-gray-500">2 emails • 7 day intervals</div>
+                      <div className="text-sm text-gray-500">
+                        <p>No email history available for this candidate.</p>
+                        <p className="mt-2">Start a conversation by composing a new email.</p>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-medium text-gray-900">Compose Email</h4>
+                        <button
+                          onClick={() => setIsComposingEmail(false)}
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                          <input
+                            type="email"
+                            value={emailTo}
+                            onChange={(e) => setEmailTo(e.target.value)}
+                            placeholder="Enter email address"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                          <input
+                            type="text"
+                            value={emailSubject}
+                            onChange={(e) => setEmailSubject(e.target.value)}
+                            placeholder="Email subject"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                          <textarea
+                            value={emailBody}
+                            onChange={(e) => setEmailBody(e.target.value)}
+                            placeholder="Type your message here..."
+                            rows={6}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                          />
+                        </div>
+                        
+                        <div className="flex justify-end gap-2 pt-2">
+                          <button
+                            onClick={async () => {
+                              if (!emailTo.trim()) {
+                                addToast({
+                                  type: 'error',
+                                  title: 'No Email',
+                                  message: 'Please enter an email address',
+                                });
+                                return;
+                              }
+                              
+                              setIsSendingEmail(true);
+                              try {
+                                await sendEmail({
+                                  to: emailTo,
+                                  subject: emailSubject,
+                                  body: emailBody,
+                                  candidateName: personalInfo.fullName,
+                                });
+                                
+                                addToast({
+                                  type: 'success',
+                                  title: 'Email Sent',
+                                  message: `Email sent successfully to ${personalInfo.fullName}`,
+                                });
+                                
+                                setIsComposingEmail(false);
+                                setEmailSubject('');
+                                setEmailBody('');
+                                setEmailTo('');
+                              } catch (error: any) {
+                                // Check if this is a Gmail reconnection error - don't show toast, modal will appear
+                                if (error?.response?.status === 401 && 
+                                    (error.response?.data?.message?.includes('Gmail') || 
+                                     error.response?.data?.message?.includes('reconnect'))) {
+                                  // Gmail modal will be shown by sendEmail function, don't show error toast
+                                  return;
+                                }
+                                
+                                addToast({
+                                  type: 'error',
+                                  title: 'Email Failed',
+                                  message: 'Failed to send email',
+                                });
+                              } finally {
+                                setIsSendingEmail(false);
+                              }
+                            }}
+                            disabled={isSendingEmail || !emailTo || !emailSubject || !emailBody}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {isSendingEmail ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Sending...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-4 h-4" />
+                                <span>Send Email</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setIsComposingEmail(false)}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -592,7 +592,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={handleOverlayClick}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4" onClick={handleOverlayClick}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-[95vw] h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
@@ -1700,14 +1700,14 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
         <>
           {/* Overlay */}
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="fixed inset-0 bg-black bg-opacity-50 z-[65]"
             aria-hidden="true"
           />
           
           {/* Side Panel */}
           <div 
             ref={sidePanelRef}
-            className="fixed right-0 top-0 h-full bg-white border-l border-gray-200 overflow-hidden z-50"
+            className="fixed right-0 top-0 h-full bg-white border-l border-gray-200 overflow-hidden z-[70]"
           >
             {/* Close button for expanded panel */}
             {panelState === 'expanded' && (

@@ -73,8 +73,17 @@ class EmailApiService {
     try {
       const response = await apiClient.post('/email-management/send-candidate-email', emailData);
       return response.data;
-    } catch (error) {
-      // Fallback to general email endpoint
+    } catch (error: any) {
+      // Check if this is a Gmail reconnection error - don't use fallback, re-throw it
+      if (error?.response?.status === 401) {
+        const errorMessage = error.response?.data?.message || '';
+        if (errorMessage.includes('Gmail') || errorMessage.includes('reconnect')) {
+          // Re-throw Gmail errors so they can be handled by the UI
+          throw error;
+        }
+      }
+      
+      // Fallback to general email endpoint for other errors
       console.warn('Enhanced candidate email endpoint not available, using fallback');
       
       const backendEmailData: SendEmailDto = {

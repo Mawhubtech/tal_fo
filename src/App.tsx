@@ -7,6 +7,7 @@ import ExternalUserGuard from './components/ExternalUserGuard';
 import SignIn from './components/SignIn';
 import OrganizationSignIn from './components/OrganizationSignIn';
 import OAuthCallback from './components/OAuthCallback';
+import GmailOAuthCallback from './pages/GmailOAuthCallback';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import LandingPage from './pages/LandingPage';
 import InvitationResponsePage from './pages/InvitationResponsePage';
@@ -75,6 +76,10 @@ function App() {
             <Route
               path="/auth/callback"
               element={<OAuthCallback />}
+            />
+            <Route
+              path="/oauth/gmail-callback"
+              element={<GmailOAuthCallback />}
             />
             {/* Updated Dashboard Route to handle nested routes */}
             <Route

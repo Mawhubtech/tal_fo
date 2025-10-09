@@ -15,6 +15,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import JobSelectionModal from '../components/JobSelectionModal';
 import SourcingProfileSidePanel, { type PanelState } from '../sourcing/outreach/components/SourcingProfileSidePanel';
 import type { UserStructuredData } from '../components/ProfileSidePanel';
+import { GmailReconnectionModal } from '../components/email/GmailReconnectionModal';
 
 import AdvancedFilterPanel, { type AdvancedFilters } from '../components/AdvancedFilterPanel';
 import { convertAdvancedFiltersToQuery, generateFilterSummary } from '../services/advancedFilterService';
@@ -424,6 +425,8 @@ const GlobalSearchResultsPage: React.FC = () => {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
   
+  // State for Gmail reconnection modal
+  const [showGmailReconnectModal, setShowGmailReconnectModal] = useState(false);
 
   
   // State for search criteria card expansion
@@ -1361,7 +1364,7 @@ const GlobalSearchResultsPage: React.FC = () => {
   const handleOpenProfilePanel = (userData: UserStructuredData, candidateId?: string) => {
     setSelectedUserDataForPanel(userData);
     setSelectedCandidateId(candidateId || null);
-    setPanelState('expanded');
+    setPanelState('collapsed');
     document.body.style.overflow = 'hidden'; // Prevent background scroll
   };
 
@@ -1372,6 +1375,18 @@ const GlobalSearchResultsPage: React.FC = () => {
       setSelectedCandidateId(null);
       document.body.style.overflow = 'auto'; // Restore background scroll
     }
+  };
+
+  // Handle Gmail connection error from side panel
+  const handleGmailError = () => {
+    console.log('DEBUG - GlobalSearchResultsPage: Gmail error detected, closing panel and showing modal');
+    // Close the side panel
+    setPanelState('closed');
+    setSelectedUserDataForPanel(null);
+    setSelectedCandidateId(null);
+    document.body.style.overflow = 'auto';
+    // Show the Gmail reconnection modal
+    setShowGmailReconnectModal(true);
   };
 
   // Function to convert candidate data to UserStructuredData format
@@ -2513,6 +2528,9 @@ const GlobalSearchResultsPage: React.FC = () => {
             onStateChange={handlePanelStateChange}
             candidateId={selectedCandidateId || undefined}
             projectId={undefined} // No project context in global search
+            onShortlist={() => handleShortlistCandidate(selectedUserDataForPanel)}
+            isShortlisting={shortlistingCandidates[selectedCandidateId || ''] || false}
+            onGmailError={handleGmailError}
           />
         </>
       )}
@@ -2546,9 +2564,33 @@ const GlobalSearchResultsPage: React.FC = () => {
             onStateChange={handlePanelStateChange}
             candidateId={selectedCandidateId || undefined}
             projectId={undefined} // No project context in global search
+            onShortlist={() => handleShortlistCandidate(selectedUserDataForPanel)}
+            isShortlisting={shortlistingCandidates[selectedCandidateId || ''] || false}
+            onGmailError={handleGmailError}
           />
         </>
       )}
+
+      {/* Gmail Reconnection Modal */}
+      <GmailReconnectionModal
+        isOpen={showGmailReconnectModal}
+        onClose={() => {
+          console.log('DEBUG - Modal onClose called');
+          setShowGmailReconnectModal(false);
+        }}
+        onSuccess={() => {
+          console.log('DEBUG - Modal onSuccess called');
+          setShowGmailReconnectModal(false);
+          addToast({
+            type: 'success',
+            title: 'Gmail Reconnected',
+            message: 'Your Gmail account has been successfully reconnected. You can now send emails.',
+            duration: 5000
+          });
+        }}
+        title="Gmail Connection Expired"
+        message="Your Gmail connection has expired. Please reconnect your Gmail account to continue sending emails."
+      />
     </div>
   );
 };

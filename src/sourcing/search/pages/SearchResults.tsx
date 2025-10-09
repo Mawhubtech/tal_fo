@@ -609,7 +609,7 @@ const SearchResultsPage: React.FC = () => {
   const handleOpenProfilePanel = (userData: UserStructuredData, candidateId?: string) => {
     setSelectedUserDataForPanel(userData);
     setSelectedCandidateId(candidateId || null);
-    setPanelState('expanded');
+    setPanelState('collapsed');
     document.body.style.overflow = 'hidden'; // Prevent background scroll
   };
 

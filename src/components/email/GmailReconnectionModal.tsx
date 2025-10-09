@@ -38,32 +38,84 @@ export const GmailReconnectionModal: React.FC<GmailReconnectionModalProps> = ({
         throw new Error('Popup blocked. Please allow popups for this site.');
       }
 
+      console.log('DEBUG - Gmail reconnection: Popup opened, waiting for OAuth completion');
+
+      // Variable to hold the interval ID for cleanup
+      let checkClosed: NodeJS.Timeout;
+
       // Listen for OAuth completion
       const messageListener = (event: MessageEvent) => {
-        if (event.data.type === 'GMAIL_OAUTH_SUCCESS') {
+        console.log('DEBUG - Gmail reconnection: Received message event:', {
+          type: event.data?.type,
+          origin: event.origin,
+          fullEventData: event.data,
+          eventDataKeys: event.data ? Object.keys(event.data) : []
+        });
+
+        // Ignore messages that aren't from our OAuth flow
+        // Filter out MetaMask and other extension messages
+        if (!event.data || typeof event.data !== 'object') {
+          console.log('DEBUG - Ignoring non-object message');
+          return;
+        }
+
+        // Ignore MetaMask messages
+        if (event.data.target === 'metamask-inpage' || event.data.name === 'metamask-provider') {
+          console.log('DEBUG - Ignoring MetaMask message');
+          return;
+        }
+
+        // Handle the message - check if type is in event.data
+        const messageType = event.data.type;
+        const messageData = event.data;
+
+        console.log('DEBUG - Gmail reconnection: Parsed message type:', messageType);
+
+        if (messageType === 'GMAIL_OAUTH_SUCCESS') {
+          console.log('DEBUG - Gmail reconnection: SUCCESS received, closing modal');
           window.removeEventListener('message', messageListener);
-          popup.close();
+          clearInterval(checkClosed);
+          try {
+            popup.close();
+          } catch (e) {
+            console.log('DEBUG - Could not close popup (might be cross-origin):', e);
+          }
           setIsConnecting(false);
           if (onSuccess) {
+            console.log('DEBUG - Gmail reconnection: Calling onSuccess callback');
             onSuccess();
           }
+          console.log('DEBUG - Gmail reconnection: Calling onClose');
           onClose();
-        } else if (event.data.type === 'GMAIL_OAUTH_ERROR') {
+        } else if (messageType === 'GMAIL_OAUTH_ERROR') {
+          console.log('DEBUG - Gmail reconnection: ERROR received:', messageData.error);
           window.removeEventListener('message', messageListener);
-          popup.close();
+          clearInterval(checkClosed);
+          try {
+            popup.close();
+          } catch (e) {
+            console.log('DEBUG - Could not close popup (might be cross-origin):', e);
+          }
           setIsConnecting(false);
-          setError(event.data.error || 'Failed to connect Gmail account');
+          setError(messageData.error || 'Failed to connect Gmail account');
         }
       };
 
       window.addEventListener('message', messageListener);
+      console.log('DEBUG - Gmail reconnection: Message listener added');
 
-      // Check if popup was closed manually
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          window.removeEventListener('message', messageListener);
-          setIsConnecting(false);
+      // Check if popup was closed manually (with error handling for CORS issues)
+      checkClosed = setInterval(() => {
+        try {
+          if (popup.closed) {
+            console.log('DEBUG - Gmail reconnection: Popup closed');
+            clearInterval(checkClosed);
+            window.removeEventListener('message', messageListener);
+            setIsConnecting(false);
+          }
+        } catch (e) {
+          // CORS error when checking popup.closed - ignore it
+          // The popup will send a message when done anyway
         }
       }, 1000);
 
@@ -74,10 +126,15 @@ export const GmailReconnectionModal: React.FC<GmailReconnectionModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log('DEBUG - GmailReconnectionModal: isOpen is false, not rendering');
+    return null;
+  }
+
+  console.log('DEBUG - GmailReconnectionModal: Rendering modal');
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
