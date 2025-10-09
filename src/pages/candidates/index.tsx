@@ -272,7 +272,7 @@ const CandidatesPage: React.FC = () => {
     setSelectedUserDataForPanel(null);
     // Set the candidate ID to trigger fetching complete data
     setSelectedCandidateId(userData.id);
-    setPanelState('expanded');
+    setPanelState('collapsed');
     // Don't prevent background scroll since only the table area is affected
   };
 

@@ -1126,18 +1126,12 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                           )}
                           {project.technologies && project.technologies.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1 ml-8">
-                              {project.technologies.slice(0, 3).map((tech, i) => (
+                              {project.technologies.map((tech, i) => (
                                 <span key={i} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs flex items-center">
                                   <span className="w-1 h-1 bg-green-700 rounded-full mr-1"></span>
                                   {tech}
                                 </span>
                               ))}
-                              {project.technologies.length > 3 && (
-                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs flex items-center">
-                                  <span className="w-1 h-1 bg-gray-600 rounded-full mr-1"></span>
-                                  +{project.technologies.length - 3}
-                                </span>
-                              )}
                             </div>
                           )}
                           {project.url && (
@@ -1927,18 +1921,12 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                           )}
                           {project.technologies && project.technologies.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1 ml-8">
-                              {project.technologies.slice(0, 3).map((tech, i) => (
+                              {project.technologies.map((tech, i) => (
                                 <span key={i} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs flex items-center">
                                   <span className="w-1 h-1 bg-green-700 rounded-full mr-1"></span>
                                   {tech}
                                 </span>
                               ))}
-                              {project.technologies.length > 3 && (
-                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs flex items-center">
-                                  <span className="w-1 h-1 bg-gray-600 rounded-full mr-1"></span>
-                                  +{project.technologies.length - 3}
-                                </span>
-                              )}
                             </div>
                           )}
                           {project.url && (
