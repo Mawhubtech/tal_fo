@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2, Loader2, Linkedin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
 import AddCandidateModal from '../../components/AddCandidateModal';
@@ -670,16 +670,11 @@ const CandidatesPage: React.FC = () => {
                       Candidate
                     </th>
                     <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[110px]">
-                      Position & Experience
+                      Position & Company
                     </th>
                     <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[110px]">
-                      Location & Salary
+                      Location
                     </th>
-                    {isUserSuperAdmin && (
-                      <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[90px]">
-                        Company
-                      </th>
-                    )}
                     <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[80px]">
                       Status
                     </th>
@@ -736,9 +731,23 @@ const CandidatesPage: React.FC = () => {
                               <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
                               <span className="truncate">{candidate.email || 'No email'}</span>
                             </div>
-                            <div className="text-xs sm:text-sm text-gray-500 flex items-center truncate">
-                              <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
-                              <span className="truncate">{candidate.phone || 'No phone'}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs sm:text-sm text-gray-500 flex items-center truncate">
+                                <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
+                                <span className="truncate">{candidate.phone || 'No phone'}</span>
+                              </div>
+                              {candidate.linkedIn && (
+                                <a
+                                  href={candidate.linkedIn.startsWith('http') ? candidate.linkedIn : `https://${candidate.linkedIn}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 transition-colors flex-shrink-0"
+                                  title="View LinkedIn Profile"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Linkedin className="w-3.5 h-3.5" />
+                                </a>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -754,36 +763,23 @@ const CandidatesPage: React.FC = () => {
                               ? candidate.experience[0].position 
                               : 'No position data')}
                           </div>
-                          <div className="text-xs sm:text-sm text-gray-500">
-                            {Array.isArray(candidate.experience) && candidate.experience.length > 0 
-                              ? `${candidate.experience.length} position(s)`
-                              : 'No experience data'}
+                          <div className="text-xs sm:text-sm text-gray-500 truncate" title={
+                            candidate.experience && Array.isArray(candidate.experience) && candidate.experience.length > 0 
+                              ? candidate.experience[0].company 
+                              : 'No company data'
+                          }>
+                            {candidate.experience && Array.isArray(candidate.experience) && candidate.experience.length > 0 
+                              ? candidate.experience[0].company 
+                              : 'No company data'}
                           </div>
                         </div>
                       </td>                      
                       <td className="px-3 sm:px-4 lg:px-6 py-3">
-                        <div>
-                          <div className="text-xs sm:text-sm text-gray-900 flex items-center truncate">
-                            <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                            <span className="truncate" title={candidate.location}>{candidate.location}</span>
-                          </div>
-                          <div className="text-xs sm:text-sm text-gray-500 truncate" title={candidate.salaryExpectation || 'No salary data'}>
-                            {candidate.salaryExpectation || 'No salary data'}
-                          </div>
+                        <div className="text-xs sm:text-sm text-gray-900 flex items-center truncate">
+                          <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                          <span className="truncate" title={candidate.location}>{candidate.location}</span>
                         </div>
                       </td>
-                      
-                      {isUserSuperAdmin && (
-                        <td className="px-3 sm:px-4 lg:px-6 py-3">
-                          <div className="text-xs sm:text-sm text-gray-900 truncate" title={candidate.company?.name || 'Job Seeker (No Company)'}>
-                            {candidate.company?.name ? (
-                              <span className="text-gray-900">{candidate.company.name}</span>
-                            ) : (
-                              <span className="text-blue-600 font-medium">Job Seeker</span>
-                            )}
-                          </div>
-                        </td>
-                      )}
                       
                       <td className="px-3 sm:px-4 lg:px-6 py-3 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(candidate.status)}`}>
