@@ -7,6 +7,8 @@ import CandidateProspectsManager from '../../../components/CandidateProspectsMan
 import CandidateNotes from './CandidateNotes';
 import { emailApiService, SendCandidateEmailDto } from '../../../services/emailApiService';
 import { useToast } from '../../../contexts/ToastContext';
+import { useCreateCandidate } from '../../../hooks/useCandidates';
+import { CreateCandidateDto, CandidateSource } from '../../../types/candidate.types';
 
 // Assuming ProfilePage.tsx is in the same directory or adjust path accordingly
 // to import UserStructuredData and other related types.
@@ -261,8 +263,14 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   const [emailBody, setEmailBody] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   
+  // State to track saved candidate ID (for auto-save functionality)
+  const [savedCandidateId, setSavedCandidateId] = useState<string | undefined>(candidateId);
+  
   // Toast context
   const { addToast } = useToast();
+  
+  // Candidate creation hook
+  const { mutateAsync: createCandidate, isPending: isCreatingCandidate } = useCreateCandidate();
   
   // Refs for scroll-based tab switching
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -274,6 +282,152 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   }
 
   const { personalInfo, summary, experience, education, skills, projects, certifications, awards, interests, languages, references, customFields } = userData;
+
+  // Sync savedCandidateId when candidateId prop changes
+  useEffect(() => {
+    if (candidateId && candidateId !== savedCandidateId) {
+      setSavedCandidateId(candidateId);
+    }
+  }, [candidateId]);
+
+  // Transform UserStructuredData to CreateCandidateDto
+  const transformUserDataToCandidate = (userData: UserStructuredData): CreateCandidateDto => {
+    const { personalInfo } = userData;
+    
+    // Split full name into first and last name
+    const nameParts = personalInfo.fullName?.split(' ') || [''];
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    return {
+      personalInfo: {
+        fullName: personalInfo.fullName || '',
+        firstName,
+        lastName,
+        email: personalInfo.email || '',
+        phone: personalInfo.phone,
+        location: personalInfo.location,
+        website: personalInfo.website,
+        linkedIn: personalInfo.linkedIn,
+        github: personalInfo.github,
+        avatar: personalInfo.avatar,
+      },
+      summary: userData.summary,
+      experience: userData.experience?.map((exp, index) => ({
+        position: exp.position || '',
+        company: exp.company || '',
+        startDate: exp.startDate || '',
+        endDate: exp.endDate,
+        location: exp.location,
+        description: exp.description,
+        responsibilities: exp.responsibilities,
+        achievements: exp.achievements,
+        technologies: exp.technologies,
+        sortOrder: index,
+      })),
+      education: userData.education?.map((edu, index) => ({
+        degree: edu.degree || '',
+        institution: edu.institution || '',
+        major: edu.major,
+        minor: edu.minors,
+        graduationDate: edu.graduationDate,
+        startDate: edu.startDate,
+        endDate: edu.endDate,
+        location: edu.location,
+        gpa: edu.gpa || undefined,
+        description: edu.description,
+        sortOrder: index,
+      })),
+      certifications: userData.certifications?.map(cert => ({
+        name: cert.name || '',
+        issuer: cert.issuer || '',
+        dateIssued: cert.dateIssued || '',
+        expirationDate: cert.expirationDate,
+      })),
+      awards: userData.awards?.map(award => ({
+        name: award.name || '',
+        issuer: award.issuer || '',
+        date: award.date || '',
+        description: award.description,
+      })),
+      projects: userData.projects?.map((proj, index) => ({
+        name: proj.name || '',
+        description: proj.description || '',
+        technologies: proj.technologies,
+        url: proj.url,
+        sortOrder: index,
+      })),
+      skills: userData.skills?.map(skill => 
+        typeof skill === 'string' ? skill : skill.name
+      ),
+      languages: userData.languages?.map(lang => ({
+        language: lang.language || '',
+        proficiency: lang.proficiency || '',
+      })),
+      source: CandidateSource.OTHER,
+    };
+  };
+
+  // Ensure candidate is saved before sending email or adding notes
+  const ensureCandidateSaved = async (): Promise<string> => {
+    console.log('🟡 ensureCandidateSaved: Called');
+    console.log('🟡 Current savedCandidateId:', savedCandidateId);
+    console.log('🟡 Current candidateId prop:', candidateId);
+    
+    // If we already have a saved candidate ID, return it
+    if (savedCandidateId) {
+      console.log('✅ ensureCandidateSaved: Returning existing savedCandidateId:', savedCandidateId);
+      return savedCandidateId;
+    }
+
+    // If no userData, we can't create a candidate
+    if (!userData) {
+      console.error('❌ ensureCandidateSaved: No userData available');
+      throw new Error('No candidate data available');
+    }
+
+    console.log('🟡 ensureCandidateSaved: No savedCandidateId, creating new candidate...');
+    console.log('🟡 UserData:', {
+      fullName: userData.personalInfo.fullName,
+      email: userData.personalInfo.email,
+      experienceCount: userData.experience?.length || 0,
+      educationCount: userData.education?.length || 0,
+    });
+
+    try {
+      // Transform and create the candidate
+      const candidateDto = transformUserDataToCandidate(userData);
+      console.log('🟡 ensureCandidateSaved: Candidate DTO created:', {
+        fullName: candidateDto.personalInfo.fullName,
+        email: candidateDto.personalInfo.email,
+        firstName: candidateDto.personalInfo.firstName,
+        lastName: candidateDto.personalInfo.lastName,
+      });
+      
+      const newCandidate = await createCandidate(candidateDto);
+      console.log('✅ ensureCandidateSaved: Candidate created successfully:', newCandidate);
+      
+      // Save the ID for future use
+      setSavedCandidateId(newCandidate.id);
+      console.log('✅ ensureCandidateSaved: savedCandidateId state updated to:', newCandidate.id);
+      
+      addToast({
+        type: 'success',
+        title: 'Candidate Saved',
+        message: 'Candidate saved successfully',
+      });
+
+      return newCandidate.id;
+    } catch (error) {
+      console.error('❌ ensureCandidateSaved: Failed to save candidate:', error);
+      addToast({
+        type: 'error',
+        title: 'Save Failed',
+        message: 'Failed to save candidate. Please try again.',
+      });
+      throw error;
+    }
+  };
 
   // Click outside to close panel
   useEffect(() => {
@@ -312,9 +466,14 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
   // Send email function
   const sendEmail = async (emailData: { to: string; subject: string; body: string; candidateName: string }) => {
     try {
-      if (!candidateId) {
-        throw new Error('Candidate ID is required to send email');
-      }
+      console.log('🔵 sendEmail: Starting email send process...');
+      console.log('🔵 Current savedCandidateId:', savedCandidateId);
+      console.log('🔵 Current candidateId prop:', candidateId);
+      
+      // Ensure candidate is saved first
+      const candidateIdToUse = await ensureCandidateSaved();
+      
+      console.log('✅ sendEmail: Candidate saved/retrieved, ID:', candidateIdToUse);
 
       // Convert plain text to nicely formatted HTML email
       const textContent = emailData.body
@@ -374,14 +533,23 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
       `.trim();
 
       const emailRequest: SendCandidateEmailDto = {
-        candidateId,
+        candidateId: candidateIdToUse,
         to: emailData.to,
         subject: emailData.subject,
         body: emailData.body, // Plain text version
         htmlBody: htmlBody, // Professional HTML version
       };
 
+      console.log('📧 sendEmail: Sending email with request:', {
+        candidateId: emailRequest.candidateId,
+        to: emailRequest.to,
+        subject: emailRequest.subject,
+      });
+
       await emailApiService.sendCandidateEmail(emailRequest);
+      
+      console.log('✅ sendEmail: Email sent successfully');
+      
       return true;
     } catch (error: any) {
       console.error('Failed to send email:', error);
@@ -1628,15 +1796,30 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </button>
                 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     // Switch to Notes tab and open actions panel
                     setIsCandidateActionsCollapsed(false); // Open actions panel
                     setActiveSideTab(2); // Notes tab
+                    
+                    // Auto-save candidate if not already saved
+                    if (!savedCandidateId && userData) {
+                      try {
+                        await ensureCandidateSaved();
+                      } catch (error) {
+                        console.error('Failed to auto-save candidate:', error);
+                        // Error toast already shown by ensureCandidateSaved
+                      }
+                    }
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                  disabled={isCreatingCandidate}
+                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                   title="Add Notes"
                 >
-                  <FileText className="h-4 w-4 flex-shrink-0" />
+                  {isCreatingCandidate ? (
+                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4 flex-shrink-0" />
+                  )}
                   <span className="hidden md:inline whitespace-nowrap">Add Notes</span>
                 </button>
             </div>
@@ -1854,30 +2037,94 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                   </div>
                 )}
 
-                {/* Notes Tab */}
-                {activeSideTab === 2 && candidateId && (
-                  <CandidateNotes 
-                    candidateId={candidateId} 
-                    candidateName={personalInfo?.fullName}
+                {/* Prospects Tab */}
+                {activeSideTab === 0 && savedCandidateId && (
+                  <CandidateProspectsManager
+                    candidateId={savedCandidateId}
+                    candidateName={personalInfo?.fullName || 'Unknown Candidate'}
+                    candidateEmail={personalInfo?.email || ''}
+                    candidateSkills={skills?.map(skill => typeof skill === 'string' ? skill : skill.name).filter(Boolean) || []}
+                    candidateExperience={experience || []}
+                    projectId={projectId}
                   />
                 )}
-                {activeSideTab === 2 && !candidateId && (
+                {activeSideTab === 0 && !savedCandidateId && (
                   <div className="p-4 text-center text-gray-500">
-                    <p>Candidate ID not available for notes management.</p>
+                    <p>Candidate will be saved automatically when you add to a job.</p>
                   </div>
                 )}
 
-                {/* Other Tabs - Show Message to Expand */}
-                {activeSideTab !== 1 && activeSideTab !== 2 && (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-gray-500 mb-3">Expand panel for full features</p>
-                    <button
-                      onClick={() => onStateChange('expanded')}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors flex items-center gap-2 mx-auto"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      Expand Panel
-                    </button>
+                {/* Notes Tab */}
+                {activeSideTab === 2 && savedCandidateId && (
+                  <CandidateNotes 
+                    candidateId={savedCandidateId} 
+                    candidateName={personalInfo?.fullName}
+                  />
+                )}
+                {activeSideTab === 2 && !savedCandidateId && (
+                  <div className="p-4 text-center text-gray-500">
+                    <p>Candidate will be saved automatically when you add your first note.</p>
+                  </div>
+                )}
+
+                {/* Activity Tab */}
+                {activeSideTab === 3 && (
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                        <Clock className="w-4 h-4 text-purple-500 mr-2" />
+                        Recent Activity
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">Profile viewed</div>
+                            <div className="text-xs text-gray-500">Just now</div>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">Profile extracted from LinkedIn</div>
+                            <div className="text-xs text-gray-500">2 minutes ago</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-3">Quick Actions</h4>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => {
+                            setActiveSideTab(1);
+                            setIsComposingEmail(true);
+                            setEmailTo(personalInfo.email || '');
+                            setEmailSubject(`Regarding your profile - ${personalInfo.fullName}`);
+                            setEmailBody(`Hi ${personalInfo.fullName.split(' ')[0]},\n\nI hope this email finds you well. I came across your profile and would like to discuss potential opportunities.\n\nBest regards`);
+                          }}
+                          className="w-full flex items-center justify-start gap-2 px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
+                        >
+                          <Mail className="w-4 h-4" />
+                          Send Email
+                        </button>
+                        <button
+                          onClick={() => setActiveSideTab(2)}
+                          className="w-full flex items-center justify-start gap-2 px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Add Note
+                        </button>
+                        <button
+                          onClick={() => setActiveSideTab(0)}
+                          className="w-full flex items-center justify-start gap-2 px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
+                        >
+                          <Briefcase className="w-4 h-4" />
+                          Manage Prospects
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

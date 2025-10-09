@@ -993,7 +993,7 @@ const SearchResultsPage: React.FC = () => {
                                 languages: candidate.languages || [],
                                 interests: candidate.interests || [],
                                 references: candidate.references || []
-                              }, candidate.id)}
+                              }, candidate.candidateId || undefined)} // Use candidateId (DB ID) instead of id (CoreSignal ID)
                             >
                               {personalInfo.fullName}
                               {/* Icon indicates clickable, panel will open */}
@@ -1248,7 +1248,7 @@ const SearchResultsPage: React.FC = () => {
                                 languages: candidate.languages || [],
                                 interests: candidate.interests || [],
                                 references: candidate.references || []
-                              }, candidate.id)}
+                              }, candidate.candidateId || undefined)} // Use candidateId (DB ID) instead of id (CoreSignal ID)
                             >
                               {personalInfo.fullName.split(' ')[0]}
                             </span>

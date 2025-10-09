@@ -2203,7 +2203,7 @@ const GlobalSearchResultsPage: React.FC = () => {
                                 className="text-base font-semibold cursor-pointer hover:text-purple-600 transition-colors duration-200 flex items-center gap-1"
                                 onClick={() => {
                                   const userData = convertCandidateToUserData(result);
-                                  handleOpenProfilePanel(userData, candidate.id);
+                                  handleOpenProfilePanel(userData, candidate.candidateId || undefined);
                                 }}
                               >
                                 {personalInfo.fullName}
@@ -2393,7 +2393,7 @@ const GlobalSearchResultsPage: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     const userData = convertCandidateToUserData(result);
-                                    handleOpenProfilePanel(userData, candidate.id);
+                                    handleOpenProfilePanel(userData, candidate.candidateId || undefined);
                                   }}
                                   className="text-purple-600 hover:text-purple-800 font-medium ml-1"
                                 >
@@ -2470,7 +2470,7 @@ const GlobalSearchResultsPage: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     const userData = convertCandidateToUserData(result);
-                                    handleOpenProfilePanel(userData, candidate.id);
+                                    handleOpenProfilePanel(userData, candidate.candidateId || undefined);
                                   }}
                                   className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
                                 >
