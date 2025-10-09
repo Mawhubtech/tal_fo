@@ -149,12 +149,12 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[85vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 sm:p-4">
+      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-hidden shadow-2xl">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-6">
+        <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-2xl font-bold text-purple-600">Add Candidate to Job</h3>
+            <h3 className="text-lg sm:text-2xl font-bold text-purple-600">Add Candidate to Job</h3>
             <button
               onClick={onClose}
               disabled={isLoading}
@@ -163,18 +163,18 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
               <X className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-xs sm:text-sm">
             Select one or more jobs for <span className="font-semibold text-purple-600">{candidate?.fullName || candidate?.candidateName || 'this candidate'}</span>
           </p>
           {addedJobIds.size > 0 && (
-            <p className="text-sm text-green-600 font-medium mt-2">
+            <p className="text-xs sm:text-sm text-green-600 font-medium mt-2">
               ✓ Added to {addedJobIds.size} {addedJobIds.size === 1 ? 'job' : 'jobs'}
             </p>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Add to Database Option - Only show if showAddToDatabase is true */}
           {showAddToDatabase && onAddToDatabase && (
             <div className="mb-6">
@@ -205,12 +205,12 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
 
           {/* Search */}
           <div className="mb-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search jobs by title, department, or location..."
+                  placeholder="Search jobs..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
@@ -220,10 +220,11 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                 href="/dashboard/jobs/create"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap"
+                className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-1.5 font-medium whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
-                Create Job
+                <span className="hidden sm:inline">Create Job</span>
+                <span className="sm:hidden">Create</span>
               </a>
             </div>
           </div>
@@ -255,7 +256,7 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                     key={job.id}
                     onClick={() => !alreadyApplied && handleAddToJob(job.id)}
                     disabled={isLoading || isProcessing || isAdded || alreadyApplied}
-                    className={`w-full p-4 border rounded-lg transition-all group text-left relative ${
+                    className={`w-full p-3 sm:p-4 border rounded-lg transition-all group text-left relative ${
                       alreadyApplied
                         ? 'border-blue-300 bg-blue-50 cursor-not-allowed'
                         : isAdded 
@@ -265,15 +266,16 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                   >
                     {/* Already Applied Badge */}
                     {alreadyApplied && (
-                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-blue-500 text-white px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium">
                         <Check className="w-3 h-3" />
-                        Candidate Added to Job
+                        <span className="hidden sm:inline">Candidate Added to Job</span>
+                        <span className="sm:hidden">Added</span>
                       </div>
                     )}
                     
                     {/* Added Badge */}
                     {!alreadyApplied && isAdded && (
-                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-green-500 text-white px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium">
                         <Check className="w-3 h-3" />
                         Added
                       </div>
@@ -286,10 +288,12 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                       </div>
                     )}
                     
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
+                    {/* Desktop: Single line | Mobile: Stacked layout */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 w-full">
+                      {/* Job Title and Details */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
                         {/* Job Title */}
-                        <h4 className={`font-semibold mb-2 transition-colors ${
+                        <h4 className={`font-semibold text-sm sm:flex-shrink-0 transition-colors ${
                           alreadyApplied 
                             ? 'text-blue-700' 
                             : isAdded 
@@ -299,52 +303,43 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                           {job.title}
                         </h4>
                       
-                      {/* Job Details Grid */}
-                      <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                        {job.client?.name && (
-                          <div className="flex items-center gap-1.5">
-                            <Building className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium text-gray-700">{job.client.name}</span>
-                          </div>
-                        )}
-                        
-                        {job.department && (
-                          <div className="flex items-center gap-1.5">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <span>{job.department}</span>
-                          </div>
-                        )}
-                        
-                        {job.location && (
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="w-4 h-4 text-gray-400" />
-                            <span>{job.location}</span>
-                          </div>
-                        )}
-                        
-                        {job.type && (
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span>{job.type}</span>
-                          </div>
-                        )}
-                        
-                        {job.salary && job.salary.min && job.salary.max && (
-                          <div className="flex items-center gap-1.5">
-                            <DollarSign className="w-4 h-4 text-gray-400" />
-                            <span>
-                              {job.salary.currency} {job.salary.min.toLocaleString()} - {job.salary.max.toLocaleString()}
-                            </span>
-                          </div>
-                        )}
+                        {/* Job Details - Responsive wrap */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-600">
+                          {job.client?.name && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Building className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              <span className="font-medium text-gray-700 truncate max-w-[120px] sm:max-w-none">{job.client.name}</span>
+                            </div>
+                          )}
+                          
+                          {job.department && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              <span className="truncate max-w-[100px] sm:max-w-none">{job.department}</span>
+                            </div>
+                          )}
+                          
+                          {job.location && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              <span className="truncate max-w-[100px] sm:max-w-none">{job.location}</span>
+                            </div>
+                          )}
+                          
+                          {job.type && (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                              <span className="truncate max-w-[80px] sm:max-w-none">{job.type}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
                     
-                    {/* Arrow Icon - Only show if not added and not already applied */}
-                    {!isAdded && !isProcessing && !alreadyApplied && (
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-colors flex-shrink-0 mt-1" />
-                    )}
-                  </div>
+                      {/* Arrow Icon - Only show if not added and not already applied */}
+                      {!isAdded && !isProcessing && !alreadyApplied && (
+                        <ChevronRight className="hidden sm:block w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors flex-shrink-0" />
+                      )}
+                    </div>
                 </button>
                 );
               })
