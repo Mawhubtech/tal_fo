@@ -690,7 +690,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
           </div> 
 
           {/* Scrollable Content Area - Collapsed view with tabs */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col relative">
             {/* AI-Powered Spotlight (Using Summary) */}
             {summary && (
               <div className="p-4 sm:p-6 border-b border-gray-100">
@@ -731,8 +731,8 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               </nav>
             </div>
 
-            {/* Tab Content - Scrollable with section refs */}
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
+            {/* Tab Content - Scrollable with section refs and bottom padding for floating action bar */}
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24">
               {/* Experience Tab */}
               {profileTabs[activeTab]?.originalIndex === 0 && (
                 <div>
@@ -1429,6 +1429,47 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                   )}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Floating Action Bar */}
+          <div className="absolute bottom-6 left-4 right-4 py-4 flex justify-center">
+            <div className='flex items-center justify-between gap-2 bg-white/20 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-4 py-4 max-w-md w-full'>
+                <button
+                  onClick={() => {
+                    // TODO: Implement add to job functionality
+                    console.log('Add to job clicked');
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                  title="Add to Job"
+                >
+                  <Plus className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden md:inline whitespace-nowrap">Add to Job</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    // TODO: Implement send email functionality
+                    console.log('Send email clicked');
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                  title="Send Email"
+                >
+                  <Mail className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden md:inline whitespace-nowrap">Send Email</span>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    // TODO: Implement add notes functionality
+                    console.log('Add notes clicked');
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                  title="Add Notes"
+                >
+                  <FileText className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden md:inline whitespace-nowrap">Add Notes</span>
+                </button>
             </div>
           </div>
         </div>

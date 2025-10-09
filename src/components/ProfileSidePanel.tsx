@@ -941,7 +941,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           )}
 
           {/* Scrollable Content Area with Tabs */}
-          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto flex flex-col">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto flex flex-col relative">
             {/* Tabs Navigation - Sticky */}
             <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
               <nav className="flex px-4 overflow-x-auto" aria-label="Tabs" style={{ 
@@ -985,8 +985,8 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               </nav>
             </div>
 
-            {/* Tab Content - All sections rendered */}
-            <div className="flex-1 p-4">
+            {/* Tab Content - All sections rendered with bottom padding for floating action bar */}
+            <div className="flex-1 p-4 pb-24">
               {/* Experience Tab */}
               {profileTabs.some(tab => tab.originalIndex === 0) && (
                 <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 0)] = el)} className="mb-6">
@@ -1610,6 +1610,54 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Floating Action Bar */}
+          <div className="absolute bottom-6 left-4 right-4 py-4 flex justify-center">
+			  {/* <div className='bg-white/50 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-1 py-1.5'> */}
+            <div className="flex items-center justify-between gap-2 bg-white/20 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-4 py-4 max-w-md w-full">
+              <button
+                onClick={() => {
+                  // TODO: Implement add to job functionality
+                  console.log('Add to job clicked');
+                }}
+                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                title="Add to Job"
+              >
+                <Plus className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden md:inline whitespace-nowrap">Add to Job</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  // TODO: Implement send email functionality
+                  console.log('Send email clicked');
+                }}
+                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                title="Send Email"
+              >
+                <Mail className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden md:inline whitespace-nowrap">Send Email</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  // TODO: Implement add notes functionality
+                  console.log('Add notes clicked');
+                }}
+                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium relative"
+                title="Add Notes"
+              >
+                <FileText className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden md:inline whitespace-nowrap">Add Notes</span>
+                {notes.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {notes.length}
+                  </span>
+                )}
+              </button>
+            </div>
+			{/* </div> */}
           </div>
         </div>
       </div>
