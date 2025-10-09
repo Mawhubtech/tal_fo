@@ -51,6 +51,19 @@ export interface Job {
   applicationDeadline?: Date | string;
   applicantsCount: number;
   organizationId?: string;
+  client?: {
+    id: string;
+    name: string;
+    description?: string;
+    logoUrl?: string;
+    industry?: string;
+    location?: string;
+    website?: string;
+    email?: string;
+    phone?: string;
+    status?: string;
+    size?: string;
+  };
   customQuestions?: Array<{
     question: string;
     type: 'text' | 'multiple-choice';

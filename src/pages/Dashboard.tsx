@@ -398,6 +398,12 @@ const Dashboard: React.FC = () => {
             } />
             
             {/* Job Creation - Integrated with hierarchical flow */}
+            <Route path="jobs/create" element={
+              <RoutePermissionGuard>
+                <CreateJobPage />
+              </RoutePermissionGuard>
+            } />
+            
             <Route path="organizations/:organizationId/create-job" element={
               <RoutePermissionGuard>
                 <CreateJobPage />

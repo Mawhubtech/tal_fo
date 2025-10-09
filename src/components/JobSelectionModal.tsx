@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Briefcase, MapPin, Building, Clock, DollarSign, Users, ChevronRight, Loader2, Check } from 'lucide-react';
+import { X, Briefcase, MapPin, Building, Clock, DollarSign, Users, ChevronRight, Loader2, Check, Plus } from 'lucide-react';
 import { useJobs } from '../hooks/useJobs';
 import { useAuthContext } from '../contexts/AuthContext';
 
@@ -205,15 +205,26 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
 
           {/* Search */}
           <div className="mb-4">
-            <div className="relative">
-              <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search jobs by title, department, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search jobs by title, department, or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                />
+              </div>
+              <a
+                href="/dashboard/jobs/create"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                Create Job
+              </a>
             </div>
           </div>
 
@@ -256,7 +267,7 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                     {alreadyApplied && (
                       <div className="absolute top-2 right-2 flex items-center gap-1 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                         <Check className="w-3 h-3" />
-                        Already Applied
+                        Candidate Added to Job
                       </div>
                     )}
                     
@@ -290,9 +301,16 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                       
                       {/* Job Details Grid */}
                       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                        {job.department && (
+                        {job.client?.name && (
                           <div className="flex items-center gap-1.5">
                             <Building className="w-4 h-4 text-gray-400" />
+                            <span className="font-medium text-gray-700">{job.client.name}</span>
+                          </div>
+                        )}
+                        
+                        {job.department && (
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-4 h-4 text-gray-400" />
                             <span>{job.department}</span>
                           </div>
                         )}
@@ -320,13 +338,6 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                           </div>
                         )}
                       </div>
-
-                      {/* Job Description Preview */}
-                      {job.description && (
-                        <p className="text-xs text-gray-500 mt-2 line-clamp-2">
-                          {job.description}
-                        </p>
-                      )}
                     </div>
                     
                     {/* Arrow Icon - Only show if not added and not already applied */}

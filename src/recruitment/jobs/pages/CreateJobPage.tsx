@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles, Globe, Lock, ExternalLink, Edit } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
-import { useOrganization, useOrganizationDepartments } from '../../../hooks/useOrganizations';
+import { useOrganization, useOrganizationDepartments, useOrganizations } from '../../../hooks/useOrganizations';
 import { useActivePipelines } from '../../../hooks/useActivePipelines';
 import { useHiringTeams } from '../../../hooks/useHiringTeam';
 import { usePipelines } from '../../../hooks/usePipelines';
@@ -34,17 +34,29 @@ const CreateJobPage: React.FC = () => {
   // Use hooks for data fetching
   const { user } = useAuth();
   
+  // Form state - declare first for use in hooks
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>(''); // For standalone mode
+  
+  // For standalone mode (no organizationId in URL), fetch all organizations
+  const {
+    data: allOrganizations = [],
+    isLoading: allOrganizationsLoading
+  } = useOrganizations();
+
   const {
     data: organization,
     isLoading: organizationLoading,
     error: organizationError
   } = useOrganization(organizationId || '');
 
+  // In standalone mode, fetch departments for the selected organization
+  const effectiveOrgId = organizationId || selectedOrganizationId;
+  
   const {
     data: departments = [],
     isLoading: departmentsLoading,
     error: departmentsError
-  } = useOrganizationDepartments(organizationId || '');
+  } = useOrganizationDepartments(effectiveOrgId || '');
 
   const {
     data: activePipelines = [],
@@ -57,7 +69,7 @@ const CreateJobPage: React.FC = () => {
     data: hiringTeams = [],
     isLoading: hiringTeamsLoading,
     error: hiringTeamsError
-  } = useHiringTeams(organizationId ? [organizationId] : undefined);
+  } = useHiringTeams(effectiveOrgId ? [effectiveOrgId] : undefined);
 
   const {
     data: editingJob,
@@ -68,7 +80,7 @@ const CreateJobPage: React.FC = () => {
   const createJobMutation = useCreateJob();
   const updateJobMutation = useUpdateJob();
   
-  // Form state
+  // Rest of form state
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [jobTitle, setJobTitle] = useState('');
@@ -450,7 +462,7 @@ const CreateJobPage: React.FC = () => {
           : undefined,
         hiringTeamId: selectedHiringTeamId || undefined,
         applicationDeadline: applicationDeadline || undefined,
-        organizationId: organizationId || undefined,
+        organizationId: effectiveOrgId || undefined,
         customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
         pipelineId: selectedPipelineId,
         publishingOptions: publish ? options : undefined,
@@ -475,8 +487,8 @@ const CreateJobPage: React.FC = () => {
       }
       
       // Navigate to the job ATS page within the organization context
-      if (organizationId && resultJob.departmentId) {
-        navigate(`/dashboard/organizations/${organizationId}/departments/${resultJob.departmentId}/jobs/${resultJob.id}/ats`);
+      if (effectiveOrgId && resultJob.departmentId) {
+        navigate(`/dashboard/organizations/${effectiveOrgId}/departments/${resultJob.departmentId}/jobs/${resultJob.id}/ats`);
       } else {
         navigate('/dashboard/organizations');
       }
@@ -580,29 +592,11 @@ const CreateJobPage: React.FC = () => {
     }
   };
 
-  // Early return if no organizationId
-  if (!organizationId) {
-    return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="text-center py-12">
-          <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Invalid URL</h3>
-          <p className="text-gray-500 mb-4">
-            Organization ID is required to create a job.
-          </p>
-          <Link 
-            to="/dashboard/organizations" 
-            className="text-purple-600 hover:text-purple-700 font-medium"
-          >
-            ← Back to Organizations
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Early return if no organizationId - allow standalone job creation
+  // In this case, user will need to manually select organization and department
 
-  // Show loading state
-  if (loading) {
+  // Show loading state only if we're in organization mode and still loading
+  if (organizationId && loading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
@@ -613,8 +607,8 @@ const CreateJobPage: React.FC = () => {
     );
   }
 
-  // Show error state
-  if ((organizationError || departmentsError) && !organization) {
+  // Show error state only if we're in organization mode and there's an error
+  if (organizationId && (organizationError || departmentsError) && !organization) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
@@ -785,7 +779,44 @@ const CreateJobPage: React.FC = () => {
                     placeholder="e.g., Senior Software Engineer"
                     required
                   />
-                </div>                <div>
+                </div>
+                
+                {/* Organization selector - only show in standalone mode */}
+                {!organizationId && (
+                  <div>
+                    <label htmlFor="organization" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Organization *
+                    </label>
+                    <select
+                      id="organization"
+                      value={selectedOrganizationId}
+                      onChange={(e) => {
+                        setSelectedOrganizationId(e.target.value);
+                        // Reset department when organization changes
+                        setDepartmentIdForm('');
+                        setSelectedDepartment(null);
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                      required
+                      disabled={allOrganizationsLoading}
+                    >
+                      <option value="">Select Organization</option>
+                      {allOrganizations.map((org: any) => (
+                        <option key={org.id} value={org.id}>
+                          {org.name}
+                        </option>
+                      ))}
+                    </select>
+                    {allOrganizationsLoading && (
+                      <p className="text-xs text-gray-500 mt-1">Loading organizations...</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Show the department field regardless of mode */}
+                <div className={!organizationId ? "lg:col-span-2" : ""}>
                   <label htmlFor="department" className="block text-sm font-semibold text-gray-700 mb-2">
                     Department *
                   </label>
@@ -799,9 +830,13 @@ const CreateJobPage: React.FC = () => {
                     }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                     required
-                    disabled={loading || departments.length === 0}
+                    disabled={loading || departments.length === 0 || (!organizationId && !selectedOrganizationId)}
                   >
-                    <option value="">Select Department</option>
+                    <option value="">
+                      {!organizationId && !selectedOrganizationId 
+                        ? 'Select an organization first' 
+                        : 'Select Department'}
+                    </option>
                     {departments.map((dept) => (
                       <option key={dept.id} value={dept.id}>
                         {dept.name}
@@ -811,7 +846,7 @@ const CreateJobPage: React.FC = () => {
                   {loading && (
                     <p className="text-xs text-gray-500 mt-1">Loading departments...</p>
                   )}
-                  {!loading && departments.length === 0 && (
+                  {!loading && effectiveOrgId && departments.length === 0 && (
                     <p className="text-xs text-red-500 mt-1">No departments found for this organization.</p>
                   )}
                 </div>
@@ -952,6 +987,22 @@ const CreateJobPage: React.FC = () => {
                     <option value="EUR">EUR (€)</option>
                     <option value="GBP">GBP (£)</option>
                     <option value="CAD">CAD (C$)</option>
+                    <option value="AUD">AUD (A$)</option>
+                    
+                    {/* Middle East Currencies */}
+                    <option value="AED">AED (د.إ) - UAE Dirham</option>
+                    <option value="SAR">SAR (﷼) - Saudi Riyal</option>
+                    <option value="QAR">QAR (ر.ق) - Qatari Riyal</option>
+                    <option value="KWD">KWD (د.ك) - Kuwaiti Dinar</option>
+                    <option value="BHD">BHD (د.ب) - Bahraini Dinar</option>
+                    <option value="OMR">OMR (ر.ع.) - Omani Rial</option>
+                    <option value="JOD">JOD (د.ا) - Jordanian Dinar</option>
+                    <option value="EGP">EGP (£) - Egyptian Pound</option>
+                    <option value="LBP">LBP (ل.ل) - Lebanese Pound</option>
+                    <option value="ILS">ILS (₪) - Israeli Shekel</option>
+                    <option value="TRY">TRY (₺) - Turkish Lira</option>
+                    <option value="IRR">IRR (﷼) - Iranian Rial</option>
+                    <option value="IQD">IQD (ع.د) - Iraqi Dinar</option>
                   </select>
                 </div>
               </div>
@@ -1152,25 +1203,6 @@ const CreateJobPage: React.FC = () => {
               </div>
             </div>
             <div className="p-6 space-y-6">
-              {/* Application Questions */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Custom Application Questions
-                </label>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600 mb-3">
-                    Standard questions (name, email, resume, cover letter) are included by default.
-                  </p>
-                  <button
-                    type="button"
-                    className="flex items-center text-purple-600 hover:text-purple-800 font-medium"
-                  >
-                    <Plus size={16} className="mr-1" />
-                    Add Custom Question (Coming Soon)
-                  </button>
-                </div>
-              </div>
-
               {/* Pipeline Selection */}
               <div>
                 <div className="flex items-center justify-between mb-2">
