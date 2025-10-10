@@ -355,43 +355,43 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } />
             
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/ats" element={
+            <Route path="jobs/:jobId/ats" element={
               <RoutePermissionGuard>
                 <JobATSPage />
               </RoutePermissionGuard>
             } />
             
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences" element={
+            <Route path="jobs/:jobId/email-sequences" element={
               <RoutePermissionGuard>
                 <JobEmailSequencesPage />
               </RoutePermissionGuard>
             } />
             
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/:sequenceId" element={
+            <Route path="jobs/:jobId/email-sequences/:sequenceId" element={
               <RoutePermissionGuard>
                 <JobSequenceDetailPage />
               </RoutePermissionGuard>
             } />
             
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/:sequenceId/steps" element={
+            <Route path="jobs/:jobId/email-sequences/:sequenceId/steps" element={
               <RoutePermissionGuard>
                 <JobSequenceStepsPage />
               </RoutePermissionGuard>
             } />
             
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/:sequenceId/enrollments" element={
+            <Route path="jobs/:jobId/email-sequences/:sequenceId/enrollments" element={
               <RoutePermissionGuard>
                 <JobSequenceEnrollmentsPage />
               </RoutePermissionGuard>
             } />
             
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-templates" element={
+            <Route path="jobs/:jobId/email-templates" element={
               <RoutePermissionGuard>
                 <JobEmailTemplatesPage />
               </RoutePermissionGuard>
             } />
             
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs/:jobId/email-sequences/create" element={
+            <Route path="jobs/:jobId/email-sequences/create" element={
               <RoutePermissionGuard>
                 <CreateJobEmailSequencePage />
               </RoutePermissionGuard>

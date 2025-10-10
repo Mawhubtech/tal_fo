@@ -157,9 +157,7 @@ const EditSequenceModal: React.FC<EditSequenceModalProps> = ({ sequence, isOpen,
 };
 
 const JobSequenceDetailPage: React.FC = () => {
-  const { organizationId, departmentId, jobId, sequenceId } = useParams<{ 
-    organizationId: string; 
-    departmentId: string; 
+  const { jobId, sequenceId } = useParams<{ 
     jobId: string; 
     sequenceId: string; 
   }>();
@@ -173,8 +171,11 @@ const JobSequenceDetailPage: React.FC = () => {
   // Determine if current user is external and use appropriate hook
   const isExternal = isExternalUser(user);
   
-  // Get job data
+  // Get job data to derive organizationId and departmentId
   const { data: job, isLoading: jobLoading, error: jobError } = useJob(jobId || '');
+  const organizationId = job?.organizationId;
+  const departmentId = job?.departmentId;
+  
   const { 
     data: externalJob, 
     isLoading: externalJobLoading, 
@@ -224,7 +225,7 @@ const JobSequenceDetailPage: React.FC = () => {
           <Link
             to={isExternal 
               ? `/external/jobs/${jobId}/email-sequences`
-              : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences`
+              : `/dashboard/jobs/${jobId}/email-sequences`
             }
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
@@ -239,7 +240,7 @@ const JobSequenceDetailPage: React.FC = () => {
   // Construct URLs
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences`
-    : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences`;
+    : `/dashboard/jobs/${jobId}/email-sequences`;
 
   const getStatusBadge = (status: string) => {
     const styles = {
@@ -268,17 +269,9 @@ const JobSequenceDetailPage: React.FC = () => {
         <div className="flex items-center text-sm text-gray-500 mb-4">
           <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
           <span className="mx-2">/</span>
-          <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
+          <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
-            Organization
-          </Link>
-          <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`} className="hover:text-gray-700">
-            {effectiveJob.department}
-          </Link>
-          <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/ats`} className="hover:text-gray-700">
+          <Link to={`/dashboard/jobs/${jobId}/ats`} className="hover:text-gray-700">
             ATS - {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>

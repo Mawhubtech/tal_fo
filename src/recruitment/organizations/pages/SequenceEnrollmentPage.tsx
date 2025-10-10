@@ -9,9 +9,7 @@ import { isExternalUser } from '../../../utils/userUtils';
 import EnrollmentManagement from '../components/EnrollmentManagement';
 
 const SequenceEnrollmentPage: React.FC = () => {
-  const { organizationId, departmentId, jobId, sequenceId } = useParams<{ 
-    organizationId: string; 
-    departmentId: string; 
+  const { jobId, sequenceId } = useParams<{ 
     jobId: string; 
     sequenceId: string; 
   }>();
@@ -20,8 +18,11 @@ const SequenceEnrollmentPage: React.FC = () => {
   // Determine if current user is external
   const isExternal = isExternalUser(user);
   
-  // Get job and sequence data
+  // Get job and sequence data to derive organizationId and departmentId
   const { data: job, isLoading: jobLoading } = useJob(jobId || '');
+  const organizationId = job?.organizationId;
+  const departmentId = job?.departmentId;
+  
   const { data: externalJob, isLoading: externalJobLoading } = useExternalJobDetail(isExternal ? (jobId || '') : '');
   const { data: sequence, isLoading: sequenceLoading } = useEmailSequence(sequenceId || '');
 
@@ -32,11 +33,11 @@ const SequenceEnrollmentPage: React.FC = () => {
   // Construct URLs
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences/${sequenceId}/steps`
-    : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${sequenceId}/steps`;
+    : `/dashboard/jobs/${jobId}/email-sequences/${sequenceId}/steps`;
 
   const sequenceDetailUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences/${sequenceId}`
-    : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${sequenceId}`;
+    : `/dashboard/jobs/${jobId}/email-sequences/${sequenceId}`;
 
   if (effectiveJobLoading || sequenceLoading) {
     return (
@@ -86,21 +87,13 @@ const SequenceEnrollmentPage: React.FC = () => {
         <div className="flex items-center text-sm text-gray-500 mb-4">
           <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
           <span className="mx-2">/</span>
-          <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
+          <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
-            Organization
-          </Link>
-          <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`} className="hover:text-gray-700">
-            {effectiveJob.department}
-          </Link>
-          <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/ats`} className="hover:text-gray-700">
+          <Link to={`/dashboard/jobs/${jobId}/ats`} className="hover:text-gray-700">
             ATS - {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences`} className="hover:text-gray-700">
+          <Link to={`/dashboard/jobs/${jobId}/email-sequences`} className="hover:text-gray-700">
             Email Sequences
           </Link>
           <span className="mx-2">/</span>

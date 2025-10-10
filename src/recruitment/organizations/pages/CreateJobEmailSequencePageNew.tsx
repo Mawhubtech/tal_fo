@@ -162,7 +162,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
             {effectiveJob.department}
           </Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/ats`} className="hover:text-gray-700">
+          <Link to={`/dashboard/jobs/${jobId}/ats`} className="hover:text-gray-700">
             ATS - {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>

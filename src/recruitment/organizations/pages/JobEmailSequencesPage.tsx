@@ -8,9 +8,7 @@ import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
 
 const JobEmailSequencesPage: React.FC = () => {
-  const { organizationId, departmentId, jobId } = useParams<{ 
-    organizationId: string; 
-    departmentId: string; 
+  const { jobId } = useParams<{ 
     jobId: string; 
   }>();
   const { user } = useAuthContext();
@@ -19,8 +17,11 @@ const JobEmailSequencesPage: React.FC = () => {
   // Determine if current user is external and use appropriate hook
   const isExternal = isExternalUser(user);
   
-  // Get job data
+  // Get job data to derive organizationId
   const { data: job, isLoading, error } = useJob(jobId || '');
+  const organizationId = job?.organizationId;
+  const departmentId = job?.departmentId;
+  
   const { 
     data: externalJob, 
     isLoading: externalJobLoading, 
@@ -56,7 +57,7 @@ const JobEmailSequencesPage: React.FC = () => {
           <Link
             to={isExternal 
               ? "/external/jobs"
-              : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`
+              : "/dashboard/my-jobs"
             }
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
@@ -91,7 +92,7 @@ const JobEmailSequencesPage: React.FC = () => {
   // Construct the back URL based on user type
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}`
-    : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/ats`;
+    : `/dashboard/jobs/${jobId}/ats`;
 
   return (
     <div className="p-6">
@@ -100,15 +101,7 @@ const JobEmailSequencesPage: React.FC = () => {
         <div className="flex items-center text-sm text-gray-500 mb-4">
           <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
           <span className="mx-2">/</span>
-          <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
-          <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
-            Organization
-          </Link>
-          <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`} className="hover:text-gray-700">
-            {effectiveJob.department}
-          </Link>
+          <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
           <Link to={backUrl} className="hover:text-gray-700">
             ATS - {effectiveJob.title}
@@ -140,7 +133,7 @@ const JobEmailSequencesPage: React.FC = () => {
             <Link
               to={isExternal 
                 ? `/external/jobs/${jobId}/email-templates`
-                : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-templates`
+                : `/dashboard/jobs/${jobId}/email-templates`
               }
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
@@ -150,7 +143,7 @@ const JobEmailSequencesPage: React.FC = () => {
             <Link
               to={isExternal 
                 ? `/external/jobs/${jobId}/email-sequences/create`
-                : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/create`
+                : `/dashboard/jobs/${jobId}/email-sequences/create`
               }
               className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
@@ -268,7 +261,7 @@ const JobEmailSequencesPage: React.FC = () => {
               <Link
                 to={isExternal 
                   ? `/external/jobs/${jobId}/email-sequences/create`
-                  : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/create`
+                  : `/dashboard/jobs/${jobId}/email-sequences/create`
                 }
                 className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
               >
@@ -287,7 +280,7 @@ const JobEmailSequencesPage: React.FC = () => {
     // Navigate to sequence detail page
     const detailUrl = isExternal 
       ? `/external/jobs/${jobId}/email-sequences/${sequenceId}`
-      : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${sequenceId}`;
+      : `/dashboard/jobs/${jobId}/email-sequences/${sequenceId}`;
     navigate(detailUrl);
   }
 
@@ -295,7 +288,7 @@ const JobEmailSequencesPage: React.FC = () => {
     // Navigate to sequence steps management
     const stepsUrl = isExternal 
       ? `/external/jobs/${jobId}/email-sequences/${sequenceId}/steps`
-      : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${sequenceId}/steps`;
+      : `/dashboard/jobs/${jobId}/email-sequences/${sequenceId}/steps`;
     navigate(stepsUrl);
   }
 
@@ -303,7 +296,7 @@ const JobEmailSequencesPage: React.FC = () => {
     // Navigate to sequence enrollments
     const enrollmentsUrl = isExternal 
       ? `/external/jobs/${jobId}/email-sequences/${sequenceId}/enrollments`
-      : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${sequenceId}/enrollments`;
+      : `/dashboard/jobs/${jobId}/email-sequences/${sequenceId}/enrollments`;
     navigate(enrollmentsUrl);
   }
 };

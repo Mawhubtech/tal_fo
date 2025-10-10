@@ -140,16 +140,8 @@ const AllJobsPage: React.FC = () => {
   };
 
   const handleJobClick = (job: Job) => {
-    if ((hasAssignmentRole || hasHiringTeamAccess) && userAssignment?.organizationId) {
-      // For users with client assignments, use their organization and the job's department
-      const departmentId = job.departmentId || userAssignment.departmentId || 'default-dept';
-      navigate(`/dashboard/organizations/${userAssignment.organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
-    } else {
-      // For super-admins or users with hiring team access, use the job's organization and department
-      const organizationId = job.organizationId || 'default-org';
-      const departmentId = job.departmentId || 'default-dept';
-      navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
-    }
+    // Navigate directly to job ATS page
+    navigate(`/dashboard/jobs/${job.id}/ats`);
   };
 
   const handleDeleteJob = (job: Job) => {

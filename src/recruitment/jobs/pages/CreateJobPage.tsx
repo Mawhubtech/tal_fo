@@ -486,9 +486,9 @@ const CreateJobPage: React.FC = () => {
         resultJob = await createJobMutation.mutateAsync(jobData);
       }
       
-      // Navigate to the job ATS page within the organization context
-      if (effectiveOrgId && resultJob.departmentId) {
-        navigate(`/dashboard/organizations/${effectiveOrgId}/departments/${resultJob.departmentId}/jobs/${resultJob.id}/ats`);
+      // Navigate to the job ATS page
+      if (resultJob.id) {
+        navigate(`/dashboard/jobs/${resultJob.id}/ats`);
       } else {
         navigate('/dashboard/organizations');
       }

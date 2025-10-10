@@ -48,16 +48,8 @@ const ExternalJobsPage: React.FC = () => {
   );
 
   const handleJobClick = (job: ExternalJob) => {
-    const organizationId = job.organizationId || job.organization?.id;
-    const departmentId = job.departmentId;
-    
-    if (organizationId && departmentId) {
-      // Navigate to the main JobATSPage for full ATS experience
-      navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${job.id}/ats`);
-    } else {
-      // Fallback to external job detail page if missing organization/department info
-      navigate(`/external/jobs/${job.id}/applications`);
-    }
+    // Navigate directly to job ATS page
+    navigate(`/dashboard/jobs/${job.id}/ats`);
   };
 
   if (isLoading) {

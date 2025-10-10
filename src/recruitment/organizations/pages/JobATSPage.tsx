@@ -38,13 +38,16 @@ import PipelineUsageWarningModal from '../../../components/PipelineUsageWarningM
 import { useJobComments, useCreateComment, useUpdateComment, useDeleteComment, useAddReaction, useRemoveReaction } from '../../../hooks/useJobComments';
 
 const JobATSPage: React.FC = () => {
-  const { organizationId, departmentId, jobId } = useParams<{ 
-	organizationId: string; 
-	departmentId: string; 
+  const { jobId } = useParams<{ 
 	jobId: string; 
   }>();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
+
+  // First, fetch the job to get organizationId and departmentId
+  const { data: jobBasicData, isLoading: jobBasicLoading } = useJob(jobId || '');
+  const organizationId = jobBasicData?.organizationId;
+  const departmentId = jobBasicData?.departmentId;
 
   const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
@@ -86,6 +89,7 @@ const JobATSPage: React.FC = () => {
   const isExternal = isExternalUser(user);
   
   // OPTIMIZED: Single API call for all job ATS page data (reduces 12+ calls to 1)
+  // Only fetch when we have organizationId from the basic job data
   const { 
     data: jobATSData, 
     isLoading: jobATSLoading, 
@@ -101,7 +105,7 @@ const JobATSPage: React.FC = () => {
 
   // Use the optimized data or fallback to external data for external users
   const job = isExternal ? externalJob : jobATSData?.job;
-  const jobLoading = isExternal ? externalJobLoading : jobATSLoading;
+  const jobLoading = isExternal ? externalJobLoading : (jobBasicLoading || jobATSLoading);
   const jobError = isExternal ? externalJobError : jobATSError;
   
   // Get pipeline data from optimized response
@@ -1150,15 +1154,7 @@ const JobATSPage: React.FC = () => {
 		<div className="flex items-center text-sm text-gray-500 mb-4">
 		  <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
 		  <span className="mx-2">/</span>
-		  <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
-		  <span className="mx-2">/</span>
-		  <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
-			Organization
-		  </Link>
-		  <span className="mx-2">/</span>
-		  <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`} className="hover:text-gray-700">
-			{job.department}
-		  </Link>
+		  <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
 		  <span className="mx-2">/</span>
 		  <span className="text-gray-900 font-medium">ATS - {job.title}</span>
 		</div>
@@ -1170,7 +1166,7 @@ const JobATSPage: React.FC = () => {
 	  {/* Back button - Only show for internal users */}
 	  {!isExternal && (
 		<Link 
-		  to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
+		  to="/dashboard/my-jobs"
 		  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
 		>
 		  <ArrowLeft className="w-5 h-5" />
@@ -1228,7 +1224,7 @@ const JobATSPage: React.FC = () => {
 	  <Link
 		to={isExternal 
 		  ? `/external/jobs/${jobId}/email-sequences`
-		  : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences`
+		  : `/dashboard/jobs/${jobId}/email-sequences`
 		}
 		className="bg-white text-orange-600 border border-orange-600 hover:bg-orange-50 px-4 py-2 rounded-md flex items-center transition-colors"
 		title="Manage email sequences for this job"

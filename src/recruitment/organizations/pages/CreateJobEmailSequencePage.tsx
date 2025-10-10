@@ -9,9 +9,7 @@ import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
 
 const CreateJobEmailSequencePage: React.FC = () => {
-  const { organizationId, departmentId, jobId } = useParams<{ 
-    organizationId: string; 
-    departmentId: string; 
+  const { jobId } = useParams<{ 
     jobId: string; 
   }>();
   const { user } = useAuthContext();
@@ -35,8 +33,10 @@ const CreateJobEmailSequencePage: React.FC = () => {
   // Determine if current user is external
   const isExternal = isExternalUser(user);
   
-  // Get job data
+  // Get job data to derive organizationId and departmentId
   const { data: job, isLoading: jobLoading, error: jobError } = useJob(jobId || '');
+  const organizationId = job?.organizationId;
+  const departmentId = job?.departmentId;
   const { 
     data: externalJob, 
     isLoading: externalJobLoading, 
@@ -175,7 +175,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
             {effectiveJob.department}
           </Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/ats`} className="hover:text-gray-700">
+          <Link to={`/dashboard/jobs/${jobId}/ats`} className="hover:text-gray-700">
             ATS - {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>

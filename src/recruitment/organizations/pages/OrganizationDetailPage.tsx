@@ -231,7 +231,7 @@ const OrganizationDetailPage: React.FC = () => {
                     {filteredJobs.map((job) => (
                       <Link
                         key={job.id}
-                        to={`/dashboard/organizations/${organizationId}/departments/${job.departmentId}/jobs/${job.id}/ats`}
+                        to={`/dashboard/jobs/${job.id}/ats`}
                         className="block bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border"
                       >
                         <div className="flex items-start justify-between">
