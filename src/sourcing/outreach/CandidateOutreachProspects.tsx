@@ -505,7 +505,7 @@ const CandidateOutreachProspects: React.FC<CandidateOutreachProspectsProps> = ({
     const prospect = prospects.find(p => p.id === candidate.id);
     if (prospect && prospect.candidateId) {
       setSelectedCandidateId(prospect.candidateId);
-      setPanelState('expanded');
+      setPanelState('collapsed');
       // Only prevent background scroll when side panel is opened
       document.body.style.overflow = 'hidden';
     }

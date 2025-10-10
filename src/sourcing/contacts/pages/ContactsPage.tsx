@@ -65,7 +65,7 @@ const ContactsPage: React.FC = () => {
   const handleContactNameClick = (contact: Contact) => {
     setSelectedContactData(contact.structuredData);
     setSelectedContactId(contact.id);
-    setPanelState('expanded'); // Or 'collapsed' based on preference
+    setPanelState('collapsed');
   };
 
   const handlePanelStateChange = (newState: PanelState) => {

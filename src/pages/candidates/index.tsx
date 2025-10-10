@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getAvatarUrl } from '../../utils/fileUtils';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../utils/roleUtils';
+import { useToast } from '../../contexts/ToastContext';
 
 // Enhanced candidate interface with additional professional fields
 interface EnhancedCandidate {
@@ -59,6 +60,7 @@ interface EnhancedCandidate {
 const CandidatesPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthContext();
+  const { addToast } = useToast();
   const isUserSuperAdmin = isSuperAdmin(user);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -257,6 +259,8 @@ const CandidatesPage: React.FC = () => {
           fieldDescription: field.fieldDescription || '',
           isRequired: field.isRequired || false,
         })) || [],
+        // Include notesData for CoreSignal enrichment
+        notesData: userData.notesData || undefined,
       } as UserStructuredData;
       
       setSelectedUserDataForPanel(userDataForPanel);
@@ -282,6 +286,11 @@ const CandidatesPage: React.FC = () => {
       setSelectedUserDataForPanel(null);
       setSelectedCandidateId(null);
     }
+  };
+
+  // Handler for closing panel via overlay - clears selection
+  const handleClosePanel = () => {
+    handlePanelStateChange('closed');
   };
 
   // Function to handle status change
@@ -371,6 +380,11 @@ const CandidatesPage: React.FC = () => {
   // Handler for adding candidate to a job
   const handleJobSelected = async (jobId: string) => {
     if (!selectedCandidateId) {
+      addToast({ 
+        type: 'error', 
+        title: 'No candidate selected',
+        message: 'Please select a candidate first'
+      });
       throw new Error('No candidate selected');
     }
 
@@ -383,13 +397,24 @@ const CandidatesPage: React.FC = () => {
         jobId: jobId,
       });
 
+      // Show success notification
+      addToast({ 
+        type: 'success', 
+        title: 'Success!',
+        message: 'Candidate successfully added to job'
+      });
+      
       // Close modal on success
       setShowProjectModal(false);
       
-      // Show success notification (you can add toast here if you have a toast system)
       console.log('Candidate successfully added to job');
     } catch (error) {
       console.error('Error adding candidate to job:', error);
+      addToast({ 
+        type: 'error', 
+        title: 'Error',
+        message: 'Failed to add candidate to job. Please try again.'
+      });
       throw error; // Re-throw to let JobSelectionModal handle the error
     } finally {
       setIsShortlisting(false);
@@ -1023,6 +1048,7 @@ const CandidatesPage: React.FC = () => {
             candidateId={selectedCandidateId}
             onShortlist={handleShortlistCandidate}
             isShortlisting={isShortlisting}
+            preventCloseOnClickOutside={showProjectModal}
           />        </>
       )}      {/* Add Candidate Modal */}
       <AddCandidateModal

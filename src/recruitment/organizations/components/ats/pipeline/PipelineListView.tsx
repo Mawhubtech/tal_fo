@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Mail, Phone, Star, Tag, MapPin, ChevronDown, Trash2 } from 'lucide-react';
+import { Calendar, Mail, Phone, Star, Tag, MapPin, ChevronDown, Trash2, ExternalLink, Briefcase } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
 import type { Pipeline } from '../../../../../services/pipelineService';
 import { getScoreColor, getStageColor } from '../shared';
@@ -54,10 +54,13 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                 Candidate
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Stage
+                Location
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Score
+                Experience
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Stage
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Contact
@@ -67,9 +70,6 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Applied
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Source
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -109,12 +109,46 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                       >
                         {candidate.name}
                       </button>
-                      <div className="text-sm text-gray-500 flex items-center">
-                        <Mail className="w-3 h-3 mr-1" />
-                        {candidate.email}
-                      </div>
+                      {candidate.position && (
+                        <div className="text-xs text-gray-500 flex items-center mt-1">
+                          <Briefcase className="w-3 h-3 mr-1" />
+                          {candidate.position}
+                        </div>
+                      )}
                     </div>
                   </div>
+                </td>
+
+                {/* Location */}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {candidate.location && (
+                    <div className="text-sm text-gray-900 flex items-center">
+                      <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                      <span className="truncate max-w-[200px]" title={candidate.location}>
+                        {candidate.location}
+                      </span>
+                    </div>
+                  )}
+                  {!candidate.location && (
+                    <span className="text-sm text-gray-400">-</span>
+                  )}
+                </td>
+
+                {/* Experience */}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {candidate.notesData?.yearsOfExperience && (
+                    <div className="text-sm text-gray-900">
+                      {candidate.notesData.yearsOfExperience} {candidate.notesData.yearsOfExperience === 1 ? 'year' : 'years'}
+                    </div>
+                  )}
+                  {candidate.notesData?.department && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {candidate.notesData.department}
+                    </div>
+                  )}
+                  {!candidate.notesData?.yearsOfExperience && !candidate.notesData?.department && (
+                    <span className="text-sm text-gray-400">-</span>
+                  )}
                 </td>                {/* Stage */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="relative">
@@ -137,21 +171,33 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                   </div>
                 </td>
 
-                {/* Score */}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                    <span className={`text-sm font-medium ${getScoreColor(candidate.score)}`}>
-                      {candidate.score}
-                    </span>
-                  </div>
-                </td>
-
                 {/* Contact */}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900 flex items-center mb-1">
-                    <Phone className="w-3 h-3 mr-1 text-gray-400" />
-                    {candidate.phone}
+                  <div className="space-y-1">
+                    {candidate.phone && (
+                      <div className="text-sm text-gray-900 flex items-center">
+                        <Phone className="w-3 h-3 mr-1 text-gray-400" />
+                        {candidate.phone}
+                      </div>
+                    )}
+                    {candidate.email && (
+                      <div className="text-sm text-gray-900 flex items-center">
+                        <Mail className="w-3 h-3 mr-1 text-gray-400" />
+                        {candidate.email}
+                      </div>
+                    )}
+                    {candidate.linkedIn && (
+                      <a
+                        href={candidate.linkedIn}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center hover:underline"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        LinkedIn
+                      </a>
+                    )}
                   </div>
                 </td>
 
@@ -181,11 +227,6 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                     <Calendar className="w-4 h-4 mr-1" />
                     {new Date(candidate.appliedDate).toLocaleDateString()}
                   </div>
-                </td>
-
-                {/* Source */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {candidate.source}
                 </td>
 
                 {/* Actions */}

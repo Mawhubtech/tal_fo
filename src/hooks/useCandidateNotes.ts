@@ -9,6 +9,8 @@ export const candidateNotesKeys = {
   list: (candidateId: string, filters?: CandidateNotesQueryDto) => [...candidateNotesKeys.lists(), candidateId, filters] as const,
   details: () => [...candidateNotesKeys.all, 'detail'] as const,
   detail: (candidateId: string, noteId: string) => [...candidateNotesKeys.details(), candidateId, noteId] as const,
+  coreSignalLists: () => [...candidateNotesKeys.all, 'coresignal', 'list'] as const,
+  coreSignalList: (coreSignalId: string, filters?: CandidateNotesQueryDto) => [...candidateNotesKeys.coreSignalLists(), coreSignalId, filters] as const,
 };
 
 /**
@@ -143,6 +145,56 @@ export const useDeleteCandidateNote = () => {
     onError: (error: any) => {
       const message = error?.response?.data?.message || 'Failed to delete note';
       toast.error('Failed to delete note', message);
+    },
+  });
+};
+
+/**
+ * Hook to fetch notes for a candidate using their CoreSignal ID
+ * Returns empty array if candidate doesn't exist yet
+ */
+export const useCoreSignalCandidateNotes = (coreSignalId: string | undefined, query?: CandidateNotesQueryDto) => {
+  return useQuery({
+    queryKey: candidateNotesKeys.coreSignalList(coreSignalId || '', query),
+    queryFn: () => candidateNotesApiService.getCoreSignalNotes(coreSignalId!, query),
+    enabled: !!coreSignalId,
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Hook to create a note for a candidate using their CoreSignal ID
+ * Creates the candidate first if they don't exist
+ */
+export const useCreateCoreSignalCandidateNote = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ 
+      coreSignalId, 
+      noteData 
+    }: { 
+      coreSignalId: string; 
+      noteData: Omit<CreateCandidateNoteDto, 'candidateId'> & { candidateData?: any } 
+    }) =>
+      candidateNotesApiService.createCoreSignalNote(coreSignalId, noteData),
+    onSuccess: (result: { note: CandidateNote; candidateId: string }, variables) => {
+      // Invalidate CoreSignal notes queries
+      queryClient.invalidateQueries({
+        queryKey: candidateNotesKeys.coreSignalLists(),
+      });
+
+      // Also invalidate regular notes queries for the candidate
+      queryClient.invalidateQueries({
+        queryKey: candidateNotesKeys.list(result.candidateId),
+      });
+
+      toast.success('Note added successfully', 'Your note has been added to the candidate.');
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Failed to add note';
+      toast.error('Failed to add note', message);
     },
   });
 };

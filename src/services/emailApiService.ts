@@ -99,6 +99,23 @@ class EmailApiService {
   }
 
   /**
+   * Send email to a candidate using CoreSignal ID (creates candidate if needed)
+   */
+  async sendCoreSignalEmail(emailData: {
+    coreSignalId: string;
+    candidateData?: any;
+    to: string;
+    subject: string;
+    body: string;
+    htmlBody?: string;
+    templateId?: string;
+    providerId?: string;
+  }): Promise<EmailResponse & { candidateId: string }> {
+    const response = await apiClient.post('/email-management/send-coresignal-email', emailData);
+    return response.data;
+  }
+
+  /**
    * Get email history for a specific candidate
    */
   async getCandidateEmailHistory(
@@ -125,6 +142,38 @@ class EmailApiService {
         total: 0,
         page: 1,
         limit: 10
+      };
+    }
+  }
+
+  /**
+   * Get email history for a candidate by CoreSignal ID
+   */
+  async getCoreSignalCandidateEmailHistory(
+    coreSignalId: string,
+    options?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+    }
+  ): Promise<EmailHistoryResponse & { candidateId?: string }> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.page) params.append('page', options.page.toString());
+      if (options?.limit) params.append('limit', options.limit.toString());
+      if (options?.status) params.append('status', options.status);
+      
+      const response = await apiClient.get(`/email-management/coresignal/${coreSignalId}/email-history?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      // Fallback: return empty result if endpoint doesn't exist yet
+      console.warn('CoreSignal email history endpoint not available yet');
+      return {
+        emails: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        candidateId: undefined,
       };
     }
   }

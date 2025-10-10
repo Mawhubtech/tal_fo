@@ -524,6 +524,11 @@ const JobATSPage: React.FC = () => {
       : mapStageToFrontend(application.stage || 'Application');
     
     
+    // Get skills from skillMappings or from notesData.skillMappings
+    const skills = application.candidate?.skillMappings?.map(sm => sm.skill?.name).filter(Boolean) 
+      || application.candidate?.notesData?.skillMappings?.map((sm: any) => sm.skill?.name).filter(Boolean)
+      || [];
+    
     return {
       id: application.candidate?.id || application.candidateId,
       name: candidateName,
@@ -535,7 +540,7 @@ const JobATSPage: React.FC = () => {
       stage: candidateStage,
       score: application.score || 0,
       lastUpdated: application.lastActivityDate || application.updatedAt,
-      tags: application.candidate?.skillMappings?.map(sm => sm.skill?.name).filter(Boolean) || [], // Map skills from skill mappings
+      tags: skills, // Use skills from either source
       source: application.candidate?.source || 'unknown',
       appliedDate: application.appliedDate,
       // Additional properties for compatibility
@@ -558,12 +563,13 @@ const JobATSPage: React.FC = () => {
       summary: application.candidate?.summary,
       experience: application.candidate?.experience,
       education: application.candidate?.education,
-      skills: application.candidate?.skillMappings?.map(sm => sm.skill?.name).filter(Boolean) || [],
+      skills: skills, // Use same skills array
       projects: application.candidate?.projects,
       certifications: application.candidate?.certifications,
       awards: application.candidate?.awards,
       interests: application.candidate?.interests,
       languages: application.candidate?.languages,
+      notesData: application.candidate?.notesData, // CoreSignal enrichment data
     };
   });
 
@@ -680,7 +686,7 @@ const JobATSPage: React.FC = () => {
     const candidateId = candidateData.id;
     if (candidateId) {
       setSelectedCandidateId(candidateId);
-      setPanelState('expanded');
+      setPanelState('collapsed');
     } else {
       console.error('No candidate ID found in candidate data:', candidateData);
     }
@@ -800,6 +806,8 @@ const JobATSPage: React.FC = () => {
               description: exp.description || '',
               responsibilities: exp.responsibilities || [],
               achievements: exp.achievements || [],
+              technologies: exp.technologies || [],
+              metadata: exp.metadata || undefined, // Include CoreSignal metadata
             }))
           : [],
         skills: Array.isArray(selectedCandidateDetails.skillMappings) 
@@ -832,8 +840,9 @@ const JobATSPage: React.FC = () => {
           ? selectedCandidateDetails.certifications.map((cert: any) => ({
               name: cert.name || '',
               issuer: cert.issuer || '',
-              dateIssued: cert.dateIssued || '',
-              expirationDate: cert.expirationDate || '',
+              date: cert.dateIssued || '',
+              credentialUrl: cert.credentialUrl || '',
+              description: cert.description || '',
             }))
           : [],
         awards: Array.isArray(selectedCandidateDetails.awards)
@@ -842,10 +851,44 @@ const JobATSPage: React.FC = () => {
               issuer: award.issuer || '',
               date: award.date || '',
               description: award.description || '',
+              category: award.category || '',
+              recognitionLevel: award.recognitionLevel || '',
             }))
           : [],
-        interests: selectedCandidateDetails.interests || [],
-        languages: selectedCandidateDetails.languages || [],
+        interests: selectedCandidateDetails.interests?.map((interest: any) => ({
+          name: interest.name || '',
+          category: interest.category || '',
+          level: interest.level || '',
+          description: interest.description || '',
+          yearsOfExperience: interest.yearsOfExperience || 0,
+          isActive: interest.isActive || false,
+        })) || [],
+        languages: selectedCandidateDetails.languages?.map((lang: any) => ({
+          language: lang.language || '',
+          proficiency: lang.proficiency || '',
+          isNative: lang.isNative || false,
+          certificationName: lang.certificationName || '',
+          certificationScore: lang.certificationScore || '',
+          certificationDate: lang.certificationDate || '',
+        })) || [],
+        references: selectedCandidateDetails.references?.map((ref: any) => ({
+          name: ref.name || '',
+          position: ref.position || '',
+          company: ref.company || '',
+          email: ref.email || '',
+          phone: ref.phone || '',
+          relationship: ref.relationship || '',
+          yearsKnown: ref.yearsKnown || '',
+          status: ref.status || '',
+        })) || [],
+        customFields: selectedCandidateDetails.customFields?.map((field: any) => ({
+          fieldName: field.fieldName || '',
+          fieldType: field.fieldType || '',
+          fieldValue: field.fieldValue || '',
+          fieldDescription: field.fieldDescription || '',
+          isRequired: field.isRequired || false,
+        })) || [],
+        notesData: selectedCandidateDetails.notesData, // CoreSignal enrichment data
       } as UserStructuredData;
 
       console.log('Transformed user data for panel:', userDataForPanel);
@@ -1504,6 +1547,7 @@ const JobATSPage: React.FC = () => {
 			  panelState={panelState}
 			  onStateChange={handlePanelStateChange}
 			  candidateId={selectedCandidateId}
+			  hideAddToJob={true}
 			/>
 		  )}
 		</>

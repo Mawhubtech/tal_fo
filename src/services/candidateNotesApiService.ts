@@ -115,6 +115,42 @@ class CandidateNotesApiService {
   async deleteNote(candidateId: string, noteId: string): Promise<void> {
     await apiClient.delete(`${this.baseUrl}/${candidateId}/notes/${noteId}`);
   }
+
+  /**
+   * Get notes for a candidate using their CoreSignal ID
+   * Returns empty array if candidate doesn't exist yet
+   */
+  async getCoreSignalNotes(coreSignalId: string, query?: CandidateNotesQueryDto): Promise<CandidateNotesResponse & { candidateId: string | null }> {
+    const params = new URLSearchParams();
+    
+    if (query?.isPrivate !== undefined) params.append('isPrivate', query.isPrivate.toString());
+    if (query?.sharedWithTeamId) params.append('sharedWithTeamId', query.sharedWithTeamId);
+    if (query?.isImportant !== undefined) params.append('isImportant', query.isImportant.toString());
+    if (query?.page) params.append('page', query.page.toString());
+    if (query?.limit) params.append('limit', query.limit.toString());
+    if (query?.sortBy) params.append('sortBy', query.sortBy);
+    if (query?.sortOrder) params.append('sortOrder', query.sortOrder);
+
+    const queryString = params.toString();
+    const url = queryString 
+      ? `${this.baseUrl}/coresignal/${coreSignalId}/notes?${queryString}` 
+      : `${this.baseUrl}/coresignal/${coreSignalId}/notes`;
+    
+    const response = await apiClient.get(url);
+    return response.data;
+  }
+
+  /**
+   * Create a note for a candidate using their CoreSignal ID
+   * Creates the candidate first if they don't exist
+   */
+  async createCoreSignalNote(
+    coreSignalId: string, 
+    noteData: Omit<CreateCandidateNoteDto, 'candidateId'> & { candidateData?: any }
+  ): Promise<{ note: CandidateNote; candidateId: string }> {
+    const response = await apiClient.post(`${this.baseUrl}/coresignal/${coreSignalId}/notes`, noteData);
+    return response.data;
+  }
 }
 
 export const candidateNotesApiService = new CandidateNotesApiService();
