@@ -412,16 +412,9 @@ const CreateJobPage: React.FC = () => {
         return;
       }
 
-      if (!selectedPipelineId.trim()) {
-        setError('Recruitment pipeline is required');
-        return;
-      }
+      // Pipeline is auto-selected (default pipeline), no need to validate
 
-      // Only require hiring team if teams are available for this organization
-      if (hiringTeams.length > 0 && !selectedHiringTeamId.trim()) {
-        setError('Please select a hiring team. If no teams are available, create one in the admin section first.');
-        return;
-      }
+      // Hiring team is optional, no validation required
 
       // Validate salary range
       const minSalary = salaryMin ? parseFloat(salaryMin) : undefined;
@@ -1194,223 +1187,10 @@ const CreateJobPage: React.FC = () => {
               </div>
             </div>
             <div className="p-6 space-y-6">
-              {/* Pipeline Selection */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="pipeline" className="block text-sm font-semibold text-gray-700">
-                    Recruitment Pipeline *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={openPipelineModal}
-                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    title="Create new pipeline"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Create Pipeline</span>
-                  </button>
-                </div>
-                
-                {/* Pipeline Selection Dropdown */}
-                <div className="relative">
-                  <select
-                    id="pipeline"
-                    value={selectedPipelineId}
-                    onChange={(e) => setSelectedPipelineId(e.target.value)}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
-                    disabled={pipelinesLoading}
-                    required
-                  >
-                    <option value="">Select a recruitment pipeline *</option>
-                    {activePipelines.map((pipeline) => (
-                      <option key={pipeline.id} value={pipeline.id}>
-                        {pipeline.name} {pipeline.isDefault ? '(Default)' : ''} {!canEditPipeline(pipeline) ? '(System Template)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                  
-                  {/* Edit Pipeline Button */}
-                  {selectedPipelineId && (() => {
-                    const selectedPipeline = activePipelines.find(p => p.id === selectedPipelineId);
-                    return selectedPipeline && canEditPipeline(selectedPipeline) ? (
-                      <button
-                        type="button"
-                        onClick={() => handleEditPipeline(selectedPipeline)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-purple-600 transition-colors rounded-md hover:bg-purple-50"
-                        title="Edit pipeline"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                    ) : null;
-                  })()}
-                </div>
-                
-                {pipelinesLoading && (
-                  <p className="text-xs text-gray-500 mt-1">Loading pipelines...</p>
-                )}
-                {!pipelinesLoading && activePipelines.length === 0 && (
-                  <p className="text-xs text-red-500 mt-1">No active recruitment pipelines found. Please create a recruitment pipeline first before creating jobs.</p>
-                )}
-                
-                {/* Available Pipelines List (for easier editing) */}
-                {!pipelinesLoading && activePipelines.length > 0 && (
-                  <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs font-medium text-gray-600 mb-2">Available Pipelines:</p>
-                    <div className="space-y-1">
-                      {activePipelines.map((pipeline) => (
-                        <div
-                          key={pipeline.id}
-                          className={`flex items-center justify-between p-2 rounded-md transition-colors ${
-                            selectedPipelineId === pipeline.id ? 'bg-purple-100 border border-purple-200' : 'bg-white hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedPipelineId(pipeline.id)}
-                              className="text-left flex-1"
-                            >
-                              <span className="text-sm font-medium text-gray-700">
-                                {pipeline.name}
-                              </span>
-                              <div className="flex items-center space-x-2 mt-1">
-                                {pipeline.isDefault && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Default</span>
-                                )}
-                                {canEditPipeline(pipeline) ? (
-                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Editable</span>
-                                ) : (
-                                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">System Template</span>
-                                )}
-                                <span className="text-xs text-gray-500">{pipeline.stages.length} stages</span>
-                              </div>
-                            </button>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            {selectedPipelineId === pipeline.id && (
-                              <span className="text-purple-600 text-sm">✓</span>
-                            )}
-                            {canEditPipeline(pipeline) && (
-                              <button
-                                type="button"
-                                onClick={() => handleEditPipeline(pipeline)}
-                                className="p-1 text-gray-400 hover:text-purple-600 transition-colors rounded hover:bg-purple-50"
-                                title="Edit pipeline"
-                              >
-                                <Edit className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Show selected pipeline stages */}
-                {selectedPipelineId && (() => {
-                  const selectedPipeline = activePipelines.find(p => p.id === selectedPipelineId);
-                  return selectedPipeline ? (
-                    <div className="mt-3 bg-white border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-medium text-gray-700">
-                          Pipeline: {selectedPipeline.name}
-                        </p>
-                        <div className="flex items-center space-x-2">
-                          {canEditPipeline(selectedPipeline) ? (
-                            <button
-                              type="button"
-                              onClick={() => handleEditPipeline(selectedPipeline)}
-                              className="flex items-center space-x-1 px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                            >
-                              <Edit className="h-3 w-3" />
-                              <span>Edit</span>
-                            </button>
-                          ) : (
-                            <span className="text-xs text-gray-500 font-medium">🔒 System Template</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedPipeline.stages
-                          .sort((a, b) => a.order - b.order)
-                          .map((stage) => (
-                            <span
-                              key={stage.id}
-                              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-                            >
-                              {stage.order}. {stage.name}
-                            </span>
-                          ))}
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-
-              {/* Hiring Team Selection */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="hiringTeam" className="block text-sm font-semibold text-gray-700">
-                    Hiring Team {hiringTeams.length > 0 ? '*' : '(Optional)'}
-                  </label>
-                  <Link
-                    to={`/admin/organizations/${organizationId}/hiring-teams`}
-                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    title="Manage hiring teams"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Manage Teams</span>
-                  </Link>
-                </div>
-                <select
-                  id="hiringTeam"
-                  value={selectedHiringTeamId}
-                  onChange={(e) => setSelectedHiringTeamId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
-                  disabled={hiringTeamsLoading}
-                  required={hiringTeams.length > 0}
-                >
-                  <option value="">Select a hiring team *</option>
-                  {hiringTeams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name} {team.isDefault ? '(Default)' : ''}
-                    </option>
-                  ))}
-                </select>
-                {hiringTeamsLoading && (
-                  <p className="text-xs text-gray-500 mt-1">Loading hiring teams...</p>
-                )}
-                {!hiringTeamsLoading && hiringTeams.length === 0 && (
-                  <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800 mb-2">No hiring teams found for this organization.</p>
-                    <Link
-                      to={`/admin/organizations/${organizationId}/hiring-teams`}
-                      className="inline-flex items-center text-sm text-yellow-700 hover:text-yellow-900 font-medium"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Create hiring teams in admin section
-                    </Link>
-                  </div>
-                )}
-                
-                {/* Show selected hiring team details */}
-                {selectedHiringTeamId && (() => {
-                  const selectedTeam = hiringTeams.find(t => t.id === selectedHiringTeamId);
-                  return selectedTeam ? (
-                    <div className="mt-3 bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Team Members ({selectedTeam.members?.length || 0}):</p>
-                      {selectedTeam.description && (
-                        <p className="text-sm text-gray-600 mb-2">{selectedTeam.description}</p>
-                      )}
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Users className="h-4 w-4 mr-1" />
-                        <span>You can manage team members in the admin section</span>
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
-              </div>
+              {/* Pipeline Selection - Hidden, using default pipeline automatically */}
+              
+              {/* Hiring Team Selection - Hidden, making it optional */}
+              
             </div>
           </div>
 
@@ -1463,13 +1243,8 @@ const CreateJobPage: React.FC = () => {
                       TAL Job Board
                     </span>
                   )}
-                  {publishingOptions.externalJobBoards && publishingOptions.externalJobBoards.length > 0 && (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full flex items-center">
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      {publishingOptions.externalJobBoards.length} External Board{publishingOptions.externalJobBoards.length > 1 ? 's' : ''}
-                    </span>
-                  )}
-                  {!publishingOptions.talJobBoard && (!publishingOptions.externalJobBoards || publishingOptions.externalJobBoards.length === 0) && (
+                  {/* External job boards badge hidden */}
+                  {!publishingOptions.talJobBoard && (
                     <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full flex items-center">
                       <Lock className="w-3 h-3 mr-1" />
                       Private Only
@@ -1568,28 +1343,7 @@ const CreateJobPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Selected Pipeline */}
-              {selectedPipelineId && (() => {
-                const selectedPipeline = activePipelines.find(p => p.id === selectedPipelineId);
-                return selectedPipeline ? (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-sm font-medium text-blue-800 mb-2">Hiring Process</p>
-                    <p className="text-sm text-blue-900 mb-2">{selectedPipeline.name}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedPipeline.stages
-                        .sort((a, b) => a.order - b.order)
-                        .map((stage) => (
-                          <span
-                            key={stage.id}
-                            className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
-                          >
-                            {stage.order}. {stage.name}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                ) : null;
-              })()}
+              {/* Selected Pipeline - Hidden from preview */}
 
               {/* Publishing Options Preview */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
@@ -1609,14 +1363,7 @@ const CreateJobPage: React.FC = () => {
                     </div>
                   )}
                   
-                  {publishingOptions.externalJobBoards && publishingOptions.externalJobBoards.length > 0 && (
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">External Boards:</span>
-                      <span className="font-medium text-gray-800">
-                        {publishingOptions.externalJobBoards.length} selected
-                      </span>
-                    </div>
-                  )}
+                  {/* External job boards hidden from preview */}
                   
                   <div className="flex flex-wrap gap-1 mt-2">
                     {publishingOptions.talJobBoard && (

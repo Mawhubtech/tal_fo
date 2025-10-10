@@ -49,9 +49,7 @@ const PublishingSettingsCard: React.FC<PublishingSettingsCardProps> = ({
   const getPublishingSummary = () => {
     const platforms = [];
     if (publishingOptions.talJobBoard) platforms.push('TAL Job Board');
-    if (publishingOptions.externalJobBoards && publishingOptions.externalJobBoards.length > 0) {
-      platforms.push(`${publishingOptions.externalJobBoards.length} External Board${publishingOptions.externalJobBoards.length > 1 ? 's' : ''}`);
-    }
+    // External job boards hidden from UI
     
     if (platforms.length === 0) return 'Private only';
     return platforms.join(', ');
@@ -105,55 +103,7 @@ const PublishingSettingsCard: React.FC<PublishingSettingsCardProps> = ({
             </label>
           </div>
 
-          {/* External Job Boards */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">
-              External Job Boards
-              {!hasConfiguredJobBoards && (
-                <span className="ml-2 px-1.5 py-0.5 text-xs bg-orange-100 text-orange-800 rounded">
-                  Configure in Admin
-                </span>
-              )}
-            </label>
-            
-            {hasConfiguredJobBoards ? (
-              <div className="space-y-2">
-                {availableJobBoards.map((board) => (
-                  <label
-                    key={board.id}
-                    className="flex items-center text-sm p-2 border rounded hover:bg-gray-50 transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={publishingOptions.externalJobBoards?.includes(board.id) || false}
-                      onChange={(e) => handleExternalBoardToggle(board.id, e.target.checked)}
-                      className="mr-3 text-purple-600 focus:ring-purple-500"
-                    />
-                    <span className="mr-2">{board.icon || '🔗'}</span>
-                    <span className="flex-1">{board.name}</span>
-                    {board.popular && (
-                      <span className="px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded mr-2">
-                        Popular
-                      </span>
-                    )}
-                    {publishingOptions.externalJobBoards?.includes(board.id) && (
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                    )}
-                  </label>
-                ))}
-                
-                {publishingOptions.externalJobBoards && publishingOptions.externalJobBoards.length > 0 && (
-                  <div className="text-xs text-green-700 mt-2">
-                    ✓ {publishingOptions.externalJobBoards.length} external board{publishingOptions.externalJobBoards.length > 1 ? 's' : ''} selected
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded p-2">
-                No external job boards configured. Contact admin to set up integrations.
-              </div>
-            )}
-          </div>
+          {/* External Job Boards - Hidden */}
         </div>
       )}
     </div>
