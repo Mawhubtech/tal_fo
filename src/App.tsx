@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { GmailStatusProvider } from './contexts/GmailStatusContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import ExternalUserGuard from './components/ExternalUserGuard';
@@ -21,6 +22,7 @@ import RequestDemoPage from './pages/RequestDemoPage';
 import AcceptInvitationPage from './pages/hiring-teams/AcceptInvitationPage';
 import InvitationAcceptedPage from './pages/hiring-teams/InvitationAcceptedPage';
 import CompanyInvitationPage from './pages/AcceptInvitationPage';
+import AcceptJobCollaboratorInvitationPage from './pages/AcceptJobCollaboratorInvitationPage';
 import ExternalTeamAccessPage from './pages/hiring-teams/ExternalTeamAccessPage';
 import ExternalUserLayout from './layouts/ExternalUserLayout';
 import ExternalJobsPage from './pages/external/ExternalJobsPage';
@@ -33,6 +35,7 @@ import JobSequenceStepsPage from './recruitment/organizations/pages/JobSequenceS
 import JobSequenceEnrollmentsPage from './recruitment/organizations/pages/JobSequenceEnrollmentsPage';
 import JobEmailTemplatesPage from './recruitment/organizations/pages/JobEmailTemplatesPage';
 import CreateJobEmailSequencePage from './recruitment/organizations/pages/CreateJobEmailSequencePage';
+import EmailSettingsPage from './pages/EmailSettingsPage';
 import { QueryProvider } from './providers/QueryProvider';
 
 function App() {
@@ -40,7 +43,9 @@ function App() {
     <ErrorBoundary>
       <QueryProvider>
         <ToastProvider>
-          <AuthProvider>        <Router>          <Routes>
+          <AuthProvider>
+            <GmailStatusProvider>
+              <Router>          <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/jobs" element={<JobBoardPage />} />
             <Route path="/jobs/:jobId" element={<JobDetailPage />} />
@@ -107,6 +112,11 @@ function App() {
               path="/hiring-teams/external-access"
               element={<ExternalTeamAccessPage />}
             />
+            {/* Job Collaborator Invitation Route */}
+            <Route
+              path="/accept-invitation/:token"
+              element={<AcceptJobCollaboratorInvitationPage />}
+            />
             {/* Company Invitation Route */}
             <Route
               path="/company/invitation"
@@ -149,6 +159,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
+        </GmailStatusProvider>
         </AuthProvider>
         </ToastProvider>
       </QueryProvider>

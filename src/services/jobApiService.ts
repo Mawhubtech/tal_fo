@@ -10,8 +10,8 @@ export interface JobPublishingOptions {
 export interface CreateJobData {
   title: string;
   description?: string;
-  department: string;
-  departmentId: string;
+  department?: string;
+  departmentId?: string;
   location: string;
   type?: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
   status?: 'Published' | 'Draft' | 'Paused' | 'Closed' | 'Archived';
@@ -36,6 +36,13 @@ export interface CreateJobData {
   }>;
   pipelineId?: string;
   publishingOptions?: JobPublishingOptions;
+  collaborators?: Array<{
+    email: string;
+    role: 'viewer' | 'recruiter' | 'hiring_manager' | 'admin';
+    canViewApplications?: boolean;
+    canMoveCandidates?: boolean;
+    canEditJob?: boolean;
+  }>;
 }
 
 export interface JobFilters {

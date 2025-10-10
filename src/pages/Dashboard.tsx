@@ -7,6 +7,7 @@ import { useAuthContext } from '../contexts/AuthContext';
 import { isExternalUser } from '../utils/userUtils';
 import DashboardOverview from './DashboardOverview'; // Import the new DashboardOverview component
 import CalendarPage from './CalendarPage'; // Import the Calendar page
+import EmailSettingsPage from './EmailSettingsPage'; // Import Email Settings page
 // Sourcing imports
 import { Search, SearchResults } from '../sourcing';
 import UnifiedContactsPage from '../sourcing/contacts/pages/UnifiedContactsPage'; // Import UnifiedContactsPage
@@ -60,6 +61,7 @@ import ClientOutreachRouter from './client-outreach/ClientOutreachRouter';
 import { ResourcesPage } from './resources';
 import ContactSupportPage from './ContactSupportPage';
 import TasksPage from './TasksPage'; // Import TasksPage
+import PendingInvitationsPage from './PendingInvitationsPage'; // Import PendingInvitationsPage
 
 // Global Search Pages
 import GlobalSearchPage from './GlobalSearchPage';
@@ -154,6 +156,13 @@ const Dashboard: React.FC = () => {
             <Route path="calendar" element={
               <RoutePermissionGuard>
                 <CalendarPage />
+              </RoutePermissionGuard>
+            } />
+            
+            {/* Email Settings Route */}
+            <Route path="settings/email" element={
+              <RoutePermissionGuard>
+                <EmailSettingsPage />
               </RoutePermissionGuard>
             } />
             
@@ -292,6 +301,13 @@ const Dashboard: React.FC = () => {
             <Route path="tasks" element={
               <RoutePermissionGuard>
                 <TasksPage />
+              </RoutePermissionGuard>
+            } />
+            
+            {/* Pending Invitations Route */}
+            <Route path="invitations" element={
+              <RoutePermissionGuard>
+                <PendingInvitationsPage />
               </RoutePermissionGuard>
             } />
             

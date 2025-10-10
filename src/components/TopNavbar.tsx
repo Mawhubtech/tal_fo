@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell, Calendar, CheckSquare, HelpCircle } from 'lucide-react';
+import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell, Calendar, CheckSquare, HelpCircle, UserPlus, Mail, MailCheck, MailX } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useLogout } from '../hooks/useAuth';
 import { AccountSettingsModal } from './AccountSettingsModal';
-import { useMyCompanies, useMemberCompanies } from '../hooks/useCompany';
+import { useMyCompanies, useMemberCompanies, useMyPendingInvitations } from '../hooks/useCompany';
 import { isSuperAdmin } from '../utils/roleUtils';
 import Button from './Button';
-import { PendingInvitations } from './calendar/PendingEventInvitations';
 import { useMyPendingEventInvitations } from '../hooks/useCalendarInvitations';
+import { useMyPendingJobInvitations } from '../hooks/useJobCollaborators';
 import { Link } from 'react-router-dom';
+import { useEmailService } from '../hooks/useEmailService';
+import { useGmailStatus } from '../contexts/GmailStatusContext';
 
 interface TopNavbarProps {
   onNewSearch?: () => void;
@@ -26,8 +28,20 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
   const { data: memberCompaniesData } = useMemberCompanies();
   const isUserSuperAdmin = isSuperAdmin(user);
 
-  // Get pending event invitations for notification count
-  const { data: pendingInvitationsData } = useMyPendingEventInvitations();
+  // Get pending invitations for notification count
+  const { data: pendingEventInvitationsData } = useMyPendingEventInvitations();
+  const { data: pendingCompanyInvitationsData } = useMyPendingInvitations();
+  const { data: pendingJobInvitations = [] } = useMyPendingJobInvitations();
+
+  // Get email connection status
+  const { emailSettings } = useEmailService(true);
+  const { isGmailConnectionExpired } = useGmailStatus();
+
+  // Calculate total pending invitations
+  const eventInvitationsCount = pendingEventInvitationsData?.invitations?.length || 0;
+  const companyInvitationsCount = pendingCompanyInvitationsData?.invitations?.length || 0;
+  const jobInvitationsCount = pendingJobInvitations.length || 0;
+  const totalPendingInvitations = eventInvitationsCount + companyInvitationsCount + jobInvitationsCount;
 
   // Determine primary company (user's main company)
   const myCompanies = myCompaniesData?.companies || [];
@@ -141,20 +155,59 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
           >
             <HelpCircle className="w-5 h-5" />
           </Link>
+
+          {/* Email Connection Status */}
+          <Link 
+            to="/dashboard/settings/email"
+            className={`relative p-2 rounded-lg transition-colors ${
+              emailSettings?.isGmailConnected && !isGmailConnectionExpired
+                ? 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+            }`}
+            title={
+              emailSettings?.isGmailConnected && !isGmailConnectionExpired
+                ? `Gmail Connected: ${emailSettings.gmailEmail || 'Connected'}`
+                : 'Gmail Disconnected - Click to reconnect'
+            }
+          >
+            {emailSettings?.isGmailConnected && !isGmailConnectionExpired ? (
+              <MailCheck className="w-5 h-5" />
+            ) : (
+              <MailX className="w-5 h-5" />
+            )}
+            {/* Status indicator dot */}
+            <span 
+              className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border-2 border-white ${
+                emailSettings?.isGmailConnected && !isGmailConnectionExpired
+                  ? 'bg-green-500'
+                  : 'bg-red-500'
+              }`}
+            />
+          </Link>
         </div>
+
+        {/* Pending Invitations */}
+        <Link 
+          to="/dashboard/invitations"
+          className="relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+          title="Pending Invitations"
+        >
+          <UserPlus className="w-5 h-5" />
+          {totalPendingInvitations > 0 && (
+            <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+              {totalPendingInvitations > 9 ? '9+' : totalPendingInvitations}
+            </span>
+          )}
+        </Link>
 
         {/* Notifications */}
         <div className="relative">
           <button 
             className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md"
             onClick={() => setShowNotifications(!showNotifications)}
+            title="Notifications"
           >
             <Bell className="w-5 h-5" />
-            {pendingInvitationsData?.invitations && pendingInvitationsData.invitations.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {pendingInvitationsData.invitations.length}
-              </span>
-            )}
           </button>
           
           {/* Notifications dropdown */}
@@ -165,10 +218,14 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
                 className="fixed inset-0 z-10" 
                 onClick={() => setShowNotifications(false)}
               />
-              <div className="absolute top-full right-0 mt-1 w-96 bg-white border border-gray-200 shadow-lg z-20 rounded-md max-h-96 overflow-y-auto">
-                <div className="p-3">
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">Notifications</h3>
-                  <PendingInvitations />
+              <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 shadow-lg z-20 rounded-md">
+                <div className="p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Notifications</h3>
+                  <div className="text-center py-8">
+                    <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No new notifications</p>
+                    <p className="text-xs text-gray-400 mt-1">You're all caught up!</p>
+                  </div>
                 </div>
               </div>
             </>

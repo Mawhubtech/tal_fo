@@ -100,6 +100,24 @@ export interface Job {
       source?: string;
     };
   }>;
+  collaborators?: Array<{
+    id: string;
+    email: string;
+    role: string;
+    status: string;
+    canViewApplications: boolean;
+    canMoveCandidates: boolean;
+    canEditJob: boolean;
+    invitationSentAt?: string;
+    acceptedAt?: string;
+    user?: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      avatar?: string;
+    };
+  }>;
   // Legacy fields for compatibility with existing frontend code
   applicants?: number; // Maps to applicantsCount
   postedDate?: string; // Computed from createdAt

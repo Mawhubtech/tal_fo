@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles, Globe, Lock, ExternalLink, Edit } from 'lucide-react';
+import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles, Globe, Lock, ExternalLink, Edit, UserPlus, Check } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
 import { useOrganization, useOrganizationDepartments, useOrganizations } from '../../../hooks/useOrganizations';
@@ -18,6 +18,32 @@ import JobPublishingModal from '../components/JobPublishingModal';
 import PublishingSettingsCard from '../components/PublishingSettingsCard';
 import PipelineModal from '../../../components/PipelineModal';
 import PipelineUsageWarningModal from '../../../components/PipelineUsageWarningModal';
+import JobCollaboratorInviteForm, { JobCollaboratorInvite } from '../components/JobCollaboratorInviteForm';
+
+// Helper function to get currency symbol
+const getCurrencySymbol = (currencyCode: string): string => {
+  const currencySymbols: { [key: string]: string } = {
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'CAD': 'C$',
+    'AUD': 'A$',
+    'AED': 'د.إ',
+    'SAR': '﷼',
+    'QAR': 'ر.ق',
+    'KWD': 'د.ك',
+    'BHD': 'د.ب',
+    'OMR': 'ر.ع.',
+    'JOD': 'د.ا',
+    'EGP': '£',
+    'LBP': 'ل.ل',
+    'ILS': '₪',
+    'TRY': '₺',
+    'IRR': '﷼',
+    'IQD': 'ع.د',
+  };
+  return currencySymbols[currencyCode] || currencyCode;
+};
 
 const CreateJobPage: React.FC = () => {
   const { organizationId, departmentId } = useParams<{ 
@@ -99,8 +125,10 @@ const CreateJobPage: React.FC = () => {
   const [newBenefit, setNewBenefit] = useState('');
   const [applicationDeadline, setApplicationDeadline] = useState('');
   const [selectedHiringTeamId, setSelectedHiringTeamId] = useState<string>('');
-  const [requirements, setRequirements] = useState(['']);
-  const [responsibilities, setResponsibilities] = useState(['']);
+  const [requirements, setRequirements] = useState<string[]>([]);
+  const [newRequirement, setNewRequirement] = useState('');
+  const [responsibilities, setResponsibilities] = useState<string[]>([]);
+  const [newResponsibility, setNewResponsibility] = useState('');
   const [customQuestions, setCustomQuestions] = useState<{question: string, type: 'text' | 'multiple-choice', required: boolean}[]>([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
   const [showAIDialog, setShowAIDialog] = useState(false);
@@ -117,6 +145,9 @@ const CreateJobPage: React.FC = () => {
     popular: boolean;
     icon?: string;
   }>>([]);
+  const [invitedCollaborators, setInvitedCollaborators] = useState<string[]>([]);
+  const [pendingCollaborators, setPendingCollaborators] = useState<JobCollaboratorInvite[]>([]);
+  const [showCollaboratorForm, setShowCollaboratorForm] = useState(false);
 
   // Pipeline usage warning state
   const [showUsageWarning, setShowUsageWarning] = useState(false);
@@ -292,6 +323,12 @@ const CreateJobPage: React.FC = () => {
       if (editingJob.publishingOptions) {
         setPublishingOptions(editingJob.publishingOptions);
       }
+
+      // Load existing collaborators
+      if (editingJob.collaborators && editingJob.collaborators.length > 0) {
+        const collaboratorEmails = editingJob.collaborators.map((collab: any) => collab.email);
+        setInvitedCollaborators(collaboratorEmails);
+      }
     }
   }, [editingJob, isEditMode, departmentId]);
   
@@ -350,31 +387,25 @@ const CreateJobPage: React.FC = () => {
   };
 
   const addRequirement = () => {
-    setRequirements([...requirements, '']);
+    if (newRequirement.trim() && !requirements.includes(newRequirement.trim())) {
+      setRequirements([...requirements, newRequirement.trim()]);
+      setNewRequirement('');
+    }
   };
 
-  const updateRequirement = (index: number, value: string) => {
-    const updated = [...requirements];
-    updated[index] = value;
-    setRequirements(updated);
-  };
-
-  const removeRequirement = (index: number) => {
-    setRequirements(requirements.filter((_, i) => i !== index));
+  const removeRequirement = (requirementToRemove: string) => {
+    setRequirements(requirements.filter(requirement => requirement !== requirementToRemove));
   };
 
   const addResponsibility = () => {
-    setResponsibilities([...responsibilities, '']);
+    if (newResponsibility.trim() && !responsibilities.includes(newResponsibility.trim())) {
+      setResponsibilities([...responsibilities, newResponsibility.trim()]);
+      setNewResponsibility('');
+    }
   };
 
-  const updateResponsibility = (index: number, value: string) => {
-    const updated = [...responsibilities];
-    updated[index] = value;
-    setResponsibilities(updated);
-  };
-
-  const removeResponsibility = (index: number) => {
-    setResponsibilities(responsibilities.filter((_, i) => i !== index));
+  const removeResponsibility = (responsibilityToRemove: string) => {
+    setResponsibilities(responsibilities.filter(responsibility => responsibility !== responsibilityToRemove));
   };  const handleSubmit = async (publish: boolean) => {
     if (publish) {
       // Show publishing modal for publish action
@@ -402,10 +433,7 @@ const CreateJobPage: React.FC = () => {
         return;
       }
 
-      if (!departmentIdForm.trim()) {
-        setError('Department is required');
-        return;
-      }
+      // Department is optional - no validation needed
 
       if (!location.trim()) {
         setError('Location is required');
@@ -425,18 +453,15 @@ const CreateJobPage: React.FC = () => {
         return;
       }
 
-      // Find the selected department to get its name
-      const selectedDept = departments.find(dept => dept.id === departmentIdForm);
-      if (!selectedDept) {
-        setError('Invalid department selected');
-        return;
-      }
+      // Department is optional - find it if selected
+      const selectedDept = departmentIdForm 
+        ? departments.find(dept => dept.id === departmentIdForm) 
+        : null;
 
       const jobData: CreateJobData = {
         title: jobTitle.trim(),
         description: jobDescription.trim() || undefined,
-        department: selectedDept.name,
-        departmentId: departmentIdForm,
+        department: selectedDept?.name || undefined,
         location: location.trim(),
         type: employmentType as any,
         status: publish ? 'Published' : 'Draft',
@@ -453,7 +478,6 @@ const CreateJobPage: React.FC = () => {
         responsibilities: responsibilities.filter(resp => resp.trim()).length > 0 
           ? responsibilities.filter(resp => resp.trim()) 
           : undefined,
-        hiringTeamId: selectedHiringTeamId || undefined,
         applicationDeadline: applicationDeadline || undefined,
         organizationId: effectiveOrgId || undefined,
         customQuestions: customQuestions.length > 0 ? customQuestions : undefined,
@@ -461,11 +485,19 @@ const CreateJobPage: React.FC = () => {
         publishingOptions: publish ? options : undefined,
       };
 
+      // Add fields that are only needed for job creation (not updates)
+      if (!isEditMode) {
+        jobData.departmentId = departmentIdForm || undefined;
+        jobData.hiringTeamId = selectedHiringTeamId || undefined;
+        jobData.collaborators = pendingCollaborators.length > 0 ? pendingCollaborators : undefined;
+      }
+
       // Debug logging to ensure hiring team and pipeline are being saved
-      console.log('Creating job with:', {
+      console.log(`${isEditMode ? 'Updating' : 'Creating'} job with:`, {
         hiringTeamId: jobData.hiringTeamId,
         pipelineId: jobData.pipelineId,
         publishingOptions: jobData.publishingOptions,
+        collaborators: jobData.collaborators,
         selectedHiringTeam: hiringTeams.find(t => t.id === selectedHiringTeamId),
         selectedPipeline: activePipelines.find(p => p.id === selectedPipelineId)
       });
@@ -474,9 +506,30 @@ const CreateJobPage: React.FC = () => {
       if (isEditMode && editJobId) {
         // Update existing job
         resultJob = await updateJobMutation.mutateAsync({ id: editJobId, data: jobData });
+        
+        // Handle collaborators separately for edit mode
+        if (resultJob.id && pendingCollaborators.length > 0) {
+          try {
+            console.log('Inviting collaborators to updated job:', resultJob.id);
+            const { jobCollaboratorApiService } = await import('../../../services/jobCollaboratorApiService');
+            await jobCollaboratorApiService.inviteBulk(resultJob.id, pendingCollaborators);
+            console.log('Successfully invited', pendingCollaborators.length, 'collaborators');
+            // Clear pending collaborators after successful invitation
+            setPendingCollaborators([]);
+          } catch (inviteError: any) {
+            console.error('Error inviting collaborators:', inviteError);
+            // Show warning but don't fail the job update
+            setError(`Job updated successfully, but failed to send some invitations: ${inviteError.message}`);
+          }
+        }
       } else {
-        // Create new job
+        // Create new job (collaborators will be invited automatically by the backend)
         resultJob = await createJobMutation.mutateAsync(jobData);
+        
+        // Clear pending collaborators after successful job creation
+        if (resultJob.id && pendingCollaborators.length > 0) {
+          setPendingCollaborators([]);
+        }
       }
       
       // Navigate to the job ATS page
@@ -489,6 +542,38 @@ const CreateJobPage: React.FC = () => {
       setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`);
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} job:`, err);
     }
+  };
+
+  // Utility function to parse and split grouped items (e.g., "Technical: Python, JavaScript, React" -> ["Python", "JavaScript", "React"])
+  const parseGroupedItems = (items: string[]): string[] => {
+    const parsed: string[] = [];
+    
+    items.forEach(item => {
+      const trimmedItem = item.trim();
+      
+      // Check if item contains a category prefix like "Technical:" or "Soft:"
+      const colonIndex = trimmedItem.indexOf(':');
+      if (colonIndex > 0 && colonIndex < 20) { // Category label should be short
+        // Extract the part after the colon
+        const content = trimmedItem.substring(colonIndex + 1).trim();
+        
+        // Split by commas and add each as separate item
+        const splitItems = content.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        parsed.push(...splitItems);
+      } else {
+        // Check if it's a comma-separated list without category
+        if (trimmedItem.includes(',')) {
+          const splitItems = trimmedItem.split(',').map(s => s.trim()).filter(s => s.length > 0);
+          parsed.push(...splitItems);
+        } else {
+          // Single item, add as is
+          parsed.push(trimmedItem);
+        }
+      }
+    });
+    
+    // Remove duplicates and empty strings
+    return [...new Set(parsed)].filter(item => item.length > 0);
   };
 
   // AI generation handler
@@ -516,11 +601,13 @@ const CreateJobPage: React.FC = () => {
     // Clear and update requirements (filter out empty ones)
     setRequirements(aiData.requirements.filter(req => req.trim()));
     
-    // Clear and update skills (replace existing with new ones)
-    setSkills(aiData.skills.filter(skill => skill.trim()));
+    // Parse and update skills (handle grouped format like "Technical: Python, JavaScript")
+    const parsedSkills = parseGroupedItems(aiData.skills);
+    setSkills(parsedSkills);
     
-    // Clear and update benefits (replace existing with new ones)
-    setBenefits(aiData.benefits.filter(benefit => benefit.trim()));
+    // Parse and update benefits (handle grouped format)
+    const parsedBenefits = parseGroupedItems(aiData.benefits);
+    setBenefits(parsedBenefits);
   };
 
   // Pipeline creation handler
@@ -583,6 +670,26 @@ const CreateJobPage: React.FC = () => {
     } finally {
       setModalLoading(false);
     }
+  };
+
+  // Handle inviting collaborators - Store them temporarily until job is created
+  const handleInviteCollaborators = async (collaborators: JobCollaboratorInvite[]) => {
+    // Validate that all collaborators have emails
+    const invalidCollaborators = collaborators.filter(c => !c.email || !c.email.trim());
+    if (invalidCollaborators.length > 0) {
+      throw new Error('All collaborators must have a valid email address');
+    }
+    
+    // Store collaborators to be invited after job creation
+    setPendingCollaborators([...pendingCollaborators, ...collaborators]);
+    
+    // Add emails to the invited list for UI display
+    const emails = collaborators.map(c => c.email.toLowerCase());
+    setInvitedCollaborators([...invitedCollaborators, ...emails]);
+    
+    console.log('Stored collaborators for invitation after job creation:', collaborators);
+    
+    return Promise.resolve();
   };
 
   // Early return if no organizationId - allow standalone job creation
@@ -677,16 +784,16 @@ const CreateJobPage: React.FC = () => {
                 type="button"
                 onClick={() => handleSubmit(false)}
                 disabled={submitLoading}
-                className="px-4 py-2 border-2 border-purple-600 text-purple-700 rounded-lg hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-3 py-2 border-2 border-purple-600 text-purple-700 rounded-md hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {submitLoading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent mr-2"></div>
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-purple-600 border-t-transparent mr-2"></div>
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="h-3.5 w-3.5 mr-2" />
                     {isEditMode ? 'Save Changes' : 'Save as Draft'}
                   </>
                 )}
@@ -695,16 +802,16 @@ const CreateJobPage: React.FC = () => {
                 type="button"
                 onClick={() => handleSubmit(true)}
                 disabled={submitLoading}
-                className="px-4 py-2 bg-purple-600 border border-purple-600 text-white rounded-lg hover:bg-purple-700 hover:border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-3 py-2 bg-purple-600 border border-purple-600 text-white rounded-md hover:bg-purple-700 hover:border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 {submitLoading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent mr-2"></div>
                     {isEditMode ? 'Updating...' : 'Publishing...'}
                   </>
                 ) : (
                   <>
-                    <Globe className="h-4 w-4 mr-2" />
+                    <Globe className="h-3.5 w-3.5 mr-2" />
                     {isEditMode ? 'Update & Publish' : 'Publish Job'}
                   </>
                 )}
@@ -749,27 +856,27 @@ const CreateJobPage: React.FC = () => {
               </div>
             </div>
             <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="jobTitle" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Job Title *
-                  </label>
-                  <input
-                    type="text"
-                    id="jobTitle"
-                    value={jobTitle}
-                    onChange={(e) => setJobTitle(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
-                    placeholder="e.g., Senior Software Engineer"
-                    required
-                  />
-                </div>
+              {/* Job Title */}
+              <div>
+                <label htmlFor="jobTitle" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Job Title *
+                </label>
+                <input
+                  type="text"
+                  id="jobTitle"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                  placeholder="e.g., Senior Software Engineer"
+                  required
+                />
+              </div>
                 
-                {/* Organization selector - only show in standalone mode */}
-                {!organizationId && (
+                {/* Organization selector - HIDDEN */}
+                {false && !organizationId && (
                   <div>
                     <label htmlFor="organization" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Organization *
+                      Organization <span className="text-gray-400 font-normal">(Optional)</span>
                     </label>
                     <select
                       id="organization"
@@ -780,8 +887,7 @@ const CreateJobPage: React.FC = () => {
                         setDepartmentIdForm('');
                         setSelectedDepartment(null);
                       }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
-                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                       disabled={allOrganizationsLoading}
                     >
                       <option value="">Select Organization</option>
@@ -796,13 +902,13 @@ const CreateJobPage: React.FC = () => {
                     )}
                   </div>
                 )}
-              </div>
 
+              {/* Department field - HIDDEN */}
+              {false && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Show the department field regardless of mode */}
                 <div className={!organizationId ? "lg:col-span-2" : ""}>
                   <label htmlFor="department" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Department *
+                    Department <span className="text-gray-400 font-normal">(Optional)</span>
                   </label>
                   <select
                     id="department"
@@ -812,14 +918,13 @@ const CreateJobPage: React.FC = () => {
                       const selected = departments.find(dept => dept.id === e.target.value);
                       setSelectedDepartment(selected || null);
                     }}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
-                    required
-                    disabled={loading || departments.length === 0 || (!organizationId && !selectedOrganizationId)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    disabled={loading || departments.length === 0}
                   >
                     <option value="">
-                      {!organizationId && !selectedOrganizationId 
-                        ? 'Select an organization first' 
-                        : 'Select Department'}
+                      {departments.length === 0 
+                        ? 'No departments available' 
+                        : 'Select Department (Optional)'}
                     </option>
                     {departments.map((dept) => (
                       <option key={dept.id} value={dept.id}>
@@ -835,7 +940,9 @@ const CreateJobPage: React.FC = () => {
                   )}
                 </div>
               </div>
+              )}
 
+              {/* Location and Employment Type */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -847,7 +954,7 @@ const CreateJobPage: React.FC = () => {
                     id="location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="e.g., New York, NY"
                     required
                   />
@@ -861,7 +968,7 @@ const CreateJobPage: React.FC = () => {
                     id="employmentType"
                     value={employmentType}
                     onChange={(e) => setEmploymentType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   >
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
@@ -872,6 +979,7 @@ const CreateJobPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Experience Level and Remote */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="experienceLevel" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -881,7 +989,7 @@ const CreateJobPage: React.FC = () => {
                     id="experienceLevel"
                     value={experienceLevel}
                     onChange={(e) => setExperienceLevel(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   >
                     <option value="">Select Experience Level</option>
                     <option value="Entry Level">Entry Level (0-2 years)</option>
@@ -891,6 +999,22 @@ const CreateJobPage: React.FC = () => {
                     <option value="Executive">Executive</option>
                   </select>
                 </div>
+                
+                <div className="flex items-center pt-8">
+                  <input
+                    type="checkbox"
+                    id="remote"
+                    checked={remote}
+                    onChange={(e) => setRemote(e.target.checked)}
+                    className="h-5 w-5 text-purple-600 focus:ring-purple-500 focus:outline-none border-gray-300 rounded"
+                  />
+                  <label htmlFor="remote" className="ml-3 text-sm font-semibold text-gray-700">
+                    Remote work available
+                  </label>
+                </div>
+                
+                {/* Application Deadline - HIDDEN */}
+                {false && (
                 <div>
                   <label htmlFor="applicationDeadline" className="block text-sm font-semibold text-gray-700 mb-2">
                     <Calendar className="inline mr-1" size={16} />
@@ -901,22 +1025,10 @@ const CreateJobPage: React.FC = () => {
                     id="applicationDeadline"
                     value={applicationDeadline}
                     onChange={(e) => setApplicationDeadline(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="remote"
-                  checked={remote}
-                  onChange={(e) => setRemote(e.target.checked)}
-                  className="h-5 w-5 text-purple-600 focus:ring-purple-500 focus:outline-none border-gray-300 rounded"
-                />
-                <label htmlFor="remote" className="ml-3 text-sm font-semibold text-gray-700">
-                  Remote work available
-                </label>
+                )}
               </div>
             </div>
           </div>
@@ -940,7 +1052,7 @@ const CreateJobPage: React.FC = () => {
                     id="salaryMin"
                     value={salaryMin}
                     onChange={(e) => setSalaryMin(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="50000"
                   />
                 </div>
@@ -953,7 +1065,7 @@ const CreateJobPage: React.FC = () => {
                     id="salaryMax"
                     value={salaryMax}
                     onChange={(e) => setSalaryMax(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="80000"
                   />
                 </div>
@@ -965,7 +1077,7 @@ const CreateJobPage: React.FC = () => {
                     id="currency"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   >
                     <option value="USD">USD ($)</option>
                     <option value="EUR">EUR (€)</option>
@@ -1008,8 +1120,8 @@ const CreateJobPage: React.FC = () => {
                   id="jobDescription"
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                  rows={4}
+                  className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                   placeholder="Provide a compelling overview of the role, company culture, and what makes this position exciting..."
                   required
                 />
@@ -1020,34 +1132,40 @@ const CreateJobPage: React.FC = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Key Responsibilities
                 </label>
-                {responsibilities.map((responsibility, index) => (
-                  <div key={index} className="flex items-center space-x-3 mb-3">
-                    <input
-                      type="text"
-                      value={responsibility}
-                      onChange={(e) => updateResponsibility(index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
-                      placeholder="e.g., Design and implement scalable backend systems"
-                    />
-                    {responsibilities.length > 1 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {responsibilities.map((responsibility, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                    >
+                      {responsibility}
                       <button
                         type="button"
-                        onClick={() => removeResponsibility(index)}
-                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                        onClick={() => removeResponsibility(responsibility)}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
                       >
-                        <X size={20} />
+                        <X size={14} />
                       </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addResponsibility}
-                  className="flex items-center text-purple-600 hover:text-purple-800 font-medium mt-2"
-                >
-                  <Plus size={16} className="mr-1" />
-                  Add Responsibility
-                </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex space-x-3">
+                  <input
+                    type="text"
+                    value={newResponsibility}
+                    onChange={(e) => setNewResponsibility(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addResponsibility())}
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    placeholder="e.g., Design and implement scalable backend systems"
+                  />
+                  <button
+                    type="button"
+                    onClick={addResponsibility}
+                    className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-xs"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
 
               {/* Requirements */}
@@ -1055,34 +1173,40 @@ const CreateJobPage: React.FC = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Requirements & Qualifications
                 </label>
-                {requirements.map((requirement, index) => (
-                  <div key={index} className="flex items-center space-x-3 mb-3">
-                    <input
-                      type="text"
-                      value={requirement}
-                      onChange={(e) => updateRequirement(index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
-                      placeholder="e.g., 5+ years of experience with React and TypeScript"
-                    />
-                    {requirements.length > 1 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {requirements.map((requirement, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800"
+                    >
+                      {requirement}
                       <button
                         type="button"
-                        onClick={() => removeRequirement(index)}
-                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                        onClick={() => removeRequirement(requirement)}
+                        className="ml-2 text-orange-600 hover:text-orange-800"
                       >
-                        <X size={20} />
+                        <X size={14} />
                       </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addRequirement}
-                  className="flex items-center text-purple-600 hover:text-purple-800 font-medium mt-2"
-                >
-                  <Plus size={16} className="mr-1" />
-                  Add Requirement
-                </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex space-x-3">
+                  <input
+                    type="text"
+                    value={newRequirement}
+                    onChange={(e) => setNewRequirement(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRequirement())}
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    placeholder="e.g., 5+ years of experience with React and TypeScript"
+                  />
+                  <button
+                    type="button"
+                    onClick={addRequirement}
+                    className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-xs"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1124,13 +1248,13 @@ const CreateJobPage: React.FC = () => {
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="e.g., React, TypeScript, Node.js"
                   />
                   <button
                     type="button"
                     onClick={addSkill}
-                    className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                    className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-xs"
                   >
                     Add
                   </button>
@@ -1165,13 +1289,13 @@ const CreateJobPage: React.FC = () => {
                     value={newBenefit}
                     onChange={(e) => setNewBenefit(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="e.g., Health Insurance, Remote Work, Flexible Hours"
                   />
                   <button
                     type="button"
                     onClick={addBenefit}
-                    className="px-6 py-3 bg-purple-600 border border-purple-600 text-white rounded-lg hover:bg-purple-700 hover:border-purple-700 transition-colors font-medium"
+                    className="px-3 py-2 bg-purple-600 border border-purple-600 text-white rounded-md hover:bg-purple-700 hover:border-purple-700 transition-colors font-medium text-xs"
                   >
                     Add
                   </button>
@@ -1191,6 +1315,125 @@ const CreateJobPage: React.FC = () => {
               
               {/* Hiring Team Selection - Hidden, making it optional */}
               
+              {/* Job Collaborators - Invite team members (Optional) */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Team Members <span className="text-gray-500 font-normal">(Optional)</span></h3>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Invite colleagues to collaborate on this job posting. You can skip this and add team members later.
+                    </p>
+                  </div>
+                  {!showCollaboratorForm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCollaboratorForm(true)}
+                      className="flex items-center space-x-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-xs font-medium"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Invite Team</span>
+                    </button>
+                  )}
+                </div>
+
+                {showCollaboratorForm && (
+                  <div className="mt-4">
+                    <JobCollaboratorInviteForm
+                      onInvite={handleInviteCollaborators}
+                      onClose={() => setShowCollaboratorForm(false)}
+                      existingCollaborators={invitedCollaborators}
+                    />
+                  </div>
+                )}
+
+                {!showCollaboratorForm && invitedCollaborators.length > 0 && (
+                  <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-2">
+                      <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-800 mb-1">
+                          {invitedCollaborators.length} team member{invitedCollaborators.length > 1 ? 's' : ''}
+                          {isEditMode && editingJob?.collaborators ? ' invited' : ' ready to invite'}
+                        </p>
+                        {isEditMode && editingJob?.collaborators && editingJob.collaborators.length > 0 ? (
+                          <>
+                            <p className="text-xs text-green-700 mb-3">
+                              Existing team members. You can manage them from the job ATS page using "Manage Teams".
+                            </p>
+                            <div className="space-y-2">
+                              {editingJob.collaborators.map((collab: any) => (
+                                <div
+                                  key={collab.id}
+                                  className="flex items-center justify-between p-2 bg-white border border-green-300 rounded"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="text-sm font-medium text-gray-900">
+                                          {collab.user ? `${collab.user.firstName} ${collab.user.lastName}` : collab.email}
+                                        </span>
+                                        {collab.status === 'accepted' && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                            Accepted
+                                          </span>
+                                        )}
+                                        {collab.status === 'pending' && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Pending
+                                          </span>
+                                        )}
+                                      </div>
+                                      {collab.user && (
+                                        <p className="text-xs text-gray-500">{collab.email}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 capitalize">
+                                      {collab.role.replace('_', ' ')}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs text-green-700 mb-2">
+                              {isEditMode 
+                                ? 'These team members will be invited when you update the job.'
+                                : 'These team members will be invited after the job is created.'}
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {invitedCollaborators.map((email, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-1 bg-white border border-green-300 rounded text-xs text-green-800"
+                                >
+                                  {email}
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!showCollaboratorForm && invitedCollaborators.length === 0 && (
+                  <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-blue-800">
+                          No team members invited yet. Click "Invite Team" to add collaborators who can help manage this job posting.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1257,11 +1500,11 @@ const CreateJobPage: React.FC = () => {
                   <p className="text-sm font-medium text-green-800 mb-1">Salary Range</p>
                   <p className="text-lg font-semibold text-green-900">
                     {salaryMin && salaryMax 
-                      ? `${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'C$'}${parseInt(salaryMin).toLocaleString()} - ${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'C$'}${parseInt(salaryMax).toLocaleString()}`
+                      ? `${getCurrencySymbol(currency)}${parseInt(salaryMin).toLocaleString()} - ${getCurrencySymbol(currency)}${parseInt(salaryMax).toLocaleString()}`
                       : salaryMin 
-                        ? `From ${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'C$'}${parseInt(salaryMin).toLocaleString()}`
+                        ? `From ${getCurrencySymbol(currency)}${parseInt(salaryMin).toLocaleString()}`
                         : salaryMax 
-                          ? `Up to ${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : 'C$'}${parseInt(salaryMax).toLocaleString()}`
+                          ? `Up to ${getCurrencySymbol(currency)}${parseInt(salaryMax).toLocaleString()}`
                           : ''
                     }
                   </p>

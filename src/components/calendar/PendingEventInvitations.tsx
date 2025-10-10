@@ -11,12 +11,15 @@ import {
   Users,
   Building2,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  Briefcase
 } from 'lucide-react';
 import { useMyPendingEventInvitations, useRespondToEventInvitation } from '../../hooks/useCalendarInvitations';
 import { useMyPendingInvitations, useAcceptInvitation } from '../../hooks/useCompany';
+import { useMyPendingJobInvitations, useAcceptInvitation as useAcceptJobInvitation } from '../../hooks/useJobCollaborators';
 import type { EventInvitation } from '../../services/calendarApiService';
 import type { CompanyMember } from '../../services/companyApiService';
+import type { JobCollaborator } from '../../services/jobCollaboratorApiService';
 
 interface PendingInvitationsProps {
   className?: string;
@@ -30,15 +33,17 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
 
   const { data: eventInvitationsData, isLoading: eventInvitationsLoading, error: eventInvitationsError } = useMyPendingEventInvitations();
   const { data: companyInvitationsData, isLoading: companyInvitationsLoading, error: companyInvitationsError } = useMyPendingInvitations();
+  const { data: jobInvitations = [], isLoading: jobInvitationsLoading } = useMyPendingJobInvitations();
   const respondToEventInvitationMutation = useRespondToEventInvitation();
   const acceptCompanyInvitationMutation = useAcceptInvitation();
+  const acceptJobInvitationMutation = useAcceptJobInvitation();
 
   const eventInvitations = eventInvitationsData?.invitations || [];
   const companyInvitations = companyInvitationsData?.invitations || [];
   
-  const isLoading = eventInvitationsLoading || companyInvitationsLoading;
+  const isLoading = eventInvitationsLoading || companyInvitationsLoading || jobInvitationsLoading;
   const hasError = eventInvitationsError || companyInvitationsError;
-  const totalInvitations = eventInvitations.length + companyInvitations.length;
+  const totalInvitations = eventInvitations.length + companyInvitations.length + jobInvitations.length;
 
   const handleEventInvitationRespond = async (invitationId: string, response: 'accepted' | 'declined' | 'maybe') => {
     try {
@@ -70,6 +75,20 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
     } catch (error: any) {
       console.error('Failed to accept company invitation:', error);
       const message = error.response?.data?.message || 'Failed to accept company invitation';
+      setErrorMessage(message);
+      setTimeout(() => setErrorMessage(null), 5000);
+    }
+  };
+
+  const handleJobInvitationAccept = async (invitation: JobCollaborator) => {
+    try {
+      setErrorMessage(null);
+      await acceptJobInvitationMutation.mutateAsync(invitation.invitationToken!);
+      setSuccessMessage(`Job invitation accepted! You can now collaborate on ${invitation.job?.title}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error: any) {
+      console.error('Failed to accept job invitation:', error);
+      const message = error.response?.data?.message || 'Failed to accept job invitation';
       setErrorMessage(message);
       setTimeout(() => setErrorMessage(null), 5000);
     }
@@ -288,6 +307,80 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
             <div className="mt-2 pt-2 border-t border-gray-100">
               <p className="text-xs text-gray-500">
                 Invited {invitation.invitedAt ? new Date(invitation.invitedAt).toLocaleDateString([], {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) : 'recently'}
+              </p>
+            </div>
+          </div>
+        ))}
+
+        {/* Job Collaborator Invitations */}
+        {jobInvitations.slice(0, Math.max(0, 3 - companyInvitations.length)).map((invitation) => (
+          <div
+            key={`job-${invitation.id}`}
+            className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Briefcase className="w-4 h-4 text-purple-600" />
+                  <h4 className="font-medium text-gray-900">
+                    {invitation.job?.title || 'Job Collaboration'}
+                  </h4>
+                  <span className="px-2 py-1 rounded-full text-xs font-medium text-white bg-purple-500">
+                    Job
+                  </span>
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-2">
+                  Role: {formatCompanyRole(invitation.role)}
+                  {invitation.invitedBy && ` • Invited by ${invitation.invitedBy.firstName} ${invitation.invitedBy.lastName}`}
+                </p>
+
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {invitation.canViewApplications && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      View Applications
+                    </span>
+                  )}
+                  {invitation.canMoveCandidates && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                      Move Candidates
+                    </span>
+                  )}
+                  {invitation.canEditJob && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                      Edit Job
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleJobInvitationAccept(invitation)}
+                disabled={acceptJobInvitationMutation.isPending}
+                className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-md hover:bg-purple-700 disabled:opacity-50"
+              >
+                <Check className="w-3 h-3" />
+                Accept
+              </button>
+
+              {acceptJobInvitationMutation.isPending && (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
+                  Accepting...
+                </div>
+              )}
+            </div>
+
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <p className="text-xs text-gray-500">
+                Invited {invitation.invitationSentAt ? new Date(invitation.invitationSentAt).toLocaleDateString([], {
                   month: 'short',
                   day: 'numeric',
                   hour: '2-digit',

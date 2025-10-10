@@ -35,6 +35,7 @@ import JobPreviewModal from '../../../components/modals/JobPreviewModal';
 import CollaborativeSidePanel, { type CollaborativePanelState, type TeamMember } from '../../../components/CollaborativeSidePanel';
 import PipelineModal from '../../../components/PipelineModal';
 import PipelineUsageWarningModal from '../../../components/PipelineUsageWarningModal';
+import ManageTeamsDialog from '../components/ManageTeamsDialog';
 import { useJobComments, useCreateComment, useUpdateComment, useDeleteComment, useAddReaction, useRemoveReaction } from '../../../hooks/useJobComments';
 
 const JobATSPage: React.FC = () => {
@@ -53,6 +54,7 @@ const JobATSPage: React.FC = () => {
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showJobPreviewModal, setShowJobPreviewModal] = useState(false);
+  const [showManageTeamsDialog, setShowManageTeamsDialog] = useState(false);
   
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
@@ -96,6 +98,12 @@ const JobATSPage: React.FC = () => {
     error: jobATSError 
   } = useJobATSPageData(organizationId || '', jobId || '');
   
+  // Fallback: Fetch applications separately when there's no organizationId
+  const {
+    data: standaloneApplicationsData,
+    isLoading: standaloneApplicationsLoading
+  } = useJobApplicationsByJob(!organizationId && jobId ? jobId : '');
+  
   // Fallback for external users (they still use the external job hook)
   const { 
     data: externalJob, 
@@ -103,21 +111,39 @@ const JobATSPage: React.FC = () => {
     error: externalJobError 
   } = useExternalJobDetail(isExternal ? (jobId || '') : '');
 
-  // Use the optimized data or fallback to external data for external users
-  const job = isExternal ? externalJob : jobATSData?.job;
-  const jobLoading = isExternal ? externalJobLoading : (jobBasicLoading || jobATSLoading);
+  // Use the optimized data or fallback for jobs without organization
+  const job = isExternal 
+    ? externalJob 
+    : (organizationId ? jobATSData?.job : jobBasicData);
+    
+  const jobLoading = isExternal 
+    ? externalJobLoading 
+    : (jobBasicLoading || (organizationId ? jobATSLoading : false));
+    
   const jobError = isExternal ? externalJobError : jobATSError;
   
-  // Get pipeline data from optimized response
-  const effectivePipeline = isExternal ? externalJob?.pipeline : jobATSData?.pipeline;
+  // Get pipeline data from optimized response or from basic job data
+  const effectivePipeline = isExternal 
+    ? externalJob?.pipeline 
+    : (organizationId ? jobATSData?.pipeline : jobBasicData?.pipeline);
+    
   const pipelineLoading = false; // Already loaded in the optimized call
   
-  // Extract other data from optimized response (fix property names from interface)
-  const jobApplicationsData = { applications: jobATSData?.applications || [] };
-  const applicationsLoading = isExternal ? true : jobATSLoading;
+  // Extract other data from optimized response or standalone fetch
+  const jobApplicationsData = { 
+    applications: organizationId 
+      ? (jobATSData?.applications || [])
+      : (standaloneApplicationsData?.applications || [])
+  };
+  
+  const applicationsLoading = isExternal 
+    ? true 
+    : (organizationId ? jobATSLoading : standaloneApplicationsLoading);
+    
   const applicationsError = isExternal ? null : jobATSError;
-  const taskStats = jobATSData?.taskStats;
-  const interviewsData = jobATSData?.interviews;
+  
+  const taskStats = organizationId ? jobATSData?.taskStats : undefined;
+  const interviewsData = organizationId ? jobATSData?.interviews : undefined;
   const reportData = null; // Will implement in future optimization
   const reportLoading = false;
   const reportError = null;
@@ -1192,79 +1218,96 @@ const JobATSPage: React.FC = () => {
 	</div>
 	
 	{/* Action buttons - moved below title */}
-	<div className="flex items-center space-x-3">
-	  {/* View Job button */}
-	  <button 
-		onClick={() => setShowJobPreviewModal(true)}
-		className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 px-4 py-2 rounded-md flex items-center transition-colors"
-		title="View job details"
-	  >
-		<Eye className="w-4 h-4 mr-2" />
-		View Job
-	  </button>
-	  
-	  {/* Manage Pipeline button */}
-	  {!isExternal && effectivePipeline && (
+	<div className="flex items-center justify-between">
+	  <div className="flex items-center space-x-2">
+		{/* View Job button */}
 		<button 
-		  onClick={() => setShowPipelineSelector(true)}
-		  className={`bg-white text-purple-600 border border-purple-600 hover:bg-purple-50 px-4 py-2 rounded-md flex items-center transition-colors ${
-			!canChangePipeline() ? 'opacity-75' : ''
-		  }`}
-		  title={!canChangePipeline() 
-			? "Pipeline management limited - job has active applications" 
-			: "Manage pipeline for this job"
+		  onClick={() => setShowJobPreviewModal(true)}
+		  className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm"
+		  title="View job details"
+		>
+		  <Eye className="w-3.5 h-3.5 mr-1.5" />
+		  View Job
+		</button>
+		
+		{/* Manage Pipeline button */}
+		{!isExternal && effectivePipeline && (
+		  <button 
+			onClick={() => setShowPipelineSelector(true)}
+			className={`bg-white text-purple-600 border border-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm ${
+			  !canChangePipeline() ? 'opacity-75' : ''
+			}`}
+			title={!canChangePipeline() 
+			  ? "Pipeline management limited - job has active applications" 
+			  : "Manage pipeline for this job"
+			}
+		  >
+			<Settings className="w-3.5 h-3.5 mr-1.5" />
+			{!canChangePipeline() ? 'Pipeline (In Use)' : 'Manage Pipeline'}
+		  </button>
+		)}
+		
+		{/* Manage Teams button */}
+		{!isExternal && (
+		  <button 
+			onClick={() => setShowManageTeamsDialog(true)}
+			className="bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm"
+			title="Manage team members for this job"
+		  >
+			<Users className="w-3.5 h-3.5 mr-1.5" />
+			Manage Teams
+		  </button>
+		)}
+		
+		{/* Email Sequences button */}
+		<Link
+		  to={isExternal 
+			? `/external/jobs/${jobId}/email-sequences`
+			: `/dashboard/jobs/${jobId}/email-sequences`
 		  }
+		  className="bg-white text-orange-600 border border-orange-600 hover:bg-orange-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm"
+		  title="Manage email sequences for this job"
 		>
-		  <Settings className="w-4 h-4 mr-2" />
-		  {!canChangePipeline() ? 'Pipeline (In Use)' : 'Manage Pipeline'}
-		</button>
-	  )}
-	  
-	  {/* Email Sequences button */}
-	  <Link
-		to={isExternal 
-		  ? `/external/jobs/${jobId}/email-sequences`
-		  : `/dashboard/jobs/${jobId}/email-sequences`
-		}
-		className="bg-white text-orange-600 border border-orange-600 hover:bg-orange-50 px-4 py-2 rounded-md flex items-center transition-colors"
-		title="Manage email sequences for this job"
-	  >
-		<Mail className="w-4 h-4 mr-2" />
-		Email Sequences
-	  </Link>
-	  
-	  {/* Refresh button */}
-	  <button 
-		onClick={handleRefreshData}
-		disabled={isRefreshing}
-		className={`bg-white text-purple-600 border border-purple-600 hover:text-purple-800 px-3 py-2 rounded-md flex items-center transition-colors ${
-		  isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-		}`}
-		title="Refresh all data"
-	  >
-		<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-	  </button>
-	  
-	  {/* Team Notes button */}
-	  <button 
-		onClick={() => handleCollaborativePanelStateChange('expanded')}
-		className="bg-white text-green-600 border border-green-600 hover:bg-green-50 px-4 py-2 rounded-md flex items-center transition-colors"
-		title="Team collaboration and notes"
-	  >
-		<MessageSquare className="w-4 h-4 mr-2" />
-		Team Notes
-	  </button>
-	  
-	  {/* Add Candidate button - Available for all users */}
-	  {effectivePipeline && (
+		  <Mail className="w-3.5 h-3.5 mr-1.5" />
+		  Email Sequences
+		</Link>
+		
+		{/* Team Notes button */}
 		<button 
-		  onClick={() => setShowAddCandidateModal(true)}
-		  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center transition-colors"
+		  onClick={() => handleCollaborativePanelStateChange('expanded')}
+		  className="bg-white text-green-600 border border-green-600 hover:bg-green-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm"
+		  title="Team collaboration and notes"
 		>
-		  <Plus className="w-4 h-4 mr-2" />
-		  Add Candidate
+		  <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+		  Team Notes
 		</button>
-	  )}
+	  </div>
+
+	  {/* Right side buttons */}
+	  <div className="flex items-center space-x-2">
+		{/* Refresh button */}
+		<button 
+		  onClick={handleRefreshData}
+		  disabled={isRefreshing}
+		  className={`bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm ${
+			isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+		  }`}
+		  title="Refresh all data"
+		>
+		  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+		</button>
+		
+		{/* Add Candidate button - Available for all users */}
+		{effectivePipeline && (
+		  <button 
+			onClick={() => setShowAddCandidateModal(true)}
+			className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-md flex items-center transition-colors text-sm font-medium"
+		  >
+			<Plus className="w-3.5 h-3.5 mr-1.5" />
+			Add Candidate
+		  </button>
+		)}
+	  </div>
 	</div>
   </div>	  {/* Job Info Card */}
 	  <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
@@ -1773,6 +1816,16 @@ const JobATSPage: React.FC = () => {
 		  onProceedAnyway={handleProceedWithOriginalEdit}
 		  pipelineName={pendingEditPipeline.name}
 		  usage={pipelineUsage}
+		/>
+	  )}
+
+	  {/* Manage Teams Dialog */}
+	  {showManageTeamsDialog && job && (
+		<ManageTeamsDialog
+		  isOpen={showManageTeamsDialog}
+		  onClose={() => setShowManageTeamsDialog(false)}
+		  jobId={job.id}
+		  jobTitle={job.title}
 		/>
 	  )}
 

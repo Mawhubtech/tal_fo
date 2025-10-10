@@ -21,6 +21,7 @@ import { useJobs, useDeleteJob } from '../../../hooks/useJobs';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyAssignment } from '../../../hooks/useUserAssignment';
 import { useUserTeamMemberships } from '../../../hooks/useHiringTeam';
+import { useMyCollaboratorJobs } from '../../../hooks/useJobCollaborators';
 import type { JobFilters } from '../../../services/jobApiService';
 import type { Job } from '../../data/types';
 
@@ -72,12 +73,36 @@ const AllJobsPage: React.FC = () => {
     refetch: refetchJobs
   } = useJobs(filters);
 
+  // Fetch jobs where user is a collaborator
+  const { 
+    data: collaboratorJobsData = [],
+    isLoading: collaboratorJobsLoading
+  } = useMyCollaboratorJobs();
+
   const deleteJobMutation = useDeleteJob();
 
   // Extract data from response or use defaults
-  const jobs = (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.data || [];
+  const organizationJobs = (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.data || [];
+  
+  // Extract jobs from collaborator data
+  const collaboratorJobs: Job[] = collaboratorJobsData
+    .filter(collab => collab.job)
+    .map(collab => collab.job!);
+  
+  // Merge organizational jobs and collaborator jobs, removing duplicates by job ID
+  const jobsMap = new Map<string, Job>();
+  
+  // Add organizational jobs first
+  organizationJobs.forEach(job => jobsMap.set(job.id, job));
+  
+  // Add collaborator jobs (won't duplicate if already in map)
+  collaboratorJobs.forEach(job => jobsMap.set(job.id, job));
+  
+  // Convert map back to array
+  const jobs = Array.from(jobsMap.values());
+  
   const pagination = {
-    total: (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.total || 0,
+    total: jobs.length, // Use combined total
     page: (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.page || 1,
     limit: (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.limit || 10
   };
@@ -221,7 +246,7 @@ const AllJobsPage: React.FC = () => {
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
-  if (loading || assignmentLoading || teamMembershipsLoading) {
+  if (loading || assignmentLoading || teamMembershipsLoading || collaboratorJobsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex items-center space-x-2">

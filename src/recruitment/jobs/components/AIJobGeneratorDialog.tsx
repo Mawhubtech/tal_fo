@@ -155,12 +155,12 @@ Make the content engaging, specific, and tailored to the role.`;
         skills: {
           type: 'array',
           items: { type: 'string' },
-          description: 'A list of 8-15 technical and soft skills required for this role. Include programming languages, tools, frameworks, and soft skills.'
+          description: 'A list of 10-20 individual skills required for this role. Each skill should be a SINGLE item (e.g., "Python", "JavaScript", "React", "Communication", "Teamwork"). Do NOT group skills into categories like "Technical:" or "Soft:". List each skill separately.'
         },
         benefits: {
           type: 'array',
           items: { type: 'string' },
-          description: 'A list of 6-12 attractive benefits and perks that would appeal to candidates. Include compensation, work-life balance, growth opportunities, etc.'
+          description: 'A list of 8-15 individual benefits and perks. Each benefit should be a SINGLE, specific item (e.g., "Competitive salary", "Health insurance", "Remote work options", "Professional development budget"). List each benefit separately, not as paragraphs.'
         }
       },
       required: ['jobTitle', 'experienceLevel', 'jobDescription', 'responsibilities', 'requirements', 'skills', 'benefits']
