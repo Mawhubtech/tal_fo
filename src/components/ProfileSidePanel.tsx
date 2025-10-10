@@ -224,9 +224,10 @@ interface ProfileSidePanelProps {
   onShortlist?: () => void; // Add shortlist handler prop
   isShortlisting?: boolean; // Add shortlisting state prop
   preventCloseOnClickOutside?: boolean; // Prevent closing when modals are open
+  hideAddToJob?: boolean; // Hide "Add to Job" button (e.g., when already in a job)
 }
 
-const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false, candidateId, onShortlist, isShortlisting = false, preventCloseOnClickOutside = false }) => {
+const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false, candidateId, onShortlist, isShortlisting = false, preventCloseOnClickOutside = false, hideAddToJob = false }) => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs - default to Communication tab
@@ -1828,25 +1829,27 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           <div className="absolute bottom-6 left-4 right-4 py-4 flex justify-center">
 			  {/* <div className='bg-white/50 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-1 py-1.5'> */}
             <div className="flex items-center justify-between gap-2 bg-white/20 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-4 py-4 max-w-md w-full">
-              <button
-                onClick={() => {
-                  if (onShortlist) {
-                    onShortlist();
-                  }
-                }}
-                disabled={isShortlisting || !onShortlist}
-                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                title="Add to Job"
-              >
-                {isShortlisting ? (
-                  <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 flex-shrink-0" />
-                )}
-                <span className="hidden md:inline whitespace-nowrap">
-                  {isShortlisting ? 'Adding...' : 'Add to Job'}
-                </span>
-              </button>
+              {!hideAddToJob && (
+                <button
+                  onClick={() => {
+                    if (onShortlist) {
+                      onShortlist();
+                    }
+                  }}
+                  disabled={isShortlisting || !onShortlist}
+                  className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  title="Add to Job"
+                >
+                  {isShortlisting ? (
+                    <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4 flex-shrink-0" />
+                  )}
+                  <span className="hidden md:inline whitespace-nowrap">
+                    {isShortlisting ? 'Adding...' : 'Add to Job'}
+                  </span>
+                </button>
+              )}
               
               <button
                 onClick={() => {

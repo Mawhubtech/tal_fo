@@ -545,7 +545,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, 
   // Handle opening profile panel
   const handleOpenProfilePanel = (candidateId: string) => {
     setSelectedCandidateId(candidateId);
-    setPanelState('expanded');
+    setPanelState('collapsed');
     document.body.style.overflow = 'hidden'; // Prevent background scroll
   };
 
