@@ -933,76 +933,73 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
         {/* Side Panel - Dynamic width based on actions panel state */}
         <div 
           ref={panelRef}
-          className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-full sm:w-2/3 md:w-1/2 lg:w-1/3' : 'w-full sm:w-4/5 md:w-3/4 lg:w-2/3'} bg-white shadow-2xl z-50 flex transition-all duration-300 ease-in-out`}
+          className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-full sm:w-1/2 md:w-5/12 lg:w-1/3' : 'w-full sm:w-3/4 md:w-2/3 lg:w-1/2'} bg-white shadow-2xl z-50 flex transition-all duration-300 ease-in-out`}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
         {/* Profile Info Section - Full width in collapsed view */}
         <div className="flex-1 w-full flex flex-col">
-          {/* Panel Header - Sticky */}
-          <div className="sticky top-0 bg-white z-10">
-            <div className="flex items-center justify-end p-4 border-b border-gray-200">
-              <Button
-                variant="primary"
-                onClick={() => onStateChange('closed')}
-                className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700 p-2"
-                aria-label="Close Panel"
-              >
-                <X size={20} />
-              </Button>
-            </div>
-          </div>
-
           {/* Profile Basic Info + Main Action Buttons */}
           <div className="p-6 border-b border-gray-200">
-            <div className="flex items-start">
-              {(() => {
-                const [imageError, setImageError] = React.useState(false);
-                
-                if (personalInfo.avatar && !imageError) {
-                  return (
-                    <img 
-                      src={personalInfo.avatar} 
-                      alt={personalInfo.fullName}
-                      className="h-12 w-12 rounded-full mr-4 flex-shrink-0 object-cover"
-                      onError={() => setImageError(true)}
-                    />
-                  );
-                } else {
-                  // Generate initials from full name
-                  const initials = personalInfo.fullName
-                    .split(' ')
-                    .map(name => name.charAt(0))
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2);
+            <div className="flex items-start justify-between">
+              <div className="flex items-start flex-1">
+                {(() => {
+                  const [imageError, setImageError] = React.useState(false);
                   
-                  return (
-                    <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold mr-4 flex-shrink-0">
-                      {initials}
-                    </div>
-                  );
-                }
-              })()}
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-gray-900">{personalInfo.fullName}</h2>
-                <div className="flex items-center text-sm text-gray-500 mt-0.5">
-                  {personalInfo.location}
-                  {personalInfo.github && (
-                    <>
-                      <span className="mx-1.5">·</span>
-                      <a
-                        href={personalInfo.github.startsWith('http') ? personalInfo.github : `https://${personalInfo.github}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-purple-600 flex items-center"
-                        title="GitHub Profile"
-                      >                        <Github size={16} />
-                      </a>
-                    </>
-                  )}
+                  if (personalInfo.avatar && !imageError) {
+                    return (
+                      <img 
+                        src={personalInfo.avatar} 
+                        alt={personalInfo.fullName}
+                        className="h-12 w-12 rounded-full mr-4 flex-shrink-0 object-cover"
+                        onError={() => setImageError(true)}
+                      />
+                    );
+                  } else {
+                    // Generate initials from full name
+                    const initials = personalInfo.fullName
+                      .split(' ')
+                      .map(name => name.charAt(0))
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2);
+                    
+                    return (
+                      <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold mr-4 flex-shrink-0">
+                        {initials}
+                      </div>
+                    );
+                  }
+                })()}
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-gray-900">{personalInfo.fullName}</h2>
+                  <div className="flex items-center text-sm text-gray-500 mt-0.5">
+                    {personalInfo.location}
+                    {personalInfo.github && (
+                      <>
+                        <span className="mx-1.5">·</span>
+                        <a
+                          href={personalInfo.github.startsWith('http') ? personalInfo.github : `https://${personalInfo.github}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-500 hover:text-purple-600 flex items-center"
+                          title="GitHub Profile"
+                        >                        <Github size={16} />
+                        </a>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
+              
+              {/* Close button positioned to the right */}
+              <button
+                onClick={() => onStateChange('closed')}
+                className="text-gray-400 hover:text-gray-600 transition-colors ml-4"
+                aria-label="Close Panel"
+              >
+                <X size={18} />
+              </button>
             </div>
             
             {/* Contact Information */}
@@ -1032,15 +1029,18 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               )}
               
               {personalInfo.linkedIn && (
-                <div className="flex items-center text-sm">
-                  <Globe className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                <div className="flex items-center text-xs">
                   <a 
                     href={personalInfo.linkedIn.startsWith('http') ? personalInfo.linkedIn : `https://${personalInfo.linkedIn}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-700 hover:text-purple-600 transition-colors truncate"
+                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
+                    title="View LinkedIn Profile"
                   >
-                    LinkedIn Profile
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                    LinkedIn
                   </a>
                 </div>
               )}
@@ -1090,7 +1090,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
           </div> 
 
           {/* Scrollable Content Area - Collapsed view with tabs */}
-          <div className="flex-1 flex flex-col relative">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto flex flex-col relative">
             {/* AI-Powered Spotlight (Using Summary) */}
             {summary && (
               <div className="p-4 sm:p-6 border-b border-gray-100">
@@ -1099,30 +1099,45 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               </div>
             )}
 
-            {/* Tabs Navigation - Responsive */}
-            <div className="border-b border-gray-200 sticky top-0 bg-white z-10">
-              <nav className="flex px-4 sm:px-6 overflow-x-auto" aria-label="Tabs" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+            {/* Tabs Navigation - Sticky */}
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
+              <nav className="flex px-4 sm:px-6 overflow-x-auto" aria-label="Tabs" style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#e5e7eb #f9fafb'
+              }}>
                 {profileTabs.map((tab) => (
                   <button
                     key={tab.name}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
+                    onClick={() => {
                       setActiveTab(tab.index);
+                      // Scroll to the corresponding section
+                      setTimeout(() => {
+                        const sectionElement = sectionRefs.current[tab.index];
+                        if (sectionElement && scrollContainerRef.current) {
+                          const containerRect = scrollContainerRef.current.getBoundingClientRect();
+                          const sectionRect = sectionElement.getBoundingClientRect();
+                          const scrollTop = scrollContainerRef.current.scrollTop;
+                          const offset = sectionRect.top - containerRect.top + scrollTop - 80; // 80px offset for sticky header
+                          
+                          scrollContainerRef.current.scrollTo({
+                            top: offset,
+                            behavior: 'smooth'
+                          });
+                        }
+                      }, 50);
                     }}
                     className={`${
                       activeTab === tab.index
-                        ? 'border-purple-500 text-purple-600 font-semibold'
+                        ? 'border-purple-600 text-purple-700 font-semibold'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-3 px-2 sm:px-3 border-b-2 text-xs flex items-center gap-1 mr-2 sm:mr-4 flex-shrink-0`}
+                    } whitespace-nowrap py-2 px-2 border-b-2 text-xs flex items-center gap-1 mr-3 flex-shrink-0`}
                   >
                     <tab.icon className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{tab.name}</span>
-                    <span className="sm:hidden">{tab.name.slice(0, 3)}</span>
+                    {tab.name}
                     {tab.count > 0 && (
                       <span className={`${
                         activeTab === tab.index ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
-                      } py-0.5 px-1.5 rounded-full text-xs font-medium`}>
+                      } py-0.5 px-1 rounded-full text-xs font-medium`}>
                         {tab.count}
                       </span>
                     )}
@@ -1131,11 +1146,15 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
               </nav>
             </div>
 
-            {/* Tab Content - Scrollable with section refs and bottom padding for floating action bar */}
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24">
-              {/* Experience Tab */}
-              {profileTabs[activeTab]?.originalIndex === 0 && (
-                <div>
+            {/* Tab Content - All sections rendered */}
+            <div className="flex-1 p-4 sm:p-6 pb-24">
+              {/* Experience Section */}
+              {profileTabs.some(tab => tab.originalIndex === 0) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 0)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Briefcase className="h-4 w-4 text-purple-600" />
+                    Experience
+                  </h3>
                   {sortedExperience && sortedExperience.length > 0 ? (
                     <div className="space-y-5">
                       {sortedExperience.map((exp, index) => (
@@ -1284,16 +1303,13 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* Education Tab */}
-              {/* Removed debug logging */}
-              {profileTabs[activeTab]?.originalIndex === 1 && (
-                <div>
-                  {(() => {
-                    console.log('=== EDUCATION TAB RENDERING ===');
-                    console.log('sortedEducation:', sortedEducation);
-                    console.log('sortedEducation.length:', sortedEducation?.length);
-                    return null;
-                  })()}
+              {/* Education Section */}
+              {profileTabs.some(tab => tab.originalIndex === 1) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 1)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <GraduationCap className="h-4 w-4 text-blue-600" />
+                    Education
+                  </h3>
                   {sortedEducation && sortedEducation.length > 0 ? (
                     <div className="space-y-4">
                       {sortedEducation.map((edu, index) => (
@@ -1484,9 +1500,13 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* Skills Tab */}
-              {profileTabs[activeTab]?.originalIndex === 2 && (
-                <div>
+              {/* Skills Section */}
+              {profileTabs.some(tab => tab.originalIndex === 2) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 2)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    Skills
+                  </h3>
                   {skills && skills.length > 0 ? (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
                       <div className="flex items-center mb-3">
@@ -1509,9 +1529,15 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                     </div>
                   )}
                 </div>
-              )}              {/* Projects Tab */}
-              {profileTabs[activeTab]?.originalIndex === 3 && (
-                <div>
+              )}
+
+              {/* Projects Section */}
+              {profileTabs.some(tab => tab.originalIndex === 3) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 3)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <FolderOpen className="h-4 w-4 text-indigo-600" />
+                    Projects
+                  </h3>
                   {projects && projects.length > 0 ? (
                     <div className="space-y-4">
                       {projects.map((project, index) => (
@@ -1570,13 +1596,18 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                     <div className="text-center py-6">
                       <FolderOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                       <p className="text-gray-500 text-sm">No projects information</p>
-                    </div>                  )}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Certifications Tab */}
-              {profileTabs[activeTab]?.originalIndex === 4 && (
-                <div>
+              {/* Certifications Section */}
+              {profileTabs.some(tab => tab.originalIndex === 4) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 4)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <FileBadge2 className="h-4 w-4 text-blue-600" />
+                    Certifications
+                  </h3>
                   {certifications && certifications.length > 0 ? (
                     <div className="space-y-4">
                       {certifications.map((cert, index) => (
@@ -1608,9 +1639,13 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* Awards Tab */}
-              {profileTabs[activeTab]?.originalIndex === 5 && (
-                <div>
+              {/* Awards Section */}
+              {profileTabs.some(tab => tab.originalIndex === 5) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 5)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Award className="h-4 w-4 text-yellow-600" />
+                    Awards
+                  </h3>
                   {awards && awards.length > 0 ? (
                     <div className="space-y-4">
                       {awards.map((award, index) => (
@@ -1642,9 +1677,13 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* Languages Tab */}
-              {profileTabs[activeTab]?.originalIndex === 6 && (
-                <div>
+              {/* Languages Section */}
+              {profileTabs.some(tab => tab.originalIndex === 6) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 6)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Languages className="h-4 w-4 text-blue-600" />
+                    Languages
+                  </h3>
                   {languages && languages.length > 0 ? (
                     <div className="space-y-4">
                       {languages.map((language, index) => (
@@ -1706,9 +1745,13 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* Interests Tab */}
-              {profileTabs[activeTab]?.originalIndex === 7 && (
-                <div>
+              {/* Interests Section */}
+              {profileTabs.some(tab => tab.originalIndex === 7) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 7)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Heart className="h-4 w-4 text-blue-600" />
+                    Interests
+                  </h3>
                   {interests && interests.length > 0 ? (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
                       <div className="flex items-center mb-3">
@@ -1733,9 +1776,13 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* References Tab */}
-              {profileTabs[activeTab]?.originalIndex === 8 && (
-                <div>
+              {/* References Section */}
+              {profileTabs.some(tab => tab.originalIndex === 8) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 8)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <Mail className="h-4 w-4 text-blue-600" />
+                    References
+                  </h3>
                   {references && references.length > 0 ? (
                     <div className="space-y-4">
                       {references.map((reference, index) => (
@@ -1800,9 +1847,13 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                 </div>
               )}
 
-              {/* Custom Fields Tab */}
-              {profileTabs[activeTab]?.originalIndex === 9 && (
-                <div>
+              {/* Custom Fields Section */}
+              {profileTabs.some(tab => tab.originalIndex === 9) && (
+                <div ref={(el) => (sectionRefs.current[profileTabs.findIndex(tab => tab.originalIndex === 9)] = el)} className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    Custom Fields
+                  </h3>
                   {customFields && customFields.length > 0 ? (
                     <div className="space-y-4">
                       {customFields.map((field, index) => (
@@ -1850,7 +1901,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
 
           {/* Floating Action Bar */}
           <div className="absolute bottom-6 left-4 right-4 py-4 flex justify-center">
-            <div className='flex items-center justify-between gap-2 bg-white/20 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-4 py-4 max-w-md w-full'>
+            <div className='flex items-center justify-between gap-2 bg-white/20 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-3 py-3 max-w-sm w-full'>
                 <button
                   onClick={() => {
                     if (onShortlist) {
@@ -1905,7 +1956,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
         </div>
 
         {/* Candidate Actions Section - Right Side (shown when not collapsed) */}
-        <div className={`${isCandidateActionsCollapsed ? 'w-0 overflow-hidden' : 'w-1/2'} bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out`}>
+        <div className={`${isCandidateActionsCollapsed ? 'w-0 overflow-hidden' : 'w-1/3'} bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out`}>
           {!isCandidateActionsCollapsed && (
             <>
               {/* Actions Header */}

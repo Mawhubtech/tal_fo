@@ -882,64 +882,28 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
   if (panelState === 'collapsed') {
     return (
-      <div ref={panelRef} className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-1/3' : 'w-2/3'} bg-white shadow-2xl z-50 flex transition-all duration-300 ease-in-out`}>
+      <div ref={panelRef} className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-full sm:w-1/2 md:w-5/12 lg:w-1/3' : 'w-full sm:w-3/4 md:w-2/3 lg:w-1/2'} bg-white shadow-2xl z-50 flex transition-all duration-300 ease-in-out`}>
         {/* Profile Info Section - Responsive width based on actions panel state */}
-        <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'w-1/2'} flex flex-col ${!isCandidateActionsCollapsed ? 'border-r border-gray-200' : ''} transition-all duration-300 ease-in-out`}>
-          {/* Panel Header - Sticky */}
-          <div className="sticky top-0 bg-white z-10">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center">
-                {personalInfo.avatar ? (
-                  <img 
-                    src={personalInfo.avatar} 
-                    alt={personalInfo.fullName}
-                    className="h-8 w-8 rounded-full mr-3 flex-shrink-0 object-cover"
-                  />
-                ) : (
-                  <div className="bg-purple-100 rounded-full h-8 w-8 flex items-center justify-center text-purple-600 text-sm font-semibold mr-3 flex-shrink-0">
-                    {personalInfo.fullName.charAt(0)}
-                  </div>
-                )}
-                <h3 className="text-md font-semibold text-gray-800">{personalInfo.fullName}</h3>
-              </div>
-              <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => onStateChange('expanded')}
-                  className="text-gray-500 hover:text-gray-700 p-2"
-                  aria-label="Expand Panel"
-                >
-                  <ChevronLeft size={20} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => onStateChange('closed')}
-                  className="text-gray-500 hover:text-gray-700 p-2 ml-1"
-                  aria-label="Close Panel"
-                >
-                  <X size={20} />
-                </Button>
-              </div>
-            </div>
-          </div>
-
+        <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'w-2/3'} flex flex-col ${!isCandidateActionsCollapsed ? 'border-r border-gray-200' : ''} transition-all duration-300 ease-in-out`}>
+          
           {/* Profile Basic Info */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-start">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start flex-1">
               {personalInfo.avatar ? (
                 <img 
                   src={personalInfo.avatar} 
                   alt={personalInfo.fullName}
-                  className="h-10 w-10 rounded-full mr-3 flex-shrink-0 object-cover"
+                  className="h-12 w-12 rounded-full mr-4 flex-shrink-0 object-cover"
                 />
               ) : (
-                <div className="bg-purple-100 rounded-full h-10 w-10 flex items-center justify-center text-purple-600 text-lg font-semibold mr-3 flex-shrink-0">
-                  {personalInfo.fullName.charAt(0)}
+                <div className="bg-purple-100 rounded-full h-12 w-12 flex items-center justify-center text-purple-600 text-xl font-semibold mr-4 flex-shrink-0">
+                  {personalInfo.fullName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2)}
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-gray-900 truncate">{personalInfo.fullName}</h2>
-                <div className="flex items-center text-xs text-gray-500 mt-0.5">
+                <div className="flex items-center text-sm text-gray-500 mt-0.5">
                   <span className="truncate">{personalInfo.location}</span>
                   {personalInfo.github && (
                     <>
@@ -956,6 +920,25 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                     </>
                   )}
                 </div>
+              </div>
+              </div>
+              
+              {/* Close and Expand Buttons */}
+              <div className="flex items-center gap-1 ml-3">
+                <button
+                  onClick={() => onStateChange('expanded')}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  title="Expand Panel"
+                >
+                  <ChevronLeft className="h-[18px] w-[18px]" />
+                </button>
+                <button
+                  onClick={() => onStateChange('closed')}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  title="Close Panel"
+                >
+                  <X className="h-[18px] w-[18px]" />
+                </button>
               </div>
             </div>
             
@@ -1783,7 +1766,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
         </div>
 
         {/* Candidate Actions Section - Right Side (shown when not collapsed) */}
-        <div className={`${isCandidateActionsCollapsed ? 'w-0 overflow-hidden' : 'w-1/2'} bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out`}>
+        <div className={`${isCandidateActionsCollapsed ? 'w-0 overflow-hidden' : 'w-1/3'} bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out`}>
           {!isCandidateActionsCollapsed && (
             <>
               {/* Actions Header */}
