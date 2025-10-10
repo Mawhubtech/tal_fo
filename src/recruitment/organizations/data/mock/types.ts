@@ -5,12 +5,17 @@ export interface Candidate {
   avatar: string;
   email: string;
   phone: string;
+  linkedIn?: string;
+  location?: string;
+  position?: string;
+  summary?: string;
   stage: string;
   score: number;
   lastUpdated: string;
   tags: string[];
   source: string;
   appliedDate: string;
+  notesData?: any; // CoreSignal enrichment data
 }
 
 export interface Task {

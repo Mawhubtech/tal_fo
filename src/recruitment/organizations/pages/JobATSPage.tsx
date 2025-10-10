@@ -524,6 +524,11 @@ const JobATSPage: React.FC = () => {
       : mapStageToFrontend(application.stage || 'Application');
     
     
+    // Get skills from skillMappings or from notesData.skillMappings
+    const skills = application.candidate?.skillMappings?.map(sm => sm.skill?.name).filter(Boolean) 
+      || application.candidate?.notesData?.skillMappings?.map((sm: any) => sm.skill?.name).filter(Boolean)
+      || [];
+    
     return {
       id: application.candidate?.id || application.candidateId,
       name: candidateName,
@@ -535,7 +540,7 @@ const JobATSPage: React.FC = () => {
       stage: candidateStage,
       score: application.score || 0,
       lastUpdated: application.lastActivityDate || application.updatedAt,
-      tags: application.candidate?.skillMappings?.map(sm => sm.skill?.name).filter(Boolean) || [], // Map skills from skill mappings
+      tags: skills, // Use skills from either source
       source: application.candidate?.source || 'unknown',
       appliedDate: application.appliedDate,
       // Additional properties for compatibility
@@ -558,7 +563,7 @@ const JobATSPage: React.FC = () => {
       summary: application.candidate?.summary,
       experience: application.candidate?.experience,
       education: application.candidate?.education,
-      skills: application.candidate?.skillMappings?.map(sm => sm.skill?.name).filter(Boolean) || [],
+      skills: skills, // Use same skills array
       projects: application.candidate?.projects,
       certifications: application.candidate?.certifications,
       awards: application.candidate?.awards,

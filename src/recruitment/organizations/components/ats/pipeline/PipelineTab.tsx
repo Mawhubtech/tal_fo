@@ -39,7 +39,7 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
   onCandidateStageChange,
   movingCandidates = new Set()
 }) => {
-  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [view, setView] = useState<'kanban' | 'list'>('list'); // Changed default to 'list'
 
   const filteredCandidates = candidates.filter(candidate => {
     const matchesSearch = candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,8 +94,8 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
           />
         </div>
         
-        {/* View Toggle */}
-        <div className="flex justify-between items-center">
+        {/* View Toggle - Hidden to show only list view */}
+        {/* <div className="flex justify-between items-center">
           <div className="flex border border-gray-300 rounded-lg overflow-hidden bg-white">
             <button
               onClick={() => setView('kanban')}
@@ -121,7 +121,7 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
               List
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Content based on view */}
