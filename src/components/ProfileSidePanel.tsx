@@ -201,6 +201,8 @@ export interface UserStructuredData {
   languages?: Language[];
   references?: Reference[];
   customFields?: CustomField[];
+  coreSignalId?: string; // CoreSignal person ID for external candidates
+  rawCandidateData?: any; // Original candidate data from external sources (for backend)
 }
 
 export interface UserData { // If UserData is also needed elsewhere

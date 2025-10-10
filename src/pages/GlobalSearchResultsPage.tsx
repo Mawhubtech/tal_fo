@@ -1480,7 +1480,9 @@ const GlobalSearchResultsPage: React.FC = () => {
       interests: interests,
       languages: languages,
       references: references,
-      customFields: []
+      customFields: [],
+      coreSignalId: candidateData.coreSignalId || undefined, // Include CoreSignal ID for external candidates
+      rawCandidateData: candidate // Include original candidate data for backend
     };
   };
 
@@ -2203,7 +2205,8 @@ const GlobalSearchResultsPage: React.FC = () => {
                                 className="text-base font-semibold cursor-pointer hover:text-purple-600 transition-colors duration-200 flex items-center gap-1"
                                 onClick={() => {
                                   const userData = convertCandidateToUserData(result);
-                                  handleOpenProfilePanel(userData, candidate.id);
+                                  // Don't pass candidateId - external search results are not in database yet
+                                  handleOpenProfilePanel(userData, undefined);
                                 }}
                               >
                                 {personalInfo.fullName}
@@ -2393,7 +2396,8 @@ const GlobalSearchResultsPage: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     const userData = convertCandidateToUserData(result);
-                                    handleOpenProfilePanel(userData, candidate.id);
+                                    // Don't pass candidateId - external search results are not in database yet
+                                    handleOpenProfilePanel(userData, undefined);
                                   }}
                                   className="text-purple-600 hover:text-purple-800 font-medium ml-1"
                                 >
@@ -2470,7 +2474,8 @@ const GlobalSearchResultsPage: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     const userData = convertCandidateToUserData(result);
-                                    handleOpenProfilePanel(userData, candidate.id);
+                                    // Don't pass candidateId - external search results are not in database yet
+                                    handleOpenProfilePanel(userData, undefined);
                                   }}
                                   className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
                                 >

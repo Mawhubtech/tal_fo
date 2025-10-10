@@ -992,8 +992,10 @@ const SearchResultsPage: React.FC = () => {
                                 projects: candidate.projects || [],
                                 languages: candidate.languages || [],
                                 interests: candidate.interests || [],
-                                references: candidate.references || []
-                              }, candidate.id)}
+                                references: candidate.references || [],
+                                coreSignalId: candidate.coreSignalId || undefined,
+                                rawCandidateData: candidate // Pass original candidate data for backend
+                              }, undefined)} // Don't pass candidateId - external search results are not in database yet
                             >
                               {personalInfo.fullName}
                               {/* Icon indicates clickable, panel will open */}
@@ -1247,8 +1249,10 @@ const SearchResultsPage: React.FC = () => {
                                 projects: candidate.projects || [],
                                 languages: candidate.languages || [],
                                 interests: candidate.interests || [],
-                                references: candidate.references || []
-                              }, candidate.id)}
+                                references: candidate.references || [],
+                                coreSignalId: candidate.coreSignalId || undefined,
+                                rawCandidateData: candidate // Pass original candidate data for backend
+                              }, undefined)} // Don't pass candidateId - external search results are not in database yet
                             >
                               {personalInfo.fullName.split(' ')[0]}
                             </span>

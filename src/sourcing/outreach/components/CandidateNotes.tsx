@@ -1,17 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, User, Clock, Lock, Users, Flag } from 'lucide-react';
 import Button from '../../../components/Button';
-import { useCandidateNotes, useCreateCandidateNote, useUpdateCandidateNote, useDeleteCandidateNote } from '../../../hooks/useCandidateNotes';
+import { 
+  useCandidateNotes, 
+  useCreateCandidateNote, 
+  useUpdateCandidateNote, 
+  useDeleteCandidateNote,
+  useCoreSignalCandidateNotes,
+  useCreateCoreSignalCandidateNote
+} from '../../../hooks/useCandidateNotes';
 import { CandidateNote, CreateCandidateNoteDto, UpdateCandidateNoteDto } from '../../../services/candidateNotesApiService';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 
 interface CandidateNotesProps {
-  candidateId: string;
+  candidateId?: string;
   candidateName?: string;
+  coreSignalId?: string;
+  candidateData?: any; // Raw candidate data for creating candidate if needed
+  onCandidateCreated?: (candidateId: string) => void;
 }
 
-const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateName }) => {
+const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateName, coreSignalId, candidateData, onCandidateCreated }) => {
   const { user } = useAuthContext();
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -20,25 +30,79 @@ const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateN
   const [editNoteContent, setEditNoteContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [isImportant, setIsImportant] = useState(false);
+  const [localCandidateId, setLocalCandidateId] = useState<string | undefined>(candidateId);
 
-  // Hooks
-  const { data: notesResponse, isLoading, error } = useCandidateNotes(candidateId);
+  // Update localCandidateId when candidateId prop changes
+  useEffect(() => {
+    if (candidateId) {
+      setLocalCandidateId(candidateId);
+    }
+  }, [candidateId]);
+
+  // Use CoreSignal hooks if we have coreSignalId but no candidateId
+  const usesCoreSignalFlow = !localCandidateId && !!coreSignalId;
+
+  // Regular candidate notes hooks
+  const { 
+    data: regularNotesResponse, 
+    isLoading: isLoadingRegular, 
+    error: errorRegular 
+  } = useCandidateNotes(localCandidateId || '');
+  
   const createNoteMutation = useCreateCandidateNote();
   const updateNoteMutation = useUpdateCandidateNote();
   const deleteNoteMutation = useDeleteCandidateNote();
 
+  // CoreSignal notes hooks
+  const { 
+    data: coreSignalNotesResponse, 
+    isLoading: isLoadingCoreSignal, 
+    error: errorCoreSignal 
+  } = useCoreSignalCandidateNotes(coreSignalId);
+  
+  const createCoreSignalNoteMutation = useCreateCoreSignalCandidateNote();
+
+  // Choose which data to use based on the flow
+  const notesResponse = usesCoreSignalFlow ? coreSignalNotesResponse : regularNotesResponse;
+  const isLoading = usesCoreSignalFlow ? isLoadingCoreSignal : isLoadingRegular;
+  const error = usesCoreSignalFlow ? errorCoreSignal : errorRegular;
+
   const handleAddNote = async () => {
     if (!newNoteContent.trim()) return;
 
-    const noteData: CreateCandidateNoteDto = {
-      candidateId,
-      content: newNoteContent.trim(),
-      isPrivate,
-      isImportant,
-    };
-
     try {
-      await createNoteMutation.mutateAsync({ candidateId, noteData });
+      if (usesCoreSignalFlow && coreSignalId) {
+        // Use CoreSignal flow - create candidate if needed
+        const noteData = {
+          content: newNoteContent.trim(),
+          isPrivate,
+          isImportant,
+          candidateData, // Include candidate data for backend to create candidate if needed
+        };
+
+        const result = await createCoreSignalNoteMutation.mutateAsync({ 
+          coreSignalId, 
+          noteData 
+        });
+
+        // Update local candidate ID and notify parent
+        setLocalCandidateId(result.candidateId);
+        if (onCandidateCreated) {
+          onCandidateCreated(result.candidateId);
+        }
+      } else if (localCandidateId) {
+        // Use regular flow - candidate already exists
+        const noteData: CreateCandidateNoteDto = {
+          candidateId: localCandidateId,
+          content: newNoteContent.trim(),
+          isPrivate,
+          isImportant,
+        };
+
+        await createNoteMutation.mutateAsync({ candidateId: localCandidateId, noteData });
+      }
+
+      // Reset form
       setNewNoteContent('');
       setIsPrivate(false);
       setIsImportant(false);
@@ -175,9 +239,9 @@ const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateN
               value={newNoteContent}
               onChange={(e) => setNewNoteContent(e.target.value)}
               placeholder={`Add a note about ${candidateName || 'this candidate'}...`}
-              className="w-full p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
               rows={3}
-              disabled={createNoteMutation.isPending}
+              disabled={createNoteMutation.isPending || createCoreSignalNoteMutation.isPending}
             />
             
             {/* Note Options */}
@@ -209,10 +273,10 @@ const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateN
                 variant="primary" 
                 size="sm" 
                 onClick={handleAddNote}
-                disabled={!newNoteContent.trim() || createNoteMutation.isPending}
+                disabled={!newNoteContent.trim() || createNoteMutation.isPending || createCoreSignalNoteMutation.isPending}
                 className="bg-purple-600 text-white hover:bg-purple-700"
               >
-                {createNoteMutation.isPending ? 'Saving...' : 'Save Note'}
+                {(createNoteMutation.isPending || createCoreSignalNoteMutation.isPending) ? 'Saving...' : 'Save Note'}
               </Button>
               <Button 
                 variant="secondary" 
@@ -223,7 +287,7 @@ const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateN
                   setIsPrivate(false);
                   setIsImportant(false);
                 }}
-                disabled={createNoteMutation.isPending}
+                disabled={createNoteMutation.isPending || createCoreSignalNoteMutation.isPending}
               >
                 Cancel
               </Button>
@@ -299,7 +363,7 @@ const CandidateNotes: React.FC<CandidateNotesProps> = ({ candidateId, candidateN
                     <textarea
                       value={editNoteContent}
                       onChange={(e) => setEditNoteContent(e.target.value)}
-                      className="w-full p-2 border border-gray-200 rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+                      className="w-full p-2 border border-gray-200 rounded text-sm resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       rows={3}
                       disabled={updateNoteMutation.isPending}
                     />
