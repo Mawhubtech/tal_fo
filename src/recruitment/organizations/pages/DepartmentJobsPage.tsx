@@ -107,12 +107,12 @@ const DepartmentJobsPage: React.FC = () => {
 
   // Handler functions for CRUD operations
   const handleCreateJob = () => {
-    navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/create-job`);
+    navigate('/dashboard/jobs/create');
   };
 
   const handleEditJob = (job: Job) => {
-    // For now, let's navigate to the create job page with the job ID as a URL parameter
-    navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/create-job?edit=${job.id}`);
+    // Navigate to standalone job edit page
+    navigate(`/dashboard/jobs/create?edit=${job.id}`);
   };
 
   const handleDeleteJob = (job: Job) => {

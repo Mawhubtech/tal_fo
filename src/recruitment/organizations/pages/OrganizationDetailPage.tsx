@@ -147,7 +147,7 @@ const OrganizationDetailPage: React.FC = () => {
             Manage Job Board
           </Link>
           <Link
-            to={`/dashboard/organizations/${organizationId}/create-job`}
+            to="/dashboard/jobs/create"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />

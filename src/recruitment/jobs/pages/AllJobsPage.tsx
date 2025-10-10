@@ -110,16 +110,8 @@ const AllJobsPage: React.FC = () => {
 
   // Handler functions for CRUD operations
   const handleEditJob = (job: Job) => {
-    if ((hasAssignmentRole || hasHiringTeamAccess) && userAssignment?.organizationId) {
-      // For users with client assignments, use their default organization and department
-      const departmentId = userAssignment.departmentId || 'default-dept';
-      navigate(`/dashboard/organizations/${userAssignment.organizationId}/departments/${departmentId}/create-job?edit=${job.id}`);
-    } else {
-      // For super-admins, use the job's organization and department
-      const organizationId = job.organizationId || 'default-org';
-      const departmentId = job.departmentId || 'default-dept';
-      navigate(`/dashboard/organizations/${organizationId}/departments/${departmentId}/create-job?edit=${job.id}`);
-    }
+    // Navigate to standalone job edit page
+    navigate(`/dashboard/jobs/create?edit=${job.id}`);
   };
 
   const handleCreateJob = () => {
@@ -130,13 +122,8 @@ const AllJobsPage: React.FC = () => {
       return; // Prevent users with no access from creating jobs
     }
     
-    if ((hasAssignmentRole || hasHiringTeamAccess) && userAssignment?.organizationId) {
-      // For users with client assignments, go directly to job creation within their assigned organization
-      navigate(`/dashboard/organizations/${userAssignment.organizationId}/create-job`);
-    } else {
-      // For super-admins or users with hiring team access but no assignment, navigate to organizations page
-      navigate('/dashboard/organizations');
-    }
+    // Navigate to standalone job creation page
+    navigate('/dashboard/jobs/create');
   };
 
   const handleJobClick = (job: Job) => {
