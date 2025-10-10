@@ -1482,7 +1482,8 @@ const GlobalSearchResultsPage: React.FC = () => {
       references: references,
       customFields: [],
       coreSignalId: candidateData.coreSignalId || undefined, // Include CoreSignal ID for external candidates
-      rawCandidateData: candidate // Include original candidate data for backend
+      rawCandidateData: candidate, // Include original candidate data for backend
+      ...(candidateData.notesData && { notesData: candidateData.notesData }) // Include notesData if available from CoreSignal
     };
   };
 

@@ -994,7 +994,8 @@ const SearchResultsPage: React.FC = () => {
                                 interests: candidate.interests || [],
                                 references: candidate.references || [],
                                 coreSignalId: candidate.coreSignalId || undefined,
-                                rawCandidateData: candidate // Pass original candidate data for backend
+                                rawCandidateData: candidate, // Pass original candidate data for backend
+                                ...(candidate.notesData && { notesData: candidate.notesData }) // Pass notesData if available
                               }, undefined)} // Don't pass candidateId - external search results are not in database yet
                             >
                               {personalInfo.fullName}
@@ -1251,7 +1252,8 @@ const SearchResultsPage: React.FC = () => {
                                 interests: candidate.interests || [],
                                 references: candidate.references || [],
                                 coreSignalId: candidate.coreSignalId || undefined,
-                                rawCandidateData: candidate // Pass original candidate data for backend
+                                rawCandidateData: candidate, // Pass original candidate data for backend
+                                ...(candidate.notesData && { notesData: candidate.notesData }) // Pass notesData if available
                               }, undefined)} // Don't pass candidateId - external search results are not in database yet
                             >
                               {personalInfo.fullName.split(' ')[0]}
