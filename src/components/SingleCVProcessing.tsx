@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { FileText, Upload, CheckCircle, AlertCircle, User, Users, AlertTriangle } from 'lucide-react';
+import { FileText, Upload, CheckCircle, AlertCircle, User, Users, AlertTriangle, Sparkles } from 'lucide-react';
 import { useCVProcessing } from '../hooks/useCVProcessing';
 import { isDataSufficient, getMissingCriticalData, removeNullValues } from '../utils/cvDataTransformer';
 
@@ -131,80 +131,122 @@ const SingleCVProcessing: React.FC = () => {
   };
 
   return (
-    <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-        <h2 className="text-lg font-medium text-gray-800">Single CV Processing</h2>
-        <p className="text-sm text-gray-500 mt-1">Upload and process a single candidate CV</p>
+    <div className="bg-white shadow-lg rounded-2xl border border-slate-200 overflow-hidden">
+      {/* Modern Header */}
+      <div className="px-8 py-6 bg-purple-50 border-b border-slate-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-purple-600" />
+              Single CV Processing
+            </h2>
+            <p className="text-sm text-slate-600 mt-1">
+              Upload and process one candidate CV at a time for detailed review
+            </p>
+          </div>
+          {selectedFile && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-slate-200">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-slate-700">Ready to process</span>
+            </div>
+          )}
+        </div>
       </div>
       
-      <div className="p-6">
+      <div className="p-8">
         {/* Upload Step */}
         {processingStep === 'upload' && (
-          <div className="space-y-6">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+          <div className="space-y-8">
+            {/* Modern Upload Zone */}
+            <div className="border-2 border-dashed border-slate-300 hover:border-purple-400 rounded-2xl p-12 text-center bg-white transition-all duration-200">
               <div className="flex flex-col items-center">
-                <FileText className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-700">Upload CV</h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  Supports PDF, DOCX, and text files up to 10MB
-                </p>
-                
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".pdf,.docx,.doc,.txt"
-                />
-                
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Select File
-                </button>
-                
-                {selectedFile && (
-                  <div className="w-full mt-4 p-3 bg-gray-50 rounded-md flex items-center">
-                    <FileText className="w-5 h-5 text-blue-500 mr-2" />
-                    <div className="flex-1 truncate text-sm text-gray-600">{selectedFile.name}</div>
-                    <div className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</div>
-                  </div>
-                )}
+                <div className="p-4 bg-purple-100 rounded-2xl mb-6">
+                  <FileText className="w-12 h-12 text-purple-600" />
+                </div>
+                  
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Upload Candidate CV</h3>
+                  <p className="text-sm text-slate-600 mb-6 max-w-md">
+                    Drag and drop your file here, or click below to browse.
+                    <br />
+                    <span className="text-xs text-slate-500">Supports PDF, DOCX, DOC, and TXT • Maximum 10MB</span>
+                  </p>
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,.docx,.doc,.txt"
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="group/btn flex items-center gap-3 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  >
+                    <Upload className="w-5 h-5 group-hover/btn:animate-bounce" />
+                    Select File to Upload
+                  </button>
+                  
+                  {selectedFile && (
+                    <div className="w-full max-w-md mt-8 p-5 bg-green-50 rounded-xl border border-green-200 shadow-sm animate-in slide-in-from-bottom duration-300">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-shrink-0 p-3 bg-white rounded-lg shadow-sm">
+                          <FileText className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-slate-800 truncate">{selectedFile.name}</div>
+                          <div className="text-sm text-slate-600 mt-1">
+                            {(selectedFile.size / 1024).toFixed(1)} KB • Ready to process
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-6 h-6 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
             
+            {/* Action Button */}
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={handleProcessCV}
                 disabled={!selectedFile || loading}
-                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-200 transform ${
                   !selectedFile || loading
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                    ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-700 text-white hover:shadow-xl hover:scale-105'
                 }`}
               >
                 {loading ? (
                   <>
-                    <span className="animate-spin mr-2">⌛</span>
-                    Processing...
+                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Processing with AI...</span>
                   </>
                 ) : (
                   <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Process CV
+                    <Sparkles className="w-5 h-5" />
+                    <span>Process CV with AI</span>
                   </>
                 )}
               </button>
             </div>
             
+            {/* Error Display */}
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-md mt-4 flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" />
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="p-5 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-in slide-in-from-right duration-300">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-1">Processing Error</h4>
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -425,7 +467,7 @@ const SingleCVProcessing: React.FC = () => {
                       type="text" 
                       value={overrideData.personalInfo.fullName} 
                       onChange={(e) => handleOverrideChange('fullName', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
                   
@@ -436,7 +478,7 @@ const SingleCVProcessing: React.FC = () => {
                         type="text" 
                         value={overrideData.personalInfo.firstName} 
                         onChange={(e) => handleOverrideChange('firstName', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
                     </div>
                     
@@ -446,7 +488,7 @@ const SingleCVProcessing: React.FC = () => {
                         type="text" 
                         value={overrideData.personalInfo.middleName} 
                         onChange={(e) => handleOverrideChange('middleName', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
                     </div>
                     
@@ -456,7 +498,7 @@ const SingleCVProcessing: React.FC = () => {
                         type="text" 
                         value={overrideData.personalInfo.lastName} 
                         onChange={(e) => handleOverrideChange('lastName', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
                     </div>
                   </div>
@@ -467,7 +509,7 @@ const SingleCVProcessing: React.FC = () => {
                       type="email" 
                       value={overrideData.personalInfo.email} 
                       onChange={(e) => handleOverrideChange('email', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
                   
@@ -477,7 +519,7 @@ const SingleCVProcessing: React.FC = () => {
                       type="text" 
                       value={overrideData.personalInfo.phone} 
                       onChange={(e) => handleOverrideChange('phone', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
                   
@@ -487,7 +529,7 @@ const SingleCVProcessing: React.FC = () => {
                       type="text" 
                       value={overrideData.personalInfo.location} 
                       onChange={(e) => handleOverrideChange('location', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
                 </div>

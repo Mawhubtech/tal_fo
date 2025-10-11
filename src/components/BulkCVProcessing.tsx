@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Package, Upload, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Settings, Zap } from 'lucide-react';
+import { Package, Upload, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Settings, Zap, Sparkles } from 'lucide-react';
 import { useCVProcessing } from '../hooks/useCVProcessing';
 
 const BulkCVProcessing: React.FC = () => {
@@ -162,58 +162,97 @@ const BulkCVProcessing: React.FC = () => {
   };
 
   return (
-    <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-medium text-gray-800 flex items-center">
-              Bulk CV Processing
-              <Zap className="w-5 h-5 text-purple-600 ml-2" />
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Process multiple CVs with AI-optimized parallel processing
+    <div className="bg-white shadow-lg rounded-2xl border border-slate-200 overflow-hidden">
+      {/* Modern Header with Performance Stats */}
+      <div className="px-8 py-6 bg-purple-50 border-b border-slate-200">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-purple-600 rounded-xl shadow-lg">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">
+                Bulk CV Processing
+              </h2>
+              <div className="px-3 py-1 bg-purple-100 rounded-full border border-purple-200">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <span className="text-xs font-semibold text-purple-700">AI-Powered</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600">
+              Process multiple CVs simultaneously with intelligent batch processing and parallel AI extraction
             </p>
           </div>
-          <div className="text-xs text-gray-500">
-            {maxConcurrency}x concurrent • {batchSize} per batch • {aiProcessingMode} AI
+          
+          <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-sm border border-slate-200">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-semibold text-slate-700">Performance Mode</span>
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                {maxConcurrency}× concurrent • {batchSize} per batch • {aiProcessingMode}
+              </div>
+            </div>
           </div>
         </div>
       </div>
       
-      <div className="p-6">
+      <div className="p-8">
         {/* Upload Step */}
         {processingStep === 'upload' && (
-          <div className="space-y-6">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+          <div className="space-y-8">
+            {/* Modern Upload Zone */}
+            <div className="border-2 border-dashed border-slate-300 hover:border-purple-400 rounded-2xl p-12 text-center bg-white transition-all duration-200">
               <div className="flex flex-col items-center">
-                <Package className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-700">Upload ZIP file</h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  Upload a ZIP file containing multiple CVs (PDF, DOCX, or TXT files)
-                </p>
-                
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".zip"
+                <div className="p-4 bg-purple-100 rounded-2xl mb-6">
+                  <Package className="w-12 h-12 text-purple-600" />
+                </div>
+                  
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Upload ZIP Archive</h3>
+                  <p className="text-sm text-slate-600 mb-6 max-w-md">
+                    Upload a ZIP file containing multiple candidate CVs for batch processing.
+                    <br />
+                    <span className="text-xs text-slate-500">Supports PDF, DOCX, DOC, and TXT files within the ZIP</span>
+                  </p>
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".zip"
                 />
                 
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="group/btn flex items-center gap-3 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                 >
-                  <Upload className="w-4 h-4 mr-2" />
+                  <Upload className="w-5 h-5 group-hover/btn:animate-bounce" />
                   Select ZIP File
                 </button>
                 
                 {selectedFile && (
-                  <div className="w-full mt-4 p-3 bg-gray-50 rounded-md flex items-center">
-                    <Package className="w-5 h-5 text-blue-500 mr-2" />
-                    <div className="flex-1 truncate text-sm text-gray-600">{selectedFile.name}</div>
-                    <div className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</div>
+                  <div className="w-full max-w-md mt-8 p-5 bg-blue-50 rounded-xl border border-blue-200 shadow-sm animate-in slide-in-from-bottom duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-shrink-0 p-3 bg-white rounded-lg shadow-sm">
+                        <Package className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-slate-800 truncate">{selectedFile.name}</div>
+                        <div className="text-sm text-slate-600 mt-1">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • Ready for batch processing
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -257,7 +296,7 @@ const BulkCVProcessing: React.FC = () => {
                         max="5"
                         value={maxConcurrency}
                         onChange={(e) => setMaxConcurrency(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Files processed simultaneously. Lower values recommended for AI processing.
@@ -275,7 +314,7 @@ const BulkCVProcessing: React.FC = () => {
                         max="20"
                         value={batchSize}
                         onChange={(e) => setBatchSize(Math.min(20, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Files per batch. Smaller batches reduce memory usage.
@@ -289,7 +328,7 @@ const BulkCVProcessing: React.FC = () => {
                       <select
                         value={aiProcessingMode}
                         onChange={(e) => setAiProcessingMode(e.target.value as 'parallel' | 'sequential' | 'batch')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
                         <option value="parallel">Parallel</option>
                         <option value="sequential">Sequential</option>
@@ -351,38 +390,45 @@ const BulkCVProcessing: React.FC = () => {
               )}
             </div>
             
+            {/* Action Button */}
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={handleProcessBulk}
                 disabled={!selectedFile || loading}
-                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-200 transform ${
                   !selectedFile || loading
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                    ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-700 text-white hover:shadow-xl hover:scale-105'
                 }`}
               >
                 {loading ? (
                   <>
-                    <span className="animate-spin mr-2">⌛</span>
-                    Processing...
+                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Processing with AI...</span>
                   </>
                 ) : (
                   <>
-                    <Package className="w-4 h-4 mr-2" />
-                    Process ZIP File
-                    <span className="ml-2 text-xs bg-purple-500 px-2 py-1 rounded-full">
-                      {maxConcurrency}x{batchSize} {aiProcessingMode}
-                    </span>
+                    <Package className="w-5 h-5" />
+                    <span>Process ZIP File</span>
+                    <div className="px-3 py-1 bg-white/20 rounded-lg text-xs font-medium">
+                      {maxConcurrency}×{batchSize} {aiProcessingMode}
+                    </div>
                   </>
                 )}
               </button>
             </div>
             
+            {/* Error Display */}
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-md mt-4 flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" />
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="p-5 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-in slide-in-from-right duration-300">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-1">Processing Error</h4>
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
