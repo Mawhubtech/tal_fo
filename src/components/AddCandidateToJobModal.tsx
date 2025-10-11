@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, X, Plus, UserPlus, ChevronLeft, ChevronRight, Briefcase } from 'lucide-react';
+import { Search, Filter, X, Plus, UserPlus, ChevronLeft, ChevronRight, Briefcase, Upload, FileText, CheckCircle, Users } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCandidates, useCandidate } from '../hooks/useCandidates';
 import { useCreateJobApplicationWithPipeline } from '../hooks/useJobApplications';
+import { useCVProcessing } from '../hooks/useCVProcessing';
 import { CandidateQueryParams } from '../services/candidatesService';
 import CandidatePreviewPanel, { type PanelState } from './CandidatePreviewPanel';
 import { getAvatarUrl } from '../utils/fileUtils';
@@ -103,6 +104,16 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
   const sidePanelRef = useRef<HTMLDivElement>(null);
+
+  // Tab state for switching between browse and upload
+  const [activeTab, setActiveTab] = useState<'browse' | 'upload'>('browse');
+  
+  // CV Upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [processingStep, setProcessingStep] = useState<number>(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { processAndAddToJob, loading: cvProcessing, error: cvError } = useCVProcessing();
 
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -375,13 +386,12 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
         return newSet;
       });
 
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['jobApplications'] });
-      
       setSelectedCandidates(new Set());
       
+      // Notify parent component of success - parent will handle query invalidation
+      // IMPORTANT: await the callback since parent's onSuccess is async
       if (onSuccess) {
-        onSuccess();
+        await onSuccess();
       }
     } catch (error) {
       console.error('Error adding candidates to job:', error);
@@ -449,6 +459,60 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
     handleFilterChange('languages', filters.languages.filter(l => l !== lang));
   };
 
+  // CV Upload handlers
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setUploadSuccess(false);
+    }
+  };
+
+  const handleProcessAndAddToJob = async () => {
+    if (!selectedFile || !jobId) return;
+
+    try {
+      // Reset processing step
+      setProcessingStep(0);
+      
+      // Step 1: Uploading & Extracting (0-2 seconds)
+      setProcessingStep(1);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Step 2: AI analyzing content (2-8 seconds) - Main work
+      setProcessingStep(2);
+      
+      // Start actual processing
+      const result = await processAndAddToJob(selectedFile, jobId);
+      
+      if (result) {
+        // Step 3: Finalizing (8-9 seconds)
+        setProcessingStep(3);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        console.log('[CV Upload] Processing complete, setting success state');
+        setUploadSuccess(true);
+        setSelectedFile(null);
+        setProcessingStep(0);
+        
+        // Notify parent component of success - parent will handle query invalidation
+        // IMPORTANT: await the callback since parent's onSuccess is async
+        if (onSuccess) {
+          console.log('[CV Upload] Calling onSuccess callback...');
+          await onSuccess();
+          console.log('[CV Upload] onSuccess callback completed');
+        } else {
+          console.warn('[CV Upload] No onSuccess callback provided!');
+        }
+        
+        // Keep modal open so user can upload more CVs or view the newly added candidate
+      }
+    } catch (err) {
+      console.error('Error processing CV and adding to job:', err);
+      setProcessingStep(0);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -458,24 +522,55 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
     >
       <div className="bg-white rounded-lg shadow-xl w-[95vw] max-w-7xl h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Briefcase className="w-6 h-6 text-purple-600" />
-              Add Candidates to Job
-            </h2>
-            {jobTitle && (
-              <p className="text-sm text-gray-600 mt-1">Job: {jobTitle}</p>
-            )}
+        <div className="border-b border-gray-200">
+          <div className="flex items-center justify-between p-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Briefcase className="w-6 h-6 text-purple-600" />
+                Add Candidates to Job
+              </h2>
+              {jobTitle && (
+                <p className="text-sm text-gray-600 mt-1">Job: {jobTitle}</p>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+
+          {/* Tabs */}
+          <div className="flex border-t border-gray-200">
+            <button
+              onClick={() => setActiveTab('browse')}
+              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'browse'
+                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <UserPlus className="w-4 h-4 inline-block mr-2" />
+              Browse Existing Candidates
+            </button>
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'upload'
+                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Upload className="w-4 h-4 inline-block mr-2" />
+              Upload New CV
+            </button>
+          </div>
         </div>
 
+        {/* Browse Tab Content */}
+        {activeTab === 'browse' && (
+          <>
         {/* Filters Section */}
         <div className="p-6 border-b border-gray-200 bg-gray-50">
           {/* Basic Filters */}
@@ -970,6 +1065,170 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
             </div>
           )}
         </div>
+          </>
+        )}
+
+        {/* Upload Tab Content */}
+        {activeTab === 'upload' && (
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Upload Candidate CV
+                </h3>
+                <p className="text-gray-600">
+                  Upload a resume and we'll automatically process it, create the candidate, and add them to this job
+                </p>
+              </div>
+
+              {uploadSuccess ? (
+                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-8">
+                  <div className="text-center mb-6">
+                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                    <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                      Success!
+                    </h4>
+                    <p className="text-gray-600">
+                      CV processed, candidate created, and added to job successfully
+                    </p>
+                  </div>
+                  
+                  <div className="flex justify-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadSuccess(false);
+                        setSelectedFile(null);
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                    >
+                      <Upload className="w-5 h-5" />
+                      Upload Another CV
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('browse')}
+                      className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300 rounded-xl font-semibold transition-all duration-200"
+                    >
+                      <Users className="w-5 h-5" />
+                      View All Candidates
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="border-2 border-dashed border-gray-300 hover:border-purple-400 rounded-2xl p-12 text-center bg-white transition-all duration-200 mb-6">
+                    <div className="flex flex-col items-center">
+                      <div className="p-4 bg-purple-100 rounded-2xl mb-6">
+                        <FileText className="w-12 h-12 text-purple-600" />
+                      </div>
+                      
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">Upload Candidate CV</h3>
+                      <p className="text-sm text-gray-600 mb-6 max-w-md">
+                        Drag and drop your file here, or click below to browse.
+                        <br />
+                        <span className="text-xs text-gray-500">Supports PDF, DOCX, DOC, and TXT • Maximum 10MB</span>
+                      </p>
+                      
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept=".pdf,.docx,.doc,.txt"
+                      />
+                      
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-3 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                      >
+                        <Upload className="w-5 h-5" />
+                        Select File to Upload
+                      </button>
+                      
+                      {selectedFile && (
+                        <div className="w-full max-w-md mt-8 p-5 bg-blue-50 rounded-xl border border-blue-200 shadow-sm">
+                          <div className="flex items-center gap-4">
+                            <div className="flex-shrink-0 p-3 bg-white rounded-lg shadow-sm">
+                              <FileText className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-gray-800 truncate">{selectedFile.name}</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {(selectedFile.size / 1024).toFixed(1)} KB • Ready to process
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0">
+                              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                <CheckCircle className="w-6 h-6 text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedFile && !cvProcessing && (
+                    <div className="flex justify-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFile(null)}
+                        className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleProcessAndAddToJob}
+                        className="px-8 py-3 rounded-xl font-semibold shadow-lg transition-all bg-purple-600 hover:bg-purple-700 text-white hover:shadow-xl hover:scale-105"
+                      >
+                        Process CV & Add to Job
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Processing Status - Simple inline indicator */}
+                  {cvProcessing && (
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="flex items-center gap-3 text-gray-700">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
+                        <span className="text-sm font-medium">
+                          {processingStep === 1 && 'Uploading and extracting content...'}
+                          {processingStep === 2 && 'AI analyzing CV content...'}
+                          {processingStep === 3 && 'Finalizing candidate profile...'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled
+                        className="px-8 py-3 rounded-xl font-semibold shadow-lg bg-gray-300 text-gray-500 cursor-not-allowed"
+                      >
+                        Processing...
+                      </button>
+                    </div>
+                  )}
+
+                  {cvError && (
+                    <div className="mt-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <X className="w-5 h-5 text-red-500" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-red-700 font-medium">Error processing CV</p>
+                          <p className="text-xs text-red-600 mt-1">{cvError}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -50,7 +50,7 @@ export interface JobApplicationFilters {
   candidateId?: string;
   status?: 'Applied' | 'Screening' | 'Phone Interview' | 'Technical Interview' | 'Final Interview' | 'Offer Extended' | 'Hired' | 'Rejected' | 'Withdrawn';
   stage?: 'Application' | 'Screening' | 'Interview' | 'Decision' | 'Offer' | 'Hired';
-  sortBy?: string;
+  sortBy?: 'createdAt' | 'updatedAt' | 'appliedDate' | 'lastActivityDate';
   sortOrder?: 'ASC' | 'DESC';
 }
 

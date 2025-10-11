@@ -966,41 +966,95 @@ const JobATSPage: React.FC = () => {
 
   // Comprehensive function to invalidate all relevant queries
   const invalidateAllQueries = async () => {
+    console.log('[JobATSPage] invalidateAllQueries - starting...');
     await Promise.all([
       // CRITICAL: Invalidate the optimized job ATS page data
-      queryClient.invalidateQueries({ queryKey: ['jobATSPageData', organizationId, jobId] }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['jobATSPageData', organizationId, jobId],
+        refetchType: 'all' 
+      }),
       
       // Job-related queries
-      queryClient.invalidateQueries({ queryKey: ['job', jobId] }),
-      queryClient.invalidateQueries({ queryKey: ['externalJob', jobId] }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['job', jobId],
+        refetchType: 'all'
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['externalJob', jobId],
+        refetchType: 'all'
+      }),
       
       // Pipeline-related queries
-      queryClient.invalidateQueries({ queryKey: ['pipeline'] }),
-      queryClient.invalidateQueries({ queryKey: ['defaultPipeline'] }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['pipeline'],
+        refetchType: 'all'
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['defaultPipeline'],
+        refetchType: 'all'
+      }),
       
-      // Job applications and candidates
-      queryClient.invalidateQueries({ queryKey: ['jobApplications', jobId] }),
-      queryClient.invalidateQueries({ queryKey: ['candidates'] }),
+      // Job applications and candidates - FIXED: Use correct query key pattern
+      queryClient.invalidateQueries({ 
+        queryKey: ['jobApplications', 'byJob', jobId],
+        refetchType: 'all'
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['jobApplications'],
+        refetchType: 'all'
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['candidates'],
+        refetchType: 'all'
+      }),
       
       // Tasks and task statistics
-      queryClient.invalidateQueries({ queryKey: ['tasks', jobId] }),
-      queryClient.invalidateQueries({ queryKey: ['taskStats', jobId] }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['tasks', jobId],
+        refetchType: 'all'
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['taskStats', jobId],
+        refetchType: 'all'
+      }),
       
       // Interviews
-      queryClient.invalidateQueries({ queryKey: ['interviews', { jobId }] }),
-      queryClient.invalidateQueries({ queryKey: ['interviews'] }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['interviews', { jobId }],
+        refetchType: 'all'
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['interviews'],
+        refetchType: 'all'
+      }),
       
       // Reports
-      queryClient.invalidateQueries({ queryKey: ['jobReport', jobId] }),
-      queryClient.invalidateQueries({ queryKey: ['reports'] }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['jobReport', jobId],
+        refetchType: 'all'
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['reports'],
+        refetchType: 'all'
+      }),
       
       // Stage movements and tracking
-      queryClient.invalidateQueries({ queryKey: ['stageMovements'] }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['stageMovements'],
+        refetchType: 'all'
+      }),
       
       // Organization and department data that might affect the job view
-      queryClient.invalidateQueries({ queryKey: ['organization', organizationId] }),
-      queryClient.invalidateQueries({ queryKey: ['department', departmentId] }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['organization', organizationId],
+        refetchType: 'all'
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ['department', departmentId],
+        refetchType: 'all'
+      }),
     ]);
+    console.log('[JobATSPage] invalidateAllQueries - complete!');
   };
 
   const handleRefreshData = async () => {
@@ -1541,10 +1595,13 @@ const JobATSPage: React.FC = () => {
 		jobId={jobId!}
 		jobTitle={jobATSData?.job?.title}
 		onSuccess={async () => {
-		  // Invalidate all queries when candidates are added
+		  console.log('[JobATSPage] onSuccess called - starting query invalidation...');
+		  console.log('[JobATSPage] organizationId:', organizationId, 'jobId:', jobId);
+		  // Invalidate all queries when candidates are added to refresh JobATSPage data
 		  await invalidateAllQueries();
-		  toast.success('Candidates added to job successfully');
-		  setShowAddCandidateModal(false);
+		  console.log('[JobATSPage] Query invalidation complete');
+		  toast.success('Candidate added to job successfully');
+		  // Don't close modal - let user upload more CVs or manually close
 		}}
 	  />
 

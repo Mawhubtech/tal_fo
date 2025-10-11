@@ -125,11 +125,34 @@ export const useCVProcessing = () => {
     }
   };
 
+  // Process CV and add to job atomically
+  const processAndAddToJob = async (
+    file: File,
+    jobId: string,
+    overrideData?: any
+  ): Promise<any> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await candidatesService.processAndAddToJob(file, jobId, overrideData);
+      setData(result);
+      setLoading(false);
+      return result;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Error processing CV and adding to job';
+      setError(errorMessage);
+      setLoading(false);
+      return null;
+    }
+  };
+
   return {
     processCV,
     processBulkCVs,
     uploadCV,
     createFromProcessed,
+    processAndAddToJob,
     loading,
     error,
     data,

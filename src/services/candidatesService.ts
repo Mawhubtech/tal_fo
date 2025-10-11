@@ -288,7 +288,25 @@ export const candidatesService = {  // Get candidates with filtering and paginat
       documentId,
       overrideData,
     });
-    return response.data;  },  // Create a new candidate manually
+    return response.data;  },
+
+  // Process CV and add to job atomically
+  async processAndAddToJob(file: File, jobId: string, overrideData?: any) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('jobId', jobId);
+    if (overrideData) {
+      formData.append('overrideData', JSON.stringify(overrideData));
+    }
+    const response = await apiClient.post('/candidates/process-and-add-to-job', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Create a new candidate manually
   async createCandidate(candidateData: any) {
     // Check if there are files to upload (avatar or documents)
     const hasDocuments = candidateData.documents && candidateData.documents.length > 0;

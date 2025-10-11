@@ -21,6 +21,7 @@ const CandidatePreviewPanel: React.FC<CandidatePreviewPanelProps> = ({
   onStateChange,
   onClose,
 }) => {
+  // ALL HOOKS MUST BE AT THE TOP - BEFORE ANY CONDITIONAL RETURNS
   const [activeTab, setActiveTab] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -29,7 +30,28 @@ const CandidatePreviewPanel: React.FC<CandidatePreviewPanelProps> = ({
   // Fetch fresh candidate data
   const { data: candidate, isLoading, error } = useCandidate(candidateId);
 
-  // Show loading or error state
+  // Auto-scroll detection - MOVED BEFORE CONDITIONAL RETURNS
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const scrollPosition = container.scrollTop + 100;
+      
+      for (let i = sectionRefs.current.length - 1; i >= 0; i--) {
+        const section = sectionRefs.current[i];
+        if (section && section.offsetTop <= scrollPosition) {
+          setActiveTab(i);
+          break;
+        }
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Show loading or error state - AFTER ALL HOOKS
   if (isLoading) {
     return (
       <div className={`fixed inset-y-0 right-0 ${
@@ -153,27 +175,6 @@ const CandidatePreviewPanel: React.FC<CandidatePreviewPanelProps> = ({
     { name: 'References', icon: Mail, index: 9, count: getReferences().length },
     { name: 'Custom Fields', icon: FileText, index: 10, count: getCustomFields().length },
   ].filter(tab => tab.count > 0); // Only show tabs with data
-
-  // Auto-scroll detection
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const scrollPosition = container.scrollTop + 100;
-      
-      for (let i = sectionRefs.current.length - 1; i >= 0; i--) {
-        const section = sectionRefs.current[i];
-        if (section && section.offsetTop <= scrollPosition) {
-          setActiveTab(i);
-          break;
-        }
-      }
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const getAvatarInitials = () => {
     if (!candidate.fullName) return '?';
