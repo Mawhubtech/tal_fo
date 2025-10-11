@@ -119,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             </Link>
           )}
           
-          {/* Jobs Section */}
+          {/* Organizations Section - HIDDEN 
           {hasAnyPermission([SIDEBAR_PERMISSIONS.JOBS_ACCESS, SIDEBAR_PERMISSIONS.ORGANIZATIONS_ACCESS]) && (
             <button
               onClick={handleJobsClick}
@@ -132,22 +132,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               {isExpanded && "Organizations"}
             </button>
           )}
+          */}
 
-          {/* My Jobs Section */}
+          {/* Jobs Section (renamed from "My Jobs") */}
           {hasPermission(SIDEBAR_PERMISSIONS.MY_JOBS_ACCESS) && (
             <Link 
               to="/dashboard/my-jobs" 
               className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/my-jobs') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
-              title={!isExpanded ? "My Jobs" : ""}
+              title={!isExpanded ? "Jobs" : ""}
             >
               <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/my-jobs') ? '#7e22ce' : '#9ca3af' }}>
                 <Atom className="w-4 h-4" />
               </div>
-              {isExpanded && "My Jobs"}
+              {isExpanded && "Jobs"}
             </Link>
           )}
 
-          {/* Job Boards Section - For Recruiters */}
+          {/* Job Boards Section - HIDDEN 
           {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ACCESS) && (
             <Link 
               to="/dashboard/job-boards" 
@@ -160,6 +161,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               {isExpanded && "Job Boards"}
             </Link>
           )}
+          */}
           
           {/* Candidates Section */}
           {hasPermission(SIDEBAR_PERMISSIONS.CANDIDATES_ACCESS) && (
@@ -188,7 +190,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               {isExpanded && (isInternalUser(user) ? "Organization" : "Clients")}
             </Link>
           )}         
-       {/* Client Outreach Section */}
+          
+          {/* Client Outreach Section - HIDDEN 
           {hasPermission(SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS) && (
             <Link 
               to="/dashboard/client-outreach" 
@@ -201,8 +204,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               {isExpanded && "Client Outreach"}
             </Link>
           )}
-
-
+          */}
 
           {/* Admin Section */}
           {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ACCESS) && (
