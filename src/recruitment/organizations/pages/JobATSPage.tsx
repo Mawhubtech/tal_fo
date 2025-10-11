@@ -27,7 +27,7 @@ import type { JobApplication } from '../../../services/jobApplicationApiService'
 import type { Pipeline, CreatePipelineDto } from '../../../services/pipelineService';
 import { pipelineService } from '../../../services/pipelineService';
 import { PipelineTab, TasksTab, InterviewsTab, ReportsTab } from '../components/ats';
-import AddCandidateModal from '../components/AddCandidateModal';
+import AddCandidateToJobModal from '../../../components/AddCandidateToJobModal';
 import ConfirmationDialog from '../../../components/ConfirmationDialog';
 import ToastContainer, { toast } from '../../../components/ToastContainer';
 import ProfileSidePanel, { type UserStructuredData, type PanelState } from '../../../components/ProfileSidePanel';
@@ -715,11 +715,6 @@ const JobATSPage: React.FC = () => {
         toast.error('Update Failed', 'Failed to update candidate. Please try again.');
       }
     }
-  };
-
-  const handleCandidateAdded = async () => {
-    // Invalidate all queries when a new candidate is added
-    await invalidateAllQueries();
   };
 
   // Function to handle opening the profile panel for a candidate
@@ -1539,17 +1534,19 @@ const JobATSPage: React.FC = () => {
 		</div>
 	  )}
 
-	  {/* Add Candidate Modal */}
-	  {effectivePipeline && (
-		<AddCandidateModal
-		  isOpen={showAddCandidateModal}
-		  onClose={() => setShowAddCandidateModal(false)}
-		  jobId={jobId!}
-		  onCandidateAdded={handleCandidateAdded}
-		  pipeline={effectivePipeline as any}
-		  onDataChange={invalidateAllQueries}
-		/>
-	  )}
+	  {/* Advanced Add Candidate to Job Modal */}
+	  <AddCandidateToJobModal
+		isOpen={showAddCandidateModal}
+		onClose={() => setShowAddCandidateModal(false)}
+		jobId={jobId!}
+		jobTitle={jobATSData?.job?.title}
+		onSuccess={async () => {
+		  // Invalidate all queries when candidates are added
+		  await invalidateAllQueries();
+		  toast.success('Candidates added to job successfully');
+		  setShowAddCandidateModal(false);
+		}}
+	  />
 
 	  {/* Remove Candidate Confirmation Dialog */}
 	  <ConfirmationDialog
