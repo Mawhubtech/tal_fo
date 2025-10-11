@@ -48,6 +48,12 @@ export const jobCollaboratorApiService = {
     return response.data;
   },
 
+  // Decline invitation
+  async declineInvitation(token: string): Promise<{ message: string }> {
+    const response = await apiClient.post(`/collaborators/decline/${token}`);
+    return response.data;
+  },
+
   // Get my jobs (where I'm a collaborator)
   async getMyCollaboratorJobs(): Promise<JobCollaborator[]> {
     const response = await apiClient.get('/collaborators/my-jobs');

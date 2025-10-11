@@ -192,6 +192,11 @@ class CompanyApiService {
     return response.data;
   }
 
+  async declineInvitation(memberId: string): Promise<{ message: string }> {
+    const response = await apiClient.put(`/companies/members/${memberId}/decline`);
+    return response.data;
+  }
+
   async acceptInvitationByToken(token: string): Promise<{ member: CompanyMember }> {
     const response = await apiClient.post(`/companies/invitations/accept/${token}`);
     return response.data;

@@ -95,6 +95,25 @@ export const useAcceptInvitation = () => {
 };
 
 /**
+ * Hook to decline a collaborator invitation
+ */
+export const useDeclineInvitation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token: string) => jobCollaboratorApiService.declineInvitation(token),
+    onSuccess: () => {
+      // Invalidate pending invitations to remove the declined invitation
+      queryClient.invalidateQueries({ queryKey: ['myPendingJobInvitations'] });
+      toast.success('Job invitation declined');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to decline invitation');
+    },
+  });
+};
+
+/**
  * Hook to resend an invitation to a collaborator
  */
 export const useResendInvitation = () => {

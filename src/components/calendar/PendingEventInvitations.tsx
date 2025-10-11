@@ -15,8 +15,8 @@ import {
   Briefcase
 } from 'lucide-react';
 import { useMyPendingEventInvitations, useRespondToEventInvitation } from '../../hooks/useCalendarInvitations';
-import { useMyPendingInvitations, useAcceptInvitation } from '../../hooks/useCompany';
-import { useMyPendingJobInvitations, useAcceptInvitation as useAcceptJobInvitation } from '../../hooks/useJobCollaborators';
+import { useMyPendingInvitations, useAcceptInvitation, useDeclineInvitation } from '../../hooks/useCompany';
+import { useMyPendingJobInvitations, useAcceptInvitation as useAcceptJobInvitation, useDeclineInvitation as useDeclineJobInvitation } from '../../hooks/useJobCollaborators';
 import type { EventInvitation } from '../../services/calendarApiService';
 import type { CompanyMember } from '../../services/companyApiService';
 import type { JobCollaborator } from '../../services/jobCollaboratorApiService';
@@ -36,7 +36,9 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
   const { data: jobInvitations = [], isLoading: jobInvitationsLoading } = useMyPendingJobInvitations();
   const respondToEventInvitationMutation = useRespondToEventInvitation();
   const acceptCompanyInvitationMutation = useAcceptInvitation();
+  const declineCompanyInvitationMutation = useDeclineInvitation();
   const acceptJobInvitationMutation = useAcceptJobInvitation();
+  const declineJobInvitationMutation = useDeclineJobInvitation();
 
   const eventInvitations = eventInvitationsData?.invitations || [];
   const companyInvitations = companyInvitationsData?.invitations || [];
@@ -80,6 +82,20 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
     }
   };
 
+  const handleCompanyInvitationDecline = async (invitation: CompanyMember) => {
+    try {
+      setErrorMessage(null);
+      await declineCompanyInvitationMutation.mutateAsync(invitation.id);
+      setSuccessMessage('Company invitation declined');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error: any) {
+      console.error('Failed to decline company invitation:', error);
+      const message = error.response?.data?.message || 'Failed to decline company invitation';
+      setErrorMessage(message);
+      setTimeout(() => setErrorMessage(null), 5000);
+    }
+  };
+
   const handleJobInvitationAccept = async (invitation: JobCollaborator) => {
     try {
       setErrorMessage(null);
@@ -89,6 +105,20 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
     } catch (error: any) {
       console.error('Failed to accept job invitation:', error);
       const message = error.response?.data?.message || 'Failed to accept job invitation';
+      setErrorMessage(message);
+      setTimeout(() => setErrorMessage(null), 5000);
+    }
+  };
+
+  const handleJobInvitationDecline = async (invitation: JobCollaborator) => {
+    try {
+      setErrorMessage(null);
+      await declineJobInvitationMutation.mutateAsync(invitation.invitationToken!);
+      setSuccessMessage('Job invitation declined');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error: any) {
+      console.error('Failed to decline job invitation:', error);
+      const message = error.response?.data?.message || 'Failed to decline job invitation';
       setErrorMessage(message);
       setTimeout(() => setErrorMessage(null), 5000);
     }
@@ -269,7 +299,8 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
                   Accept
                 </button>
                 <button
-                  disabled={acceptCompanyInvitationMutation.isPending}
+                  onClick={() => handleCompanyInvitationDecline(invitation)}
+                  disabled={declineCompanyInvitationMutation.isPending}
                   className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
                 >
                   <X className="w-3 h-3" />
@@ -312,7 +343,8 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
                   Accept
                 </button>
                 <button
-                  disabled={acceptJobInvitationMutation.isPending}
+                  onClick={() => handleJobInvitationDecline(invitation)}
+                  disabled={declineJobInvitationMutation.isPending}
                   className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
                 >
                   <X className="w-3 h-3" />

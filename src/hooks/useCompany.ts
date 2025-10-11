@@ -147,6 +147,19 @@ export const useAcceptInvitation = () => {
   });
 };
 
+export const useDeclineInvitation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (memberId: string) => companyApiService.declineInvitation(memberId),
+    onSuccess: () => {
+      // Invalidate pending invitations to remove the declined invitation
+      queryClient.invalidateQueries({ queryKey: ['my-pending-invitations'] });
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
+    },
+  });
+};
+
 export const useUpdateMember = () => {
   const queryClient = useQueryClient();
 
