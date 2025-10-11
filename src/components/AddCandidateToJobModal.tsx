@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCandidates, useCandidate } from '../hooks/useCandidates';
 import { useCreateJobApplicationWithPipeline } from '../hooks/useJobApplications';
 import { CandidateQueryParams } from '../services/candidatesService';
-import ProfileSidePanel, { type PanelState, type UserStructuredData } from './ProfileSidePanel';
+import CandidatePreviewPanel, { type PanelState } from './CandidatePreviewPanel';
 import { getAvatarUrl } from '../utils/fileUtils';
 
 interface AddCandidateToJobModalProps {
@@ -100,7 +100,6 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
   });
 
   // Profile side panel state
-  const [selectedCandidateForProfile, setSelectedCandidateForProfile] = useState<any>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<PanelState>('closed');
   const sidePanelRef = useRef<HTMLDivElement>(null);
@@ -137,9 +136,6 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
 
   const { data: candidatesData, isLoading, error, refetch } = useCandidates(activeQueryParams);
   const createJobApplicationMutation = useCreateJobApplicationWithPipeline();
-  
-  // Load candidate data for side panel
-  const { data: selectedCandidateData, isLoading: candidateLoading } = useCandidate(selectedCandidateId || '');
 
   const candidates = candidatesData?.items || [];
   const totalCandidates = candidatesData?.total || 0;
@@ -158,7 +154,6 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
       setSelectedCandidates(new Set());
       setCurrentPage(1);
       setPanelState('closed');
-      setSelectedCandidateForProfile(null);
       setSelectedCandidateId(null);
       setSearchTriggered(false);
       setIsSearching(false);
@@ -200,7 +195,6 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (sidePanelRef.current && !sidePanelRef.current.contains(event.target as Node)) {
         setPanelState('closed');
-        setSelectedCandidateForProfile(null);
         setSelectedCandidateId(null);
       }
     };
@@ -208,7 +202,6 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && panelState !== 'closed') {
         setPanelState('closed');
-        setSelectedCandidateForProfile(null);
         setSelectedCandidateId(null);
       }
     };
@@ -397,7 +390,6 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
 
   const handleCandidateClick = (candidate: any) => {
     setSelectedCandidateId(candidate.id);
-    setSelectedCandidateForProfile(candidate);
     setPanelState('expanded');
   };
 
@@ -963,16 +955,17 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
             )}
           </div>
 
-          {/* Side Panel */}
-          {panelState !== 'closed' && (
+          {/* Candidate Preview Panel */}
+          {panelState !== 'closed' && selectedCandidateId && (
             <div ref={sidePanelRef}>
-              <ProfileSidePanel
-                userData={selectedCandidateForProfile}
-                panelState={panelState}
+              <CandidatePreviewPanel
+                candidateId={selectedCandidateId}
+                state={panelState}
                 onStateChange={setPanelState}
-                preventCloseOnClickOutside={false}
-                candidateId={selectedCandidateId || undefined}
-                hideAddToJob={true}
+                onClose={() => {
+                  setPanelState('closed');
+                  setSelectedCandidateId(null);
+                }}
               />
             </div>
           )}
