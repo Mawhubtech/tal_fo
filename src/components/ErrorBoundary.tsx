@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Home, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Props {
   children: ReactNode;
@@ -35,15 +36,33 @@ class ErrorBoundary extends Component<Props, State> {
             <h1 className="text-xl font-semibold text-gray-900 mb-2">
               Something went wrong
             </h1>
-            <p className="text-gray-600 mb-4">
-              We're sorry, but something unexpected happened. Please try refreshing the page.
+            <p className="text-gray-600 mb-6">
+              We're sorry, but something unexpected happened. Please try refreshing the page or return to the dashboard.
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Refresh Page
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                Refresh Page
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.history.back()}
+                  className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Go Back
+                </button>
+                <Link
+                  to="/dashboard"
+                  className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                >
+                  <Home className="w-4 h-4" />
+                  Dashboard
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       );

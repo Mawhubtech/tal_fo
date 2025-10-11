@@ -1151,10 +1151,10 @@ const JobATSPage: React.FC = () => {
 		  <h3 className="text-lg font-medium text-gray-900 mb-2">Job not found</h3>
 		  <p className="text-gray-500 mb-4">The job you're looking for doesn't exist.</p>
 		  <Link 
-			to="/dashboard/organizations" 
+			to="/dashboard/my-jobs" 
 			className="text-purple-600 hover:text-purple-700 font-medium"
 		  >
-			← Back to Organizations
+			← Back to My Jobs
 		  </Link>
 		</div>
 	  </div>
