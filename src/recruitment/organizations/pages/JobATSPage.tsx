@@ -485,16 +485,16 @@ const JobATSPage: React.FC = () => {
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
   };
 
-  // Transform hiring team members to TeamMember format for CollaborativeSidePanel
+  // Transform hiring team members AND collaborators to TeamMember format for CollaborativeSidePanel
   const teamMembers: TeamMember[] = (() => {
-    const members = teamMembersData.map(member => {
+    const members: TeamMember[] = [];
+    const seenIds = new Set<string>();
+
+    // 1. Add hiring team members
+    teamMembersData.forEach(member => {
       const fullName = member.memberType === 'internal' && member.user
         ? `${member.user.firstName} ${member.user.lastName}`
         : `${member.externalFirstName || ''} ${member.externalLastName || ''}`.trim();
-      
-      const email = member.memberType === 'internal' && member.user
-        ? member.user.email
-        : member.externalEmail || '';
 
       // For presence matching, use the actual user ID for both internal and external users
       // Internal users: member.user.id
@@ -503,36 +503,50 @@ const JobATSPage: React.FC = () => {
         ? member.user.id 
         : member.userId || member.id;
 
-      // Debug logging for team member ID mapping
-    //   console.log(`Team member mapping: ${fullName}`, {
-    //     memberType: member.memberType,
-    //     memberId,
-    //     memberRecordId: member.id,
-    //     userId: member.userId,
-    //     userIdFromUser: member.user?.id
-    //   });
-
-      return {
+      seenIds.add(memberId);
+      members.push({
         id: memberId,
         name: fullName || 'Unknown Member',
-        email: email,
         avatar: member.user?.avatar,
         role: member.teamRole as string,
         isOnline: false, // This would need to be implemented with real-time status if needed
-      };
+      });
     });
 
-    // Add job creator if they're not already in the team
+    // 2. Add collaborators (if not already in hiring team)
+    if (job?.collaborators) {
+      job.collaborators.forEach(collaborator => {
+        // Only add accepted collaborators
+        if (collaborator.status === 'accepted' && collaborator.user) {
+          const collaboratorId = collaborator.user.id;
+          
+          // Skip if already added from hiring team
+          if (seenIds.has(collaboratorId)) {
+            return;
+          }
+
+          seenIds.add(collaboratorId);
+          members.push({
+            id: collaboratorId,
+            name: `${collaborator.user.firstName || ''} ${collaborator.user.lastName || ''}`.trim() || collaborator.email,
+            avatar: collaborator.user.avatar,
+            role: `Collaborator (${collaborator.role})`,
+            isOnline: false,
+          });
+        }
+      });
+    }
+
+    // 3. Add job creator if they're not already in the team
     if (job?.createdBy) {
       const creatorId = job.createdBy.id;
-      const isCreatorInTeam = members.some(member => member.id === creatorId);
+      const isCreatorInTeam = seenIds.has(creatorId);
       
       if (!isCreatorInTeam) {
         const creatorName = `${job.createdBy.firstName} ${job.createdBy.lastName}`;
         members.unshift({
           id: creatorId,
           name: creatorName,
-          email: job.createdBy.email,
           avatar: undefined, // Job creator info from backend might not include avatar
           role: 'Job Creator',
           isOnline: false,
@@ -801,7 +815,13 @@ const JobATSPage: React.FC = () => {
 
   const handleRefreshComments = async () => {
     try {
-      console.log('Refreshing comments for job:', jobId);
+      // Invalidate the query cache first to force a fresh fetch
+      await queryClient.invalidateQueries({ 
+        queryKey: ['jobComments', jobId],
+        exact: true 
+      });
+      
+      // Then refetch
       await refetchComments();
     } catch (error) {
       console.error('Error refreshing comments:', error);
@@ -1272,14 +1292,14 @@ const JobATSPage: React.FC = () => {
 		  Email Sequences
 		</Link>
 		
-		{/* Team Notes button */}
+		{/* Team Chat button */}
 		<button 
 		  onClick={() => handleCollaborativePanelStateChange('expanded')}
 		  className="bg-white text-green-600 border border-green-600 hover:bg-green-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm"
-		  title="Team collaboration and notes"
+		  title="Team collaboration and chat"
 		>
 		  <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
-		  Team Notes
+		  Team Chat
 		</button>
 	  </div>
 

@@ -20,6 +20,8 @@ export function useJobComments(jobId: string) {
     queryKey: jobCommentsKeys.job(jobId),
     queryFn: () => jobCommentsApiService.getJobComments(jobId),
     enabled: !!jobId,
+    staleTime: 0, // Always consider data stale to ensure fresh fetches
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes (previously cacheTime)
   });
 }
 

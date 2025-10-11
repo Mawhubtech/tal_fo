@@ -320,6 +320,28 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     }
   }, [candidateId, panelState]);
 
+  // Lock body scroll when panel is open
+  useEffect(() => {
+    if (panelState !== 'closed') {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // Restore scroll position when panel closes
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      };
+    }
+  }, [panelState]);
+
   // Extract enrichment data from notesData
   const enrichedData = React.useMemo(() => {
     if (!userData) return null;
@@ -763,7 +785,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           </div>
 
           {/* Loading content */}
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div 
+            className="flex-1 p-6 overflow-y-auto"
+            onWheel={(e) => e.stopPropagation()}
+          >
             <div className="space-y-6">
               {/* Personal info loading skeleton */}
               <div className="space-y-4">
@@ -913,9 +938,19 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
   ];  // Collapsed state - show only the 2/3 profile section (1/3 of total page width)
   if (panelState === 'collapsed') {
     return (
-      <div ref={panelRef} className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-full sm:w-1/2 md:w-5/12 lg:w-1/3' : 'w-full sm:w-3/4 md:w-2/3 lg:w-1/2'} bg-white shadow-2xl z-50 flex transition-all duration-300 ease-in-out`}>
+      <div 
+        ref={panelRef} 
+        className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-full sm:w-1/2 md:w-5/12 lg:w-1/3' : 'w-full sm:w-3/4 md:w-2/3 lg:w-1/2'} bg-white shadow-2xl z-50 flex transition-all duration-300 ease-in-out overflow-hidden`}
+        onWheel={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onTouchMove={(e) => {
+          e.stopPropagation();
+        }}
+      >
         {/* Profile Info Section - Responsive width based on actions panel state */}
-        <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'w-2/3'} flex flex-col ${!isCandidateActionsCollapsed ? 'border-r border-gray-200' : ''} transition-all duration-300 ease-in-out`}>
+        <div className={`${isCandidateActionsCollapsed ? 'flex-1' : 'w-2/3'} flex flex-col ${!isCandidateActionsCollapsed ? 'border-r border-gray-200' : ''} transition-all duration-300 ease-in-out overflow-hidden`}>
           
           {/* Profile Basic Info */}
           <div className="p-6 border-b border-gray-200">
@@ -1091,7 +1126,11 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           )}
 
           {/* Scrollable Content Area with Tabs */}
-          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto flex flex-col relative">
+          <div 
+            ref={scrollContainerRef} 
+            className="flex-1 overflow-y-auto flex flex-col relative"
+            onWheel={(e) => e.stopPropagation()}
+          >
             {/* Tabs Navigation - Sticky */}
             <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
               <nav className="flex px-4 overflow-x-auto" aria-label="Tabs" style={{ 
@@ -1896,7 +1935,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
         </div>
 
         {/* Candidate Actions Section - Right Side (shown when not collapsed) */}
-        <div className={`${isCandidateActionsCollapsed ? 'w-0 overflow-hidden' : 'w-1/3'} bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out`}>
+        <div className={`${isCandidateActionsCollapsed ? 'w-0 overflow-hidden' : 'w-1/3'} bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out overflow-hidden`}>
           {!isCandidateActionsCollapsed && (
             <>
               {/* Actions Header */}
@@ -1941,7 +1980,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               </div>
 
               {/* Side Tab Content - Communication Tab Only for Compact View */}
-              <div className="flex-1 overflow-y-auto p-4">
+              <div 
+                className="flex-1 overflow-y-auto p-4"
+                onWheel={(e) => e.stopPropagation()}
+              >
                 {/* Communication Tab */}
                 {activeSideTab === 1 && (
                   <div className="space-y-4">
@@ -2797,7 +2839,10 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               </div>
 
               {/* Modal Content */}
-              <div className="flex-1 overflow-y-auto p-4">
+              <div 
+                className="flex-1 overflow-y-auto p-4"
+                onWheel={(e) => e.stopPropagation()}
+              >
                 <div className="space-y-4">
                   {/* Email Header */}
                   <div className="bg-gray-50 rounded-lg p-3">

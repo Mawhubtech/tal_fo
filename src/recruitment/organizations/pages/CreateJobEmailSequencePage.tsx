@@ -57,7 +57,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
   // Construct URLs
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences`
-    : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences`;
+    : `/dashboard/jobs/${jobId}/email-sequences`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +95,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
       // Navigate to the new sequence detail page
       const detailUrl = isExternal 
         ? `/external/jobs/${jobId}/email-sequences/${newSequence.id}`
-        : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${newSequence.id}`;
+        : `/dashboard/jobs/${jobId}/email-sequences/${newSequence.id}`;
       
       navigate(detailUrl);
     } catch (error) {
@@ -144,10 +144,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Job Not Found</h2>
           <p className="text-gray-600 mb-4">The job you're looking for doesn't exist.</p>
           <Link
-            to={isExternal 
-              ? "/external/jobs"
-              : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`
-            }
+            to={isExternal ? "/external/jobs" : "/dashboard/jobs"}
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -165,15 +162,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
         <div className="flex items-center text-sm text-gray-500 mb-4">
           <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
           <span className="mx-2">/</span>
-          <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
-          <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
-            Organization
-          </Link>
-          <span className="mx-2">/</span>
-          <Link to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`} className="hover:text-gray-700">
-            {effectiveJob.department}
-          </Link>
+          <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
           <Link to={`/dashboard/jobs/${jobId}/ats`} className="hover:text-gray-700">
             ATS - {effectiveJob.title}
