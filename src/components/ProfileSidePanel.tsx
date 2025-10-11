@@ -267,11 +267,14 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
   
   // Real backend data hooks
   const { data: jobApplicationsData, isLoading: applicationsLoading } = useJobApplicationsByCandidate(candidateId || '');
+  
+  // ❌ DISABLED: Job suggestions endpoint removed to improve performance
   const { data: jobSuggestionsData, isLoading: jobsLoading } = useJobSuggestions(
     candidateId || '',
-    undefined, // Not filtering by organization for now
-    { enabled: !!candidateId }
+    undefined,
+    { enabled: false } // Disabled - not using job suggestions feature
   );
+  
   const { data: prospectsData, isLoading: prospectsLoading } = useSourcingProspects({
     search: userData?.personalInfo?.email || ''
   });

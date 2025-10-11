@@ -177,6 +177,8 @@ export function transformCVDataToCandidate(
         degree: edu.degree || '',
         major: edu.field || edu.major || undefined,
         minor: edu.minor || undefined,
+        startDate: parseAndFormatDate(edu.startDate),
+        endDate: parseAndFormatDate(edu.endDate),
         graduationDate: parseAndFormatDate(edu.graduationDate) || parseAndFormatDate(edu.endDate),
         location: edu.location || undefined,
         gpa: edu.gpa ? parseFloat(edu.gpa) : undefined,

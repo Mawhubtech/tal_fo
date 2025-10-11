@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { FileText, Upload, CheckCircle, AlertCircle, User, Users, AlertTriangle } from 'lucide-react';
 import { useCVProcessing } from '../hooks/useCVProcessing';
-import { transformCVDataToCandidate, isDataSufficient, getMissingCriticalData, removeNullValues } from '../utils/cvDataTransformer';
+import { isDataSufficient, getMissingCriticalData, removeNullValues } from '../utils/cvDataTransformer';
 
 const SingleCVProcessing: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -66,19 +66,14 @@ const SingleCVProcessing: React.FC = () => {
     if (!processedData) return;
     
     try {
-      // Transform the structured data to the proper format expected by the backend
-      const transformedData = transformCVDataToCandidate(
-        processedData.structuredData,
-        showCreateForm ? overrideData : undefined
-      );
+      // Send RAW AI data directly to backend - no transformation needed!
+      // Backend's createFromStructuredData() already handles all data extraction and mapping
+      console.log('Sending raw AI data to backend:', processedData.structuredData);
       
-      console.log('Transformed data for backend:', transformedData);
-      
-      // Send the properly formatted data to the backend
       const result = await createFromProcessed(
-        transformedData, // Use transformed data instead of raw structuredData
+        processedData.structuredData, // ✅ Raw AI output - backend handles everything
         undefined, // No document ID since we're processing without saving
-        undefined  // Override data is already applied in transformation
+        showCreateForm ? overrideData : undefined // Only override if user manually edited
       );
       
       if (result) {
