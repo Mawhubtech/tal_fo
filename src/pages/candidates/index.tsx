@@ -665,7 +665,7 @@ const CandidatesPage: React.FC = () => {
                   <FileText className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">CV</span>
                 </Link>
-                <Link to="/dashboard/sourcing/projects" title="Candidate Sourcing Projects" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors text-xs sm:text-sm">
+                <Link to="/dashboard/search" title="Candidate Sourcing Search" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors text-xs sm:text-sm">
                   <SearchCheckIcon className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Source</span>
                 </Link>              

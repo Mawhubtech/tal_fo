@@ -311,8 +311,8 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } />
             
-            {/* Jobs redirect to organizations - hierarchical approach */}
-            <Route path="jobs" element={<Navigate to="/dashboard/organizations" replace />} />
+            {/* Jobs redirect - Updated to point to my-jobs instead of organizations */}
+            <Route path="jobs" element={<Navigate to="/dashboard/my-jobs" replace />} />
             
             {/* My Jobs - Show AllJobsPage */}
             <Route path="my-jobs" element={
@@ -346,30 +346,30 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } />
             
-            {/* New Hierarchical Recruitment Flow */}
-            <Route path="organizations" element={
+            {/* New Hierarchical Recruitment Flow - HIDDEN: Organization hierarchy removed from navigation */}
+            {/* <Route path="organizations" element={
               <RoutePermissionGuard>
                 <OrganizationsPage />
               </RoutePermissionGuard>
-            } />
+            } /> */}
             
-            <Route path="organizations/:organizationId" element={
+            {/* <Route path="organizations/:organizationId" element={
               <RoutePermissionGuard>
                 <OrganizationDetailPage />
               </RoutePermissionGuard>
-            } />
+            } /> */}
             
-            <Route path="organizations/:organizationId/departments" element={
+            {/* <Route path="organizations/:organizationId/departments" element={
               <RoutePermissionGuard>
                 <DepartmentsPage />
               </RoutePermissionGuard>
-            } />
+            } /> */}
             
-            <Route path="organizations/:organizationId/departments/:departmentId/jobs" element={
+            {/* <Route path="organizations/:organizationId/departments/:departmentId/jobs" element={
               <RoutePermissionGuard>
                 <DepartmentJobsPage />
               </RoutePermissionGuard>
-            } />
+            } /> */}
             
             <Route path="jobs/:jobId/ats" element={
               <RoutePermissionGuard>
@@ -420,31 +420,33 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } />
             
-            <Route path="organizations/:organizationId/create-job" element={
+            {/* Create job within organization - HIDDEN: Organization hierarchy removed */}
+            {/* <Route path="organizations/:organizationId/create-job" element={
               <RoutePermissionGuard>
                 <CreateJobPage />
               </RoutePermissionGuard>
-            } />
+            } /> */}
             
-            <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={
+            {/* Create job within department - HIDDEN: Organization hierarchy removed */}
+            {/* <Route path="organizations/:organizationId/departments/:departmentId/create-job" element={
               <RoutePermissionGuard>
                 <CreateJobPage />
               </RoutePermissionGuard>
-            } />
+            } /> */}
             
-            {/* Organization-specific hiring teams */}
-            <Route path="organizations/:organizationId/hiring-teams" element={
+            {/* Organization-specific hiring teams - HIDDEN: Organization hierarchy removed */}
+            {/* <Route path="organizations/:organizationId/hiring-teams" element={
               <RoutePermissionGuard>
                 <HiringTeamsPage />
               </RoutePermissionGuard>
-            } />
+            } /> */}
 
-            {/* Job Board Management Routes */}
-            <Route path="organizations/:organizationId/job-boards" element={
+            {/* Job Board Management Routes - HIDDEN: Organization hierarchy removed */}
+            {/* <Route path="organizations/:organizationId/job-boards" element={
               <RoutePermissionGuard>
                 <OrganizationJobBoardsPage />
               </RoutePermissionGuard>
-            } />
+            } /> */}
 
             {/* Recruiter Job Board Dashboard */}
             <Route path="job-boards" element={
