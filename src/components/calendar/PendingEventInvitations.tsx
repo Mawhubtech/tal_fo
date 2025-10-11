@@ -246,74 +246,42 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
         {companyInvitations.slice(0, Math.max(0, 3 - eventInvitations.length)).map((invitation) => (
           <div
             key={`company-${invitation.id}`}
-            className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors"
+            className="border border-gray-200 rounded-lg p-3 hover:border-purple-300 transition-colors"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Building2 className="w-4 h-4 text-blue-600" />
-                  <h4 className="font-medium text-gray-900">
-                    Join {invitation.company?.name || 'Company'}
-                  </h4>
-                  <span className="px-2 py-1 rounded-full text-xs font-medium text-white bg-blue-500">
-                    Company
-                  </span>
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-2">
-                  Company invitation • Role: {formatCompanyRole(invitation.role)}
-                </p>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Building2 className="w-3 h-3" />
-                    {invitation.company?.type ? getCompanyTypeLabel(invitation.company.type) : 'Company'}
-                  </div>
-                  
-                  {invitation.title && (
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Users className="w-3 h-3" />
-                      <span>{invitation.title}</span>
-                    </div>
-                  )}
-                </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <h4 className="font-medium text-gray-900 truncate text-sm">
+                  Join {invitation.company?.name || 'Company'}
+                </h4>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium text-white bg-blue-500 flex-shrink-0">
+                  Company
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleCompanyInvitationAccept(invitation)}
+                  disabled={acceptCompanyInvitationMutation.isPending}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <Check className="w-3 h-3" />
+                  Accept
+                </button>
+                <button
+                  disabled={acceptCompanyInvitationMutation.isPending}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
+                >
+                  <X className="w-3 h-3" />
+                  Decline
+                </button>
               </div>
             </div>
-
-            {invitation.company?.description && (
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {invitation.company.description}
-              </p>
-            )}
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleCompanyInvitationAccept(invitation)}
-                disabled={acceptCompanyInvitationMutation.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                <Check className="w-3 h-3" />
-                Accept
-              </button>
-
-              {acceptCompanyInvitationMutation.isPending && (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
-                  Accepting...
-                </div>
-              )}
-            </div>
-
-            <div className="mt-2 pt-2 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
-                Invited {invitation.invitedAt ? new Date(invitation.invitedAt).toLocaleDateString([], {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) : 'recently'}
-              </p>
-            </div>
+            
+            <p className="text-xs text-gray-500 mt-1 truncate">
+              {formatCompanyRole(invitation.role)}
+              {invitation.title && ` • ${invitation.title}`}
+            </p>
           </div>
         ))}
 
@@ -321,73 +289,42 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
         {jobInvitations.slice(0, Math.max(0, 3 - companyInvitations.length)).map((invitation) => (
           <div
             key={`job-${invitation.id}`}
-            className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors"
+            className="border border-gray-200 rounded-lg p-3 hover:border-purple-300 transition-colors"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Briefcase className="w-4 h-4 text-purple-600" />
-                  <h4 className="font-medium text-gray-900">
-                    {invitation.job?.title || 'Job Collaboration'}
-                  </h4>
-                  <span className="px-2 py-1 rounded-full text-xs font-medium text-white bg-purple-500">
-                    Job
-                  </span>
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-2">
-                  Role: {formatCompanyRole(invitation.role)}
-                  {invitation.invitedBy && ` • Invited by ${invitation.invitedBy.firstName} ${invitation.invitedBy.lastName}`}
-                </p>
-
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {invitation.canViewApplications && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      View Applications
-                    </span>
-                  )}
-                  {invitation.canMoveCandidates && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                      Move Candidates
-                    </span>
-                  )}
-                  {invitation.canEditJob && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                      Edit Job
-                    </span>
-                  )}
-                </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Briefcase className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                <h4 className="font-medium text-gray-900 truncate text-sm">
+                  {invitation.job?.title || 'Job Collaboration'}
+                </h4>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium text-white bg-purple-500 flex-shrink-0">
+                  Job
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleJobInvitationAccept(invitation)}
+                  disabled={acceptJobInvitationMutation.isPending}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-md hover:bg-purple-700 disabled:opacity-50"
+                >
+                  <Check className="w-3 h-3" />
+                  Accept
+                </button>
+                <button
+                  disabled={acceptJobInvitationMutation.isPending}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
+                >
+                  <X className="w-3 h-3" />
+                  Decline
+                </button>
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleJobInvitationAccept(invitation)}
-                disabled={acceptJobInvitationMutation.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-md hover:bg-purple-700 disabled:opacity-50"
-              >
-                <Check className="w-3 h-3" />
-                Accept
-              </button>
-
-              {acceptJobInvitationMutation.isPending && (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
-                  Accepting...
-                </div>
-              )}
-            </div>
-
-            <div className="mt-2 pt-2 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
-                Invited {invitation.invitationSentAt ? new Date(invitation.invitationSentAt).toLocaleDateString([], {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) : 'recently'}
-              </p>
-            </div>
+            
+            <p className="text-xs text-gray-500 mt-1 truncate">
+              {formatCompanyRole(invitation.role)}
+              {invitation.invitedBy && ` • Invited by ${invitation.invitedBy.firstName} ${invitation.invitedBy.lastName}`}
+            </p>
           </div>
         ))}
 
@@ -395,102 +332,44 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
         {eventInvitations.slice(0, Math.max(0, 3 - companyInvitations.length)).map((invitation) => (
           <div
             key={`event-${invitation.id}`}
-            className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors"
+            className="border border-gray-200 rounded-lg p-3 hover:border-purple-300 transition-colors"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-medium text-gray-900">
-                    {invitation.event?.title || 'Event'}
-                  </h4>
-                  {invitation.event && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getEventTypeColor(invitation.event.type)}`}>
-                      {invitation.event.type}
-                    </span>
-                  )}
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-2">
-                  Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
-                </p>
-
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Calendar className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                <h4 className="font-medium text-gray-900 truncate text-sm">
+                  {invitation.event?.title || 'Event'}
+                </h4>
                 {invitation.event && (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Clock className="w-3 h-3" />
-                      {formatEventTime(invitation)}
-                    </div>
-                    
-                    {invitation.event.location && (
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <MapPin className="w-3 h-3" />
-                        <span className="truncate">{invitation.event.location}</span>
-                      </div>
-                    )}
-                    
-                    {invitation.event.meetingLink && (
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <Video className="w-3 h-3" />
-                        <span>Online Meeting</span>
-                      </div>
-                    )}
-                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium text-white flex-shrink-0 ${getEventTypeColor(invitation.event.type)}`}>
+                    {invitation.event.type}
+                  </span>
                 )}
               </div>
-            </div>
-
-            {invitation.event?.description && (
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {invitation.event.description}
-              </p>
-            )}
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleEventInvitationRespond(invitation.id, 'accepted')}
-                disabled={respondToEventInvitationMutation.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 disabled:opacity-50"
-              >
-                <Check className="w-3 h-3" />
-                Accept
-              </button>
               
-              <button
-                onClick={() => handleEventInvitationRespond(invitation.id, 'maybe')}
-                disabled={respondToEventInvitationMutation.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 bg-yellow-600 text-white text-xs font-medium rounded-md hover:bg-yellow-700 disabled:opacity-50"
-              >
-                <Clock className="w-3 h-3" />
-                Maybe
-              </button>
-
-              <button
-                onClick={() => handleEventInvitationRespond(invitation.id, 'declined')}
-                disabled={respondToEventInvitationMutation.isPending}
-                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
-              >
-                <X className="w-3 h-3" />
-                Decline
-              </button>
-
-              {respondToEventInvitationMutation.isPending && (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-purple-600"></div>
-                  Responding...
-                </div>
-              )}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleEventInvitationRespond(invitation.id, 'accepted')}
+                  disabled={respondToEventInvitationMutation.isPending}
+                  className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  <Check className="w-3 h-3" />
+                </button>
+                
+                <button
+                  onClick={() => handleEventInvitationRespond(invitation.id, 'declined')}
+                  disabled={respondToEventInvitationMutation.isPending}
+                  className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
             </div>
-
-            <div className="mt-2 pt-2 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
-                Invited {new Date(invitation.createdAt).toLocaleDateString([], {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </div>
+            
+            <p className="text-xs text-gray-500 mt-1 truncate">
+              {invitation.event && formatEventTime(invitation)}
+              {invitation.invitedBy && ` • by ${invitation.invitedBy.firstName} ${invitation.invitedBy.lastName}`}
+            </p>
           </div>
         ))}
 
