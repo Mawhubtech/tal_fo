@@ -9,6 +9,7 @@ import SignIn from './components/SignIn';
 import OrganizationSignIn from './components/OrganizationSignIn';
 import OAuthCallback from './components/OAuthCallback';
 import GmailOAuthCallback from './pages/GmailOAuthCallback';
+import OutlookOAuthCallback from './pages/OutlookOAuthCallback';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import LandingPage from './pages/LandingPage';
 import InvitationResponsePage from './pages/InvitationResponsePage';
@@ -85,6 +86,10 @@ function App() {
             <Route
               path="/oauth/gmail-callback"
               element={<GmailOAuthCallback />}
+            />
+            <Route
+              path="/email/outlook/callback"
+              element={<OutlookOAuthCallback />}
             />
             {/* Updated Dashboard Route to handle nested routes */}
             <Route

@@ -54,6 +54,9 @@ import CreateJobEmailSequencePage from '../recruitment/organizations/pages/Creat
 // Candidates Page
 import CandidatesPage from './candidates'; // Import the new CandidatesPage
 
+// Communication Page
+import CommunicationPage from './CommunicationPage'; // Import the Communication page
+
 // Client Outreach Pages
 import ClientOutreachRouter from './client-outreach/ClientOutreachRouter';
 
@@ -325,6 +328,13 @@ const Dashboard: React.FC = () => {
             <Route path="candidates" element={
               <RoutePermissionGuard>
                 <CandidatesPage />
+              </RoutePermissionGuard>
+            } />
+            
+            {/* Communication Route */}
+            <Route path="communication" element={
+              <RoutePermissionGuard>
+                <CommunicationPage />
               </RoutePermissionGuard>
             } />
             

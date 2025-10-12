@@ -41,12 +41,28 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
       
       // If it's an SMTP provider and has config but no settings, convert config to settings
       if (provider.type === 'smtp' && provider.config && Object.keys(settings).length === 0) {
+        // Handle new format with smtp and imap sub-objects
+        const smtpConfig = provider.config.smtp || provider.config;
+        const imapConfig = provider.config.imap;
+        
+        // Ensure port is always a valid number (default 587 for SMTP)
+        const smtpPort = smtpConfig.port ? parseInt(String(smtpConfig.port)) : 587;
+        
         settings = {
-          smtpHost: provider.config.host || '',
-          smtpPort: provider.config.port || 587,
-          smtpSecure: provider.config.secure !== false, // Default to true
-          username: provider.config.user || '',
-          password: provider.config.pass || ''
+          smtpHost: smtpConfig.host || '',
+          smtpPort: smtpPort,
+          smtpSecure: smtpConfig.secure !== false,
+          username: smtpConfig.user || '',
+          password: smtpConfig.pass || '',
+          // Load IMAP settings if present
+          imapEnabled: imapConfig?.enabled || false,
+          imapHost: imapConfig?.host || '',
+          imapPort: imapConfig?.port || 993,
+          imapUser: imapConfig?.user || '',
+          imapPassword: imapConfig?.password || '',
+          imapTls: imapConfig?.tls !== false,
+          imapSentMailbox: imapConfig?.sentMailbox || 'Sent',
+          imapRejectUnauthorized: imapConfig?.tlsOptions?.rejectUnauthorized !== false,
         };
       }
       
@@ -79,7 +95,15 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
           smtpPort: 587,
           smtpSecure: true,
           username: '',
-          password: ''
+          password: '',
+          imapEnabled: false,
+          imapHost: '',
+          imapPort: 993,
+          imapUser: '',
+          imapPassword: '',
+          imapTls: true,
+          imapSentMailbox: 'Sent',
+          imapRejectUnauthorized: false,
         } : {}
       });
     }
@@ -101,21 +125,56 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
       let submitData = { ...formData };
       
       if (type === 'smtp' && formData.settings) {
+        // Build SMTP config - ensure all required fields are present
+        const smtpConfig = {
+          host: formData.settings.smtpHost,
+          port: formData.settings.smtpPort || 587, // Ensure port has a default value
+          user: formData.settings.username,
+          pass: formData.settings.password,
+          secure: formData.settings.smtpSecure
+        };
+        
+        console.log('🔧 Building SMTP config:', { 
+          smtpPort: formData.settings.smtpPort,
+          finalPort: smtpConfig.port 
+        });
+
+        // Build IMAP config if enabled
+        let imapConfig = undefined;
+        if (formData.settings.imapEnabled) {
+          imapConfig = {
+            enabled: true,
+            host: formData.settings.imapHost,
+            port: formData.settings.imapPort || 993, // Ensure port has a default value
+            user: formData.settings.imapUser,
+            password: formData.settings.imapPassword,
+            tls: formData.settings.imapTls !== false,
+            sentMailbox: formData.settings.imapSentMailbox || 'Sent',
+            tlsOptions: {
+              rejectUnauthorized: formData.settings.imapRejectUnauthorized === true
+            }
+          };
+          
+          console.log('📬 Building IMAP config:', {
+            imapPort: formData.settings.imapPort,
+            finalPort: imapConfig.port
+          });
+        }
+
         // Transform settings to config for SMTP providers
         submitData = {
           ...formData,
           config: {
-            host: formData.settings.smtpHost,
-            port: formData.settings.smtpPort,
-            user: formData.settings.username,
-            pass: formData.settings.password,
-            secure: formData.settings.smtpSecure
+            smtp: smtpConfig,
+            ...(imapConfig && { imap: imapConfig })
           },
           fromEmail: formData.email, // Ensure fromEmail is set
           fromName: formData.fromName, // Ensure fromName is set
           // Remove settings as we're using config now
           settings: undefined
         };
+        
+        console.log('📤 Final submit data:', JSON.stringify(submitData, null, 2));
       } else {
         // For OAuth providers (Gmail, Outlook), ensure fromEmail and fromName are set
         submitData = {
@@ -221,9 +280,79 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
           }, 300000);
         }
       } else if (type === 'outlook') {
-        // Outlook OAuth not implemented yet
-        addToast({ type: 'info', title: 'Coming Soon', message: 'Outlook integration is coming soon!' });
-        setIsConnecting(false);
+        // Outlook OAuth
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/email/connect-outlook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get Outlook auth URL');
+        }
+
+        const { authUrl } = await response.json();
+        
+        // Open OAuth window
+        const oauthWindow = window.open(
+          authUrl,
+          'Outlook OAuth',
+          'width=600,height=700,left=200,top=100'
+        );
+
+        if (oauthWindow) {
+          // Listen for OAuth callback
+          const handleMessage = async (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            
+            if (event.data.type === 'outlook-oauth-success' && event.data.email) {
+              window.removeEventListener('message', handleMessage);
+              
+              // Create provider with the connected email
+              await handleCreateProviderFromOAuth(event.data.email);
+            } else if (event.data.type === 'outlook-oauth-error') {
+              window.removeEventListener('message', handleMessage);
+              addToast({ type: 'error', title: 'OAuth Failed', message: event.data.message || 'Failed to connect Outlook' });
+              setIsConnecting(false);
+            }
+          };
+
+          window.addEventListener('message', handleMessage);
+
+          // Fallback: Check if window is closed manually
+          const checkWindowClosed = setInterval(() => {
+            if (!oauthWindow || oauthWindow.closed) {
+              clearInterval(checkWindowClosed);
+              window.removeEventListener('message', handleMessage);
+              // Only try to create provider if we haven't already processed a message
+              setTimeout(() => {
+                // This fallback will attempt to create provider if OAuth was completed
+                // but message wasn't received (which can happen with provider creation flow)
+                if (formData.email) {
+                  handleCreateProviderFromOAuth(formData.email).catch(() => {
+                    // Silently ignore errors as this is just a fallback
+                    setIsConnecting(false);
+                  });
+                } else {
+                  setIsConnecting(false);
+                }
+              }, 1000);
+            }
+          }, 1000);
+          
+          // Cleanup after 5 minutes
+          setTimeout(() => {
+            clearInterval(checkWindowClosed);
+            window.removeEventListener('message', handleMessage);
+            if (oauthWindow && !oauthWindow.closed) {
+              oauthWindow.close();
+              addToast({ type: 'error', title: 'Timeout', message: 'Outlook connection timed out. Please try again.' });
+            }
+            setIsConnecting(false);
+          }, 300000);
+        }
       }
     } catch (error) {
       console.error('OAuth connection error:', error);
@@ -361,7 +490,7 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
             {/* SMTP Settings */}
             {type === 'smtp' && (
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-gray-900">SMTP Settings</h4>
+                <h4 className="text-sm font-medium text-gray-900 border-b pb-2">SMTP Settings (Sending Emails)</h4>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -460,6 +589,179 @@ const EmailProviderForm: React.FC<EmailProviderFormProps> = ({
                   <label htmlFor="smtpSecure" className="ml-2 block text-sm text-gray-700">
                     Use TLS/SSL encryption (recommended)
                   </label>
+                </div>
+
+                {/* IMAP Settings for Reading Emails */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-medium text-gray-900">IMAP Settings (Receiving Emails)</h4>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.settings?.imapEnabled || false}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          settings: { 
+                            ...formData.settings, 
+                            imapEnabled: e.target.checked,
+                            // Set default IMAP values when enabled
+                            ...(e.target.checked && {
+                              imapHost: formData.settings?.imapHost || formData.settings?.smtpHost || '',
+                              imapPort: formData.settings?.imapPort || 993,
+                              imapUser: formData.settings?.imapUser || formData.settings?.username || '',
+                              imapPassword: formData.settings?.imapPassword || formData.settings?.password || '',
+                              imapTls: formData.settings?.imapTls !== false,
+                              imapSentMailbox: formData.settings?.imapSentMailbox || 'Sent'
+                            })
+                          }
+                        })}
+                        className="focus:ring-purple-500 h-4 w-4 text-purple-600 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm font-medium text-gray-700">Enable IMAP</span>
+                    </label>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-blue-700">
+                      <strong>What is IMAP?</strong> IMAP allows fetching emails from your inbox. Enable this to view received emails in the Communication page, not just sent ones.
+                    </p>
+                  </div>
+
+                  {formData.settings?.imapEnabled && (
+                    <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            IMAP Host *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.settings?.imapHost || ''}
+                            onChange={(e) => setFormData({ 
+                              ...formData, 
+                              settings: { ...formData.settings, imapHost: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="mail.example.com"
+                            required={formData.settings?.imapEnabled}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            IMAP Port *
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.settings?.imapPort || 993}
+                            onChange={(e) => setFormData({ 
+                              ...formData, 
+                              settings: { ...formData.settings, imapPort: parseInt(e.target.value) }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                            min={1}
+                            max={65535}
+                            required={formData.settings?.imapEnabled}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Usually 993 (SSL) or 143 (STARTTLS)</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          IMAP Username *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.settings?.imapUser || ''}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            settings: { ...formData.settings, imapUser: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                          placeholder="Usually same as SMTP username"
+                          required={formData.settings?.imapEnabled}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          IMAP Password *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={formData.settings?.imapPassword || ''}
+                            onChange={(e) => setFormData({ 
+                              ...formData, 
+                              settings: { ...formData.settings, imapPassword: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                            placeholder="Usually same as SMTP password"
+                            required={formData.settings?.imapEnabled}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Sent Mail Folder Name
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.settings?.imapSentMailbox || 'Sent'}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            settings: { ...formData.settings, imapSentMailbox: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                          placeholder="Sent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Common names: "Sent", "Sent Items", "Sent Mail", "[Gmail]/Sent Mail"
+                        </p>
+                      </div>
+
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="imapTls"
+                          checked={formData.settings?.imapTls !== false}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            settings: { ...formData.settings, imapTls: e.target.checked }
+                          })}
+                          className="focus:ring-purple-500 h-4 w-4 text-purple-600 border-gray-300 rounded"
+                        />
+                        <label htmlFor="imapTls" className="ml-2 block text-sm text-gray-700">
+                          Use TLS/SSL encryption (recommended)
+                        </label>
+                      </div>
+
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="imapRejectUnauthorized"
+                          checked={formData.settings?.imapRejectUnauthorized !== true}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            settings: { ...formData.settings, imapRejectUnauthorized: !e.target.checked }
+                          })}
+                          className="focus:ring-purple-500 h-4 w-4 text-purple-600 border-gray-300 rounded"
+                        />
+                        <label htmlFor="imapRejectUnauthorized" className="ml-2 block text-sm text-gray-700">
+                          Allow self-signed certificates (for custom servers)
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Common SMTP Presets */}

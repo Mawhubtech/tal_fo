@@ -176,6 +176,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               {isExpanded && "Candidates"}
             </Link>
           )}
+
+          {/* Communication Section */}
+          <Link 
+            to="/dashboard/communication" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/communication') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+            title={!isExpanded ? "Communication" : ""}
+          >
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/communication') ? '#7e22ce' : '#9ca3af' }}>
+              <Mail className="w-4 h-4" />
+            </div>
+            {isExpanded && "Communication"}
+          </Link>
           
           {/* Clients Section */}
           {hasPermission(SIDEBAR_PERMISSIONS.CLIENTS_ACCESS) && (

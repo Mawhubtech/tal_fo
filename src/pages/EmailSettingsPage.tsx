@@ -14,6 +14,7 @@ import {
 } from '../hooks/useEmailManagement';
 import ConfirmationModal from '../components/ConfirmationModal';
 import EmailProviderForm from '../components/EmailProviderForm';
+import { EmailErrorDisplay, EmailDataEmptyState } from '../components/EmailErrorBoundary';
 
 const EmailSettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,10 +23,12 @@ const EmailSettingsPage: React.FC = () => {
     emailSettings, 
     refetchSettings, 
     connectGmail, 
-    isConnectingGmail
+    isConnectingGmail,
+    connectOutlook,
+    isConnectingOutlook
   } = useEmailService(true);
   const { checkGmailStatus } = useGmailStatus();
-  const { data: providersData, isLoading: isLoadingProviders } = useEmailProviders();
+  const { data: providersData, isLoading: isLoadingProviders, error: providersError, refetch: refetchProviders } = useEmailProviders();
   
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<EmailProvider | null>(null);
@@ -50,12 +53,15 @@ const EmailSettingsPage: React.FC = () => {
 
   const handleRefreshStatus = () => {
     refetchSettings();
+    refetchProviders();
     checkGmailStatus();
   };
 
   const handleConnectProvider = (type: 'gmail' | 'outlook' | 'smtp') => {
     if (type === 'gmail') {
       handleConnectGmail();
+    } else if (type === 'outlook') {
+      handleConnectOutlook();
     } else {
       setSelectedProvider(null);
       setSelectedProviderType(type);
@@ -83,9 +89,18 @@ const EmailSettingsPage: React.FC = () => {
         const checkPopupClosed = setInterval(() => {
           if (popup?.closed) {
             clearInterval(checkPopupClosed);
-            // Refresh email settings after OAuth completion
+            
+            // Refresh email settings and provider list after OAuth completion
             refetchSettings();
             checkGmailStatus();
+            
+            // Refetch provider list with a slight delay
+            setTimeout(async () => {
+              console.log('Refetching providers list after Gmail OAuth...');
+              const result = await refetchProviders();
+              console.log('Providers refetched:', result.data);
+            }, 500);
+            
             addToast({ type: 'success', title: 'Gmail connection successful' });
           }
         }, 500);
@@ -93,6 +108,119 @@ const EmailSettingsPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to initiate Gmail connection:', error);
       addToast({ type: 'error', title: 'Failed to connect Gmail' });
+    }
+  };
+
+  const handleConnectOutlook = async () => {
+    try {
+      const response = await connectOutlook();
+      if (response?.authUrl) {
+        // Open OAuth in popup window
+        const width = 600;
+        const height = 700;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+        
+        const popup = window.open(
+          response.authUrl,
+          'Outlook OAuth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+        );
+
+        if (!popup) {
+          addToast({ type: 'error', title: 'Popup blocked', message: 'Please allow popups for this site' });
+          return;
+        }
+
+        let checkPopupInterval: NodeJS.Timeout | null = null;
+        let timeoutId: NodeJS.Timeout | null = null;
+
+        // Listen for OAuth callback message
+        const handleMessage = (event: MessageEvent) => {
+          console.log('Message received from popup:', event.data);
+          
+          // Ignore messages that don't have the expected type
+          if (!event.data || !event.data.type) {
+            return;
+          }
+          
+          // Ignore MetaMask and other extension messages
+          if (event.data.target === 'metamask-inpage' || event.data.type.includes('metamask')) {
+            return;
+          }
+          
+          if (event.origin !== window.location.origin) {
+            console.log('Message origin mismatch, ignoring');
+            return;
+          }
+          
+          if (event.data.type === 'outlook-oauth-success' && event.data.email) {
+            console.log('Outlook OAuth success received');
+            cleanup();
+            
+            // Refetch both settings and providers
+            refetchSettings();
+            
+            // Refetch provider list with a slight delay to ensure backend has committed the transaction
+            setTimeout(async () => {
+              console.log('Refetching providers list...');
+              const result = await refetchProviders();
+              console.log('Providers refetched:', result.data);
+            }, 500);
+            
+            addToast({ 
+              type: 'success', 
+              title: 'Outlook Connected', 
+              message: `Successfully connected ${event.data.email}` 
+            });
+          } else if (event.data.type === 'outlook-oauth-error') {
+            console.log('Outlook OAuth error received:', event.data.message);
+            cleanup();
+            addToast({ 
+              type: 'error', 
+              title: 'Outlook Connection Failed', 
+              message: event.data.message || 'Failed to connect Outlook account' 
+            });
+          }
+        };
+
+        // Cleanup function
+        const cleanup = () => {
+          console.log('Cleaning up Outlook OAuth listeners');
+          window.removeEventListener('message', handleMessage);
+          if (checkPopupInterval) clearInterval(checkPopupInterval);
+          if (timeoutId) clearTimeout(timeoutId);
+        };
+
+        window.addEventListener('message', handleMessage);
+        console.log('Message listener added for Outlook OAuth');
+
+        // Check if popup is closed manually
+        checkPopupInterval = setInterval(() => {
+          try {
+            if (popup?.closed) {
+              console.log('Popup window closed');
+              cleanup();
+            }
+          } catch (error) {
+            // Ignore COOP errors - they're expected when popup navigates to different origin
+            // The postMessage will still work
+          }
+        }, 1000); // Increased to 1 second to reduce overhead
+
+        // Cleanup after 5 minutes
+        timeoutId = setTimeout(() => {
+          console.log('Outlook OAuth timeout');
+          cleanup();
+          if (popup && !popup.closed) {
+            popup.close();
+            addToast({ type: 'error', title: 'Timeout', message: 'Outlook connection timed out' });
+          }
+        }, 300000);
+      }
+    } catch (error) {
+      console.error('Failed to initiate Outlook connection:', error);
+      addToast({ type: 'error', title: 'Failed to connect Outlook' });
     }
   };
 
@@ -205,6 +333,39 @@ const EmailSettingsPage: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
           <p className="text-gray-600">Loading email settings...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (providersError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-6xl mx-auto px-6 py-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors mb-4"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Mail className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Email Settings</h1>
+                <p className="text-sm text-gray-600">Manage your email providers</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <EmailErrorDisplay
+          error={providersError}
+          context="email providers"
+          onRetry={() => refetchProviders()}
+          showDetails={import.meta.env.DEV}
+        />
       </div>
     );
   }

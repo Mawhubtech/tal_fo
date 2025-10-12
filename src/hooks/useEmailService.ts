@@ -153,6 +153,27 @@ export const useEmailService = (enabled: boolean = true) => {
     }
   });
 
+  // Connect Outlook OAuth
+  const connectOutlookMutation = useMutation({
+    mutationFn: async () => {
+      const response = await emailApi.post('/email/connect-outlook');
+      return response.data;
+    },
+  });
+
+  // Disconnect Outlook
+  const disconnectOutlookMutation = useMutation({
+    mutationFn: async () => {
+      const response = await emailApi.delete('/email/disconnect-outlook');
+      return response.data;
+    },
+    onSuccess: () => {
+      // Clear cache and refetch on successful disconnect
+      clearEmailSettingsCache();
+      refetchSettings();
+    }
+  });
+
   // Custom refetch that clears cache first
   const refetchSettingsWithCacheClear = () => {
     clearEmailSettingsCache();
@@ -168,6 +189,10 @@ export const useEmailService = (enabled: boolean = true) => {
     isConnectingGmail: connectGmailMutation.isPending,
     disconnectGmail: disconnectGmailMutation.mutateAsync,
     isDisconnectingGmail: disconnectGmailMutation.isPending,
+    connectOutlook: connectOutlookMutation.mutateAsync,
+    isConnectingOutlook: connectOutlookMutation.isPending,
+    disconnectOutlook: disconnectOutlookMutation.mutateAsync,
+    isDisconnectingOutlook: disconnectOutlookMutation.isPending,
     refetchSettings: refetchSettingsWithCacheClear
   };
 };
