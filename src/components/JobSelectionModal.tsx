@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Briefcase, MapPin, Building, Clock, DollarSign, Users, ChevronRight, Loader2, Check, Plus } from 'lucide-react';
+import { X, Briefcase, MapPin, Building, Clock, DollarSign, Users, ChevronRight, Loader2, Check, Plus, ChevronLeft } from 'lucide-react';
 import { useJobs } from '../hooks/useJobs';
 import { useAuthContext } from '../contexts/AuthContext';
 
@@ -24,21 +24,41 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
 }) => {
   const { user } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10); // Jobs per page
   const [addedJobIds, setAddedJobIds] = useState<Set<string>>(new Set());
   const [processingJobIds, setProcessingJobIds] = useState<Set<string>>(new Set());
   const [alreadyAppliedJobIds, setAlreadyAppliedJobIds] = useState<Set<string>>(new Set());
+
+  // Debounce search term
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
   
-  // Fetch all jobs for the current user
+  // Fetch all jobs for the current user - refetch every 10 seconds while modal is open
   const { data: jobsData, isLoading: jobsLoading } = useJobs(
     { 
       status: 'Published',
       sortBy: 'createdAt',
-      sortOrder: 'DESC'
+      sortOrder: 'DESC',
+      page: currentPage,
+      limit: pageSize,
+      search: debouncedSearch || undefined, // Use debounced search
     },
-    { enabled: isOpen && !!user }
+    { 
+      enabled: isOpen && !!user,
+      refetchInterval: isOpen ? 10000 : false // Refetch every 10 seconds when modal is open
+    }
   );
 
   const jobs = jobsData?.data || [];
+  const totalJobs = jobsData?.total || 0;
+  const totalPages = Math.ceil(totalJobs / pageSize);
 
   // Check which jobs the candidate has already applied to
   React.useEffect(() => {
@@ -107,12 +127,18 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
     }
   }, [candidate, jobs]);
 
-  // Filter jobs based on search term
-  const filteredJobs = jobs.filter(job =>
-    job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.location?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Handle search with debouncing - reset to page 1 when searching
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   // Handle adding candidate to a job
   const handleAddToJob = async (jobId: string) => {
@@ -143,6 +169,7 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
       setAddedJobIds(new Set());
       setProcessingJobIds(new Set());
       setSearchTerm('');
+      setCurrentPage(1);
     }
   }, [isOpen]);
 
@@ -212,9 +239,14 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                   type="text"
                   placeholder="Search jobs..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                 />
+                {jobsLoading && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 text-purple-500 animate-spin" />
+                  </div>
+                )}
               </div>
               <a
                 href="/dashboard/jobs/create"
@@ -235,7 +267,7 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
               </div>
-            ) : filteredJobs.length === 0 ? (
+            ) : jobs.length === 0 ? (
               <div className="text-center py-12">
                 <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500 font-medium">
@@ -246,7 +278,7 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                 </p>
               </div>
             ) : (
-              filteredJobs.map((job) => {
+              jobs.map((job) => {
                 const isAdded = addedJobIds.has(job.id);
                 const isProcessing = processingJobIds.has(job.id);
                 const alreadyApplied = alreadyAppliedJobIds.has(job.id);
@@ -347,11 +379,91 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer with Pagination */}
         <div className="border-t border-gray-200 p-4 bg-gray-50">
-          <p className="text-xs text-gray-500 text-center">
-            Showing {filteredJobs.length} of {jobs.length} open {jobs.length === 1 ? 'position' : 'positions'}
-          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Results Info */}
+            <p className="text-xs text-gray-500 text-center sm:text-left">
+              Showing {jobs.length > 0 ? ((currentPage - 1) * pageSize + 1) : 0} - {Math.min(currentPage * pageSize, totalJobs)} of {totalJobs} {totalJobs === 1 ? 'position' : 'positions'}
+            </p>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || jobsLoading}
+                  className="p-1.5 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4 text-gray-600" />
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {/* Show first page */}
+                  {currentPage > 2 && (
+                    <>
+                      <button
+                        onClick={() => handlePageChange(1)}
+                        className="px-2.5 py-1 text-xs rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors"
+                      >
+                        1
+                      </button>
+                      {currentPage > 3 && <span className="text-gray-400 px-1">...</span>}
+                    </>
+                  )}
+                  
+                  {/* Show current and adjacent pages */}
+                  {[...Array(totalPages)].map((_, idx) => {
+                    const pageNum = idx + 1;
+                    if (
+                      pageNum === currentPage ||
+                      pageNum === currentPage - 1 ||
+                      pageNum === currentPage + 1
+                    ) {
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          disabled={jobsLoading}
+                          className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${
+                            pageNum === currentPage
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'border-gray-300 hover:bg-gray-100'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  {/* Show last page */}
+                  {currentPage < totalPages - 1 && (
+                    <>
+                      {currentPage < totalPages - 2 && <span className="text-gray-400 px-1">...</span>}
+                      <button
+                        onClick={() => handlePageChange(totalPages)}
+                        className="px-2.5 py-1 text-xs rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors"
+                      >
+                        {totalPages}
+                      </button>
+                    </>
+                  )}
+                </div>
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages || jobsLoading}
+                  className="p-1.5 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

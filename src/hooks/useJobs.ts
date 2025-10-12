@@ -16,12 +16,13 @@ export const jobKeys = {
 };
 
 // Get all jobs with filters
-export function useJobs(filters: JobFilters = {}, options: { enabled?: boolean } = {}) {
+export function useJobs(filters: JobFilters = {}, options: { enabled?: boolean; refetchInterval?: number | false } = {}) {
   return useQuery({
     queryKey: jobKeys.list(filters),
     queryFn: () => jobApiService.getAllJobs(filters),
     staleTime: 1000 * 60 * 3, // 3 minutes
     enabled: options.enabled ?? true, // Default to true if not specified
+    refetchInterval: options.refetchInterval, // Add refetch interval support
   });
 }
 

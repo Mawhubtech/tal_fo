@@ -145,7 +145,9 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
   const [awardInput, setAwardInput] = useState('');
   const [languageInput, setLanguageInput] = useState('');
 
-  const { data: candidatesData, isLoading, error, refetch } = useCandidates(activeQueryParams);
+  const { data: candidatesData, isLoading, error, refetch } = useCandidates(activeQueryParams, {
+    refetchInterval: isOpen ? 30000 : false // Refetch every 30 seconds when modal is open
+  });
   const createJobApplicationMutation = useCreateJobApplicationWithPipeline();
 
   const candidates = candidatesData?.items || [];
@@ -588,8 +590,13 @@ const AddCandidateToJobModal: React.FC<AddCandidateToJobModalProps> = ({
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
+                {isLoadingCandidates && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                  </div>
+                )}
               </div>
             </div>
 
