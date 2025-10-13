@@ -388,6 +388,8 @@ export const emailSendingApi = {
     const requestData = {
       providerId: data.providerId,
       to: data.to,
+      cc: data.cc,
+      bcc: data.bcc,
       subject: data.subject,
       body: data.plainText || data.content, // Use plainText if available, otherwise content as fallback
       htmlBody: data.content, // Use content for HTML body

@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Loader,
   Eye,
-  Download
+  Download,
+  Reply
 } from 'lucide-react';
 import { useEmailProviders, useProviderMessages } from '../hooks/useEmailLogs';
 import { useAuthContext } from '../contexts/AuthContext';
@@ -35,6 +36,7 @@ const CommunicationPage: React.FC = () => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [showComposeModal, setShowComposeModal] = useState(false);
+  const [showReplySection, setShowReplySection] = useState(false);
   
   // Compose email form state
   const [emailForm, setEmailForm] = useState({
@@ -45,10 +47,49 @@ const CommunicationPage: React.FC = () => {
     content: '', // HTML content from Quill
   });
 
+  // Reply form state
+  const [replyForm, setReplyForm] = useState({
+    providerId: '',
+    to: '',
+    cc: '',
+    bcc: '',
+    subject: '',
+    content: '',
+  });
+
   // Helper function to check if HTML content is empty
   const isContentEmpty = (htmlContent: string): boolean => {
     const strippedContent = htmlContent.replace(/<[^>]*>/g, '').trim();
     return !strippedContent;
+  };
+
+  // Helper function to reset reply form
+  const resetReplyForm = () => {
+    setReplyForm({
+      providerId: '',
+      to: '',
+      cc: '',
+      bcc: '',
+      subject: '',
+      content: '',
+    });
+  };
+
+  // Helper function to initialize reply form with email data
+  const initializeReplyForm = (email: any) => {
+    const fromEmail = email.from || email.sender;
+    const subject = email.subject?.startsWith('Re:') 
+      ? email.subject 
+      : `Re: ${email.subject || '(No Subject)'}`;
+    
+    setReplyForm({
+      providerId: selectedProvider || '',
+      to: fromEmail || '',
+      cc: email.cc || '',
+      bcc: '',
+      subject: subject,
+      content: '',
+    });
   };
   
   const [filters, setFilters] = useState<EmailLogFilters>({
@@ -492,12 +533,33 @@ const CommunicationPage: React.FC = () => {
                     {selectedEmail.type === 'sent' || selectedEmail.type === 'outbound' ? 'Sent' : 'Received'} on {new Date(selectedEmail.date || selectedEmail.sentAt || selectedEmail.createdAt).toLocaleString()}
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowEmailModal(false)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors"
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Show Reply button only for received emails */}
+                  {(selectedEmail.type === 'received' || selectedEmail.type === 'inbound' || !selectedEmail.type || selectedEmail.type === 'all') && (
+                    <button
+                      onClick={() => {
+                        if (!showReplySection) {
+                          initializeReplyForm(selectedEmail);
+                        }
+                        setShowReplySection(!showReplySection);
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <Reply className="w-4 h-4" />
+                      <span>{showReplySection ? 'Hide Reply' : 'Reply'}</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowEmailModal(false);
+                      setShowReplySection(false);
+                      resetReplyForm();
+                    }}
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                  >
+                    <XCircle className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -581,63 +643,250 @@ const CommunicationPage: React.FC = () => {
               </div>
 
               {/* Email Body - Right Content Area */}
-              <div className="flex-1 p-6 bg-white flex flex-col">
-                <h4 className="text-lg font-bold text-gray-900 mb-4">Message</h4>
-                {(() => {
-                  const htmlContent = selectedEmail.bodyHtml || selectedEmail.body;
-                  const textContent = selectedEmail.bodyText;
-                  const snippetContent = selectedEmail.snippet;
+              <div className="flex-1 bg-white overflow-y-auto">
+                <div className="p-6">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4">Message</h4>
+                  <div>
+                  {(() => {
+                    const htmlContent = selectedEmail.bodyHtml || selectedEmail.body;
+                    const textContent = selectedEmail.bodyText;
+                    const snippetContent = selectedEmail.snippet;
 
-                  // Try HTML content first
-                  if (htmlContent && htmlContent.trim() !== '') {
-                    try {
-                      // Sanitize HTML to remove problematic meta tags that cause console warnings
-                      const cleanHtml = htmlContent.replace(
-                        /<meta[^>]*viewport[^>]*>/gi,
-                        '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
-                      );
-                      
+                    // Try HTML content first
+                    if (htmlContent && htmlContent.trim() !== '') {
+                      try {
+                        // Sanitize HTML to remove problematic meta tags that cause console warnings
+                        const cleanHtml = htmlContent.replace(
+                          /<meta[^>]*viewport[^>]*>/gi,
+                          '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+                        );
+                        
+                        return (
+                          <div className="mb-6">
+                            <iframe
+                              srcDoc={cleanHtml}
+                              className="w-full border-0 rounded-lg"
+                              sandbox="allow-same-origin"
+                              title="Email Content"
+                              style={{ height: '600px', colorScheme: 'light' }}
+                            />
+                          </div>
+                        );
+                      } catch (error) {
+                        console.error('Error rendering HTML email:', error);
+                      }
+                    }
+                    
+                    // Fallback to plain text
+                    if (textContent && textContent.trim() !== '') {
                       return (
-                        <div className="flex-1 h-full">
-                          <iframe
-                            srcDoc={cleanHtml}
-                            className="w-full h-full border-0 rounded-lg"
-                            sandbox="allow-same-origin"
-                            title="Email Content"
-                            style={{ colorScheme: 'light' }}
-                          />
+                        <div className="mb-6 text-gray-900 bg-gray-50 p-6 rounded-lg whitespace-pre-wrap border border-gray-200">
+                          {textContent}
                         </div>
                       );
-                    } catch (error) {
-                      console.error('Error rendering HTML email:', error);
                     }
-                  }
-                  
-                  // Fallback to plain text
-                  if (textContent && textContent.trim() !== '') {
+                    
+                    // Fallback to snippet
+                    if (snippetContent && snippetContent.trim() !== '') {
+                      return (
+                        <div className="mb-6 text-gray-900 bg-gray-50 p-6 rounded-lg whitespace-pre-wrap border border-gray-200">
+                          {snippetContent}
+                        </div>
+                      );
+                    }
+                    
+                    // No content available
                     return (
-                      <div className="flex-1 text-gray-900 bg-white p-6 rounded-lg whitespace-pre-wrap border border-gray-200 overflow-y-auto">
-                        {textContent}
+                      <div className="mb-6 text-gray-500 bg-gray-50 p-6 rounded-lg text-center italic py-20">
+                        No content available
                       </div>
                     );
-                  }
-                  
-                  // Fallback to snippet
-                  if (snippetContent && snippetContent.trim() !== '') {
-                    return (
-                      <div className="flex-1 text-gray-900 bg-white p-6 rounded-lg whitespace-pre-wrap border border-gray-200 overflow-y-auto">
-                        {snippetContent}
+                  })()}
+                  </div>
+                </div>
+
+                {/* Reply Section */}
+                {showReplySection && (
+                  <div className="border-t border-gray-200 p-6">
+                    <h4 className="text-lg font-bold text-gray-900 mb-4">Reply</h4>
+                    <div className="space-y-4">
+                      {/* Provider Selection */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Send From <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={replyForm.providerId}
+                          onChange={(e) => setReplyForm({ ...replyForm, providerId: e.target.value })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          required
+                        >
+                          <option value="">Select email account</option>
+                          {providers?.map((provider) => (
+                            <option key={provider.id} value={provider.id}>
+                              {provider.name} ({provider.fromEmail})
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    );
-                  }
-                  
-                  // No content available
-                  return (
-                    <div className="text-gray-500 bg-gray-50 p-6 rounded-lg text-center italic">
-                      No content available
+
+                      {/* To Field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          To <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={replyForm.to}
+                          onChange={(e) => setReplyForm({ ...replyForm, to: e.target.value })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="recipient@example.com"
+                          required
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
+                      </div>
+
+                      {/* CC Field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          CC (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={replyForm.cc}
+                          onChange={(e) => setReplyForm({ ...replyForm, cc: e.target.value })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="cc@example.com"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
+                      </div>
+
+                      {/* BCC Field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          BCC (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={replyForm.bcc}
+                          onChange={(e) => setReplyForm({ ...replyForm, bcc: e.target.value })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="bcc@example.com"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
+                      </div>
+
+                      {/* Subject Field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Subject <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={replyForm.subject}
+                          onChange={(e) => setReplyForm({ ...replyForm, subject: e.target.value })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="Subject"
+                          required
+                        />
+                      </div>
+
+                      {/* Message Content */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Your Reply <span className="text-red-500">*</span>
+                        </label>
+                        <ReactQuill
+                          value={replyForm.content}
+                          onChange={(value) => setReplyForm({ ...replyForm, content: value })}
+                          modules={{
+                            toolbar: [
+                              [{ 'header': [1, 2, 3, false] }],
+                              ['bold', 'italic', 'underline', 'strike'],
+                              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                              [{ 'color': [] }, { 'background': [] }],
+                              ['link'],
+                              ['clean']
+                            ],
+                          }}
+                          className="bg-white"
+                          theme="snow"
+                          placeholder="Type your reply here..."
+                          style={{ minHeight: '200px' }}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3 pt-4">
+                        <button
+                          onClick={() => {
+                            setShowReplySection(false);
+                            resetReplyForm();
+                          }}
+                          className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={async () => {
+                            // Validation
+                            if (!replyForm.providerId) {
+                              addToast({ type: 'error', title: 'Please select an email account' });
+                              return;
+                            }
+                            if (!replyForm.to.trim()) {
+                              addToast({ type: 'error', title: 'Please enter recipient email' });
+                              return;
+                            }
+                            if (!replyForm.subject.trim()) {
+                              addToast({ type: 'error', title: 'Please enter a subject' });
+                              return;
+                            }
+                            if (isContentEmpty(replyForm.content)) {
+                              addToast({ type: 'error', title: 'Please enter a reply message' });
+                              return;
+                            }
+
+                            try {
+                              // Parse multiple recipients
+                              const toEmails = replyForm.to.split(',').map(email => email.trim()).filter(email => email);
+                              const ccEmails = replyForm.cc ? replyForm.cc.split(',').map(email => email.trim()).filter(email => email) : undefined;
+                              const bccEmails = replyForm.bcc ? replyForm.bcc.split(',').map(email => email.trim()).filter(email => email) : undefined;
+                              
+                              await sendEmailMutation.mutateAsync({
+                                providerId: replyForm.providerId,
+                                to: toEmails,
+                                cc: ccEmails,
+                                bcc: bccEmails,
+                                subject: replyForm.subject,
+                                content: replyForm.content,
+                              });
+                              
+                              addToast({ type: 'success', title: 'Reply sent successfully!' });
+                              setShowReplySection(false);
+                              resetReplyForm();
+                            } catch (error) {
+                              console.error('Failed to send reply:', error);
+                              addToast({ type: 'error', title: 'Failed to send reply' });
+                            }
+                          }}
+                          disabled={sendEmailMutation.isPending || !replyForm.providerId || !replyForm.to.trim() || !replyForm.subject.trim() || isContentEmpty(replyForm.content)}
+                          className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          {sendEmailMutation.isPending ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              <span>Sending...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              <span>Send Reply</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  );
-                })()}
+                  </div>
+                )}
               </div>
             </div>
           </div>

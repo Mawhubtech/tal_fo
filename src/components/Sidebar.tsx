@@ -189,8 +189,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             {isExpanded && "Communication"}
           </Link>
           
-          {/* Clients Section */}
-          {hasPermission(SIDEBAR_PERMISSIONS.CLIENTS_ACCESS) && (
+          {/* Clients Section - HIDDEN */}
+          {/* {hasPermission(SIDEBAR_PERMISSIONS.CLIENTS_ACCESS) && (
             <Link 
               to="/dashboard/clients" 
               className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/clients') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
@@ -201,7 +201,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               </div>            
               {isExpanded && (isInternalUser(user) ? "Organization" : "Clients")}
             </Link>
-          )}         
+          )} */}         
           
           {/* Client Outreach Section - HIDDEN 
           {hasPermission(SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS) && (
