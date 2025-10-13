@@ -277,45 +277,49 @@ const CommunicationPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-2 sm:p-4 space-y-4 max-w-7xl mx-auto">
       {/* Header */}
       <div className="bg-white border-2 border-purple-500 rounded-lg p-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">Email Communications</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Email Communications</h1>
             <p className="text-sm text-gray-600">View emails from your connected email accounts</p>
           </div>
-          
-          {/* Actions and Provider Selector */}
-          <div className="flex items-center gap-3">
-            {/* Send Email Button */}
-            <button
-              onClick={() => {
-                // Set default provider when opening compose modal
-                const defaultProvider = selectedProvider || (providers && providers.length > 0 ? providers[0].id : '');
-                setEmailForm({ providerId: defaultProvider, to: '', cc: '', subject: '', content: '' });
-                setShowComposeModal(true);
-              }}
-              disabled={!providers || providers.length === 0}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <Send className="w-4 h-4" />
-              <span className="font-medium">Send Email</span>
-            </button>
+        </div>
+      </div>
 
-            {/* Email Provider Selector */}
+      {/* Actions and Provider Selector - Moved here */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          {/* Send Email Button */}
+          <button
+            onClick={() => {
+              // Set default provider when opening compose modal
+              const defaultProvider = selectedProvider || (providers && providers.length > 0 ? providers[0].id : '');
+              setEmailForm({ providerId: defaultProvider, to: '', cc: '', subject: '', content: '' });
+              setShowComposeModal(true);
+            }}
+            disabled={!providers || providers.length === 0}
+            className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg transition-colors text-sm sm:text-base font-medium whitespace-nowrap"
+          >
+            <Send className="w-4 h-4" />
+            <span>Send Email</span>
+          </button>
+
+          {/* Email Provider Selector */}
+          <div className="flex-1 min-w-0">
             {providersLoading ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 py-2">
                 <Loader className="w-4 h-4 animate-spin text-purple-600" />
                 <span className="text-xs text-gray-500">Loading providers...</span>
               </div>
             ) : providers && providers.length > 0 ? (
               <div className="flex items-center gap-2">
-                <Mail className="w-5 h-5 text-purple-600" />
+                <Mail className="w-5 h-5 text-purple-600 flex-shrink-0" />
                 <select
                   value={selectedProvider || ''}
                   onChange={(e) => setSelectedProvider(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm font-medium"
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm font-medium bg-white min-w-0"
                 >
                   {providers.map((provider) => (
                     <option key={provider.id} value={provider.id}>
@@ -326,7 +330,7 @@ const CommunicationPage: React.FC = () => {
                 </select>
               </div>
             ) : (
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 text-center py-2">
                 No email providers connected
               </div>
             )}
@@ -336,9 +340,9 @@ const CommunicationPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <div className="flex flex-col lg:flex-row gap-3">
+        <div className="flex flex-col gap-3">
           {/* Search */}
-          <div className="flex-1">
+          <div className="w-full">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
@@ -357,12 +361,12 @@ const CommunicationPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex gap-2">
+          {/* Filter Controls */}
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={filters.type || 'all'}
               onChange={(e) => handleFilterChange({ type: e.target.value as any })}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm"
+              className="flex-1 sm:flex-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm"
             >
               <option value="all">All Emails</option>
               <option value="sent">Sent</option>
@@ -371,10 +375,10 @@ const CommunicationPage: React.FC = () => {
 
             <button
               onClick={handleSearch}
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2 text-sm"
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center justify-center space-x-2 text-sm font-medium"
             >
               <Filter className="h-4 w-4" />
-              <span>Apply</span>
+              <span>Apply Filters</span>
             </button>
           </div>
         </div>
@@ -406,33 +410,33 @@ const CommunicationPage: React.FC = () => {
               {emails.map((email) => (
                 <div 
                   key={email.id} 
-                  className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
                   onClick={() => handleViewEmail(email)}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    {/* Left: Email Info */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                    {/* Email Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         {email.type === 'sent' ? (
-                          <Send className="w-4 h-4 text-blue-500" />
+                          <Send className="w-4 h-4 text-blue-500 flex-shrink-0" />
                         ) : (
-                          <Inbox className="w-4 h-4 text-purple-500" />
+                          <Inbox className="w-4 h-4 text-purple-500 flex-shrink-0" />
                         )}
-                        <h3 className="text-sm font-semibold text-gray-900 truncate">
+                        <h3 className="text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
                           {email.subject || '(No Subject)'}
                         </h3>
                         {!email.isRead && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
                             Unread
                           </span>
                         )}
                         {email.type === 'received' && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 flex-shrink-0">
                             Received
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-gray-600">
                         <div className="flex items-center gap-1">
                           <span className="font-medium">
                             {email.type === 'sent' ? 'To:' : 'From:'}
@@ -447,19 +451,19 @@ const CommunicationPage: React.FC = () => {
                         </div>
                       </div>
                       {email.snippet && (
-                        <p className="text-xs text-gray-500 mt-1 truncate">
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2 sm:truncate">
                           {email.snippet}
                         </p>
                       )}
                     </div>
 
-                    {/* Right: Action */}
+                    {/* Action Button */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewEmail(email);
                       }}
-                      className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                      className="self-end sm:self-auto p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                       title="View Email"
                     >
                       <Eye className="h-4 w-4" />
@@ -471,48 +475,56 @@ const CommunicationPage: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Showing {((filters.page || 1) - 1) * (filters.limit || 20) + 1} to {Math.min((filters.page || 1) * (filters.limit || 20), totalEmails)} of {totalEmails}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange((filters.page || 1) - 1)}
-                    disabled={filters.page === 1}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span>Previous</span>
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    {[...Array(Math.min(5, totalPages))].map((_, idx) => {
-                      const pageNum = idx + 1;
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`px-3 py-1.5 rounded-lg text-sm ${
-                            filters.page === pageNum
-                              ? 'bg-purple-600 text-white'
-                              : 'border border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
+              <div className="px-3 sm:px-4 py-3 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
+                    Showing {((filters.page || 1) - 1) * (filters.limit || 20) + 1} to {Math.min((filters.page || 1) * (filters.limit || 20), totalEmails)} of {totalEmails}
                   </div>
 
-                  <button
-                    onClick={() => handlePageChange((filters.page || 1) + 1)}
-                    disabled={filters.page === totalPages}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => handlePageChange((filters.page || 1) - 1)}
+                      disabled={filters.page === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">Previous</span>
+                      <span className="sm:hidden">Prev</span>
+                    </button>
+
+                    <div className="hidden sm:flex items-center gap-1">
+                      {[...Array(Math.min(5, totalPages))].map((_, idx) => {
+                        const pageNum = idx + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`px-3 py-1.5 rounded-lg text-sm ${
+                              filters.page === pageNum
+                                ? 'bg-purple-600 text-white'
+                                : 'border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Mobile page indicator */}
+                    <div className="sm:hidden px-3 py-1.5 border border-gray-300 rounded-lg text-xs">
+                      {filters.page} / {totalPages}
+                    </div>
+
+                    <button
+                      onClick={() => handlePageChange((filters.page || 1) + 1)}
+                      disabled={filters.page === totalPages}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -522,18 +534,18 @@ const CommunicationPage: React.FC = () => {
 
       {/* Email Detail Modal */}
       {showEmailModal && selectedEmail && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-6xl w-full h-[80vh] overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-xl w-full max-w-7xl h-[95vh] sm:h-[85vh] overflow-hidden shadow-2xl">
             {/* Modal Header */}
-            <div className="bg-white border-b border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900">Email Details</h3>
-                  <p className="text-gray-500 text-sm mt-1">
+            <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-900 break-words">Email Details</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm mt-1">
                     {selectedEmail.type === 'sent' || selectedEmail.type === 'outbound' ? 'Sent' : 'Received'} on {new Date(selectedEmail.date || selectedEmail.sentAt || selectedEmail.createdAt).toLocaleString()}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   {/* Show Reply button only for received emails */}
                   {(selectedEmail.type === 'received' || selectedEmail.type === 'inbound' || !selectedEmail.type || selectedEmail.type === 'all') && (
                     <button
@@ -543,10 +555,11 @@ const CommunicationPage: React.FC = () => {
                         }
                         setShowReplySection(!showReplySection);
                       }}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
                     >
                       <Reply className="w-4 h-4" />
-                      <span>{showReplySection ? 'Hide Reply' : 'Reply'}</span>
+                      <span className="hidden sm:inline">{showReplySection ? 'Hide Reply' : 'Reply'}</span>
+                      <span className="sm:hidden">Reply</span>
                     </button>
                   )}
                   <button
@@ -557,40 +570,40 @@ const CommunicationPage: React.FC = () => {
                     }}
                     className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors"
                   >
-                    <XCircle className="w-6 h-6" />
+                    <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Modal Body */}
-            <div className="flex flex-col lg:flex-row overflow-hidden" style={{ height: 'calc(80vh - 100px)' }}>
+            <div className="flex flex-col lg:flex-row overflow-hidden" style={{ height: 'calc(95vh - 90px)' }}>
               {/* Email Meta Information - Left Sidebar */}
-              <div className="lg:w-80 border-r border-gray-200 p-6 overflow-y-auto bg-gray-50">
-                <h4 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wide">Details</h4>
-                <div className="space-y-4">
+              <div className="lg:w-80 border-b lg:border-b-0 lg:border-r border-gray-200 p-4 sm:p-6 overflow-y-auto bg-gray-50 max-h-[40vh] lg:max-h-none">
+                <h4 className="text-xs sm:text-sm font-bold text-gray-900 mb-4 uppercase tracking-wide">Details</h4>
+                <div className="space-y-3 sm:space-y-4 text-xs sm:text-sm">
                   <div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject</span>
-                    <p className="text-sm text-gray-900 mt-1">{selectedEmail.subject || '(No Subject)'}</p>
+                    <p className="text-sm text-gray-900 mt-1 break-words">{selectedEmail.subject || '(No Subject)'}</p>
                   </div>
                   <div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">From</span>
-                    <p className="text-sm text-gray-900 mt-1">{selectedEmail.from || selectedEmail.sender}</p>
+                    <p className="text-sm text-gray-900 mt-1 break-all">{selectedEmail.from || selectedEmail.sender}</p>
                   </div>
                   <div>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">To</span>
-                    <p className="text-sm text-gray-900 mt-1">{selectedEmail.to || selectedEmail.recipient}</p>
+                    <p className="text-sm text-gray-900 mt-1 break-all">{selectedEmail.to || selectedEmail.recipient}</p>
                   </div>
                   {selectedEmail.cc && (
                     <div>
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">CC</span>
-                      <p className="text-sm text-gray-900 mt-1">{selectedEmail.cc}</p>
+                      <p className="text-sm text-gray-900 mt-1 break-all">{selectedEmail.cc}</p>
                     </div>
                   )}
                   {selectedEmail.bcc && (
                     <div>
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">BCC</span>
-                      <p className="text-sm text-gray-900 mt-1">{selectedEmail.bcc}</p>
+                      <p className="text-sm text-gray-900 mt-1 break-all">{selectedEmail.bcc}</p>
                     </div>
                   )}
                   {selectedEmail.isRead !== undefined && (
@@ -644,8 +657,8 @@ const CommunicationPage: React.FC = () => {
 
               {/* Email Body - Right Content Area */}
               <div className="flex-1 bg-white overflow-y-auto">
-                <div className="p-6">
-                  <h4 className="text-lg font-bold text-gray-900 mb-4">Message</h4>
+                <div className="p-4 sm:p-6">
+                  <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Message</h4>
                   <div>
                   {(() => {
                     const htmlContent = selectedEmail.bodyHtml || selectedEmail.body;
@@ -707,9 +720,9 @@ const CommunicationPage: React.FC = () => {
 
                 {/* Reply Section */}
                 {showReplySection && (
-                  <div className="border-t border-gray-200 p-6">
-                    <h4 className="text-lg font-bold text-gray-900 mb-4">Reply</h4>
-                    <div className="space-y-4">
+                  <div className="border-t border-gray-200 p-4 sm:p-6">
+                    <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Reply</h4>
+                    <div className="space-y-3 sm:space-y-4">
                       {/* Provider Selection */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -896,30 +909,30 @@ const CommunicationPage: React.FC = () => {
 
       {/* Compose Email Modal */}
       {showComposeModal && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-purple-50 to-blue-50">
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-purple-50 to-blue-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Send className="w-5 h-5 text-purple-600" />
-                  <h3 className="text-xl font-bold text-gray-900">Compose Email</h3>
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">Compose Email</h3>
                 </div>
                 <button
                   onClick={() => {
                     setShowComposeModal(false);
                     setEmailForm({ providerId: '', to: '', cc: '', subject: '', content: '' });
                   }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1"
                 >
-                  <XCircle className="w-6 h-6" />
+                  <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
               </div>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="space-y-4">
+            <div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: 'calc(95vh - 140px)' }}>
+              <div className="space-y-3 sm:space-y-4">
                 {/* Provider Selector */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
