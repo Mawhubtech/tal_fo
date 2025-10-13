@@ -96,9 +96,7 @@ const EmailSettingsPage: React.FC = () => {
             
             // Refetch provider list with a slight delay
             setTimeout(async () => {
-              console.log('Refetching providers list after Gmail OAuth...');
-              const result = await refetchProviders();
-              console.log('Providers refetched:', result.data);
+              await refetchProviders();
             }, 500);
             
             addToast({ type: 'success', title: 'Gmail connection successful' });
@@ -137,8 +135,6 @@ const EmailSettingsPage: React.FC = () => {
 
         // Listen for OAuth callback message
         const handleMessage = (event: MessageEvent) => {
-          console.log('Message received from popup:', event.data);
-          
           // Ignore messages that don't have the expected type
           if (!event.data || !event.data.type) {
             return;
@@ -150,31 +146,24 @@ const EmailSettingsPage: React.FC = () => {
           }
           
           if (event.origin !== window.location.origin) {
-            console.log('Message origin mismatch, ignoring');
             return;
           }
           
           if (event.data.type === 'outlook-oauth-success' && event.data.email) {
-            console.log('Outlook OAuth success received');
             cleanup();
-            
-            // Refetch both settings and providers
             refetchSettings();
             
             // Refetch provider list with a slight delay to ensure backend has committed the transaction
             setTimeout(async () => {
-              console.log('Refetching providers list...');
-              const result = await refetchProviders();
-              console.log('Providers refetched:', result.data);
+              await refetchProviders();
             }, 500);
             
             addToast({ 
               type: 'success', 
               title: 'Outlook Connected', 
-              message: `Successfully connected ${event.data.email}` 
+              message: `Successfully connected ${event.data.email}. Provider list updated.` 
             });
           } else if (event.data.type === 'outlook-oauth-error') {
-            console.log('Outlook OAuth error received:', event.data.message);
             cleanup();
             addToast({ 
               type: 'error', 
@@ -186,31 +175,33 @@ const EmailSettingsPage: React.FC = () => {
 
         // Cleanup function
         const cleanup = () => {
-          console.log('Cleaning up Outlook OAuth listeners');
           window.removeEventListener('message', handleMessage);
           if (checkPopupInterval) clearInterval(checkPopupInterval);
           if (timeoutId) clearTimeout(timeoutId);
         };
 
         window.addEventListener('message', handleMessage);
-        console.log('Message listener added for Outlook OAuth');
 
-        // Check if popup is closed manually
+        // Poll to detect when popup closes (with error handling for COOP)
         checkPopupInterval = setInterval(() => {
           try {
-            if (popup?.closed) {
-              console.log('Popup window closed');
+            // Try to check if popup is closed
+            // This might throw COOP error, but we'll catch it
+            if (popup.closed) {
               cleanup();
+              
+              // Refetch providers after popup closes (regardless of success/error)
+              setTimeout(async () => {
+                await refetchProviders();
+              }, 1000); // 1 second delay to ensure backend has saved
             }
           } catch (error) {
-            // Ignore COOP errors - they're expected when popup navigates to different origin
-            // The postMessage will still work
+            // Silently ignore COOP errors - postMessage will still work
           }
-        }, 1000); // Increased to 1 second to reduce overhead
+        }, 500);
 
         // Cleanup after 5 minutes
         timeoutId = setTimeout(() => {
-          console.log('Outlook OAuth timeout');
           cleanup();
           if (popup && !popup.closed) {
             popup.close();

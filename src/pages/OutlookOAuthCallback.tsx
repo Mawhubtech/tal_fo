@@ -9,46 +9,34 @@ const OutlookOAuthCallback: React.FC = () => {
   const error = searchParams.get('error');
 
   useEffect(() => {
-    console.log('OutlookOAuthCallback mounted:', { success, email, error });
-    console.log('window.opener:', window.opener);
-    console.log('window.location.origin:', window.location.origin);
-
     // Send message to parent window
     if (window.opener) {
-      console.log('window.opener exists, sending message');
       try {
         if (success === 'true' && email) {
           const message = {
             type: 'outlook-oauth-success',
             email: decodeURIComponent(email)
           };
-          console.log('Sending success message:', message);
           window.opener.postMessage(message, window.location.origin);
-          console.log('Success message sent to opener');
         } else if (error) {
           const message = {
             type: 'outlook-oauth-error',
             message: decodeURIComponent(error)
           };
-          console.log('Sending error message:', message);
           window.opener.postMessage(message, window.location.origin);
-          console.log('Error message sent to opener');
         }
 
-        // Close window after a short delay
+        // Close window after a delay to ensure message is delivered
         setTimeout(() => {
-          console.log('Closing window');
           window.close();
-        }, 2000); // Increased delay to ensure message is sent
+        }, 3000); // 3 seconds to ensure message delivery
       } catch (e) {
-        console.error('Error sending message to opener:', e);
         // Still try to close the window
-        setTimeout(() => window.close(), 3000);
+        setTimeout(() => window.close(), 4000);
       }
     } else {
-      console.warn('No window.opener found');
       // Close anyway after showing the message
-      setTimeout(() => window.close(), 3000);
+      setTimeout(() => window.close(), 4000);
     }
   }, [success, email, error]);
 

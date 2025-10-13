@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Mail, 
-  Send, 
-  Inbox, 
+  Send,
+  Inbox,
   Search, 
   Filter, 
   Calendar,
@@ -16,7 +16,7 @@ import {
   Eye,
   Download
 } from 'lucide-react';
-import { useEmailProviders, useProviderMessages, useUnifiedStats } from '../hooks/useEmailLogs';
+import { useEmailProviders, useProviderMessages } from '../hooks/useEmailLogs';
 import { useAuthContext } from '../contexts/AuthContext';
 import { EmailLogFilters, EmailProvider } from '../services/emailLogApiService';
 
@@ -66,12 +66,6 @@ const CommunicationPage: React.FC = () => {
   } = useProviderMessages(selectedProvider || '', filters, {
     refetchInterval: selectedProvider ? 30000 : false // Only refresh if provider selected
   });
-
-  // Fetch unified statistics
-  const { data: unifiedStats } = useUnifiedStats();
-
-  // Get stats for selected provider
-  const stats = unifiedStats?.byProvider.find(p => p.providerId === selectedProvider)?.stats || unifiedStats?.overall;
 
   const emails = emailLogsData?.data || [];
   const totalEmails = emailLogsData?.total || 0;
@@ -216,83 +210,6 @@ const CommunicationPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Statistics Cards */}
-      {stats && (
-        <div className="space-y-3">
-          {/* Selected Provider Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-600">Sent</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.sent}</p>
-                </div>
-                <Send className="w-8 h-8 text-blue-500" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-600">Received</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.received}</p>
-                </div>
-                <Inbox className="w-8 h-8 text-purple-500" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-600">Unread</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.unread || 0}</p>
-                </div>
-                <Mail className="w-8 h-8 text-yellow-500" />
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* Overall Stats Across All Providers */}
-          {unifiedStats && unifiedStats.byProvider.length > 1 && (
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-purple-700">ALL PROVIDERS COMBINED</p>
-                  <div className="flex gap-6 mt-2">
-                    <div>
-                      <p className="text-xs text-gray-600">Total Sent</p>
-                      <p className="text-lg font-bold text-gray-900">{unifiedStats.overall.sent}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Total Received</p>
-                      <p className="text-lg font-bold text-gray-900">{unifiedStats.overall.received}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Total Unread</p>
-                      <p className="text-lg font-bold text-gray-900">{unifiedStats.overall.unread}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Grand Total</p>
-                      <p className="text-lg font-bold text-gray-900">{unifiedStats.overall.total}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-xs text-purple-600">
-                  {unifiedStats.byProvider.length} providers
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow">
