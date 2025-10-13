@@ -120,6 +120,15 @@ export interface EmailProvider {
     smtpSecure?: boolean;
     username?: string;
     password?: string;
+    // IMAP settings
+    imapEnabled?: boolean;
+    imapHost?: string;
+    imapPort?: number;
+    imapUser?: string;
+    imapPassword?: string;
+    imapTls?: boolean;
+    imapSentMailbox?: string;
+    imapRejectUnauthorized?: boolean;
   };
 }
 
@@ -171,6 +180,15 @@ export interface CreateProviderData {
     smtpSecure?: boolean;
     username?: string;
     password?: string;
+    // IMAP settings
+    imapEnabled?: boolean;
+    imapHost?: string;
+    imapPort?: number;
+    imapUser?: string;
+    imapPassword?: string;
+    imapTls?: boolean;
+    imapSentMailbox?: string;
+    imapRejectUnauthorized?: boolean;
   };
 }
 
@@ -327,7 +345,7 @@ export const emailProviderApi = {
 
   // Update provider
   update: async (id: string, data: Partial<CreateProviderData>) => {
-    const response = await apiClient.patch(`/email-management/providers/${id}`, data);
+    const response = await apiClient.put(`/email-management/providers/${id}`, data);
     return response.data;
   },
 
@@ -370,6 +388,8 @@ export const emailSendingApi = {
     const requestData = {
       providerId: data.providerId,
       to: data.to,
+      cc: data.cc,
+      bcc: data.bcc,
       subject: data.subject,
       body: data.plainText || data.content, // Use plainText if available, otherwise content as fallback
       htmlBody: data.content, // Use content for HTML body
@@ -420,10 +440,21 @@ export const useEmailTemplates = (params?: Parameters<typeof emailTemplateApi.ge
         if (error.response?.status === 404) {
           return [];
         }
+        // Log error for debugging
+        console.error('Error fetching email templates:', error);
         throw error;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error: any) => {
+      // Don't retry on client errors (4xx)
+      if (error.response?.status >= 400 && error.response?.status < 500) {
+        return false;
+      }
+      // Retry up to 2 times for server errors
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 
@@ -493,10 +524,21 @@ export const useEmailProviders = () => {
         if (error.response?.status === 404) {
           return [];
         }
+        // Log error for debugging
+        console.error('Error fetching email providers:', error);
         throw error;
       }
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: (failureCount, error: any) => {
+      // Don't retry on client errors (4xx)
+      if (error.response?.status >= 400 && error.response?.status < 500) {
+        return false;
+      }
+      // Retry up to 2 times for server errors
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 

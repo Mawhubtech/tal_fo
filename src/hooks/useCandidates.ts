@@ -10,7 +10,7 @@ const QUERY_KEYS = {
 };
 
 // Hook to fetch candidates with filters and pagination
-export const useCandidates = (params: CandidateQueryParams) => {
+export const useCandidates = (params: CandidateQueryParams, options?: { refetchInterval?: number | false }) => {
   return useQuery({
     queryKey: [QUERY_KEYS.candidates, params],
     queryFn: async () => {
@@ -48,6 +48,7 @@ export const useCandidates = (params: CandidateQueryParams) => {
       return response;
     },
     placeholderData: (previousData) => previousData, // This replaces keepPreviousData in v5
+    refetchInterval: options?.refetchInterval, // Add refetch interval support
   });
 };
 

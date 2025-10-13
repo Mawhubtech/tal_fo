@@ -23,6 +23,7 @@ import PresetTemplatesDialog from '../../components/PresetTemplatesDialog';
 import TemplateShareDialog from '../../components/TemplateShareDialog';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import GmailReconnectionBanner from '../../components/GmailReconnectionBanner';
+import { EmailErrorDisplay, EmailDataEmptyState } from '../../components/EmailErrorBoundary';
 
 const EmailManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'templates' | 'providers'>('templates');
@@ -56,14 +57,16 @@ const EmailManagementPage: React.FC = () => {
   const { handleApiError } = useApiError();
 
   // API hooks
-  const { data: templatesData, isLoading: isLoadingTemplates, error: templatesError } = useEmailTemplates();
-  const { data: providersData, isLoading: isLoadingProviders, error: providersError } = useEmailProviders();
+  const { data: templatesData, isLoading: isLoadingTemplates, error: templatesError, refetch: refetchTemplates } = useEmailTemplates();
+  const { data: providersData, isLoading: isLoadingProviders, error: providersError, refetch: refetchProviders } = useEmailProviders();
   const {
     emailSettings,
     connectGmail,
     isConnectingGmail,
     disconnectGmail,
     isDisconnectingGmail,
+    connectOutlook,
+    isConnectingOutlook,
     refetchSettings
   } = useEmailService();
   
@@ -263,9 +266,15 @@ const EmailManagementPage: React.FC = () => {
   };
 
   const handleConnectProvider = (type: 'gmail' | 'outlook' | 'smtp') => {
-    setSelectedProvider(null);
-    setSelectedProviderType(type);
-    setIsProviderModalOpen(true);
+    if (type === 'gmail') {
+      handleConnectGmail();
+    } else if (type === 'outlook') {
+      handleConnectOutlook();
+    } else {
+      setSelectedProvider(null);
+      setSelectedProviderType(type);
+      setIsProviderModalOpen(true);
+    }
   };
 
   const handleSetDefaultProvider = async (providerId: string) => {
@@ -429,6 +438,76 @@ If you received this email, your email provider is working correctly.
     }
   };
 
+  const handleConnectOutlook = async () => {
+    try {
+      const result = await connectOutlook();
+      if (result.authUrl) {
+        // Open OAuth flow in new window
+        const oauthWindow = window.open(result.authUrl, 'outlook-oauth', 'width=600,height=700');
+        
+        if (!oauthWindow) {
+          addToast({ type: 'error', title: 'Popup blocked', message: 'Please allow popups for this site' });
+          return;
+        }
+
+        // Listen for messages from the OAuth window
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data.type === 'outlook-oauth-success') {
+            // OAuth successful, refetch settings
+          refetchSettings().then(() => {
+            addToast({ 
+              type: 'success', 
+              title: 'Outlook Connected', 
+              message: `Successfully connected ${event.data.email}` 
+            });
+          });
+          oauthWindow?.close();
+          window.removeEventListener('message', handleMessage);
+        } else if (event.data.type === 'outlook-oauth-error') {
+          addToast({ 
+            type: 'error', 
+            title: 'Connection Failed', 
+            message: event.data.message || 'Failed to connect Outlook. Please try again.' 
+          });
+          oauthWindow?.close();
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      // Fallback: Check if window is closed manually
+      const checkWindowClosed = setInterval(() => {
+        if (!oauthWindow || oauthWindow.closed) {
+          clearInterval(checkWindowClosed);
+          window.removeEventListener('message', handleMessage);
+          // Only refetch if we haven't received a message yet
+          setTimeout(() => {
+            refetchSettings().catch(() => {
+              // Silently ignore refetch errors
+            });
+          }, 1000);
+        }
+      }, 1000);
+      
+      // Cleanup after 5 minutes
+      setTimeout(() => {
+        clearInterval(checkWindowClosed);
+        window.removeEventListener('message', handleMessage);
+        if (oauthWindow && !oauthWindow.closed) {
+          oauthWindow.close();
+          addToast({ type: 'error', title: 'Timeout', message: 'Outlook connection timed out. Please try again.' });
+        }
+      }, 300000);
+      }
+    } catch (error) {
+      console.error('Failed to connect Outlook:', error);
+      handleApiError(error, 'Connection Failed');
+    }
+  };
+
   const handleDisconnectGmail = async () => {
     try {
       await disconnectGmail();
@@ -489,7 +568,6 @@ If you received this email, your email provider is working correctly.
   };
 
   const isLoading = isLoadingTemplates || isLoadingProviders;
-  const hasError = templatesError || providersError;
 
   if (isLoading) {
     return (
@@ -502,23 +580,26 @@ If you received this email, your email provider is working correctly.
     );
   }
 
-  if (hasError) {
+  // Handle errors with improved error display
+  if (templatesError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading email management data</h3>
-          <p className="text-gray-600 mb-4">
-            {templatesError?.message || providersError?.message || 'An unexpected error occurred'}
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
+      <EmailErrorDisplay
+        error={templatesError}
+        context="email templates"
+        onRetry={() => refetchTemplates()}
+        showDetails={import.meta.env.DEV}
+      />
+    );
+  }
+
+  if (providersError) {
+    return (
+      <EmailErrorDisplay
+        error={providersError}
+        context="email providers"
+        onRetry={() => refetchProviders()}
+        showDetails={import.meta.env.DEV}
+      />
     );
   }
 
