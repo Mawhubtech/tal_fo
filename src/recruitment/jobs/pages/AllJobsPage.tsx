@@ -23,6 +23,7 @@ import { useMyAssignment } from '../../../hooks/useUserAssignment';
 import { useUserTeamMemberships } from '../../../hooks/useHiringTeam';
 import { useMyCollaboratorJobs } from '../../../hooks/useJobCollaborators';
 import JobPreviewModal from '../../../components/modals/JobPreviewModal';
+import { createJobUrl } from '../../../lib/urlUtils';
 import type { JobFilters } from '../../../services/jobApiService';
 import type { Job } from '../../data/types';
 
@@ -159,8 +160,8 @@ const AllJobsPage: React.FC = () => {
   };
 
   const handleJobClick = (job: Job) => {
-    // Navigate directly to job ATS page
-    navigate(`/dashboard/jobs/${job.id}/ats`);
+    // Navigate directly to job ATS page with slugified title
+    navigate(createJobUrl(job.id, job.title));
   };
 
   const handleDeleteJob = (job: Job) => {

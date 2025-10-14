@@ -7,6 +7,7 @@ import { useCreateEmailSequence } from '../../../hooks/useEmailSequences';
 import { usePipeline } from '../../../hooks/usePipelines';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
+import { createJobUrl } from '../../../lib/urlUtils';
 
 const CreateJobEmailSequencePage: React.FC = () => {
   const { jobId } = useParams<{ 
@@ -164,8 +165,8 @@ const CreateJobEmailSequencePage: React.FC = () => {
           <span className="mx-2">/</span>
           <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/jobs/${jobId}/ats`} className="hover:text-gray-700">
-            ATS - {effectiveJob.title}
+          <Link to={createJobUrl(jobId || '', effectiveJob.title)} className="hover:text-gray-700">
+            {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>
           <Link to={backUrl} className="hover:text-gray-700">

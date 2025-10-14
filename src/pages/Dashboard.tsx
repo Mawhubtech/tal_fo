@@ -381,6 +381,14 @@ const Dashboard: React.FC = () => {
               </RoutePermissionGuard>
             } /> */}
             
+            {/* Job ATS Page - supports both /jobs/:jobId/:jobTitle and legacy /jobs/:jobId/ats */}
+            <Route path="jobs/:jobId/:jobTitle" element={
+              <RoutePermissionGuard>
+                <JobATSPage />
+              </RoutePermissionGuard>
+            } />
+            
+            {/* Legacy route redirect for backward compatibility */}
             <Route path="jobs/:jobId/ats" element={
               <RoutePermissionGuard>
                 <JobATSPage />

@@ -39,7 +39,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If user is external, check if they're trying to access an ATS route
   if (isExternalUser(user)) {
     // Allow external users to access ATS routes for jobs they have access to
-    const isATSRoute = location.pathname.includes('/jobs/') && location.pathname.endsWith('/ats');
+    // Updated to match new URL format: /jobs/:jobId/:jobTitle or legacy /jobs/:jobId/ats
+    const isATSRoute = location.pathname.includes('/jobs/') && 
+      (location.pathname.endsWith('/ats') || 
+       location.pathname.match(/\/jobs\/[^\/]+\/[^\/]+$/));
     
     if (isATSRoute) {
       // Allow access to ATS routes for external users

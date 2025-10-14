@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useExternalUserJobs } from '../../hooks/useExternalJobs';
+import { createJobUrl } from '../../lib/urlUtils';
 import type { Job } from '../../recruitment/data/types';
 
 // Extended job type for external users with relations
@@ -48,8 +49,8 @@ const ExternalJobsPage: React.FC = () => {
   );
 
   const handleJobClick = (job: ExternalJob) => {
-    // Navigate directly to job ATS page
-    navigate(`/dashboard/jobs/${job.id}/ats`);
+    // Navigate directly to job ATS page with slugified title
+    navigate(createJobUrl(job.id, job.title));
   };
 
   if (isLoading) {

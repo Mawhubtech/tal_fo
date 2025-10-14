@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useDepartmentJobsPageData } from '../../../hooks/useOrganizations';
 import { useDeleteJob } from '../../../hooks/useJobs';
+import { createJobUrl } from '../../../lib/urlUtils';
 import type { Job } from '../../data/types';
 import JobPreviewModal from '../../../components/modals/JobPreviewModal';
 
@@ -430,7 +431,7 @@ const DepartmentJobsPage: React.FC = () => {
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <Link
-                      to={`/dashboard/jobs/${job.id}/ats`}
+                      to={createJobUrl(job.id, job.title)}
                       className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center ml-2"
                     >
                       View ATS <ChevronRight className="w-4 h-4 ml-1" />
@@ -539,7 +540,7 @@ const DepartmentJobsPage: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </button>
                         <Link
-                          to={`/dashboard/jobs/${job.id}/ats`}
+                          to={createJobUrl(job.id, job.title)}
                           className="text-purple-600 hover:text-purple-700 p-1 hover:bg-purple-50 rounded"
                           title="View ATS"
                         >

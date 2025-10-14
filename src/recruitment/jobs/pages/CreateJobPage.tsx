@@ -10,6 +10,7 @@ import { usePipelineModal } from '../../../hooks/usePipelineModal';
 import { useAuth } from '../../../hooks/useAuth';
 import { pipelineService } from '../../../services/pipelineService';
 import { jobApiService } from '../../../services/jobApiService';
+import { createJobUrl } from '../../../lib/urlUtils';
 import type { CreateJobData, JobPublishingOptions } from '../../../services/jobApiService';
 import type { Department } from '../../organizations/services/organizationApiService';
 import type { Pipeline, CreatePipelineDto } from '../../../services/pipelineService';
@@ -532,9 +533,9 @@ const CreateJobPage: React.FC = () => {
         }
       }
       
-      // Navigate to the job ATS page
+      // Navigate to the job ATS page with slugified title
       if (resultJob.id) {
-        navigate(`/dashboard/jobs/${resultJob.id}/ats`);
+        navigate(createJobUrl(resultJob.id, resultJob.title));
       } else {
         navigate('/dashboard/organizations');
       }

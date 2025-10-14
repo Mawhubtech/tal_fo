@@ -6,6 +6,7 @@ import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { useEmailSequence, useUpdateEmailSequence } from '../../../hooks/useEmailSequences';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
+import { createJobUrl } from '../../../lib/urlUtils';
 import { EmailSequence } from '../../../services/emailSequencesApiService';
 import { EmailTrackingAnalytics } from '../../../components/EmailTrackingAnalytics';
 import EnrollmentManagement from '../components/EnrollmentManagement';
@@ -271,8 +272,8 @@ const JobSequenceDetailPage: React.FC = () => {
           <span className="mx-2">/</span>
           <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/jobs/${jobId}/ats`} className="hover:text-gray-700">
-            ATS - {effectiveJob.title}
+          <Link to={createJobUrl(jobId || '', effectiveJob.title)} className="hover:text-gray-700">
+            {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>
           <Link to={backUrl} className="hover:text-gray-700">

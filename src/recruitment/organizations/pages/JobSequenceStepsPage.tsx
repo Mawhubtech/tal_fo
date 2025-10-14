@@ -7,6 +7,7 @@ import { useEmailSequence, useUpdateEmailSequence } from '../../../hooks/useEmai
 import { EmailSequence, EmailSequenceStep, EmailSequencesApiService } from '../../../services/emailSequencesApiService';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
+import { createJobUrl } from '../../../lib/urlUtils';
 import { useRecruitmentTemplates } from '../../../hooks/useEmailTemplates';
 import { EmailTemplate } from '../../../services/emailTemplatesApiService';
 
@@ -211,8 +212,8 @@ const JobSequenceStepsPage: React.FC = () => {
           <span className="mx-2">/</span>
           <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/jobs/${jobId}/ats`} className="hover:text-gray-700">
-            ATS - {effectiveJob.title}
+          <Link to={createJobUrl(jobId || '', effectiveJob.title)} className="hover:text-gray-700">
+            {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>
           <Link to={backUrl} className="hover:text-gray-700">

@@ -5,6 +5,7 @@ import {
   MapPin, Search, Grid3X3, List, ChevronDown, ChevronUp, Clock
 } from 'lucide-react';
 import { useOrganizationDetailPageData } from '../../../hooks/useOrganizations';
+import { createJobUrl } from '../../../lib/urlUtils';
 import type { Department } from '../services/organizationApiService';
 import type { Job } from '../../data/types';
 
@@ -231,7 +232,7 @@ const OrganizationDetailPage: React.FC = () => {
                     {filteredJobs.map((job) => (
                       <Link
                         key={job.id}
-                        to={`/dashboard/jobs/${job.id}/ats`}
+                        to={createJobUrl(job.id, job.title)}
                         className="block bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border"
                       >
                         <div className="flex items-start justify-between">

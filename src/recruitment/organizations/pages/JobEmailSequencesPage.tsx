@@ -6,6 +6,7 @@ import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { useEmailSequences } from '../../../hooks/useEmailSequences';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { isExternalUser } from '../../../utils/userUtils';
+import { createJobUrl } from '../../../lib/urlUtils';
 
 const JobEmailSequencesPage: React.FC = () => {
   const { jobId } = useParams<{ 
@@ -92,19 +93,19 @@ const JobEmailSequencesPage: React.FC = () => {
   // Construct the back URL based on user type
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}`
-    : `/dashboard/jobs/${jobId}/ats`;
+    : createJobUrl(jobId || '', effectiveJob?.title || '');
 
   return (
     <div className="p-6">
       {/* Breadcrumbs - Only show for internal users */}
-      {!isExternal && (
+      {!isExternal && effectiveJob && (
         <div className="flex items-center text-sm text-gray-500 mb-4">
           <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
           <span className="mx-2">/</span>
           <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
           <Link to={backUrl} className="hover:text-gray-700">
-            ATS - {effectiveJob.title}
+            {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900 font-medium">Email Sequences</span>
