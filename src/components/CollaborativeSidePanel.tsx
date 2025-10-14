@@ -1158,10 +1158,8 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                     <div className="flex items-center space-x-2">
                       <div className="relative">
                         <button
-                      
-                      
                           onClick={() => setShowCandidatePicker(!showCandidatePicker)}
-                          className="text-gray-500 hover:text-purple-700"
+                          className="flex items-center text-sm text-gray-500 hover:text-purple-700"
                         >
                           <Tag className="h-4 w-4 mr-1" />
                           Tag Candidates
@@ -1169,7 +1167,7 @@ const CollaborativeSidePanel: React.FC<CollaborativeSidePanelProps> = ({
                         
                         {/* Candidate Picker Dropdown */}
                         {showCandidatePicker && (
-                          <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                          <div className="absolute bottom-full left-0 mb-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                             <div className="p-3">
                               <div className="relative mb-2">
                                 <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
