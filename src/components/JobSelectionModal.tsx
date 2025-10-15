@@ -216,8 +216,8 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                       <Users className="w-6 h-6 text-purple-600" />
                     </div>
                     <div className="text-left">
-                      <div className="font-semibold text-gray-900">Add to Candidates Database Only</div>
-                      <div className="text-sm text-gray-600">Save candidate without assigning to a specific job</div>
+                      <div className="font-semibold text-gray-900">Save candidate without assigning to a specific job</div>
+                      
                     </div>
                   </div>
                   {isLoading ? (
