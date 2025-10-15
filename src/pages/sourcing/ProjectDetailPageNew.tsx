@@ -41,7 +41,7 @@ const ProjectDetailPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
-            to="/dashboard/sourcing/projects"
+            to="/sourcing/projects"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -74,7 +74,7 @@ const ProjectDetailPage: React.FC = () => {
       description: 'Manage and create new talent searches',
       icon: Search,
       count: searches.length,
-      link: `/dashboard/sourcing/projects/${project.id}/searches`,
+      link: `/sourcing/projects/${project.id}/searches`,
       color: 'bg-blue-50 border-blue-200 hover:bg-blue-100'
     },
     {
@@ -82,7 +82,7 @@ const ProjectDetailPage: React.FC = () => {
       description: 'View and manage prospects from searches',
       icon: Users,
       count: project.progress?.totalProspects || 0,
-      link: `/dashboard/sourcing/projects/${project.id}/prospects`,
+      link: `/sourcing/projects/${project.id}/prospects`,
       color: 'bg-green-50 border-green-200 hover:bg-green-100'
     },
     {
@@ -90,7 +90,7 @@ const ProjectDetailPage: React.FC = () => {
       description: 'Create and manage outreach sequences',
       icon: Mail,
       count: sequences.length,
-      link: `/dashboard/sourcing/projects/${project.id}/sequences`,
+      link: `/sourcing/projects/${project.id}/sequences`,
       color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     },
     {
@@ -98,7 +98,7 @@ const ProjectDetailPage: React.FC = () => {
       description: 'View performance metrics and insights',
       icon: BarChart3,
       count: null,
-      link: `/dashboard/sourcing/projects/${project.id}/analytics`,
+      link: `/sourcing/projects/${project.id}/analytics`,
       color: 'bg-orange-50 border-orange-200 hover:bg-orange-100'
     }
   ];
@@ -109,7 +109,7 @@ const ProjectDetailPage: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Link
-            to="/dashboard/sourcing/projects"
+            to="/sourcing/projects"
             className="inline-flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -142,7 +142,7 @@ const ProjectDetailPage: React.FC = () => {
           
           <div className="flex items-center gap-2">
             <Link
-              to={`/dashboard/sourcing/projects/${project.id}/edit`}
+              to={`/sourcing/projects/${project.id}/edit`}
               className="inline-flex items-center px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               <Edit className="w-4 h-4 mr-2" />

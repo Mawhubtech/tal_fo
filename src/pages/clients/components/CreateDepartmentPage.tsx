@@ -60,9 +60,7 @@ const CreateDepartmentPage: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Breadcrumbs */}
       <div className="flex items-center text-sm text-gray-500 mb-4">
-        <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
-        <span className="mx-2">/</span>
-        <Link to="/dashboard/clients" className="hover:text-gray-700">Clients</Link>
+        <Link to="/clients" className="hover:text-gray-700">Clients</Link>
         <span className="mx-2">/</span>
         <span className="text-gray-900 font-medium">Create Department</span>
       </div>

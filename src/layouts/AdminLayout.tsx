@@ -20,27 +20,27 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     {
       id: 'overview',
       label: 'Overview',
-      path: '/dashboard/admin',
+      path: '/admin',
       icon: LayoutDashboard,
       description: 'Admin dashboard overview'
     },
     {
       id: 'user-management',
       label: 'User Management',
-      path: '/dashboard/admin/users',
+      path: '/admin/users',
       icon: Users,
       description: 'Manage system users and permissions',
       submenu: [
         {
           id: 'users',
           label: 'Users',
-          path: '/dashboard/admin/users',
+          path: '/admin/users',
           description: 'Manage system users'
         },
         {
           id: 'team-management',
           label: 'Team Management',
-          path: '/dashboard/admin/team-management',
+          path: '/admin/team-management',
           description: 'Create and manage team members'
         }
       ]
@@ -48,49 +48,49 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     {
       id: 'pipelines',
       label: 'Pipelines',
-      path: '/dashboard/admin/pipelines',
+      path: '/admin/pipelines',
       icon: GitBranch,
       description: 'Create and manage recruitment pipelines'
     },
     {
       id: 'candidate-profiles',
       label: 'Candidate Profiles',
-      path: '/dashboard/admin/candidate-profiles',
+      path: '/admin/candidate-profiles',
       icon: UserPlus,
       description: 'Manage candidate data and profiles'
     },
     {
       id: 'company-management',
       label: 'Company Management',
-      path: '/dashboard/admin/companies',
+      path: '/admin/companies',
       icon: Building,
       description: 'Manage HR companies and teams'
     },
     {
       id: 'job-board-config',
       label: 'Job Board Config',
-      path: '/dashboard/admin/job-board-config',
+      path: '/admin/job-board-config',
       icon: Target,
       description: 'Configure job board integrations'
     },
     {
       id: 'analytics',
       label: 'Analytics & Reports',
-      path: '/dashboard/admin/analytics',
+      path: '/admin/analytics',
       icon: BarChart3,
       description: 'View platform analytics'
     },
     {
       id: 'support',
       label: 'Support Dashboard',
-      path: '/dashboard/admin/support',
+      path: '/admin/support',
       icon: MessageSquare,
       description: 'Manage support tickets and customer inquiries'
     },
     {
       id: 'system-settings',
       label: 'System Settings',
-      path: '/dashboard/admin/system-settings',
+      path: '/admin/system-settings',
       icon: Settings,
       description: 'Configure platform settings'
     }
@@ -104,7 +104,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   ];
 
   const isActive = (path: string) => {
-    if (path === '/dashboard/admin') {
+    if (path === '/admin') {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
@@ -142,13 +142,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const getBreadcrumbs = () => {
     const pathSegments = location.pathname.split('/').filter(Boolean);
     const breadcrumbs = [
-      { label: 'Dashboard', path: '/dashboard' },
-      { label: 'Admin', path: '/dashboard/admin' }
+      { label: 'Admin', path: '/admin' }
     ];
 
     if (pathSegments.length > 2) {
       const currentItem = adminNavigationItems.find(item => isActive(item.path));
-      if (currentItem && currentItem.path !== '/dashboard/admin') {
+      if (currentItem && currentItem.path !== '/admin') {
         breadcrumbs.push({ label: currentItem.label, path: currentItem.path });
       }
     }

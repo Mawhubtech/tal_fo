@@ -34,11 +34,11 @@ const SequenceEnrollmentPage: React.FC = () => {
   // Construct URLs
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences/${sequenceId}/steps`
-    : `/dashboard/jobs/${jobId}/email-sequences/${sequenceId}/steps`;
+    : `/jobs/${jobId}/email-sequences/${sequenceId}/steps`;
 
   const sequenceDetailUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences/${sequenceId}`
-    : `/dashboard/jobs/${jobId}/email-sequences/${sequenceId}`;
+    : `/jobs/${jobId}/email-sequences/${sequenceId}`;
 
   if (effectiveJobLoading || sequenceLoading) {
     return (
@@ -86,15 +86,13 @@ const SequenceEnrollmentPage: React.FC = () => {
       {/* Breadcrumbs - Only show for internal users */}
       {!isExternal && (
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
-          <span className="mx-2">/</span>
-          <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
+          <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
           <Link to={createJobUrl(jobId || '', effectiveJob.title)} className="hover:text-gray-700">
             {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>
-          <Link to={`/dashboard/jobs/${jobId}/email-sequences`} className="hover:text-gray-700">
+          <Link to={`/jobs/${jobId}/email-sequences`} className="hover:text-gray-700">
             Email Sequences
           </Link>
           <span className="mx-2">/</span>

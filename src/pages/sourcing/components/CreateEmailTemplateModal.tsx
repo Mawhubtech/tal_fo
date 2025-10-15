@@ -21,7 +21,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
     content: '',
     description: '',
     type: 'candidate_outreach' as any,
-    category: 'outreach' as any,
+    category: 'sourcing' as any,
     scope: 'personal' as const,
     variables: [] as string[],
   });
@@ -139,21 +139,31 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
   };
 
   const typeOptions = [
-    { value: 'candidate_outreach', label: 'Candidate Outreach' },
-    { value: 'follow_up', label: 'Follow Up' },
-    { value: 'interview_invite', label: 'Interview Invitation' },
+    { value: 'interview_invitation', label: 'Interview Invitation' },
     { value: 'interview_reminder', label: 'Interview Reminder' },
-    { value: 'rejection', label: 'Rejection' },
-    { value: 'offer', label: 'Offer' },
+    { value: 'interview_reschedule', label: 'Interview Reschedule' },
+    { value: 'interview_cancellation', label: 'Interview Cancellation' },
+    { value: 'feedback_request', label: 'Feedback Request' },
+    { value: 'offer_letter', label: 'Offer Letter' },
+    { value: 'rejection_letter', label: 'Rejection Letter' },
+    { value: 'welcome_email', label: 'Welcome Email' },
+    { value: 'follow_up', label: 'Follow Up' },
+    { value: 'candidate_outreach', label: 'Candidate Outreach' },
+    { value: 'client_outreach', label: 'Client Outreach' },
+    { value: 'team_invitation', label: 'Team Invitation' },
+    { value: 'networking', label: 'Networking' },
+    { value: 'referral_request', label: 'Referral Request' },
+    { value: 'event_invitation', label: 'Event Invitation' },
     { value: 'custom', label: 'Custom' },
   ];
 
   const categoryOptions = [
-    { value: 'outreach', label: 'Outreach' },
-    { value: 'interview', label: 'Interview' },
-    { value: 'hiring', label: 'Hiring' },
-    { value: 'general', label: 'General' },
     { value: 'recruitment', label: 'Recruitment' },
+    { value: 'interviews', label: 'Interviews' },
+    { value: 'client_communication', label: 'Client Communication' },
+    { value: 'team_management', label: 'Team Management' },
+    { value: 'sourcing', label: 'Sourcing' },
+    { value: 'general', label: 'General' },
   ];
 
   const scopeOptions = [
@@ -289,7 +299,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                       value={aiInstructions}
                       onChange={(e) => setAiInstructions(e.target.value)}
                       placeholder="Optional: Provide specific instructions for AI content generation..."
-                      className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none text-sm"
                     />
                     <button
                       type="button"
@@ -336,7 +346,7 @@ export const CreateEmailTemplateModal: React.FC<CreateEmailTemplateModalProps> =
                     rows={12}
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none font-mono text-sm"
                     placeholder="Hi {{candidate_name}},&#10;&#10;I hope this email finds you well...&#10;&#10;Best regards,&#10;{{recruiter_name}}"
                   />
                 )}

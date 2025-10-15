@@ -144,7 +144,7 @@ const AllJobsPage: React.FC = () => {
   // Handler functions for CRUD operations
   const handleEditJob = (job: Job) => {
     // Navigate to standalone job edit page
-    navigate(`/dashboard/jobs/create?edit=${job.id}`);
+    navigate(`/jobs/create?edit=${job.id}`);
   };
 
   const handleCreateJob = () => {
@@ -156,12 +156,12 @@ const AllJobsPage: React.FC = () => {
     }
     
     // Navigate to standalone job creation page
-    navigate('/dashboard/jobs/create');
+    navigate('/jobs/create');
   };
 
   const handleJobClick = (job: Job) => {
     // Navigate directly to job ATS page with slugified title
-    navigate(createJobUrl(job.id, job.title));
+    navigate(createJobUrl(job.slug, job.title));
   };
 
   const handleDeleteJob = (job: Job) => {

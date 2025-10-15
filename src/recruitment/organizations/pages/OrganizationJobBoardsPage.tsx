@@ -415,7 +415,7 @@ const OrganizationJobBoardsPage: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Breadcrumbs */}
       <div className="flex items-center text-sm text-gray-500 mb-4">
-        <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+        <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
         <span className="mx-2">/</span>
         <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
         <span className="mx-2">/</span>

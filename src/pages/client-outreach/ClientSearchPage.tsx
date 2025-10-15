@@ -245,7 +245,7 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
 
       // Navigate to project-based results page if we have a saved search
       if (result.savedSearch && projectId) {
-        navigate(`/dashboard/client-outreach/projects/${projectId}/searches/${result.savedSearch.id}/results`, {
+        navigate(`/client-outreach/projects/${projectId}/searches/${result.savedSearch.id}/results`, {
           state: {
             searchResults: result,
             searchQuery,
@@ -255,7 +255,7 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
         });
       } else {
         // Fallback to the generic search results page
-        navigate('/dashboard/client-outreach/search-results', {
+        navigate('/client-outreach/search-results', {
           state: {
             searchResults: result,
             searchQuery,
@@ -354,7 +354,7 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
 
       // Navigate to results page with manual search data
       if (result.savedSearch?.id) {
-        navigate(`/dashboard/client-outreach/projects/${projectId}/searches/${result.savedSearch.id}/results`, {
+        navigate(`/client-outreach/projects/${projectId}/searches/${result.savedSearch.id}/results`, {
           state: {
             searchResults: result,
             searchQuery: generateSearchQueryFromFilters(manualFilters),
@@ -364,7 +364,7 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
           }
         });
       } else {
-        navigate('/dashboard/client-outreach/search-results', {
+        navigate('/client-outreach/search-results', {
           state: {
             searchResults: result,
             searchQuery: generateSearchQueryFromFilters(manualFilters),
@@ -511,7 +511,7 @@ const ClientSearch = forwardRef<ClientSearchRef, ClientSearchProps>(({ onSearchR
       {projectId && (
         <div className="mb-8 pt-4">
           <button
-            onClick={() => navigate(`/dashboard/client-outreach/projects/${projectId}/searches`)}
+            onClick={() => navigate(`/client-outreach/projects/${projectId}/searches`)}
             className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

@@ -78,7 +78,7 @@ const OrganizationsPage: React.FC = () => {
     <div className="bg-white min-h-screen pb-2">
       {/* Breadcrumbs */}
       <div className="flex items-center text-sm text-gray-500 mb-4 px-6 pt-6">
-        <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+        <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
         <span className="mx-2">/</span>
         <span className="text-gray-900 font-medium">Organizations</span>
       </div>

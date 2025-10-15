@@ -77,7 +77,7 @@ const CreateSearchPage: React.FC = () => {
       });
       
       // Navigate to the search results
-      navigate(`/dashboard/client-outreach/searches/${result.search.id}/results`);
+      navigate(`/client-outreach/searches/${result.search.id}/results`);
     } catch (error) {
       console.error('Error creating search:', error);
       alert('Error creating search. Please try again.');
@@ -94,7 +94,7 @@ const CreateSearchPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to={`/dashboard/client-outreach/projects/${projectId}`}
+            to={`/client-outreach/projects/${projectId}`}
             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -359,7 +359,7 @@ const CreateSearchPage: React.FC = () => {
           {/* Submit Button */}
           <div className="flex justify-end gap-4">
             <Link
-              to={`/dashboard/client-outreach/projects/${projectId}`}
+              to={`/client-outreach/projects/${projectId}`}
               className="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
               Cancel

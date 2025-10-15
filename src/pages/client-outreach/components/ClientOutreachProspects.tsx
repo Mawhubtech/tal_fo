@@ -174,7 +174,7 @@ const ClientOutreachProspects: React.FC<ClientOutreachProspectsProps> = ({ proje
     // Convert raw prospect data to match CompanyResult interface
     const rawProspect = rawProspects.find(rp => rp.id === prospect.id);
     
-    navigate(`/dashboard/client-outreach/projects/${projectId}/company-detail`, {
+    navigate(`/client-outreach/projects/${projectId}/company-detail`, {
       state: {
         company: {
           id: prospect.id,

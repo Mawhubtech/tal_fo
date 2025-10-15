@@ -49,7 +49,7 @@ const ClientOutreachRouter: React.FC = () => {
       <Route path="company-detail" element={<CompanyDetailPage />} />
       
       {/* Fallback redirect */}
-      <Route path="*" element={<Navigate to="/dashboard/client-outreach" replace />} />
+      <Route path="*" element={<Navigate to="/client-outreach" replace />} />
     </Routes>
   );
 };

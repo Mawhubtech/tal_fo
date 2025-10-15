@@ -112,7 +112,7 @@ const EditProjectPage: React.FC = () => {
         <h3 className="text-lg font-medium text-gray-900 mb-2">Project not found</h3>
         <p className="text-gray-600 mb-4">The project you're trying to edit doesn't exist.</p>
         <Link 
-          to="/dashboard/sourcing/projects"
+          to="/sourcing/projects"
           className="text-purple-600 hover:text-purple-700"
         >
           Back to Projects
@@ -127,7 +127,7 @@ const EditProjectPage: React.FC = () => {
         id: project.id,
         data,
       });
-      navigate(`/dashboard/sourcing/projects/${project.id}`);
+      navigate(`/sourcing/projects/${project.id}`);
     } catch (error: any) {
       console.error('Failed to update project:', error);
       setError('root', {
@@ -140,7 +140,7 @@ const EditProjectPage: React.FC = () => {
   const handleDelete = async () => {
     try {
       await deleteProject.mutateAsync(project.id);
-      navigate('/dashboard/sourcing/projects');
+      navigate('/sourcing/projects');
     } catch (error: any) {
       console.error('Failed to delete project:', error);
       setError('root', {
@@ -186,7 +186,7 @@ const EditProjectPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center mb-4">
           <Link 
-            to={`/dashboard/sourcing/projects/${project.id}`}
+            to={`/sourcing/projects/${project.id}`}
             className="flex items-center text-gray-600 hover:text-gray-900 mr-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -460,7 +460,7 @@ const EditProjectPage: React.FC = () => {
         {/* Submit Buttons */}
         <div className="flex items-center justify-end space-x-4 pt-6">
           <Link
-            to={`/dashboard/sourcing/projects/${project.id}`}
+            to={`/sourcing/projects/${project.id}`}
             className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancel

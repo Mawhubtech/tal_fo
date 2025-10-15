@@ -41,7 +41,7 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
   });
 
   const handleEdit = () => {
-    navigate(`/dashboard/sourcing/projects/${project.id}/edit`);
+    navigate(`/sourcing/projects/${project.id}/edit`);
   };
 
   const handleDelete = () => {
@@ -87,7 +87,7 @@ const ProjectCard: React.FC<{ project: SourcingProject }> = ({ project }) => {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0 pr-4">
             <Link 
-              to={`/dashboard/sourcing/projects/${project.id}`}
+              to={`/sourcing/projects/${project.id}`}
               className="text-lg font-semibold text-gray-900 hover:text-purple-600 transition-colors block truncate"
             >
               {project.name}
@@ -290,7 +290,7 @@ const SourcingProjectsPage: React.FC = () => {
           </p>
         </div>
         <Link
-          to="/dashboard/sourcing/projects/create"
+          to="/sourcing/projects/create"
           className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -374,7 +374,7 @@ const SourcingProjectsPage: React.FC = () => {
             Get started by creating your first sourcing project
           </p>
           <Link
-            to="/dashboard/sourcing/projects/create"
+            to="/sourcing/projects/create"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Plus className="w-5 h-5 mr-2" />

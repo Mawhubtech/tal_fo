@@ -198,9 +198,7 @@ const JobBoardConfigPage: React.FC = () => {
       {/* Breadcrumbs */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center text-sm text-gray-500">
-          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
-          <span className="mx-2">/</span>
-          <Link to="/dashboard/admin" className="hover:text-gray-700">Admin</Link>
+          <Link to="/admin" className="hover:text-gray-700">Admin</Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900 font-medium">Job Board Management</span>
         </div>

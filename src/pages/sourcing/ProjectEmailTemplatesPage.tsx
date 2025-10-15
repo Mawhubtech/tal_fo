@@ -259,7 +259,7 @@ const ProjectEmailTemplatesPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
-            to="/dashboard/sourcing/projects"
+            to="/sourcing/projects"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -306,7 +306,7 @@ const ProjectEmailTemplatesPage: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Link
-            to={`/dashboard/sourcing/projects/${project.id}`}
+            to={`/sourcing/projects/${project.id}`}
             className="inline-flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -852,7 +852,7 @@ const ProjectEmailTemplatesPage: React.FC = () => {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
                     <p className="text-gray-600 mb-4">Create email sequences to view comprehensive analytics</p>
                     <Link
-                      to={`/dashboard/sourcing/projects/${projectId}/sequences`}
+                      to={`/sourcing/projects/${projectId}/sequences`}
                       className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                     >
                       <Plus className="w-4 h-4 mr-2" />

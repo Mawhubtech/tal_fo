@@ -22,14 +22,14 @@ const SearchResultsPage: React.FC = () => {
             {searchDetails?.project ? (
               <>
                 <Link
-                  to={`/dashboard/client-outreach/projects/${searchDetails.project.id}`}
+                  to={`/client-outreach/projects/${searchDetails.project.id}`}
                   className="hover:text-gray-700"
                 >
                   {searchDetails.project.name}
                 </Link>
                 <span>/</span>
                 <Link
-                  to={`/dashboard/client-outreach/projects/${searchDetails.project.id}/searches`}
+                  to={`/client-outreach/projects/${searchDetails.project.id}/searches`}
                   className="hover:text-gray-700"
                 >
                   Searches
@@ -39,7 +39,7 @@ const SearchResultsPage: React.FC = () => {
               </>
             ) : (
               <Link
-                to="/dashboard/client-outreach/searches"
+                to="/client-outreach/searches"
                 className="inline-flex items-center hover:text-gray-700"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
@@ -60,7 +60,7 @@ const SearchResultsPage: React.FC = () => {
             
             {searchDetails?.project && (
               <Link
-                to={`/dashboard/client-outreach/projects/${searchDetails.project.id}/prospects`}
+                to={`/client-outreach/projects/${searchDetails.project.id}/prospects`}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 <Users className="w-4 h-4 mr-2" />

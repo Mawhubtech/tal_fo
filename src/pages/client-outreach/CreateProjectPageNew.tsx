@@ -83,7 +83,7 @@ const CreateProjectPage: React.FC = () => {
 
     try {
       const project = await createProjectMutation.mutateAsync(formData);
-      navigate(`/dashboard/client-outreach/projects/${project.id}`);
+      navigate(`/client-outreach/projects/${project.id}`);
     } catch (error) {
       console.error('Error creating project:', error);
       alert('Error creating project. Please try again.');
@@ -100,7 +100,7 @@ const CreateProjectPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to="/dashboard/client-outreach/projects"
+            to="/client-outreach/projects"
             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -400,7 +400,7 @@ const CreateProjectPage: React.FC = () => {
           {/* Submit Button */}
           <div className="flex justify-end gap-4">
             <Link
-              to="/dashboard/client-outreach/projects"
+              to="/client-outreach/projects"
               className="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
               Cancel

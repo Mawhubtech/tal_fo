@@ -51,7 +51,7 @@ const SequenceDetailPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Sequence Not Found</h2>
           <p className="text-gray-600 mb-4">The sequence you're looking for doesn't exist.</p>
           <Link
-            to={`/dashboard/sourcing/projects/${project.id}/sequences`}
+            to={`/sourcing/projects/${project.id}/sequences`}
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -72,7 +72,7 @@ const SequenceDetailPage: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Link
-            to={`/dashboard/sourcing/projects/${project.id}/sequences`}
+            to={`/sourcing/projects/${project.id}/sequences`}
             className="inline-flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -182,7 +182,7 @@ const SequenceDetailPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Sequence Steps</h2>
               <Link
-                to={`/dashboard/sourcing/projects/${projectId}/sequences/${sequenceId}/steps`}
+                to={`/sourcing/projects/${projectId}/sequences/${sequenceId}/steps`}
                 className="text-purple-600 hover:text-purple-700 text-sm font-medium"
               >
                 Manage Steps

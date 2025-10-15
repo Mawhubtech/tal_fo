@@ -134,7 +134,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
           <Link
             to={isExternal 
               ? "/external/jobs"
-              : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`
+              : `/my-jobs`
             }
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
@@ -151,7 +151,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
       {/* Breadcrumbs - Only show for internal users */}
       {!isExternal && (
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+          <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
           <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
           <span className="mx-2">/</span>

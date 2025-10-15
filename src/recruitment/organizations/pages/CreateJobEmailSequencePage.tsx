@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Save, Plus, X } from 'lucide-react';
-import { useJob } from '../../../hooks/useJobs';
+import { useJob, useJobBySlug } from '../../../hooks/useJobs';
 import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { useCreateEmailSequence } from '../../../hooks/useEmailSequences';
 import { usePipeline } from '../../../hooks/usePipelines';
@@ -10,11 +10,24 @@ import { isExternalUser } from '../../../utils/userUtils';
 import { createJobUrl } from '../../../lib/urlUtils';
 
 const CreateJobEmailSequencePage: React.FC = () => {
-  const { jobId } = useParams<{ 
-    jobId: string; 
+  const { slug, jobId } = useParams<{ 
+    slug?: string;
+    jobId?: string; 
   }>();
   const { user } = useAuthContext();
   const navigate = useNavigate();
+  
+  // Determine if current user is external and use appropriate hook
+  const isExternal = isExternalUser(user);
+  
+  // Extract the actual slug from the URL parameter if it's in the combined format
+  const extractSlug = (slugParam: string | undefined): string => {
+    if (!slugParam) return '';
+    const parts = slugParam.split('-');
+    return parts[parts.length - 1];
+  };
+  
+  const actualSlug = slug ? extractSlug(slug) : '';
 
   // Form state
   const [formData, setFormData] = useState({
@@ -30,12 +43,12 @@ const CreateJobEmailSequencePage: React.FC = () => {
 
   const [newTag, setNewTag] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Determine if current user is external
-  const isExternal = isExternalUser(user);
   
-  // Get job data to derive organizationId and departmentId
-  const { data: job, isLoading: jobLoading, error: jobError } = useJob(jobId || '');
+  // Get job data using slug for internal users, jobId for external
+  const { data: job, isLoading: jobLoading, error: jobError } = isExternal 
+    ? useJob(jobId || '') 
+    : useJobBySlug(actualSlug);
+    
   const organizationId = job?.organizationId;
   const departmentId = job?.departmentId;
   const { 
@@ -58,7 +71,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
   // Construct URLs
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences`
-    : `/dashboard/jobs/${jobId}/email-sequences`;
+    : `/jobs/${slug}/email-sequences`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +95,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
         variables: formData.variables,
         organizationId: organizationId || effectiveJob.organizationId,
         metadata: {
-          jobId: jobId,
+          jobId: effectiveJob.id, // Use actual job UUID instead of URL parameter
           jobTitle: effectiveJob.title,
           department: effectiveJob.department,
           location: effectiveJob.location,
@@ -96,7 +109,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
       // Navigate to the new sequence detail page
       const detailUrl = isExternal 
         ? `/external/jobs/${jobId}/email-sequences/${newSequence.id}`
-        : `/dashboard/jobs/${jobId}/email-sequences/${newSequence.id}`;
+        : `/jobs/${slug}/email-sequences/${newSequence.id}`;
       
       navigate(detailUrl);
     } catch (error) {
@@ -145,7 +158,7 @@ const CreateJobEmailSequencePage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Job Not Found</h2>
           <p className="text-gray-600 mb-4">The job you're looking for doesn't exist.</p>
           <Link
-            to={isExternal ? "/external/jobs" : "/dashboard/jobs"}
+            to={isExternal ? "/external/jobs" : "/my-jobs"}
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -159,13 +172,11 @@ const CreateJobEmailSequencePage: React.FC = () => {
   return (
     <div className="p-6">
       {/* Breadcrumbs - Only show for internal users */}
-      {!isExternal && (
+      {!isExternal && effectiveJob && (
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+          <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
-          <Link to="/dashboard/jobs" className="hover:text-gray-700">Jobs</Link>
-          <span className="mx-2">/</span>
-          <Link to={createJobUrl(jobId || '', effectiveJob.title)} className="hover:text-gray-700">
+          <Link to={createJobUrl(effectiveJob.slug || '', effectiveJob.title)} className="hover:text-gray-700">
             {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>

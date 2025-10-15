@@ -66,7 +66,7 @@ const CreateSearchPage: React.FC = () => {
         type: 'success',
         title: 'Search created successfully!',
       });
-      navigate(`/dashboard/sourcing/projects/${projectId}`);
+      navigate(`/sourcing/projects/${projectId}`);
     } catch (error) {
       console.error('Failed to create search:', error);
       addToast({
@@ -98,7 +98,7 @@ const CreateSearchPage: React.FC = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => navigate(`/dashboard/sourcing/projects/${projectId}`)}
+          onClick={() => navigate(`/sourcing/projects/${projectId}`)}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -312,7 +312,7 @@ const CreateSearchPage: React.FC = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate(`/dashboard/sourcing/projects/${projectId}`)}
+            onClick={() => navigate(`/sourcing/projects/${projectId}`)}
           >
             Cancel
           </Button>

@@ -105,6 +105,16 @@ class JobApiService {
     }
   }
 
+  async getJobBySlug(slug: string): Promise<Job> {
+    try {
+      const response = await apiClient.get(`/jobs/slug/${slug}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching job by slug:', error);
+      throw error;
+    }
+  }
+
   async getJobWithPipeline(id: string): Promise<Job> {
     try {
       const response = await apiClient.get(`/jobs/${id}`);

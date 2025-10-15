@@ -51,7 +51,7 @@ const CreateEmailCampaignPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
-            to="/dashboard/client-outreach/projects"
+            to="/client-outreach/projects"
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -91,7 +91,7 @@ const CreateEmailCampaignPage: React.FC = () => {
   const handleSaveCampaign = () => {
     // TODO: Implement campaign saving logic
     console.log('Saving campaign:', campaignData);
-    navigate(`/dashboard/client-outreach/projects/${id}/campaigns`);
+    navigate(`/client-outreach/projects/${id}/campaigns`);
   };
 
   return (
@@ -100,7 +100,7 @@ const CreateEmailCampaignPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to={`/dashboard/client-outreach/projects/${id}/campaigns`}
+            to={`/client-outreach/projects/${id}/campaigns`}
             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />

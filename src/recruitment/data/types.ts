@@ -30,6 +30,7 @@ export interface JobPublishingOptions {
 
 export interface Job {
   id: string;
+  slug: string; // Unique nanoid identifier for SEO-friendly URLs
   title: string;
   description?: string;
   department: string;

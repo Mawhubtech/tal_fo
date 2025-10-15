@@ -66,7 +66,7 @@ const ProjectDetailPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
-            to="/dashboard/sourcing/projects"
+            to="/sourcing/projects"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -95,7 +95,7 @@ const ProjectDetailPage: React.FC = () => {
   const handleDelete = () => {
     deleteProjectMutation.mutate(project.id, {
       onSuccess: () => {
-        navigate('/dashboard/sourcing/projects');
+        navigate('/sourcing/projects');
       }
     });
   };
@@ -107,7 +107,7 @@ const ProjectDetailPage: React.FC = () => {
       description: 'Manage and create new talent searches',
       icon: Search,
       count: searches.length,
-      link: `/dashboard/sourcing/projects/${project.id}/searches`,
+      link: `/sourcing/projects/${project.id}/searches`,
       color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     },
     {
@@ -115,7 +115,7 @@ const ProjectDetailPage: React.FC = () => {
       description: 'View and manage prospects from searches',
       icon: Users,
       count: project.progress?.totalProspects || 0,
-      link: `/dashboard/sourcing/projects/${project.id}/prospects`,
+      link: `/sourcing/projects/${project.id}/prospects`,
       color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     },
     {
@@ -123,7 +123,7 @@ const ProjectDetailPage: React.FC = () => {
       description: 'Manage email templates and campaigns',
       icon: Mail,
       count: null,
-      link: `/dashboard/sourcing/projects/${project.id}/email-templates`,
+      link: `/sourcing/projects/${project.id}/email-templates`,
       color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     },
     {
@@ -131,7 +131,7 @@ const ProjectDetailPage: React.FC = () => {
       description: 'View performance metrics and insights',
       icon: BarChart3,
       count: null,
-      link: `/dashboard/sourcing/projects/${project.id}/analytics`,
+      link: `/sourcing/projects/${project.id}/analytics`,
       color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
     }
   ];
@@ -142,7 +142,7 @@ const ProjectDetailPage: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Link
-            to="/dashboard/sourcing/projects"
+            to="/sourcing/projects"
             className="inline-flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -175,7 +175,7 @@ const ProjectDetailPage: React.FC = () => {
           
           <div className="flex items-center gap-2">
             <Link
-              to={`/dashboard/sourcing/projects/${project.id}/edit`}
+              to={`/sourcing/projects/${project.id}/edit`}
               className="inline-flex items-center px-3 py-2 text-purple-700 bg-purple-50 border border-purple-300 rounded-lg hover:bg-purple-100"
             >
               <Edit className="w-4 h-4 mr-2" />

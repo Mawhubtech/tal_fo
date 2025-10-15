@@ -23,7 +23,7 @@ const ProjectSequencesPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
-            to="/dashboard/sourcing/projects"
+            to="/sourcing/projects"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -40,7 +40,7 @@ const ProjectSequencesPage: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Link
-            to={`/dashboard/sourcing/projects/${project.id}`}
+            to={`/sourcing/projects/${project.id}`}
             className="inline-flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -56,14 +56,14 @@ const ProjectSequencesPage: React.FC = () => {
           
           <div className="flex items-center gap-3">
             <Link
-              to={`/dashboard/sourcing/projects/${project.id}/email-templates`}
+              to={`/sourcing/projects/${project.id}/email-templates`}
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               <Mail className="w-4 h-4 mr-2" />
               Email Templates
             </Link>
             <Link
-              to={`/dashboard/sourcing/projects/${project.id}/sequences/create`}
+              to={`/sourcing/projects/${project.id}/sequences/create`}
               className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
               <Plus className="w-4 h-4 mr-2" />

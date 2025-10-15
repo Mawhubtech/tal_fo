@@ -70,10 +70,10 @@ const CompanyDetailPage: React.FC = () => {
   // If no company data, redirect back
   if (!company) {
     const fallbackRoute = projectId && searchId
-      ? `/dashboard/client-outreach/projects/${projectId}/searches/${searchId}/results`
+      ? `/client-outreach/projects/${projectId}/searches/${searchId}/results`
       : projectId 
-      ? `/dashboard/client-outreach/projects/${projectId}/search`
-      : '/dashboard/client-outreach';
+      ? `/client-outreach/projects/${projectId}/search`
+      : '/client-outreach';
     navigate(fallbackRoute);
     return null;
   }

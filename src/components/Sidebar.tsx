@@ -108,11 +108,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {/* Sourcing Section - redirects to global search */}
           {hasPermission(SIDEBAR_PERMISSIONS.SOURCING_ACCESS) && (
             <Link 
-              to="/dashboard/search" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              to="/search" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/search') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? "Sourcing" : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/search') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/search') ? '#7e22ce' : '#9ca3af' }}>
                 <Target className="w-4 h-4" />
               </div>
               {isExpanded && "Sourcing"}
@@ -123,10 +123,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {hasAnyPermission([SIDEBAR_PERMISSIONS.JOBS_ACCESS, SIDEBAR_PERMISSIONS.ORGANIZATIONS_ACCESS]) && (
             <button
               onClick={handleJobsClick}
-              className={`flex items-center w-full ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/jobs') || location.pathname.includes('/dashboard/organizations') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              className={`flex items-center w-full ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/jobs') || location.pathname.includes('/organizations') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? "Organizations" : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/jobs') || location.pathname.includes('/dashboard/organizations') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/jobs') || location.pathname.includes('/organizations') ? '#7e22ce' : '#9ca3af' }}>
                 <Briefcase className="w-4 h-4" />
               </div>
               {isExpanded && "Organizations"}
@@ -137,11 +137,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {/* Jobs Section (renamed from "My Jobs") */}
           {hasPermission(SIDEBAR_PERMISSIONS.MY_JOBS_ACCESS) && (
             <Link 
-              to="/dashboard/my-jobs" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/my-jobs') || isActive('/dashboard/jobs') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              to="/my-jobs" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/my-jobs') || isActive('/jobs') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? "Jobs" : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/my-jobs') || isActive('/dashboard/jobs') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/my-jobs') || isActive('/jobs') ? '#7e22ce' : '#9ca3af' }}>
                 <Atom className="w-4 h-4" />
               </div>
               {isExpanded && "Jobs"}
@@ -151,11 +151,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {/* Job Boards Section - HIDDEN 
           {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ACCESS) && (
             <Link 
-              to="/dashboard/job-boards" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              to="/job-boards" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? "Job Boards" : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/job-boards') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/job-boards') ? '#7e22ce' : '#9ca3af' }}>
                 <Target className="w-4 h-4" />
               </div>
               {isExpanded && "Job Boards"}
@@ -166,11 +166,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {/* Candidates Section */}
           {hasPermission(SIDEBAR_PERMISSIONS.CANDIDATES_ACCESS) && (
             <Link 
-              to="/dashboard/candidates" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/candidates') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              to="/candidates" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/candidates') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? "Candidates" : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/candidates') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/candidates') ? '#7e22ce' : '#9ca3af' }}>
                 <UserPlus className="w-4 h-4" />
               </div>
               {isExpanded && "Candidates"}
@@ -179,11 +179,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
 
           {/* Communication Section */}
           <Link 
-            to="/dashboard/communication" 
-            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/communication') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+            to="/communication" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/communication') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
             title={!isExpanded ? "Communication" : ""}
           >
-            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/communication') ? '#7e22ce' : '#9ca3af' }}>
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/communication') ? '#7e22ce' : '#9ca3af' }}>
               <Mail className="w-4 h-4" />
             </div>
             {isExpanded && "Communication"}
@@ -192,11 +192,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {/* Clients Section - HIDDEN */}
           {/* {hasPermission(SIDEBAR_PERMISSIONS.CLIENTS_ACCESS) && (
             <Link 
-              to="/dashboard/clients" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/clients') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              to="/clients" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/clients') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? (isInternalUser(user) ? "Organization" : "Clients") : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/clients') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/clients') ? '#7e22ce' : '#9ca3af' }}>
                 <Building className="w-4 h-4" />
               </div>            
               {isExpanded && (isInternalUser(user) ? "Organization" : "Clients")}
@@ -206,11 +206,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {/* Client Outreach Section - HIDDEN 
           {hasPermission(SIDEBAR_PERMISSIONS.CLIENT_OUTREACH_ACCESS) && (
             <Link 
-              to="/dashboard/client-outreach" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/client-outreach') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              to="/client-outreach" 
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/client-outreach') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? "Client Outreach" : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/client-outreach') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/client-outreach') ? '#7e22ce' : '#9ca3af' }}>
                 <Mail className="w-4 h-4" />
               </div>
               {isExpanded && "Client Outreach"}
@@ -223,11 +223,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
             <div className="relative group">           
          <button 
                 onClick={() => isExpanded && toggleSection('admin')}
-                className={`flex items-center w-full ${isExpanded ? 'px-4 justify-between' : 'px-0 justify-center'} py-2 text-sm font-medium ${location.pathname.includes('/dashboard/admin') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                className={`flex items-center w-full ${isExpanded ? 'px-4 justify-between' : 'px-0 justify-center'} py-2 text-sm font-medium ${location.pathname.includes('/admin') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
                 title={!isExpanded ? "Admin" : ""}
               >
                 <div className="flex items-center">
-                  <div className={isExpanded ? "mr-3" : ""} style={{ color: location.pathname.includes('/dashboard/admin') ? '#7e22ce' : '#9ca3af' }}>
+                  <div className={isExpanded ? "mr-3" : ""} style={{ color: location.pathname.includes('/admin') ? '#7e22ce' : '#9ca3af' }}>
                     <Shield className="w-4 h-4" />
                   </div>
                   {isExpanded && "Admin"}
@@ -239,7 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
               {openSections['admin'] && isExpanded && (            
           <nav className="pl-8 space-y-1 py-1">
                   {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_OVERVIEW) && (
-                    <Link to="/dashboard/admin" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin') && !location.pathname.includes('/dashboard/admin/') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <Link to="/admin" className={`flex items-center py-1 text-sm ${isActive('/admin') && !location.pathname.includes('/admin/') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                       <LayoutGrid className="w-3 h-3 mr-2" />
                       Overview
                     </Link>
@@ -249,42 +249,42 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     <div className="text-xs text-gray-500 mb-1 font-medium">Management</div>
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_USERS) && (
-                      <Link to="/dashboard/admin/users" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/users') && !isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/users" className={`flex items-center py-1 text-sm ${isActive('/admin/users') && !isActive('/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Users className="w-3 h-3 mr-2" />
                         Users
                       </Link>
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ROLES) && (
-                      <Link to="/dashboard/admin/roles" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/roles') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/roles" className={`flex items-center py-1 text-sm ${isActive('/admin/roles') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <KeyRound className="w-3 h-3 mr-2" />
                         Roles & Permissions
                       </Link>
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_USERS) && (
-                      <Link to="/dashboard/admin/team-management" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/team-management" className={`flex items-center py-1 text-sm ${isActive('/admin/team-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Shield className="w-3 h-3 mr-2" />
                         Team Management
                       </Link>
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
-                      <Link to="/dashboard/admin/job-boards" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/job-boards" className={`flex items-center py-1 text-sm ${isActive('/admin/job-boards') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Briefcase className="w-3 h-3 mr-2" />
                         Job Boards
                       </Link>
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
-                      <Link to="/dashboard/admin/support" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/support') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/support" className={`flex items-center py-1 text-sm ${isActive('/admin/support') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <MessageSquare className="w-3 h-3 mr-2" />
                         Support Dashboard
                       </Link>
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
-                      <Link to="/dashboard/admin/settings" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/settings') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/settings" className={`flex items-center py-1 text-sm ${isActive('/admin/settings') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Settings className="w-3 h-3 mr-2" />
                         Settings
                       </Link>
@@ -295,35 +295,35 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     <div className="text-xs text-gray-500 mb-1 font-medium">System</div>
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
-                      <Link to="/dashboard/admin/email-management" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/email-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/email-management" className={`flex items-center py-1 text-sm ${isActive('/admin/email-management') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Mail className="w-3 h-3 mr-2" />
                         Email Management
                       </Link>
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_PIPELINES) && (
-                      <Link to="/dashboard/admin/pipelines" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/pipelines') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/pipelines" className={`flex items-center py-1 text-sm ${isActive('/admin/pipelines') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <GitBranch className="w-3 h-3 mr-2" />
                         Pipelines
                       </Link>
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
-                      <Link to="/dashboard/admin/email-sequences" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/email-sequences') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/email-sequences" className={`flex items-center py-1 text-sm ${isActive('/admin/email-sequences') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <MessageSquare className="w-3 h-3 mr-2" />
                         Email Sequences
                       </Link>
                     )}
 
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ANALYTICS) && (
-                      <Link to="/dashboard/admin/analytics" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/analytics') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/analytics" className={`flex items-center py-1 text-sm ${isActive('/admin/analytics') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <BarChart3 className="w-3 h-3 mr-2" />
                         Analytics
                       </Link>
                     )}
                     
                     {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
-                      <Link to="/dashboard/admin/companies" className={`flex items-center py-1 text-sm ${isActive('/dashboard/admin/companies') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
+                      <Link to="/admin/companies" className={`flex items-center py-1 text-sm ${isActive('/admin/companies') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-600 hover:text-gray-900'}`}>
                         <Building className="w-3 h-3 mr-2" />
                         Company Management
                       </Link>
@@ -341,8 +341,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                     </div>
                     <nav className="space-y-1">
                       {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_OVERVIEW) && (
-                        <Link to="/dashboard/admin" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin') && !location.pathname.includes('/dashboard/admin/') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          <LayoutGrid className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin') && !location.pathname.includes('/dashboard/admin/') ? '#7e22ce' : '' }} />
+                        <Link to="/admin" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin') && !location.pathname.includes('/admin/') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                          <LayoutGrid className="w-4 h-4 mr-3" style={{ color: isActive('/admin') && !location.pathname.includes('/admin/') ? '#7e22ce' : '' }} />
                           Overview
                         </Link>
                       )}
@@ -351,43 +351,43 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                         <div className="px-3 py-1 text-xs font-medium text-gray-500">Management</div>
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_USERS) && (
-                          <Link to="/dashboard/admin/users" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/users') && !isActive('/dashboard/admin/user-clients') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <Users className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/users') && !isActive('/dashboard/admin/user-clients') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/users" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/users') && !isActive('/admin/user-clients') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <Users className="w-4 h-4 mr-3" style={{ color: isActive('/admin/users') && !isActive('/admin/user-clients') ? '#7e22ce' : '' }} />
                             Users
                           </Link>
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ROLES) && (
-                          <Link to="/dashboard/admin/roles" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/roles') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <KeyRound className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/roles') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/roles" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/roles') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <KeyRound className="w-4 h-4 mr-3" style={{ color: isActive('/admin/roles') ? '#7e22ce' : '' }} />
                             Roles & Permissions
                           </Link>
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_USERS) && (
-                          <Link to="/dashboard/admin/team-management" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/team-management') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <Shield className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/team-management') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/team-management" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/team-management') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <Shield className="w-4 h-4 mr-3" style={{ color: isActive('/admin/team-management') ? '#7e22ce' : '' }} />
                             Team Management
                           </Link>
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
-                          <Link to="/dashboard/admin/job-boards" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/job-boards') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <Briefcase className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/job-boards') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/job-boards" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/job-boards') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <Briefcase className="w-4 h-4 mr-3" style={{ color: isActive('/admin/job-boards') ? '#7e22ce' : '' }} />
                             Job Boards
                           </Link>
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
-                          <Link to="/dashboard/admin/support" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/support') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/support') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/support" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/support') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/admin/support') ? '#7e22ce' : '' }} />
                             Support Dashboard
                           </Link>
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
-                          <Link to="/dashboard/admin/settings" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/settings') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <Settings className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/settings') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/settings" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/settings') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <Settings className="w-4 h-4 mr-3" style={{ color: isActive('/admin/settings') ? '#7e22ce' : '' }} />
                             Settings
                           </Link>
                         )}
@@ -397,37 +397,37 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
                         <div className="px-3 py-1 text-xs font-medium text-gray-500">System</div>
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
-                          <Link to="/dashboard/admin/email-management" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/email-management') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <Mail className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/email-management') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/email-management" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/email-management') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <Mail className="w-4 h-4 mr-3" style={{ color: isActive('/admin/email-management') ? '#7e22ce' : '' }} />
                             Email Management
                           </Link>
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_PIPELINES) && (
-                          <Link to="/dashboard/admin/pipelines" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/pipelines') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <GitBranch className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/pipelines') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/pipelines" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/pipelines') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <GitBranch className="w-4 h-4 mr-3" style={{ color: isActive('/admin/pipelines') ? '#7e22ce' : '' }} />
                             Pipelines
                           </Link>
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_HIRING_TEAMS) && (
-                          <Link to="/dashboard/admin/email-sequences" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/email-sequences') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/email-sequences') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/email-sequences" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/email-sequences') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <MessageSquare className="w-4 h-4 mr-3" style={{ color: isActive('/admin/email-sequences') ? '#7e22ce' : '' }} />
                             Email Sequences
                           </Link>
                         )}
 
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ANALYTICS) && (
-                          <Link to="/dashboard/admin/analytics" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/analytics') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <BarChart3 className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/analytics') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/analytics" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/analytics') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <BarChart3 className="w-4 h-4 mr-3" style={{ color: isActive('/admin/analytics') ? '#7e22ce' : '' }} />
                             Analytics
                           </Link>
                         )}
                         
                         {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_SETTINGS) && (
-                          <Link to="/dashboard/admin/companies" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/dashboard/admin/companies') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                            <Building className="w-4 h-4 mr-3" style={{ color: isActive('/dashboard/admin/companies') ? '#7e22ce' : '' }} />
+                          <Link to="/admin/companies" className={`flex items-center px-3 py-2 text-sm rounded-md ${isActive('/admin/companies') ? 'text-purple-700 bg-purple-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            <Building className="w-4 h-4 mr-3" style={{ color: isActive('/admin/companies') ? '#7e22ce' : '' }} />
                             Company Management
                           </Link>
                         )}
@@ -441,11 +441,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
 
           {/* Resources Section */}
           <Link 
-            to="/dashboard/resources" 
-            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/resources') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+            to="/resources" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/resources') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
             title={!isExpanded ? "Resources" : ""}
           >
-            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/resources') ? '#7e22ce' : '#9ca3af' }}>
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/resources') ? '#7e22ce' : '#9ca3af' }}>
               <BookOpen className="w-4 h-4" />
             </div>
             {isExpanded && "Resources"}
@@ -453,11 +453,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           
           {/* Contact Support Section */}
           <Link 
-            to="/dashboard/contact-support" 
-            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/contact-support') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+            to="/contact-support" 
+            className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/contact-support') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
             title={!isExpanded ? "Contact Support" : ""}
           >
-            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/contact-support') ? '#7e22ce' : '#9ca3af' }}>
+            <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/contact-support') ? '#7e22ce' : '#9ca3af' }}>
               <HelpCircle className="w-4 h-4" />
             </div>
             {isExpanded && "Contact Support"}

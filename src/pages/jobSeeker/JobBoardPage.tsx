@@ -275,7 +275,7 @@ const JobBoardPage: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <Link
-                          to={`/jobs/${job.id}`}
+                          to={`/careers/jobs/${job.id}`}
                           className="text-xl font-semibold text-gray-900 hover:text-purple-600 transition-colors"
                         >
                           {job.title}
@@ -369,7 +369,7 @@ const JobBoardPage: React.FC = () => {
 
                     <div className="mt-4 lg:mt-0 lg:ml-6 flex-shrink-0 flex gap-3">
                       <Link
-                        to={`/jobs/${job.id}`}
+                        to={`/careers/jobs/${job.id}`}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
                       >
                         View Details

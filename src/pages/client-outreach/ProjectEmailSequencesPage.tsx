@@ -26,7 +26,7 @@ const ProjectEmailCampaignsPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
-            to="/dashboard/client-outreach/projects"
+            to="/client-outreach/projects"
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -43,7 +43,7 @@ const ProjectEmailCampaignsPage: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Link
-            to={`/dashboard/client-outreach/projects/${project.id}`}
+            to={`/client-outreach/projects/${project.id}`}
             className="inline-flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -59,14 +59,14 @@ const ProjectEmailCampaignsPage: React.FC = () => {
           
           <div className="flex items-center gap-3">
             <Link
-              to={`/dashboard/client-outreach/projects/${id}/email-templates`}
+              to={`/client-outreach/projects/${id}/email-templates`}
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               <Mail className="w-4 h-4 mr-2" />
               Email Templates
             </Link>
             <Link
-              to={`/dashboard/client-outreach/projects/${id}/campaigns/create`}
+              to={`/client-outreach/projects/${id}/campaigns/create`}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <Plus className="w-4 h-4 mr-2" />

@@ -22,7 +22,7 @@ const ProjectProspectsPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
-            to="/dashboard/client-outreach/projects"
+            to="/client-outreach/projects"
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -39,7 +39,7 @@ const ProjectProspectsPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to={`/dashboard/client-outreach/projects/${projectId}`}
+            to={`/client-outreach/projects/${projectId}`}
             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -55,7 +55,7 @@ const ProjectProspectsPage: React.FC = () => {
             </div>
             
             <Link
-              to={`/dashboard/client-outreach/projects/${projectId}/search/create`}
+              to={`/client-outreach/projects/${projectId}/search/create`}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -73,7 +73,7 @@ const ProjectProspectsPage: React.FC = () => {
                 Start by running a search to find potential prospects for this project.
               </p>
               <Link
-                to={`/dashboard/client-outreach/projects/${projectId}/search/create`}
+                to={`/client-outreach/projects/${projectId}/search/create`}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 <Plus className="w-4 h-4 mr-2" />

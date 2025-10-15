@@ -118,7 +118,7 @@ const EditProjectPage: React.FC = () => {
     try {
       const { id, ...data } = formData;
       await updateProjectMutation.mutateAsync({ id, data });
-      navigate(`/dashboard/client-outreach/projects/${id}`);
+      navigate(`/client-outreach/projects/${id}`);
     } catch (error) {
       console.error('Error updating project:', error);
     }
@@ -135,7 +135,7 @@ const EditProjectPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're trying to edit doesn't exist.</p>
           <Link
-            to="/dashboard/client-outreach/projects"
+            to="/client-outreach/projects"
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -152,7 +152,7 @@ const EditProjectPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to={`/dashboard/client-outreach/projects/${id}`}
+            to={`/client-outreach/projects/${id}`}
             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -306,7 +306,7 @@ const EditProjectPage: React.FC = () => {
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-4 pt-6">
             <Link
-              to={`/dashboard/client-outreach/projects/${id}`}
+              to={`/client-outreach/projects/${id}`}
               className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Cancel

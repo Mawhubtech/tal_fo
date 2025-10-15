@@ -50,7 +50,7 @@ const ExternalJobsPage: React.FC = () => {
 
   const handleJobClick = (job: ExternalJob) => {
     // Navigate directly to job ATS page with slugified title
-    navigate(createJobUrl(job.id, job.title));
+    navigate(createJobUrl(job.slug, job.title));
   };
 
   if (isLoading) {

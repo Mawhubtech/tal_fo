@@ -110,6 +110,7 @@ export interface GetSequencesParams {
   createdBy?: string;
   organizationId?: string;
   teamId?: string;
+  jobId?: string;
   page?: number;
   limit?: number;
   sortBy?: string;

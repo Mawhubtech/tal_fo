@@ -156,7 +156,7 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
       const createdSearch = await createSearchRecord(searchQuery, filters, 'ai_assisted');
       
       // Navigate to project search results with search mode
-      navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
+      navigate(`/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: searchQuery,
           filters: filters,
@@ -182,7 +182,7 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
       const createdSearch = await createSearchRecord(searchQuery, filters, 'manual');
       
       // Navigate to project search results with search mode
-      navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
+      navigate(`/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: searchQuery,
           filters: filters,
@@ -209,7 +209,7 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
       const createdSearch = await createSearchRecord(searchQuery, filters, 'manual');
       
       // Navigate to project search results with search mode
-      navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
+      navigate(`/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: searchQuery,
           filters: filters,
@@ -237,7 +237,7 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
       console.warn('Using legacy boolean search - consider using global search instead');
       
       // Just navigate with the boolean query
-      navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
+      navigate(`/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: booleanQuery,
           searchMode: searchMode,
@@ -265,7 +265,7 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
       console.warn('Using legacy job description search - consider using global search instead');
       
       // Just navigate with the job description
-      navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
+      navigate(`/sourcing/projects/${projectId}/search-results`, {
         state: {
           query: jobDescription,
           searchMode: searchMode,
@@ -299,7 +299,7 @@ const Search = forwardRef<SearchRef, SearchProps>((props, ref) => {
       const createdSearch = await createSearchRecord(query, enhancedFilters, 'ai_assisted');
       
       // Navigate to search results with enhanced data
-      navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
+      navigate(`/sourcing/projects/${projectId}/search-results`, {
         state: {
           query,
           filters: enhancedFilters,

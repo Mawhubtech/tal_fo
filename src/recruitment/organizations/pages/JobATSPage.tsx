@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useJobATSPageData } from '../../../hooks/useOrganizations';
-import { useJob, useUpdateJob, useSwitchPipeline } from '../../../hooks/useJobs';
+import { useJob, useJobBySlug, useUpdateJob, useSwitchPipeline } from '../../../hooks/useJobs';
 import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { usePipeline, usePipelines } from '../../../hooks/usePipelines';
 import { useDefaultPipeline } from '../../../hooks/useDefaultPipeline';
@@ -39,16 +39,30 @@ import ManageTeamsDialog from '../components/ManageTeamsDialog';
 import { useJobComments, useCreateComment, useUpdateComment, useDeleteComment, useAddReaction, useRemoveReaction } from '../../../hooks/useJobComments';
 
 const JobATSPage: React.FC = () => {
-  const { jobId } = useParams<{ 
-	jobId: string; 
+  const { jobSlug } = useParams<{ 
+	jobSlug: string; 
   }>();
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
 
+  // Extract the actual slug from the URL parameter (format: "jobtitle-slug")
+  // The slug is the last part after the last hyphen (10 characters nanoid)
+  const extractSlug = (jobSlugParam: string | undefined): string => {
+    if (!jobSlugParam) return '';
+    // Split by hyphen and take the last part (the nanoid slug)
+    const parts = jobSlugParam.split('-');
+    const extractedSlug = parts[parts.length - 1];
+    console.log('URL param:', jobSlugParam, '-> Extracted slug:', extractedSlug);
+    return extractedSlug;
+  };
+  
+  const slug = extractSlug(jobSlug);
+
   // First, fetch the job to get organizationId and departmentId
-  const { data: jobBasicData, isLoading: jobBasicLoading } = useJob(jobId || '');
+  const { data: jobBasicData, isLoading: jobBasicLoading } = useJobBySlug(slug);
   const organizationId = jobBasicData?.organizationId;
   const departmentId = jobBasicData?.departmentId;
+  const jobId = jobBasicData?.id; // Get the actual job ID from the fetched data
 
   const [activeTab, setActiveTab] = useState<'pipeline' | 'tasks' | 'interviews' | 'reports'>('pipeline');
   const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
@@ -1220,7 +1234,7 @@ const JobATSPage: React.FC = () => {
 		  <h3 className="text-lg font-medium text-gray-900 mb-2">Job not found</h3>
 		  <p className="text-gray-500 mb-4">The job you're looking for doesn't exist.</p>
 		  <Link 
-			to="/dashboard/my-jobs" 
+			to="/my-jobs" 
 			className="text-purple-600 hover:text-purple-700 font-medium"
 		  >
 			← Back to My Jobs
@@ -1247,47 +1261,80 @@ const JobATSPage: React.FC = () => {
 	  {/* Breadcrumbs - Only show for internal users */}
 	  {!isExternal && (
 		<div className="flex items-center text-sm text-gray-500 mb-4">
-		  <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
-		  <span className="mx-2">/</span>
-		  <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
+		  <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
 		  <span className="mx-2">/</span>
 		  <span className="text-gray-900 font-medium">ATS - {job.title}</span>
 		</div>
 	  )}
 
-  {/* Header */}
+  {/* Header with Back Button and Job Info Card */}
   <div className="mb-6">
-	<div className="flex items-center mb-4">
-	  {/* Back button - Only show for internal users */}
-	  {!isExternal && (
+	<div className="flex items-start gap-4">
+	  {/* Back button */}
+	  {/* {!isExternal ? (
 		<Link 
-		  to="/dashboard/my-jobs"
-		  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+		  to="/my-jobs"
+		  className="mt-6 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
 		>
 		  <ArrowLeft className="w-5 h-5" />
 		</Link>
-	  )}
-	  {/* For external users, show a back button to their jobs page */}
-	  {isExternal && (
+	  ) : (
 		<Link 
 		  to="/external/jobs"
-		  className="mr-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+		  className="mt-6 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
 		>
 		  <ArrowLeft className="w-5 h-5" />
 		</Link>
-	  )}
-	  <div>
-		<h1 className="text-2xl font-bold text-gray-900">
-		  {isExternal ? 'Job Applications' : 'ATS Pipeline'}
-		</h1>
-		<p className="text-gray-600 mt-1">
-		  {isExternal ? 'View and manage candidates for this job' : 'Managing candidates for this specific job'}
-		</p>
+	  )} */}
+
+	  {/* Job Info Card */}
+	  <div className="bg-white rounded-lg shadow-sm border p-6 flex-1">
+		<div className="flex items-center justify-between">
+		  <div className="flex items-center">
+			<div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+			  <Briefcase className="w-6 h-6 text-purple-600" />
+			</div>
+			<div className="ml-4">
+			  <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
+			  <p className="text-gray-600">{job.department} • {job.location} • {job.type}</p>
+			  <p className="text-gray-500 text-sm">
+		    Status: {job.status} • Experience Level: {job.experienceLevel || 'Not specified'}
+		    {effectivePipeline && <span> • Pipeline: {effectivePipeline.name}</span>}
+		  </p>
+			</div>
+		  </div>
+		  <div className="flex items-center space-x-4">
+			<div className="text-right">
+			  <p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
+			  <p className="text-sm text-gray-500">Total Candidates</p>
+			</div>
+			
+			{/* Pipeline Management Button - Only show for internal users */}
+			{!isExternal && effectivePipeline && (
+			  <button
+				onClick={() => setShowPipelineSelector(true)}
+				className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 p-2 rounded-lg transition-colors"
+				title="Manage pipeline"
+			  >
+				<Settings className="w-5 h-5" />
+			  </button>
+			)}
+			
+			<button
+			  onClick={() => setShowJobPreviewModal(true)}
+			  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+			  title="View job details"
+			>
+			  <Eye className="w-5 h-5" />
+			</button>
+		  </div>
+		</div>
 	  </div>
 	</div>
+  </div>
 	
-	{/* Action buttons - moved below title */}
-	<div className="flex items-center justify-between">
+	{/* Action buttons */}
+	<div className="flex items-center justify-between mb-6">
 	  <div className="flex items-center space-x-2">
 		{/* View Job button */}
 		<button 
@@ -1332,7 +1379,7 @@ const JobATSPage: React.FC = () => {
 		<Link
 		  to={isExternal 
 			? `/external/jobs/${jobId}/email-sequences`
-			: `/dashboard/jobs/${jobId}/email-sequences`
+			: `/jobs/${jobSlug}/email-sequences`
 		  }
 		  className="bg-white text-orange-600 border border-orange-600 hover:bg-orange-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm"
 		  title="Manage email sequences for this job"
@@ -1378,47 +1425,6 @@ const JobATSPage: React.FC = () => {
 		)}
 	  </div>
 	</div>
-  </div>	  {/* Job Info Card */}
-	  <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-		<div className="flex items-center justify-between">
-		  <div className="flex items-center">
-			<div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-			  <Briefcase className="w-6 h-6 text-purple-600" />
-			</div>
-			<div className="ml-4">
-			  <h2 className="text-xl font-semibold text-gray-900">{job.title}</h2>
-			  <p className="text-gray-600">{job.department} • {job.location} • {job.type}</p>		  <p className="text-gray-500 text-sm">
-		    Status: {job.status} • Experience Level: {job.experienceLevel || 'Not specified'}
-		    {effectivePipeline && <span> • Pipeline: {effectivePipeline.name}</span>}
-		  </p>
-			</div>
-		  </div>		  <div className="flex items-center space-x-4">
-			<div className="text-right">
-			  <p className="text-2xl font-bold text-gray-900">{candidates.length}</p>
-			  <p className="text-sm text-gray-500">Total Candidates</p>
-			</div>
-			
-			{/* Pipeline Management Button - Only show for internal users */}
-			{!isExternal && effectivePipeline && (
-			  <button
-				onClick={() => setShowPipelineSelector(true)}
-				className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 p-2 rounded-lg transition-colors"
-				title="Manage pipeline"
-			  >
-				<Settings className="w-5 h-5" />
-			  </button>
-			)}
-			
-			<button
-			  onClick={() => setShowJobPreviewModal(true)}
-			  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
-			  title="View job details"
-			>
-			  <Eye className="w-5 h-5" />
-			</button>
-		  </div>
-		</div>
-	  </div>
 
 	  {/* No Pipeline Warning - Only allow internal users to create default pipeline */}
 	  {job && !job.pipelineId && !effectivePipeline && !defaultPipelineLoading && (

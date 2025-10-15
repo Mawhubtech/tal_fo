@@ -232,7 +232,7 @@ const ClientEmailCampaigns: React.FC<ClientEmailCampaignsProps> = ({ projectId }
           <p className="text-gray-600 mt-1">Create and manage email campaigns for client outreach</p>
         </div>
         <Link 
-          to={`/dashboard/client-outreach/projects/${projectId}/campaigns/create`}
+          to={`/client-outreach/projects/${projectId}/campaigns/create`}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
         >
           <Plus className="w-4 h-4" />
@@ -351,7 +351,7 @@ const ClientEmailCampaigns: React.FC<ClientEmailCampaignsProps> = ({ projectId }
             </button>
           ) : (
             <Link
-              to={`/dashboard/client-outreach/projects/${projectId}/campaigns/create`}
+              to={`/client-outreach/projects/${projectId}/campaigns/create`}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <Plus className="w-4 h-4 mr-2" />

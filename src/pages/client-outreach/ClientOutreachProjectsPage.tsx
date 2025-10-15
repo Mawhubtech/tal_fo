@@ -43,7 +43,7 @@ const ProjectCard: React.FC<{ project: ClientOutreachProject }> = ({ project }) 
 
   return (
     <Link 
-      to={`/dashboard/client-outreach/projects/${project.id}`}
+      to={`/client-outreach/projects/${project.id}`}
       className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
     >
       <div className="p-6">
@@ -193,7 +193,7 @@ const ClientOutreachProjectsPage: React.FC = () => {
           <p className="text-gray-600">Manage your business development and client acquisition projects</p>
         </div>
         <Link
-          to="/dashboard/client-outreach/create"
+          to="/client-outreach/create"
           className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -291,7 +291,7 @@ const ClientOutreachProjectsPage: React.FC = () => {
               : 'Get started by creating your first client outreach project.'}
           </p>
           <Link
-            to="/dashboard/client-outreach/create"
+            to="/client-outreach/create"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />

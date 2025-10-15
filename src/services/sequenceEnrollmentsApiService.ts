@@ -88,7 +88,7 @@ export class SequenceEnrollmentsApiService {
       });
     }
 
-    const response = await apiClient.get(`${this.baseUrl}?${searchParams.toString()}`);
+    const response = await apiClient.get(`${this.baseUrl}/enrollments?${searchParams.toString()}`);
     return response.data;
   }
 
@@ -104,27 +104,27 @@ export class SequenceEnrollmentsApiService {
   }
 
   static async createEnrollment(data: CreateEnrollmentRequest): Promise<SequenceEnrollment> {
-    const response = await apiClient.post(this.baseUrl, data);
+    const response = await apiClient.post(`${this.baseUrl}/enrollments`, data);
     return response.data;
   }
 
   static async bulkEnrollment(data: BulkEnrollmentRequest): Promise<SequenceEnrollment[]> {
-    const response = await apiClient.post(`${this.baseUrl}/bulk`, data);
+    const response = await apiClient.post(`${this.baseUrl}/enrollments/bulk`, data);
     return response.data;
   }
 
   static async pauseEnrollment(enrollmentId: string): Promise<SequenceEnrollment> {
-    const response = await apiClient.patch(`${this.baseUrl}/${enrollmentId}/pause`);
+    const response = await apiClient.patch(`${this.baseUrl}/enrollments/${enrollmentId}/pause`);
     return response.data;
   }
 
   static async resumeEnrollment(enrollmentId: string): Promise<SequenceEnrollment> {
-    const response = await apiClient.patch(`${this.baseUrl}/${enrollmentId}/resume`);
+    const response = await apiClient.patch(`${this.baseUrl}/enrollments/${enrollmentId}/resume`);
     return response.data;
   }
 
   static async removeEnrollment(enrollmentId: string): Promise<void> {
-    await apiClient.delete(`${this.baseUrl}/${enrollmentId}`);
+    await apiClient.delete(`${this.baseUrl}/enrollments/${enrollmentId}`);
   }
 
   static async updateEnrollment(enrollmentId: string, data: {
@@ -134,7 +134,7 @@ export class SequenceEnrollmentsApiService {
     nextExecutionAt?: string;
     metadata?: Record<string, any>;
   }): Promise<SequenceEnrollment> {
-    const response = await apiClient.patch(`${this.baseUrl}/${enrollmentId}`, data);
+    const response = await apiClient.patch(`${this.baseUrl}/enrollments/${enrollmentId}`, data);
     return response.data;
   }
 

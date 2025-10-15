@@ -108,12 +108,12 @@ const DepartmentJobsPage: React.FC = () => {
 
   // Handler functions for CRUD operations
   const handleCreateJob = () => {
-    navigate('/dashboard/jobs/create');
+    navigate('/jobs/create');
   };
 
   const handleEditJob = (job: Job) => {
     // Navigate to standalone job edit page
-    navigate(`/dashboard/jobs/create?edit=${job.id}`);
+    navigate(`/jobs/create?edit=${job.id}`);
   };
 
   const handleDeleteJob = (job: Job) => {
@@ -203,7 +203,7 @@ const DepartmentJobsPage: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Breadcrumbs */}
       <div className="flex items-center text-sm text-gray-500 mb-4">
-        <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+        <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
         <span className="mx-2">/</span>
         <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
         <span className="mx-2">/</span>        <Link to={`/dashboard/organizations/${organizationId}`} className="hover:text-gray-700">
@@ -431,7 +431,7 @@ const DepartmentJobsPage: React.FC = () => {
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <Link
-                      to={createJobUrl(job.id, job.title)}
+                      to={createJobUrl(job.slug, job.title)}
                       className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center ml-2"
                     >
                       View ATS <ChevronRight className="w-4 h-4 ml-1" />
@@ -540,7 +540,7 @@ const DepartmentJobsPage: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </button>
                         <Link
-                          to={createJobUrl(job.id, job.title)}
+                          to={createJobUrl(job.slug, job.title)}
                           className="text-purple-600 hover:text-purple-700 p-1 hover:bg-purple-50 rounded"
                           title="View ATS"
                         >

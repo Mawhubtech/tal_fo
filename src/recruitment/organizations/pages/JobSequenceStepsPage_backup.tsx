@@ -45,11 +45,11 @@ const JobSequenceStepsPage: React.FC = () => {
   // Construct URLs
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences`
-    : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences`;
+    : `jobs/${jobId}/email-sequences`;
 
   const sequenceDetailUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences/${sequenceId}`
-    : `/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs/${jobId}/email-sequences/${sequenceId}`;
+    : `/jobs/${jobId}/email-sequences/${sequenceId}`;
 
   const getStepTypeIcon = (type: string) => {
     const icons = {
@@ -190,7 +190,7 @@ const JobSequenceStepsPage: React.FC = () => {
       {/* Breadcrumbs - Only show for internal users */}
       {!isExternal && (
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+          <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
           <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
           <span className="mx-2">/</span>

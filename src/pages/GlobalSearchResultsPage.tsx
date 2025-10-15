@@ -608,7 +608,7 @@ const GlobalSearchResultsPage: React.FC = () => {
     } else {
 
       // Navigate back to global search if no state
-      navigate('/dashboard/search');
+      navigate('/search');
     }
   }, [location.state, navigate]);
 
@@ -1618,10 +1618,10 @@ const GlobalSearchResultsPage: React.FC = () => {
   const handleBackToSearch = () => {
     if (fromQuickSearch) {
       // If came from quick search, go back to projects page
-      navigate('/dashboard/sourcing/projects');
+      navigate('/sourcing/projects');
     } else {
       // Otherwise go back to global search page
-      navigate('/dashboard/search', {
+      navigate('/search', {
         state: {
           query: searchQuery
         }
@@ -2071,7 +2071,7 @@ const GlobalSearchResultsPage: React.FC = () => {
               {fromQuickSearch ? 'Back to Projects' : 'Back to Search'}
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Global Search Results</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Search Results</h1>
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-gray-600">
                   Showing {results.length} candidates

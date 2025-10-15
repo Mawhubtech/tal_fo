@@ -75,7 +75,7 @@ const JobDetailPage: React.FC = () => {
               The job you're looking for doesn't exist or is no longer available.
             </p>
             <Link
-              to="/jobs"
+              to="/my-jobs"
               className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -365,7 +365,7 @@ const JobDetailPage: React.FC = () => {
                   {relatedJobs.map((relatedJob) => (
                     <Link
                       key={relatedJob.id}
-                      to={`/jobs/${relatedJob.id}`}
+                      to={`/careers/jobs/${relatedJob.id}`}
                       className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <h4 className="font-medium text-gray-900 mb-1">{relatedJob.title}</h4>

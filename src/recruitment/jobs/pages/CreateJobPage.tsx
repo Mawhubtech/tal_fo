@@ -722,10 +722,10 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
       }
       
       // Navigate to the job ATS page with slugified title
-      if (resultJob.id) {
-        navigate(createJobUrl(resultJob.id, resultJob.title));
+      if (resultJob.slug) {
+        navigate(createJobUrl(resultJob.slug, resultJob.title));
       } else {
-        navigate('/dashboard/organizations');
+        navigate('/organizations');
       }
     } catch (err: any) {
       setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`);
@@ -916,7 +916,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
           <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Organization</h3>
           <p className="text-gray-500 mb-4">{error || 'Failed to load organization data'}</p>
           <Link 
-            to="/dashboard/organizations" 
+            to="/organizations" 
             className="text-purple-600 hover:text-purple-700 font-medium"
           >
             ← Back to Organizations
@@ -944,15 +944,15 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-3">
             <div className="flex items-center text-sm text-gray-500">
-              <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+              <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
               <span className="mx-2">/</span>
               {organizationId ? (
                 <>
-                  <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
+                  <Link to="/organizations" className="hover:text-gray-700">Organizations</Link>
                   <span className="mx-2">/</span>
                   {organization ? (
                     <Link 
-                      to={`/dashboard/organizations/${organizationId}`} 
+                      to={`/organizations/${organizationId}`} 
                       className="hover:text-gray-700"
                     >
                       {organization.name}
@@ -964,7 +964,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
 				     {departmentId && selectedDepartment ? (
                     <>
                       <Link 
-                        to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
+                        to={`/organizations/${organizationId}/departments/${departmentId}/jobs`}
                         className="hover:text-gray-700"
                       >
                         {selectedDepartment.name}
@@ -976,8 +976,6 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                 </>
               ) : (
                 <>
-                  <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
-                  <span className="mx-2">/</span>
                   <span className="text-gray-900 font-medium">{isEditMode ? 'Edit Job' : 'Create Job'}</span>
                 </>
               )}

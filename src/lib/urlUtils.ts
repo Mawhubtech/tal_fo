@@ -24,15 +24,15 @@ export function slugify(text: string): string {
 }
 
 /**
- * Create a job URL with ID and slugified title
- * @param jobId - The job ID
+ * Create a job URL with slugified title and unique slug for SEO
+ * @param jobSlug - The job's unique slug (nanoid)
  * @param jobTitle - The job title
  * @returns URL path for the job
  * 
  * @example
- * createJobUrl("123", "Senior Developer") // "/dashboard/jobs/123/senior-developer"
+ * createJobUrl("aBc123XyZ9", "Senior Developer") // "/jobs/senior-developer-aBc123XyZ9"
  */
-export function createJobUrl(jobId: string, jobTitle: string): string {
-  const slug = slugify(jobTitle);
-  return `/dashboard/jobs/${jobId}/${slug}`;
+export function createJobUrl(jobSlug: string, jobTitle: string): string {
+  const titleSlug = slugify(jobTitle);
+  return `/jobs/${titleSlug}-${jobSlug}`;
 }

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, Settings, Edit, Trash2, Mail, Clock, MessageSquare, Phone, CheckSquare, Timer, Users, Eye, GitBranch, TestTube, Brain, FileText, Wand2 } from 'lucide-react';
-import { useJob } from '../../../hooks/useJobs';
+import { useJob, useJobBySlug } from '../../../hooks/useJobs';
 import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { useEmailSequence, useUpdateEmailSequence } from '../../../hooks/useEmailSequences';
 import { EmailSequence, EmailSequenceStep, EmailSequencesApiService } from '../../../services/emailSequencesApiService';
@@ -12,8 +12,9 @@ import { useRecruitmentTemplates } from '../../../hooks/useEmailTemplates';
 import { EmailTemplate } from '../../../services/emailTemplatesApiService';
 
 const JobSequenceStepsPage: React.FC = () => {
-  const { jobId, sequenceId } = useParams<{ 
-    jobId: string; 
+  const { slug, jobId, sequenceId } = useParams<{ 
+    slug?: string;
+    jobId?: string; 
     sequenceId: string; 
   }>();
   const { user } = useAuthContext();
@@ -26,8 +27,20 @@ const JobSequenceStepsPage: React.FC = () => {
   // Determine if current user is external
   const isExternal = isExternalUser(user);
   
-  // Get job and sequence data to derive organizationId and departmentId
-  const { data: job, isLoading: jobLoading } = useJob(jobId || '');
+  // Extract the actual slug from the URL parameter if it's in the combined format
+  const extractSlug = (slugParam: string | undefined): string => {
+    if (!slugParam) return '';
+    const parts = slugParam.split('-');
+    return parts[parts.length - 1];
+  };
+  
+  const actualSlug = slug ? extractSlug(slug) : '';
+  
+  // Get job data using slug for internal users, jobId for external
+  const { data: job, isLoading: jobLoading } = isExternal 
+    ? useJob(jobId || '') 
+    : useJobBySlug(actualSlug);
+    
   const organizationId = job?.organizationId;
   const departmentId = job?.departmentId;
   
@@ -47,11 +60,11 @@ const JobSequenceStepsPage: React.FC = () => {
   // Construct URLs
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences`
-    : `/dashboard/jobs/${jobId}/email-sequences`;
+    : `/jobs/${slug}/email-sequences`;
 
   const sequenceDetailUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences/${sequenceId}`
-    : `/dashboard/jobs/${jobId}/email-sequences/${sequenceId}`;
+    : `/jobs/${slug}/email-sequences/${sequenceId}`;
 
   const getStepTypeIcon = (type: string) => {
     const icons = {
@@ -206,13 +219,11 @@ const JobSequenceStepsPage: React.FC = () => {
   return (
     <div className="p-6">
       {/* Breadcrumbs - Only show for internal users */}
-      {!isExternal && (
+      {!isExternal && effectiveJob && (
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+          <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
-          <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
-          <span className="mx-2">/</span>
-          <Link to={createJobUrl(jobId || '', effectiveJob.title)} className="hover:text-gray-700">
+          <Link to={createJobUrl(effectiveJob.slug || '', effectiveJob.title)} className="hover:text-gray-700">
             {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>

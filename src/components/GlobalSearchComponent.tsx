@@ -143,7 +143,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
         }
         
         // Navigate to global search results with boolean search data
-        navigate('/dashboard/search-results', {
+        navigate('/search-results', {
           state: {
             query: searchQuery,
             filters: filters,
@@ -196,7 +196,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
           // Navigate to global search results with enhanced data and search results
           if (usedSingleAICall) {
             // Navigation for single AI call (no keywords object)
-            navigate('/dashboard/search-results', {
+            navigate('/search-results', {
               state: {
                 query: searchQuery,
                 filters: filters,
@@ -209,7 +209,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
             });
           } else {
             // Navigation for 3-step fallback (has keywords object)
-            navigate('/dashboard/search-results', {
+            navigate('/search-results', {
               state: {
                 query: searchQuery,
                 filters: filters,
@@ -243,7 +243,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
           }
           
           // Navigate to global search results with standard data
-          navigate('/dashboard/search-results', {
+          navigate('/search-results', {
             state: {
               query: searchQuery,
               filters: filters,
@@ -272,7 +272,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
     setIsSearching(true);
     try {
       // Navigate to global search results
-      navigate('/dashboard/search-results', {
+      navigate('/search-results', {
         state: {
           query: searchQuery,
           filters: filters,
@@ -389,7 +389,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
       }
       
       // Navigate to global search results with preloaded data
-      navigate('/dashboard/search-results', {
+      navigate('/search-results', {
         state: {
           query: searchQuery,
           advancedFilters: advancedFilters, // Pass the original filters
@@ -444,7 +444,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
       console.log('🎯 Boolean AI search results:', searchResults);
       
       // Navigate to search results with Boolean query data
-      navigate('/dashboard/search-results', {
+      navigate('/search-results', {
         state: {
           query: querySummary, // Display concise summary
           originalQuery: booleanQuery, // Keep original for reference
@@ -521,7 +521,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
       const jobDescriptionSummary = extractJobDescriptionSummary(jobDescription);
       
       // Navigate to global search results with preloaded data
-      navigate('/dashboard/search-results', {
+      navigate('/search-results', {
         state: {
           query: jobDescriptionSummary, // Use summary instead of full description
           fullJobDescription: jobDescription, // Store full description for reference

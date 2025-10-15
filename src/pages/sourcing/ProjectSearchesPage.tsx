@@ -151,7 +151,7 @@ const SearchHistoryTab: React.FC<SearchHistoryTabProps> = ({ projectSearches, is
                 <div className="flex items-center gap-2 ml-4">
                   {search.status === 'completed' && (
                     <Link
-                      to={`/dashboard/sourcing/projects/${projectId}/search-results`}
+                      to={`/sourcing/projects/${projectId}/search-results`}
                       state={{
                         query: search.query,
                         filters: search.filters,
@@ -204,7 +204,7 @@ const ProjectSearchesPage: React.FC = () => {
 
   const handleRerunSearch = (search: any) => {
     // Navigate to search results directly with the search data
-    navigate(`/dashboard/sourcing/projects/${projectId}/search-results`, {
+    navigate(`/sourcing/projects/${projectId}/search-results`, {
       state: {
         query: search.query,
         filters: search.filters,
@@ -228,7 +228,7 @@ const ProjectSearchesPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
           <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
           <Link
-            to="/dashboard/sourcing/projects"
+            to="/sourcing/projects"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -245,7 +245,7 @@ const ProjectSearchesPage: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <Link
-            to={`/dashboard/sourcing/projects/${project.id}`}
+            to={`/sourcing/projects/${project.id}`}
             className="inline-flex items-center text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />

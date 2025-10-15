@@ -259,7 +259,7 @@ const SearchResultsPage: React.FC = () => {
         }
       } else {
         // Navigate back to project searches if no state and no URL params
-        navigate(`/dashboard/sourcing/projects/${projectId}/searches`);
+        navigate(`/sourcing/projects/${projectId}/searches`);
       }
     }
   }, [location.state, location.search, navigate, projectId]);
@@ -585,7 +585,7 @@ const SearchResultsPage: React.FC = () => {
 
   const handleBackToSearchForm = () => {
     // Navigate to project searches
-    const searchPath = `/dashboard/sourcing/projects/${projectId}/searches`;
+    const searchPath = `/sourcing/projects/${projectId}/searches`;
     
     navigate(searchPath, {
       state: {
@@ -828,7 +828,7 @@ const SearchResultsPage: React.FC = () => {
               className="text-sm bg-purple-600 text-white hover:bg-purple-700"
               onClick={() => {
                 // Navigate to project searches
-                const searchPath = `/dashboard/sourcing/projects/${projectId}/searches`;
+                const searchPath = `/sourcing/projects/${projectId}/searches`;
                 navigate(searchPath);
               }}
             >

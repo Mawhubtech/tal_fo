@@ -708,9 +708,7 @@ const ClientDetailPage: React.FC = () => {
       {/* Breadcrumbs - Hidden for internal users */}
       {!isInternalUserRole && (
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
-          <span className="mx-2">/</span>
-          <Link to="/dashboard/clients" className="hover:text-gray-700">Clients</Link>
+          <Link to="/clients" className="hover:text-gray-700">Clients</Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900 font-medium">{client.name}</span>
         </div>

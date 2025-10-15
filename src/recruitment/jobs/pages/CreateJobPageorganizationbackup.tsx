@@ -631,7 +631,7 @@ const CreateJobPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-3">
             <div className="flex items-center text-sm text-gray-500">
-              <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+              <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
               <span className="mx-2">/</span>
               {organizationId ? (
                 <>
@@ -662,7 +662,7 @@ const CreateJobPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
+                  <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
                   <span className="mx-2">/</span>
                   <span className="text-gray-900 font-medium">{isEditMode ? 'Edit Job' : 'Create Job'}</span>
                 </>

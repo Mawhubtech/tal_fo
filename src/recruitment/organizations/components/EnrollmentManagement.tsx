@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Users, Plus, Settings, ToggleLeft, ToggleRight, Play, Pause, Trash2, UserCheck, Clock, CheckCircle, AlertCircle, Search, Filter } from 'lucide-react';
 import { 
   useSequenceEnrollmentsList, 
@@ -526,7 +527,7 @@ const EnrollCandidateModal: React.FC<EnrollCandidateModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
@@ -619,7 +620,8 @@ const EnrollCandidateModal: React.FC<EnrollCandidateModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

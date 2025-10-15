@@ -82,7 +82,7 @@ const DashboardOverview: React.FC = () => {
         title: 'Sourcing Projects',
         description: 'Access your sourcing projects',
         icon: Search,
-        link: '/dashboard/sourcing/projects',
+        link: '/sourcing/projects',
         color: 'purple'
       });
     }
@@ -92,7 +92,7 @@ const DashboardOverview: React.FC = () => {
         title: 'View Jobs',
         description: 'Manage job positions',
         icon: Briefcase,
-        link: '/dashboard/organizations',
+        link: '/organizations',
         color: 'blue'
       });
     }
@@ -102,7 +102,7 @@ const DashboardOverview: React.FC = () => {
         title: 'Start Sequence',
         description: 'Launch outreach campaign',
         icon: Send,
-        link: '/dashboard/sequences',
+        link: '/sequences',
         color: 'green'
       });
     }
@@ -112,7 +112,7 @@ const DashboardOverview: React.FC = () => {
         title: 'View Analytics',
         description: 'Check performance metrics',
         icon: BarChart3,
-        link: '/dashboard/admin/analytics',
+        link: '/admin/analytics',
         color: 'orange'
       });
     }
@@ -122,7 +122,7 @@ const DashboardOverview: React.FC = () => {
         title: 'Manage Candidates',
         description: 'View and manage candidates',
         icon: UserPlus,
-        link: '/dashboard/candidates',
+        link: '/candidates',
         color: 'emerald'
       });
     }
@@ -195,7 +195,7 @@ const DashboardOverview: React.FC = () => {
         {/* Total Candidates Card - Only show if user has candidates access */}
         {hasPermission(SIDEBAR_PERMISSIONS.CANDIDATES_ACCESS) && (
           <Link 
-            to="/dashboard/candidates" 
+            to="/candidates" 
             className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm min-h-[140px] hover:shadow-md hover:border-purple-200 transition-all duration-200 cursor-pointer"
           >
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between h-full">
@@ -215,7 +215,7 @@ const DashboardOverview: React.FC = () => {
         )}
 
         <Link 
-          to="/dashboard/my-jobs" 
+          to="/my-jobs" 
           className="bg-white p-4 md:p-6 rounded-xl border border-gray-200 shadow-sm min-h-[140px] hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer"
         >
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between h-full">
@@ -290,7 +290,7 @@ const DashboardOverview: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
               {/* {hasPermission(SIDEBAR_PERMISSIONS.ADMIN_ACCESS) && (
-                <Link to="/dashboard/admin/analytics" className="text-sm text-purple-600 hover:text-purple-700 font-medium flex-shrink-0">
+                <Link to="/admin/analytics" className="text-sm text-purple-600 hover:text-purple-700 font-medium flex-shrink-0">
                   View all
                 </Link>
               )} */}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Play, Pause, Settings, Users, Mail, Eye, Plus, Archive, Edit, Search, Filter, X, BarChart3 } from 'lucide-react';
-import { useJob } from '../../../hooks/useJobs';
+import { useJob, useJobBySlug } from '../../../hooks/useJobs';
 import { useExternalJobDetail } from '../../../hooks/useExternalJobs';
 import { useEmailSequence, useUpdateEmailSequence } from '../../../hooks/useEmailSequences';
 import { useAuthContext } from '../../../contexts/AuthContext';
@@ -158,8 +158,9 @@ const EditSequenceModal: React.FC<EditSequenceModalProps> = ({ sequence, isOpen,
 };
 
 const JobSequenceDetailPage: React.FC = () => {
-  const { jobId, sequenceId } = useParams<{ 
-    jobId: string; 
+  const { slug, jobId, sequenceId } = useParams<{ 
+    slug?: string;
+    jobId?: string; 
     sequenceId: string; 
   }>();
   const { user } = useAuthContext();
@@ -172,8 +173,20 @@ const JobSequenceDetailPage: React.FC = () => {
   // Determine if current user is external and use appropriate hook
   const isExternal = isExternalUser(user);
   
-  // Get job data to derive organizationId and departmentId
-  const { data: job, isLoading: jobLoading, error: jobError } = useJob(jobId || '');
+  // Extract the actual slug from the URL parameter if it's in the combined format
+  const extractSlug = (slugParam: string | undefined): string => {
+    if (!slugParam) return '';
+    const parts = slugParam.split('-');
+    return parts[parts.length - 1];
+  };
+  
+  const actualSlug = slug ? extractSlug(slug) : '';
+  
+  // Get job data using slug for internal users, jobId for external
+  const { data: job, isLoading: jobLoading, error: jobError } = isExternal 
+    ? useJob(jobId || '') 
+    : useJobBySlug(actualSlug);
+    
   const organizationId = job?.organizationId;
   const departmentId = job?.departmentId;
   
@@ -226,7 +239,7 @@ const JobSequenceDetailPage: React.FC = () => {
           <Link
             to={isExternal 
               ? `/external/jobs/${jobId}/email-sequences`
-              : `/dashboard/jobs/${jobId}/email-sequences`
+              : `/jobs/${jobId}/email-sequences`
             }
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
@@ -241,7 +254,15 @@ const JobSequenceDetailPage: React.FC = () => {
   // Construct URLs
   const backUrl = isExternal 
     ? `/external/jobs/${jobId}/email-sequences`
-    : `/dashboard/jobs/${jobId}/email-sequences`;
+    : `/jobs/${slug}/email-sequences`;
+  
+  const stepsUrl = isExternal 
+    ? `/external/jobs/${jobId}/email-sequences/${sequenceId}/steps`
+    : `/jobs/${slug}/email-sequences/${sequenceId}/steps`;
+  
+  const enrollmentsUrl = isExternal 
+    ? `/external/jobs/${jobId}/email-sequences/${sequenceId}/enrollments`
+    : `/jobs/${slug}/email-sequences/${sequenceId}/enrollments`;
 
   const getStatusBadge = (status: string) => {
     const styles = {
@@ -266,13 +287,11 @@ const JobSequenceDetailPage: React.FC = () => {
   return (
     <div className="p-6">
       {/* Breadcrumbs - Only show for internal users */}
-      {!isExternal && (
+      {!isExternal && effectiveJob && (
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+          <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
           <span className="mx-2">/</span>
-          <Link to="/dashboard/my-jobs" className="hover:text-gray-700">Jobs</Link>
-          <span className="mx-2">/</span>
-          <Link to={createJobUrl(jobId || '', effectiveJob.title)} className="hover:text-gray-700">
+          <Link to={createJobUrl(effectiveJob.slug || '', effectiveJob.title)} className="hover:text-gray-700">
             {effectiveJob.title}
           </Link>
           <span className="mx-2">/</span>
@@ -313,7 +332,7 @@ const JobSequenceDetailPage: React.FC = () => {
           
           <div className="flex items-center gap-3">
             <Link 
-              to={`${location.pathname}/steps`}
+              to={stepsUrl}
               className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
               <Settings className="w-4 h-4 mr-2" />
@@ -537,7 +556,7 @@ const JobSequenceDetailPage: React.FC = () => {
       {activeTab === 'enrollments' && (
         <EnrollmentManagement 
           sequenceId={sequenceId || ''}
-          jobId={jobId || ''}
+          jobId={effectiveJob.id}
           isExternal={isExternal}
           organizationId={organizationId}
           departmentId={departmentId}

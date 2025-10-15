@@ -225,7 +225,7 @@ const CreateProjectPage: React.FC = () => {
       } else {
         // Normal flow - go to project detail page
         const projectIdToUse = isEditMode ? projectId : result.id;
-        navigate(`/dashboard/sourcing/projects/${projectIdToUse}`);
+        navigate(`/sourcing/projects/${projectIdToUse}`);
       }
     } catch (error: any) {
       console.error(`Failed to ${isEditMode ? 'update' : 'create'} project:`, error);
@@ -304,7 +304,7 @@ const CreateProjectPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center mb-4">
           <Link 
-            to={isEditMode ? `/dashboard/sourcing/projects/${projectId}` : "/dashboard/sourcing/projects"}
+            to={isEditMode ? `/sourcing/projects/${projectId}` : "/sourcing/projects"}
             className="flex items-center text-gray-600 hover:text-gray-900 mr-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
@@ -662,7 +662,7 @@ const CreateProjectPage: React.FC = () => {
         {/* Submit Buttons */}
         <div className="flex items-center justify-end space-x-4 pt-6">
           <Link
-            to={isEditMode ? `/dashboard/sourcing/projects/${projectId}` : "/dashboard/sourcing/projects"}
+            to={isEditMode ? `/sourcing/projects/${projectId}` : "/sourcing/projects"}
             className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancel

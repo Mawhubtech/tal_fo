@@ -111,8 +111,8 @@ const SearchResultsListPage: React.FC = () => {
   // If no search results after loading, redirect back
   if (!searchResults) {
     const fallbackRoute = projectId 
-      ? `/dashboard/client-outreach/projects/${projectId}/search`
-      : '/dashboard/client-outreach';
+      ? `/client-outreach/projects/${projectId}/search`
+      : '/client-outreach';
     navigate(fallbackRoute);
     return null;
   }
@@ -141,8 +141,8 @@ const SearchResultsListPage: React.FC = () => {
   const handleCompanyClick = (company: CompanyResult) => {
     // Maintain project and search context in the URL
     const companyDetailRoute = projectId && searchId 
-      ? `/dashboard/client-outreach/projects/${projectId}/searches/${searchId}/company-detail`
-      : '/dashboard/client-outreach/company-detail';
+      ? `/client-outreach/projects/${projectId}/searches/${searchId}/company-detail`
+      : '/client-outreach/company-detail';
       
     navigate(companyDetailRoute, {
       state: { company, searchContext: { searchQuery, extractedFilters } }
@@ -152,8 +152,8 @@ const SearchResultsListPage: React.FC = () => {
   const handleBackToSearch = () => {
     // Determine the correct route based on whether we're in a project context
     const searchRoute = projectId 
-      ? `/dashboard/client-outreach/projects/${projectId}/search`
-      : '/dashboard/client-outreach/search';
+      ? `/client-outreach/projects/${projectId}/search`
+      : '/client-outreach/search';
       
     navigate(searchRoute, {
       state: { 

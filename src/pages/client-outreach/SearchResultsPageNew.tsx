@@ -18,7 +18,7 @@ const SearchResultsPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to="/dashboard/client-outreach/searches"
+            to="/client-outreach/searches"
             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />

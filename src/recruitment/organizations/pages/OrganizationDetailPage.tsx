@@ -112,7 +112,7 @@ const OrganizationDetailPage: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Breadcrumbs */}
       <div className="flex items-center text-sm text-gray-500 mb-4">
-        <Link to="/dashboard" className="hover:text-gray-700">Dashboard</Link>
+        <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
         <span className="mx-2">/</span>
         <Link to="/dashboard/organizations" className="hover:text-gray-700">Organizations</Link>
         <span className="mx-2">/</span>
@@ -148,7 +148,7 @@ const OrganizationDetailPage: React.FC = () => {
             Manage Job Board
           </Link>
           <Link
-            to="/dashboard/jobs/create"
+            to="/jobs/create"
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -232,7 +232,7 @@ const OrganizationDetailPage: React.FC = () => {
                     {filteredJobs.map((job) => (
                       <Link
                         key={job.id}
-                        to={createJobUrl(job.id, job.title)}
+                        to={createJobUrl(job.slug, job.title)}
                         className="block bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border"
                       >
                         <div className="flex items-start justify-between">
