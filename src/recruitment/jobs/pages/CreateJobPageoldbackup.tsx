@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, ChevronRight, Sparkles, Globe, Lock, ExternalLink, Edit, Edit2, UserPlus, Check, CheckCircle, RefreshCw } from 'lucide-react';
+import { Plus, X, Users, FileText, Settings, MapPin, Building, DollarSign, Clock, Calendar, Save, AlertCircle, ChevronDown, Sparkles, Globe, Lock, ExternalLink, Edit, UserPlus, Check } from 'lucide-react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCreateJob, useUpdateJob, useJob } from '../../../hooks/useJobs';
 import { useOrganization, useOrganizationDepartments, useOrganizations } from '../../../hooks/useOrganizations';
@@ -20,9 +20,6 @@ import PublishingSettingsCard from '../components/PublishingSettingsCard';
 import PipelineModal from '../../../components/PipelineModal';
 import PipelineUsageWarningModal from '../../../components/PipelineUsageWarningModal';
 import JobCollaboratorInviteForm, { JobCollaboratorInvite } from '../components/JobCollaboratorInviteForm';
-import AIJobPromptInput from '../components/AIJobPromptInput';
-import AIPromptDisplay from '../components/AIPromptDisplay';
-import { useAIStructuredQuery } from '../../../hooks/useAIStructuredQuery';
 
 // Helper function to get currency symbol
 const getCurrencySymbol = (currencyCode: string): string => {
@@ -110,12 +107,6 @@ const CreateJobPage: React.FC = () => {
   const createJobMutation = useCreateJob();
   const updateJobMutation = useUpdateJob();
   
-  // AI Prompt State
-  const [aiPrompt, setAiPrompt] = useState<string>('');
-  const [showPromptInput, setShowPromptInput] = useState<boolean>(!isEditMode); // Show prompt input initially unless editing
-  const [isGeneratingFromPrompt, setIsGeneratingFromPrompt] = useState(false);
-  const { data: aiData, loading: aiLoading, error: aiError, structuredQuery, reset: resetAI } = useAIStructuredQuery();
-  
   // Rest of form state
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -158,12 +149,6 @@ const CreateJobPage: React.FC = () => {
   const [invitedCollaborators, setInvitedCollaborators] = useState<string[]>([]);
   const [pendingCollaborators, setPendingCollaborators] = useState<JobCollaboratorInvite[]>([]);
   const [showCollaboratorForm, setShowCollaboratorForm] = useState(false);
-
-  // Collapsible sections state
-  const [isTeamMembersExpanded, setIsTeamMembersExpanded] = useState(true);
-  const [isAIPromptExpanded, setIsAIPromptExpanded] = useState(true);
-  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
-  const [editedPrompt, setEditedPrompt] = useState('');
 
   // Pipeline usage warning state
   const [showUsageWarning, setShowUsageWarning] = useState(false);
@@ -422,180 +407,7 @@ const CreateJobPage: React.FC = () => {
 
   const removeResponsibility = (responsibilityToRemove: string) => {
     setResponsibilities(responsibilities.filter(responsibility => responsibility !== responsibilityToRemove));
-  };
-
-  // Handle AI Prompt Generation
-  const handleGenerateFromPrompt = async (prompt: string) => {
-    setAiPrompt(prompt);
-    setIsGeneratingFromPrompt(true);
-
-    const schema = {
-      type: 'object',
-      properties: {
-        jobTitle: {
-          type: 'string',
-          description: 'A clear, professional job title that accurately reflects the role and seniority level. Should be concise and industry-standard.'
-        },
-        experienceLevel: {
-          type: 'string',
-          enum: ['Entry Level', 'Mid Level', 'Senior Level', 'Lead/Principal', 'Executive'],
-          description: 'The experience level required for this position based on the responsibilities and requirements.'
-        },
-        location: {
-          type: 'string',
-          description: 'The job location. Can be a city and country (e.g., "New York, USA", "London, UK"), "Remote", "Hybrid", or a combination (e.g., "San Francisco, USA (Hybrid)"). Be specific about the location.'
-        },
-        minSalary: {
-          type: 'number',
-          description: 'The minimum salary for this position. Provide a realistic number based on the role, experience level, and market standards. For entry-level, typically 30000-50000; mid-level 50000-80000; senior 80000-120000; lead/principal 120000-180000; executive 150000+.'
-        },
-        maxSalary: {
-          type: 'number',
-          description: 'The maximum salary for this position. Should be 20-40% higher than minSalary to provide a competitive range. Ensure it reflects market rates for the role and experience level.'
-        },
-        currency: {
-          type: 'string',
-          enum: ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'AED', 'SAR', 'QAR', 'KWD', 'BHD', 'OMR', 'JOD', 'EGP', 'LBP', 'ILS', 'TRY', 'IRR', 'IQD'],
-          description: 'The currency code for the salary. Choose based on the job location: USD for USA/international, EUR for Europe, GBP for UK, AED for UAE, SAR for Saudi Arabia, etc.'
-        },
-        jobDescription: {
-          type: 'string',
-          description: 'A comprehensive, engaging job description that explains the role, company culture, and what makes this position exciting. Should be 3-5 paragraphs.'
-        },
-        responsibilities: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'A list of 5-8 key responsibilities and daily tasks for this role. Each should be specific and actionable.'
-        },
-        requirements: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'A list of 5-10 specific requirements, qualifications, and experience needed. Include education, experience, and other must-haves.'
-        },
-        skills: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'A list of 10-20 individual skills required for this role. Each skill should be a SINGLE item (e.g., "Python", "JavaScript", "React", "Communication", "Teamwork"). Do NOT group skills into categories like "Technical:" or "Soft:". List each skill separately.'
-        },
-        benefits: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'A list of 8-15 individual benefits and perks. Each benefit should be a SINGLE, specific item (e.g., "Competitive salary", "Health insurance", "Remote work options", "Professional development budget"). List each benefit separately, not as paragraphs.'
-        }
-      },
-      required: ['jobTitle', 'experienceLevel', 'location', 'minSalary', 'maxSalary', 'currency', 'jobDescription', 'responsibilities', 'requirements', 'skills', 'benefits']
-    };
-
-    const systemPrompt = `You are an expert HR professional and job description writer with extensive experience in recruitment. Your task is to create compelling, detailed job content that attracts top talent while being specific about requirements. Focus on creating content that is:
-
-1. Professional yet engaging
-2. Specific and actionable
-3. Attractive to qualified candidates
-4. Clear about expectations and compensation
-5. Industry-appropriate and competitive
-
-Always provide realistic salary ranges based on the role level and market standards. Consider location when determining currency and salary ranges.
-
-Always respond with valid JSON that matches the provided schema exactly.`;
-
-    const fullPrompt = `Generate comprehensive job content based on this description: "${prompt}"
-
-Please create detailed, professional content that includes:
-- A clear, compelling job title that accurately reflects the role
-- An appropriate experience level (Entry Level, Mid Level, Senior Level, Lead/Principal, Executive)
-- A specific job location (city, country, or Remote/Hybrid)
-- A realistic salary range (minSalary and maxSalary) appropriate for the role and experience level
-- The appropriate currency code based on the location
-- A compelling job description that attracts candidates
-- Key responsibilities that clearly outline daily tasks
-- Specific requirements and qualifications needed
-- Technical and soft skills required
-- Attractive benefits and perks
-
-Make the content engaging, specific, and tailored to the role. Ensure salary ranges are competitive and realistic for the market.`;
-
-    try {
-      await structuredQuery({
-        prompt: fullPrompt,
-        schema,
-        systemPrompt,
-        model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
-        max_tokens: 3000,
-        temperature: 0.7
-      });
-    } catch (err) {
-      console.error('AI generation error:', err);
-      setError('Failed to generate job content with AI. Please try again.');
-      setIsGeneratingFromPrompt(false);
-    }
-  };
-
-  // Handle regeneration from existing prompt
-  const handleRegenerateFromPrompt = (newPrompt: string) => {
-    handleGenerateFromPrompt(newPrompt);
-  };
-
-  // Process AI response when it arrives
-  useEffect(() => {
-    if (aiData && !aiLoading && !aiError && isGeneratingFromPrompt) {
-      const generatedData = aiData.data as any;
-      
-      // Populate form with AI-generated data
-      setJobTitle(generatedData.jobTitle || '');
-      setExperienceLevel(generatedData.experienceLevel || '');
-      setJobDescription(generatedData.jobDescription || '');
-      
-      // Set location if provided
-      if (generatedData.location) {
-        setLocation(generatedData.location);
-      }
-      
-      // Set salary range if provided
-      if (generatedData.minSalary) {
-        setSalaryMin(generatedData.minSalary.toString());
-      }
-      if (generatedData.maxSalary) {
-        setSalaryMax(generatedData.maxSalary.toString());
-      }
-      
-      // Set currency if provided
-      if (generatedData.currency) {
-        setCurrency(generatedData.currency);
-      }
-      
-      // Parse and update responsibilities
-      setResponsibilities(Array.isArray(generatedData.responsibilities) 
-        ? generatedData.responsibilities.filter((r: string) => r.trim()) 
-        : []);
-      
-      // Parse and update requirements
-      setRequirements(Array.isArray(generatedData.requirements) 
-        ? generatedData.requirements.filter((r: string) => r.trim()) 
-        : []);
-      
-      // Parse skills - handle grouped format
-      const parsedSkills = parseGroupedItems(Array.isArray(generatedData.skills) ? generatedData.skills : []);
-      setSkills(parsedSkills);
-      
-      // Parse benefits - handle grouped format
-      const parsedBenefits = parseGroupedItems(Array.isArray(generatedData.benefits) ? generatedData.benefits : []);
-      setBenefits(parsedBenefits);
-      
-      // Hide prompt input and show form
-      setShowPromptInput(false);
-      setIsGeneratingFromPrompt(false);
-    }
-  }, [aiData, aiLoading, aiError, isGeneratingFromPrompt]);
-
-  // Handle AI errors
-  useEffect(() => {
-    if (aiError && isGeneratingFromPrompt) {
-      setError('Failed to generate job content with AI. Please try again.');
-      setIsGeneratingFromPrompt(false);
-    }
-  }, [aiError, isGeneratingFromPrompt]);
-
-  const handleSubmit = async (publish: boolean) => {
+  };  const handleSubmit = async (publish: boolean) => {
     if (publish) {
       // Show publishing modal for publish action
       setShowPublishingModal(true);
@@ -881,17 +693,6 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
     return Promise.resolve();
   };
 
-  // Handle removing collaborators
-  const handleRemoveCollaborator = (emailToRemove: string) => {
-    // Remove from invited collaborators list
-    setInvitedCollaborators(invitedCollaborators.filter(email => email !== emailToRemove));
-    
-    // Remove from pending collaborators list
-    setPendingCollaborators(pendingCollaborators.filter(collab => collab.email.toLowerCase() !== emailToRemove.toLowerCase()));
-    
-    console.log('Removed collaborator:', emailToRemove);
-  };
-
   // Early return if no organizationId - allow standalone job creation
   // In this case, user will need to manually select organization and department
 
@@ -926,20 +727,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
     );
   }
 
-  // Show AI Prompt Input Screen (Initial State - unless in edit mode)
-  if (showPromptInput && !isEditMode) {
-    return (
-      <AIJobPromptInput
-        onGenerate={handleGenerateFromPrompt}
-        initialPrompt={aiPrompt}
-        isLoading={isGeneratingFromPrompt || aiLoading}
-      />
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Breadcrumbs */}
+  return (    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">      {/* Breadcrumbs */}
       <div className="bg-white border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-3">
@@ -960,8 +748,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   ) : (
                     <span>Loading...</span>
                   )}
-                  <span className="mx-2">/</span>               
-				     {departmentId && selectedDepartment ? (
+                  <span className="mx-2">/</span>                  {departmentId && selectedDepartment ? (
                     <>
                       <Link 
                         to={`/dashboard/organizations/${organizationId}/departments/${departmentId}/jobs`}
@@ -987,8 +774,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
       </div>      {/* Header */}      <div className="bg-white shadow-sm border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>           
-			 <div className="flex gap-4">
+            <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>            <div className="flex gap-4">
               {error && (
                 <div className="flex items-center text-red-600 bg-red-50 px-3 py-2 rounded-lg mr-4">
                   <AlertCircle className="h-4 w-4 mr-2" />
@@ -1015,14 +801,6 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
               </button>
               <button
                 type="button"
-                onClick={() => setShowCollaboratorForm(true)}
-                className="px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs shadow-sm flex items-center"
-              >
-                <UserPlus className="h-3.5 w-3.5 mr-2" />
-                Invite Team
-              </button>
-              <button
-                type="button"
                 onClick={() => handleSubmit(true)}
                 disabled={submitLoading}
                 className="px-3 py-2 bg-purple-600 border border-purple-600 text-white rounded-md hover:bg-purple-700 hover:border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
@@ -1044,177 +822,41 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
         </div>
       </div>
 
-      <div className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6">
-        {/* Team Members Display - Show invited collaborators at the top */}
-        {(invitedCollaborators.length > 0 || pendingCollaborators.length > 0) && (
-          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setIsTeamMembersExpanded(!isTeamMembersExpanded)}>
-              <div className="flex items-center">
-                {isTeamMembersExpanded ? (
-                  <ChevronDown className="text-gray-400 mr-2" size={20} />
-                ) : (
-                  <ChevronRight className="text-gray-400 mr-2" size={20} />
-                )}
-                <Users className="text-purple-600 mr-3" size={20} />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Team Members ({invitedCollaborators.length})
-                </h3>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCollaboratorForm(true);
-                }}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <UserPlus className="w-4 h-4" />
-                Invite More
-              </button>
-            </div>
-            {isTeamMembersExpanded && (
-              <div className="px-6 pb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {invitedCollaborators.map((email, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg group hover:bg-purple-100 transition-colors">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Users className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{email}</p>
-                        <p className="text-xs text-gray-500">Team Member</p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Check className="w-5 h-5 text-purple-600" />
-                        <button
-                          onClick={() => handleRemoveCollaborator(email)}
-                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Remove team member"
-                          type="button"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* AI Prompt Display - Show the prompt that was used to generate this job */}
-        {aiPrompt && (
-          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div 
-              className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-            >
-              <div 
-                className="flex items-center flex-1 cursor-pointer"
-                onClick={() => setIsAIPromptExpanded(!isAIPromptExpanded)}
-              >
-                {isAIPromptExpanded ? (
-                  <ChevronDown className="text-gray-400 mr-2" size={20} />
-                ) : (
-                  <ChevronRight className="text-gray-400 mr-2" size={20} />
-                )}
-                <Sparkles className="text-purple-600 mr-3" size={20} />
-                <h3 className="text-lg font-semibold text-gray-900">AI Generated Content</h3>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditedPrompt(aiPrompt);
-                    setIsEditingPrompt(true);
-                    setIsAIPromptExpanded(true);
-                  }}
-                  disabled={isGeneratingFromPrompt || aiLoading || isEditingPrompt}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  type="button"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit Prompt
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRegenerateFromPrompt(aiPrompt);
-                  }}
-                  disabled={isGeneratingFromPrompt || aiLoading || isEditingPrompt}
-                  className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  type="button"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isGeneratingFromPrompt || aiLoading ? 'animate-spin' : ''}`} />
-                  {isGeneratingFromPrompt || aiLoading ? 'Regenerating...' : 'Regenerate'}
-                </button>
-              </div>
-            </div>
-            {isAIPromptExpanded && (
-              <div className="px-6 pb-4">
-                {isEditingPrompt ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Edit your prompt and regenerate:
-                      </label>
-                      <textarea
-                        value={editedPrompt}
-                        onChange={(e) => setEditedPrompt(e.target.value)}
-                        className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all outline-none resize-none text-gray-800"
-                        placeholder="Describe the job you want to create..."
-                      />
-                    </div>
-                    <div className="flex justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          setIsEditingPrompt(false);
-                          setEditedPrompt('');
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium"
-                        type="button"
-                      >
-                        <X className="w-4 h-4" />
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleRegenerateFromPrompt(editedPrompt);
-                          setIsEditingPrompt(false);
-                        }}
-                        disabled={!editedPrompt.trim()}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        type="button"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        Save & Regenerate
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <p className="text-sm font-medium text-purple-700 mb-2">Your AI Prompt:</p>
-                    <p className="text-purple-700 whitespace-pre-wrap leading-relaxed text-sm">
-                      {aiPrompt}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+<div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow flex flex-col">
+        {/* Publishing Settings - Prominent placement before job form */}
+        <div className="mb-6">
+          <PublishingSettingsCard
+            publishingOptions={publishingOptions}
+            onUpdate={setPublishingOptions}
+            className="shadow-lg border-2 border-purple-600"
+            availableJobBoards={availableJobBoards}
+          />
+        </div>
 
-        <form onSubmit={(e) => e.preventDefault()}>
-          {/* Job Overview & Compensation - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Job Overview */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-200 px-6 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)] overflow-hidden">
+            {/* Main Content - Takes up 1/2 space on large screens, full width on smaller */}
+          <div className="overflow-y-auto lg:pr-4 h-full pb-20">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+          {/* Job Overview */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <Building className="text-purple-600 mr-3" size={20} />
-                  <h2 className="text-lg font-semibold text-gray-900">Job Overview</h2>
+                  <Building className="text-purple-600 mr-3" size={24} />
+                  <h2 className="text-xl font-semibold text-purple-600">Job Overview</h2>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAIDialog(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 group"
+                  title="Generate job content with AI"
+                >
+                  <Sparkles className="h-4 w-4 animate-pulse group-hover:animate-spin" />
+                  <span className="text-sm font-medium">AI Generate</span>
+                </button>
               </div>
-              <div className="p-6 space-y-6">
+            </div>
+            <div className="p-6 space-y-6">
               {/* Job Title */}
               <div>
                 <label htmlFor="jobTitle" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1392,15 +1034,16 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
             </div>
           </div>
 
-            {/* Compensation */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center">
-                  <DollarSign className="text-purple-600 mr-3" size={20} />
-                  <h2 className="text-lg font-semibold text-gray-900">Compensation</h2>
-                </div>
+          {/* Compensation */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
+              <div className="flex items-center">
+                <DollarSign className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Compensation</h2>
               </div>
-              <div className="p-6 space-y-6">
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div>
                   <label htmlFor="salaryMin" className="block text-sm font-semibold text-gray-700 mb-2">
                     Minimum Salary
@@ -1461,18 +1104,14 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Job Description & Skills - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Job Description */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center">
-                  <FileText className="text-purple-600 mr-3" size={20} />
-                  <h2 className="text-lg font-semibold text-gray-900">Job Description</h2>
-                </div>
+          </div>          {/* Job Description */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
+              <div className="flex items-center">
+                <FileText className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Job Description</h2>
               </div>
+            </div>
             <div className="p-6 space-y-6">
               <div>
                 <label htmlFor="jobDescription" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1498,13 +1137,13 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   {responsibilities.map((responsibility, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800"
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
                     >
                       {responsibility}
                       <button
                         type="button"
                         onClick={() => removeResponsibility(responsibility)}
-                        className="ml-2 text-purple-600 hover:text-purple-800"
+                        className="ml-2 text-blue-600 hover:text-blue-800"
                       >
                         <X size={14} />
                       </button>
@@ -1512,41 +1151,25 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   ))}
                 </div>
                 <div className="flex space-x-3">
-                  <textarea
+                  <input
+                    type="text"
                     value={newResponsibility}
                     onChange={(e) => setNewResponsibility(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        addResponsibility();
-                      }
-                    }}
-                    rows={3}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 resize-y"
-                    placeholder="e.g., Design and implement scalable backend systems&#10;Press Enter to add, Shift+Enter for new line"
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addResponsibility())}
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    placeholder="e.g., Design and implement scalable backend systems"
                   />
                   <button
                     type="button"
                     onClick={addResponsibility}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-sm self-start"
+                    className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-xs"
                   >
                     Add
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
 
-            {/* Requirements */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center">
-                  <CheckCircle className="text-purple-600 mr-3" size={20} />
-                  <h2 className="text-lg font-semibold text-gray-900">Requirements</h2>
-                </div>
-              </div>
-              <div className="p-6 space-y-6">
-              {/* Requirements & Qualifications */}
+              {/* Requirements */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Requirements & Qualifications
@@ -1555,13 +1178,13 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   {requirements.map((requirement, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800"
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800"
                     >
                       {requirement}
                       <button
                         type="button"
                         onClick={() => removeRequirement(requirement)}
-                        className="ml-2 text-purple-600 hover:text-purple-800"
+                        className="ml-2 text-orange-600 hover:text-orange-800"
                       >
                         <X size={14} />
                       </button>
@@ -1569,29 +1192,35 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   ))}
                 </div>
                 <div className="flex space-x-3">
-                  <textarea
+                  <input
+                    type="text"
                     value={newRequirement}
                     onChange={(e) => setNewRequirement(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        addRequirement();
-                      }
-                    }}
-                    rows={3}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 resize-y"
-                    placeholder="e.g., 5+ years of experience with React and TypeScript&#10;Press Enter to add, Shift+Enter for new line"
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRequirement())}
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    placeholder="e.g., 5+ years of experience with React and TypeScript"
                   />
                   <button
                     type="button"
                     onClick={addRequirement}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-sm self-start"
+                    className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-xs"
                   >
                     Add
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
 
+          {/* Skills & Benefits */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
+              <div className="flex items-center">
+                <Settings className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Skills & Benefits</h2>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
               {/* Skills */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1632,40 +1261,216 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   </button>
                 </div>
               </div>
+
+              {/* Benefits */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Benefits & Perks
+                </label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {benefits.map((benefit, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800"
+                    >
+                      {benefit}
+                      <button
+                        type="button"
+                        onClick={() => removeBenefit(benefit)}
+                        className="ml-2 text-green-600 hover:text-green-800"
+                      >
+                        <X size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex space-x-3">
+                  <input
+                    type="text"
+                    value={newBenefit}
+                    onChange={(e) => setNewBenefit(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    placeholder="e.g., Health Insurance, Remote Work, Flexible Hours"
+                  />
+                  <button
+                    type="button"
+                    onClick={addBenefit}
+                    className="px-3 py-2 bg-purple-600 border border-purple-600 text-white rounded-md hover:bg-purple-700 hover:border-purple-700 transition-colors font-medium text-xs"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>          {/* Hiring Process */}
+          <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden">
+            <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
+              <div className="flex items-center">
+                <Users className="text-purple-600 mr-3" size={24} />
+                <h2 className="text-xl font-semibold text-purple-600">Hiring Process</h2>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Pipeline Selection - Hidden, using default pipeline automatically */}
+              
+              {/* Hiring Team Selection - Hidden, making it optional */}
+              
+              {/* Job Collaborators - Invite team members (Optional) */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Team Members <span className="text-gray-500 font-normal">(Optional)</span></h3>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Invite colleagues to collaborate on this job posting. You can skip this and add team members later.
+                    </p>
+                  </div>
+                  {!showCollaboratorForm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCollaboratorForm(true)}
+                      className="flex items-center space-x-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-xs font-medium"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Invite Team</span>
+                    </button>
+                  )}
+                </div>
+
+                {showCollaboratorForm && (
+                  <div className="mt-4">
+                    <JobCollaboratorInviteForm
+                      onInvite={handleInviteCollaborators}
+                      onClose={() => setShowCollaboratorForm(false)}
+                      existingCollaborators={invitedCollaborators}
+                    />
+                  </div>
+                )}
+
+                {!showCollaboratorForm && invitedCollaborators.length > 0 && (
+                  <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-2">
+                      <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-800 mb-1">
+                          {invitedCollaborators.length} team member{invitedCollaborators.length > 1 ? 's' : ''}
+                          {isEditMode && editingJob?.collaborators ? ' invited' : ' ready to invite'}
+                        </p>
+                        {isEditMode && editingJob?.collaborators && editingJob.collaborators.length > 0 ? (
+                          <>
+                            <p className="text-xs text-green-700 mb-3">
+                              Existing team members. You can manage them from the job ATS page using "Manage Teams".
+                            </p>
+                            <div className="space-y-2">
+                              {editingJob.collaborators.map((collab: any) => (
+                                <div
+                                  key={collab.id}
+                                  className="flex items-center justify-between p-2 bg-white border border-green-300 rounded"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="text-sm font-medium text-gray-900">
+                                          {collab.user ? `${collab.user.firstName} ${collab.user.lastName}` : collab.email}
+                                        </span>
+                                        {collab.status === 'accepted' && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                            Accepted
+                                          </span>
+                                        )}
+                                        {collab.status === 'pending' && (
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Pending
+                                          </span>
+                                        )}
+                                      </div>
+                                      {collab.user && (
+                                        <p className="text-xs text-gray-500">{collab.email}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 capitalize">
+                                      {collab.role.replace('_', ' ')}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs text-green-700 mb-2">
+                              {isEditMode 
+                                ? 'These team members will be invited when you update the job.'
+                                : 'These team members will be invited after the job is created.'}
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {invitedCollaborators.map((email, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-1 bg-white border border-green-300 rounded text-xs text-green-800"
+                                >
+                                  {email}
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!showCollaboratorForm && invitedCollaborators.length === 0 && (
+                  <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-blue-800">
+                          No team members invited yet. Click "Invite Team" to add collaborators who can help manage this job posting.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        </form>
+          </form>
 
-        {/* Live Job Preview - Moved to bottom */}
-        <div className="mt-8 mb-12">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">📋 Live Preview</h3>
-              <p className="text-xs text-gray-500 mt-1">See how your job posting will appear to candidates</p>
-            </div>
-              <div className="p-6">
-                <div className="space-y-6">
-                  {/* Job Title */}
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">
-                      {jobTitle || 'Job Title'}
-                    </h2>
-                    <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-3">
-                      <span className="flex items-center">
-                        <MapPin size={14} className="mr-1" />
-                        {location || 'Location'}
-                      </span>
+            {/* Hiring Team Management - Only show in edit mode */}
+            {/* Teams are now managed in admin section */}
+      </div>        {/* Sidebar - Takes up 1/2 space on large screens, full width on smaller */}      
+	  <div className="h-full">
+        {/* Live Job Preview */}
+        <div className="bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden h-full flex flex-col relative">          <div className="bg-white border-b-2 border-purple-600 px-6 py-4 flex-shrink-0 sticky top-0 z-10">
+            <h3 className="text-lg font-semibold text-purple-600">📋 Live Preview</h3>
+          </div>
+          <div className="p-6 overflow-y-auto overflow-x-hidden flex-grow max-h-[calc(100vh-200px)]">
+            <div className="space-y-6">{/* Job Title */}
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  {jobTitle || 'Job Title'}
+                </h2>
+                <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-3">                  <span className="flex items-center">
+                    <Building size={14} className="mr-1" />
+                    {selectedDepartment?.name || 'Department'}
+                  </span>
+                  <span className="flex items-center">
+                    <MapPin size={14} className="mr-1" />
+                    {location || 'Location'}
+                  </span>
                 </div>
 
                 {/* Employment Type & Status Badges */}
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                     {employmentType}
                   </span>
                   {remote && (
-                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                       Remote Available
                     </span>
                   )}
@@ -1692,9 +1497,9 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                 </div>
               </div>{/* Salary Range */}
               {(salaryMin || salaryMax) && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                  <p className="text-sm font-medium text-purple-800 mb-1">Salary Range</p>
-                  <p className="text-lg font-semibold text-purple-900">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-green-800 mb-1">Salary Range</p>
+                  <p className="text-lg font-semibold text-green-900">
                     {salaryMin && salaryMax 
                       ? `${getCurrencySymbol(currency)}${parseInt(salaryMin).toLocaleString()} - ${getCurrencySymbol(currency)}${parseInt(salaryMax).toLocaleString()}`
                       : salaryMin 
@@ -1740,7 +1545,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   <ul className="text-sm text-gray-600 space-y-1">
                     {requirements.filter(req => req.trim()).map((requirement, index) => (
                       <li key={index} className="flex items-start">
-                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                         {requirement}
                       </li>
                     ))}
@@ -1765,9 +1570,52 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                 </div>
               )}
 
+              {/* Benefits */}
+              {benefits.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Benefits & Perks</p>
+                  <div className="flex flex-wrap gap-1">
+                    {benefits.map((benefit, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium"
+                      >
+                        {benefit}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Selected Pipeline - Hidden from preview */}
 
-              {/* Publishing Options - Hidden from preview */}
+              {/* Publishing Options Preview */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-800 mb-2">📢 Publishing Settings</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Status:</span>
+                    <span className="font-medium text-gray-800">
+                      🔒 Private (Internal Only)
+                    </span>
+                  </div>
+                  
+                  {publishingOptions.talJobBoard && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">TAL Job Board:</span>
+                      <span className="font-medium text-purple-800">✓ Enabled</span>
+                    </div>
+                  )}
+                  
+                  {/* External job boards hidden from preview */}
+                  
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {publishingOptions.talJobBoard && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">TAL Platform</span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               {/* Application Deadline */}
               {applicationDeadline && (
@@ -1787,10 +1635,68 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   This is how your job posting will appear to candidates
                 </p>
               </div>
-            </div>
+            </div>      </div>
+        </div>        {/* Progress Indicator - Hidden on larger screens since sidebar is already full height */}
+        <div className="lg:hidden bg-white rounded-xl shadow-lg border-2 border-purple-600 overflow-hidden mt-6 mb-24">
+          <div className="bg-white border-b-2 border-purple-600 px-6 py-4">
+            <h3 className="text-lg font-semibold text-purple-600">📊 Completion</h3>
           </div>
+          <div className="p-6">
+            <div className="space-y-3">              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Job Details</span>
+                <span className={`font-medium ${jobTitle && departmentIdForm && location ? 'text-green-600' : 'text-gray-400'}`}>
+                  {jobTitle && departmentIdForm && location ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Description</span>
+                <span className={`font-medium ${jobDescription ? 'text-green-600' : 'text-gray-400'}`}>
+                  {jobDescription ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Requirements</span>
+                <span className={`font-medium ${requirements.some(req => req.trim()) ? 'text-green-600' : 'text-gray-400'}`}>
+                  {requirements.some(req => req.trim()) ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Skills</span>
+                <span className={`font-medium ${skills.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {skills.length > 0 ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Pipeline</span>
+                <span className={`font-medium ${selectedPipelineId ? 'text-green-600' : 'text-gray-400'}`}>
+                  {selectedPipelineId ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Hiring Team</span>
+                <span className={`font-medium ${selectedHiringTeamId || hiringTeams.length === 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {selectedHiringTeamId || hiringTeams.length === 0 ? '✓' : '○'}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
+                <div 
+                  className="bg-purple-600 h-2 rounded-full transition-all duration-300"                  style={{
+                    width: `${Math.round(
+                      ((jobTitle && departmentIdForm && location ? 17 : 0) +
+                       (jobDescription ? 17 : 0) +
+                       (requirements.some(req => req.trim()) ? 17 : 0) +
+                       (skills.length > 0 ? 17 : 0) +
+                       (selectedPipelineId ? 16 : 0) +
+                       (selectedHiringTeamId || hiringTeams.length === 0 ? 16 : 0))
+                    )}%`
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>       
+		   </div>     
+		    </div>        
         </div>
-      </div>
       </div>
 
       {/* Publishing Options Modal */}
@@ -1838,38 +1744,6 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
           pipelineName={pendingEditPipeline.name}
           usage={pipelineUsage}
         />
-      )}
-
-      {/* Invite Team Modal */}
-      {showCollaboratorForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Users className="text-purple-600 mr-3" size={24} />
-                  <h2 className="text-xl font-semibold text-gray-900">Invite Team Members</h2>
-                </div>
-                <button
-                  onClick={() => setShowCollaboratorForm(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                Add team members to collaborate on this job posting. They will be invited after you save or publish.
-              </p>
-            </div>
-            <div className="p-6">
-              <JobCollaboratorInviteForm
-                onInvite={handleInviteCollaborators}
-                onClose={() => setShowCollaboratorForm(false)}
-                existingCollaborators={invitedCollaborators}
-              />
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
