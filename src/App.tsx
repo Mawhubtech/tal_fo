@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { GmailStatusProvider } from './contexts/GmailStatusContext';
+import { JobNotificationProvider } from './contexts/JobNotificationContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoutePermissionGuard from './components/RoutePermissionGuard';
@@ -110,7 +112,10 @@ function App() {
         <ToastProvider>
           <AuthProvider>
             <GmailStatusProvider>
-              <Router>          <Routes>
+              <NotificationProvider>
+                <JobNotificationProvider enabled={true}>
+                  <Router>
+                    <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/jobs" element={<JobBoardPage />} />
             <Route path="/careers/jobs/:jobId" element={<JobDetailPage />} />
@@ -627,8 +632,10 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
-        </GmailStatusProvider>
-        </AuthProvider>
+              </JobNotificationProvider>
+            </NotificationProvider>
+            </GmailStatusProvider>
+          </AuthProvider>
         </ToastProvider>
       </QueryProvider>
     </ErrorBoundary>

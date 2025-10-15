@@ -40,7 +40,7 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
     return () => clearTimeout(timer);
   }, [searchTerm]);
   
-  // Fetch all jobs for the current user - refetch every 10 seconds while modal is open
+  // Fetch all jobs for the current user - WebSocket handles real-time updates
   const { data: jobsData, isLoading: jobsLoading } = useJobs(
     { 
       status: 'Published',
@@ -52,7 +52,7 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
     },
     { 
       enabled: isOpen && !!user,
-      refetchInterval: isOpen ? 10000 : false // Refetch every 10 seconds when modal is open
+      // Removed refetchInterval - WebSocket handles updates via JobNotificationProvider
     }
   );
 
@@ -249,7 +249,7 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                 )}
               </div>
               <a
-                href="/dashboard/jobs/create"
+                href="/jobs/create"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-1.5 font-medium whitespace-nowrap"

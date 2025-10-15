@@ -29,9 +29,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
   });
     // Helper function to check if a route is active
   const isActive = (path: string) => {
-    // Special case for dashboard to avoid it being active for all sub-routes
+    // Special case for dashboard to include its sub-routes (calendar, tasks, email settings, etc.)
     if (path === '/dashboard') {
-      return location.pathname === '/dashboard';
+      return location.pathname === '/dashboard' || 
+             location.pathname.startsWith('/calendar') ||
+             location.pathname.startsWith('/tasks') ||
+             location.pathname.startsWith('/settings/email') ||
+             location.pathname.startsWith('/invitations');
     }
     // For other routes, check if the pathname is exactly the path or starts with path/
     return location.pathname === path || location.pathname.startsWith(`${path}/`);

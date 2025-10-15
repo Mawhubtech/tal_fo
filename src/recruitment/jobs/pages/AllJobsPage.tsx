@@ -18,6 +18,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useJobs, useDeleteJob } from '../../../hooks/useJobs';
+import { useJobsWebSocket } from '../../../hooks/useJobsWebSocket';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyAssignment } from '../../../hooks/useUserAssignment';
 import { useUserTeamMemberships } from '../../../hooks/useHiringTeam';
@@ -71,14 +72,33 @@ const AllJobsPage: React.FC = () => {
   // Check if user has access through hiring team membership
   const hasHiringTeamAccess = userTeamMemberships && userTeamMemberships.length > 0;
 
-  // Use the main jobs hook - filtering is now done in the backend
+  // Use the main jobs hook - WebSocket will handle real-time updates
   const { 
     data: jobsResponse,
     isLoading: loading,
     error: queryError,
     refetch: refetchJobs
-  } = useJobs(filters, {
-    refetchInterval: 30000 // Refetch every 30 seconds
+  } = useJobs(filters); // Removed refetchInterval - WebSocket handles updates
+
+  // Setup WebSocket connection for real-time job updates
+  useJobsWebSocket({
+    enabled: !!user,
+    onJobCreated: (job) => {
+      console.log('[AllJobsPage] New job created:', job);
+      // Query will auto-refetch via invalidateQueries in the hook
+    },
+    onJobUpdated: (job) => {
+      console.log('[AllJobsPage] Job updated:', job);
+      // Query will auto-refetch via invalidateQueries in the hook
+    },
+    onJobDeleted: (data) => {
+      console.log('[AllJobsPage] Job deleted:', data);
+      // Query will auto-refetch via invalidateQueries in the hook
+    },
+    onJobStatusChanged: (data) => {
+      console.log('[AllJobsPage] Job status changed:', data);
+      // Query will auto-refetch via invalidateQueries in the hook
+    },
   });
 
   // Fetch jobs where user is a collaborator
