@@ -138,10 +138,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
           {hasPermission(SIDEBAR_PERMISSIONS.MY_JOBS_ACCESS) && (
             <Link 
               to="/dashboard/my-jobs" 
-              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/my-jobs') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              className={`flex items-center ${isExpanded ? 'px-4 justify-start' : 'px-0 justify-center'} py-2 text-sm font-medium ${isActive('/dashboard/my-jobs') || isActive('/dashboard/jobs') ? 'text-purple-700 bg-purple-50 border-l-4 border-purple-700' : 'text-gray-700 hover:bg-gray-50'}`}
               title={!isExpanded ? "Jobs" : ""}
             >
-              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/my-jobs') ? '#7e22ce' : '#9ca3af' }}>
+              <div className={isExpanded ? "mr-3" : ""} style={{ color: isActive('/dashboard/my-jobs') || isActive('/dashboard/jobs') ? '#7e22ce' : '#9ca3af' }}>
                 <Atom className="w-4 h-4" />
               </div>
               {isExpanded && "Jobs"}
