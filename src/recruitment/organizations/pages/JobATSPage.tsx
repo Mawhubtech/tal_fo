@@ -726,14 +726,23 @@ const JobATSPage: React.FC = () => {
     const candidateId = candidateData.id;
     if (candidateId) {
       setSelectedCandidateId(candidateId);
-      setPanelState('collapsed');
+      // On small screens (< 1024px), default to collapsed mode
+      const isSmallScreen = window.innerWidth < 1024;
+      setPanelState(isSmallScreen ? 'collapsed' : 'collapsed');
     } else {
       console.error('No candidate ID found in candidate data:', candidateData);
     }
   };
 
   const handlePanelStateChange = (newState: PanelState) => {
-    setPanelState(newState);
+    // On small screens (< 1024px), prevent expanded mode
+    const isSmallScreen = window.innerWidth < 1024;
+    if (isSmallScreen && newState === 'expanded') {
+      setPanelState('collapsed');
+    } else {
+      setPanelState(newState);
+    }
+    
     if (newState === 'closed') {
       setSelectedUserDataForPanel(null);
       setSelectedCandidateId(null);
@@ -742,7 +751,13 @@ const JobATSPage: React.FC = () => {
 
   // Collaborative panel handlers
   const handleCollaborativePanelStateChange = (newState: CollaborativePanelState) => {
-    setCollaborativePanelState(newState);
+    // On small screens (< 1024px), prevent expanded mode for collaborative panel
+    const isSmallScreen = window.innerWidth < 1024;
+    if (isSmallScreen && newState === 'expanded') {
+      setCollaborativePanelState('collapsed');
+    } else {
+      setCollaborativePanelState(newState);
+    }
   };
 
   const handlePostComment = async (content: string, parentId?: string, taggedCandidateIds?: string[]) => {
@@ -1232,15 +1247,18 @@ const JobATSPage: React.FC = () => {
   }
 
   return (
-	<div className={`p-6 bg-gray-50 min-h-screen transition-all duration-300 ${
-      // Calculate margins for both panels
+	<div className={`p-3 sm:p-6 bg-gray-50 min-h-screen transition-all duration-300 ${
+      // Calculate margins for both panels - responsive behavior
       (() => {
-        const profileMargin = panelState === 'expanded' ? 'mr-[33.333333%]' : 
-                             panelState === 'collapsed' ? 'mr-[16.666667%]' : '';
+        // On small screens (< lg), don't apply margins as panels will overlay
+        const isLargeScreen = 'lg:';
+        
+        const profileMargin = panelState === 'expanded' ? `${isLargeScreen}mr-[33.333333%]` : 
+                             panelState === 'collapsed' ? `${isLargeScreen}mr-[16.666667%]` : '';
         const collabMargin = collaborativePanelState === 'expanded' ? 
-                            (profileMargin ? 'mr-[66.666667%]' : 'mr-[33.333333%]') :
+                            (profileMargin ? `${isLargeScreen}mr-[66.666667%]` : `${isLargeScreen}mr-[33.333333%]`) :
                             collaborativePanelState === 'collapsed' ? 
-                            (profileMargin ? 'mr-[50%]' : 'mr-[16.666667%]') : 
+                            (profileMargin ? `${isLargeScreen}mr-[50%]` : `${isLargeScreen}mr-[16.666667%]`) : 
                             profileMargin;
         return collabMargin;
       })()
@@ -1296,23 +1314,24 @@ const JobATSPage: React.FC = () => {
 			  <p className="text-sm text-gray-500">Total Candidates</p>
 			</div>
 			
-			{/* Pipeline Management Button - Only show for internal users */}
-			{!isExternal && effectivePipeline && (
-			  <button
-				onClick={() => setShowPipelineSelector(true)}
-				className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 p-2 rounded-lg transition-colors"
-				title="Manage pipeline"
-			  >
-				<Settings className="w-5 h-5" />
-			  </button>
-			)}
-			
 			<button
 			  onClick={() => setShowJobPreviewModal(true)}
 			  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
 			  title="View job details"
 			>
 			  <Eye className="w-5 h-5" />
+			</button>
+			
+			{/* Refresh button */}
+			<button 
+			  onClick={handleRefreshData}
+			  disabled={isRefreshing}
+			  className={`text-gray-600 hover:text-gray-700 hover:bg-gray-50 p-2 rounded-lg transition-colors ${
+				isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+			  }`}
+			  title="Refresh all data"
+			>
+			  <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
 			</button>
 		  </div>
 		</div>
@@ -1321,8 +1340,8 @@ const JobATSPage: React.FC = () => {
   </div>
 	
 	{/* Action buttons */}
-	<div className="flex items-center justify-between mb-6">
-	  <div className="flex items-center space-x-2">
+	<div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
+	  <div className="flex flex-wrap items-center gap-2">
 		{/* View Job button */}
 		<button 
 		  onClick={() => setShowJobPreviewModal(true)}
@@ -1346,7 +1365,8 @@ const JobATSPage: React.FC = () => {
 			}
 		  >
 			<Settings className="w-3.5 h-3.5 mr-1.5" />
-			{!canChangePipeline() ? 'Pipeline (In Use)' : 'Manage Pipeline'}
+			<span className="hidden sm:inline">{!canChangePipeline() ? 'Pipeline (In Use)' : 'Manage Pipeline'}</span>
+			<span className="sm:hidden">Pipeline</span>
 		  </button>
 		)}
 		
@@ -1358,7 +1378,8 @@ const JobATSPage: React.FC = () => {
 			title="Manage team members for this job"
 		  >
 			<Users className="w-3.5 h-3.5 mr-1.5" />
-			Manage Teams
+			<span className="hidden sm:inline">Manage Teams</span>
+			<span className="sm:hidden">Teams</span>
 		  </button>
 		)}
 		
@@ -1372,7 +1393,8 @@ const JobATSPage: React.FC = () => {
 		  title="Manage email sequences for this job"
 		>
 		  <Mail className="w-3.5 h-3.5 mr-1.5" />
-		  Email Sequences
+		  <span className="hidden sm:inline">Email Sequences</span>
+		  <span className="sm:hidden">Email</span>
 		</Link>
 		
 		{/* Team Chat button */}
@@ -1382,24 +1404,13 @@ const JobATSPage: React.FC = () => {
 		  title="Team collaboration and chat"
 		>
 		  <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
-		  Team Chat
+		  <span className="hidden sm:inline">Team Chat</span>
+		  <span className="sm:hidden">Chat</span>
 		</button>
 	  </div>
 
 	  {/* Right side buttons */}
-	  <div className="flex items-center space-x-2">
-		{/* Refresh button */}
-		<button 
-		  onClick={handleRefreshData}
-		  disabled={isRefreshing}
-		  className={`bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md flex items-center transition-colors text-sm ${
-			isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-		  }`}
-		  title="Refresh all data"
-		>
-		  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-		</button>
-		
+	  <div className="flex items-center gap-2">
 		{/* Add Candidate button - Available for all users */}
 		{effectivePipeline && (
 		  <button 
@@ -1618,10 +1629,10 @@ const JobATSPage: React.FC = () => {
 	  {/* Profile Side Panel */}
 	  {panelState !== 'closed' && (
 		<>
-		  {/* Overlay - only show for expanded state */}
-		  {panelState === 'expanded' && (
+		  {/* Overlay - show for expanded state OR on small screens when panel is open */}
+		  {(panelState === 'expanded' || (panelState === 'collapsed' && window.innerWidth < 1024)) && (
 			<div
-			  className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out"
+			  className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out lg:hidden"
 			  onClick={() => handlePanelStateChange('closed')}
 			  aria-hidden="true"
 			></div>
@@ -1629,14 +1640,14 @@ const JobATSPage: React.FC = () => {
 		  
 		  {/* Show loading state while candidate details are being fetched */}
 		  {candidateDetailsLoading ? (
-			<div className="fixed inset-y-0 right-0 w-1/3 bg-white shadow-2xl z-50 flex items-center justify-center">
+			<div className="fixed inset-y-0 right-0 w-full sm:w-2/3 lg:w-1/3 bg-white shadow-2xl z-50 flex items-center justify-center">
 			  <div className="text-center">
 				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
 				<p className="text-gray-500">Loading candidate details...</p>
 			  </div>
 			</div>
 		  ) : candidateDetailsError ? (
-			<div className="fixed inset-y-0 right-0 w-1/3 bg-white shadow-2xl z-50 flex items-center justify-center">
+			<div className="fixed inset-y-0 right-0 w-full sm:w-2/3 lg:w-1/3 bg-white shadow-2xl z-50 flex items-center justify-center">
 			  <div className="text-center text-red-600">
 				<p className="mb-2">Failed to load candidate details</p>
 				<button 
@@ -1670,10 +1681,10 @@ const JobATSPage: React.FC = () => {
 	  {/* Collaborative Side Panel */}
 	  {collaborativePanelState !== 'closed' && (
 		<>
-		  {/* Overlay for collaborative panel - only show for expanded state when profile panel is not open */}
-		  {collaborativePanelState === 'expanded' && panelState === 'closed' && (
+		  {/* Overlay for collaborative panel - show for expanded state OR on small screens when panel is open */}
+		  {((collaborativePanelState === 'expanded' || (collaborativePanelState === 'collapsed' && window.innerWidth < 1024)) && panelState === 'closed') && (
 			<div
-			  className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out"
+			  className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300 ease-in-out lg:hidden"
 			  onClick={() => handleCollaborativePanelStateChange('closed')}
 			  aria-hidden="true"
 			></div>

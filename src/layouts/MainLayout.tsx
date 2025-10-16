@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import TopNavbar from '../components/TopNavbar';
@@ -14,8 +14,25 @@ import { isExternalUser } from '../utils/userUtils';
  */
 const MainLayout: React.FC = () => {
   const { user } = useAuthContext();
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  // Initialize sidebar state based on screen size
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
+    // On small screens (< 1024px), start collapsed
+    return window.innerWidth >= 1024;
+  });
   const isExternal = isExternalUser(user);
+  
+  // Handle window resize to auto-collapse on small screens
+  useEffect(() => {
+    const handleResize = () => {
+      const isSmallScreen = window.innerWidth < 1024;
+      if (isSmallScreen && isSidebarExpanded) {
+        setIsSidebarExpanded(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSidebarExpanded]);
   
   const toggleSidebar = () => {
     setIsSidebarExpanded(!isSidebarExpanded);
