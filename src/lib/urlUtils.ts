@@ -31,8 +31,13 @@ export function slugify(text: string): string {
  * 
  * @example
  * createJobUrl("aBc123XyZ9", "Senior Developer") // "/jobs/senior-developer-aBc123XyZ9"
+ * createJobUrl("f1Uk-Vl3in", "Senior Marketing Manager") // "/jobs/senior-marketing-manager-f1Uk-Vl3in"
+ * 
+ * @note The backend automatically extracts the nanoid slug from the full URL parameter,
+ * so the frontend can pass the entire SEO-friendly slug without extraction.
  */
 export function createJobUrl(jobSlug: string, jobTitle: string): string {
   const titleSlug = slugify(jobTitle);
   return `/jobs/${titleSlug}-${jobSlug}`;
 }
+

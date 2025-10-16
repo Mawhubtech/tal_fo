@@ -45,21 +45,8 @@ const JobATSPage: React.FC = () => {
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
 
-  // Extract the actual slug from the URL parameter (format: "jobtitle-slug")
-  // The slug is the last part after the last hyphen (10 characters nanoid)
-  const extractSlug = (jobSlugParam: string | undefined): string => {
-    if (!jobSlugParam) return '';
-    // Split by hyphen and take the last part (the nanoid slug)
-    const parts = jobSlugParam.split('-');
-    const extractedSlug = parts[parts.length - 1];
-    console.log('URL param:', jobSlugParam, '-> Extracted slug:', extractedSlug);
-    return extractedSlug;
-  };
-  
-  const slug = extractSlug(jobSlug);
-
   // First, fetch the job to get organizationId and departmentId
-  const { data: jobBasicData, isLoading: jobBasicLoading } = useJobBySlug(slug);
+  const { data: jobBasicData, isLoading: jobBasicLoading } = useJobBySlug(jobSlug || '');
   const organizationId = jobBasicData?.organizationId;
   const departmentId = jobBasicData?.departmentId;
   const jobId = jobBasicData?.id; // Get the actual job ID from the fetched data

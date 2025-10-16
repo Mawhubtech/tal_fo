@@ -173,19 +173,10 @@ const JobSequenceDetailPage: React.FC = () => {
   // Determine if current user is external and use appropriate hook
   const isExternal = isExternalUser(user);
   
-  // Extract the actual slug from the URL parameter if it's in the combined format
-  const extractSlug = (slugParam: string | undefined): string => {
-    if (!slugParam) return '';
-    const parts = slugParam.split('-');
-    return parts[parts.length - 1];
-  };
-  
-  const actualSlug = slug ? extractSlug(slug) : '';
-  
   // Get job data using slug for internal users, jobId for external
   const { data: job, isLoading: jobLoading, error: jobError } = isExternal 
     ? useJob(jobId || '') 
-    : useJobBySlug(actualSlug);
+    : useJobBySlug(slug || '');
     
   const organizationId = job?.organizationId;
   const departmentId = job?.departmentId;
