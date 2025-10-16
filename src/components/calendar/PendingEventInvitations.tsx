@@ -30,6 +30,7 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
 }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [processingInvitation, setProcessingInvitation] = useState<string | null>(null);
 
   const { data: eventInvitationsData, isLoading: eventInvitationsLoading, error: eventInvitationsError } = useMyPendingEventInvitations();
   const { data: companyInvitationsData, isLoading: companyInvitationsLoading, error: companyInvitationsError } = useMyPendingInvitations();
@@ -50,6 +51,7 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
   const handleEventInvitationRespond = async (invitationId: string, response: 'accepted' | 'declined' | 'maybe') => {
     try {
       setErrorMessage(null);
+      setProcessingInvitation(`event-${invitationId}-${response}`);
       await respondToEventInvitationMutation.mutateAsync({
         invitationId,
         response: {
@@ -65,12 +67,15 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
       const message = error.response?.data?.message || 'Failed to respond to event invitation';
       setErrorMessage(message);
       setTimeout(() => setErrorMessage(null), 5000);
+    } finally {
+      setProcessingInvitation(null);
     }
   };
 
   const handleCompanyInvitationAccept = async (invitation: CompanyMember) => {
     try {
       setErrorMessage(null);
+      setProcessingInvitation(`company-${invitation.id}`);
       await acceptCompanyInvitationMutation.mutateAsync(invitation.id);
       setSuccessMessage('Company invitation accepted successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -79,12 +84,15 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
       const message = error.response?.data?.message || 'Failed to accept company invitation';
       setErrorMessage(message);
       setTimeout(() => setErrorMessage(null), 5000);
+    } finally {
+      setProcessingInvitation(null);
     }
   };
 
   const handleCompanyInvitationDecline = async (invitation: CompanyMember) => {
     try {
       setErrorMessage(null);
+      setProcessingInvitation(`company-decline-${invitation.id}`);
       await declineCompanyInvitationMutation.mutateAsync(invitation.id);
       setSuccessMessage('Company invitation declined');
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -93,12 +101,15 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
       const message = error.response?.data?.message || 'Failed to decline company invitation';
       setErrorMessage(message);
       setTimeout(() => setErrorMessage(null), 5000);
+    } finally {
+      setProcessingInvitation(null);
     }
   };
 
   const handleJobInvitationAccept = async (invitation: JobCollaborator) => {
     try {
       setErrorMessage(null);
+      setProcessingInvitation(`job-${invitation.id}`);
       await acceptJobInvitationMutation.mutateAsync(invitation.invitationToken!);
       setSuccessMessage(`Job invitation accepted! You can now collaborate on ${invitation.job?.title}`);
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -107,12 +118,15 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
       const message = error.response?.data?.message || 'Failed to accept job invitation';
       setErrorMessage(message);
       setTimeout(() => setErrorMessage(null), 5000);
+    } finally {
+      setProcessingInvitation(null);
     }
   };
 
   const handleJobInvitationDecline = async (invitation: JobCollaborator) => {
     try {
       setErrorMessage(null);
+      setProcessingInvitation(`job-decline-${invitation.id}`);
       await declineJobInvitationMutation.mutateAsync(invitation.invitationToken!);
       setSuccessMessage('Job invitation declined');
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -121,6 +135,8 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
       const message = error.response?.data?.message || 'Failed to decline job invitation';
       setErrorMessage(message);
       setTimeout(() => setErrorMessage(null), 5000);
+    } finally {
+      setProcessingInvitation(null);
     }
   };
 
@@ -292,18 +308,26 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => handleCompanyInvitationAccept(invitation)}
-                  disabled={acceptCompanyInvitationMutation.isPending}
+                  disabled={processingInvitation === `company-${invitation.id}`}
                   className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  <Check className="w-3 h-3" />
+                  {processingInvitation === `company-${invitation.id}` ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  ) : (
+                    <Check className="w-3 h-3" />
+                  )}
                   Accept
                 </button>
                 <button
                   onClick={() => handleCompanyInvitationDecline(invitation)}
-                  disabled={declineCompanyInvitationMutation.isPending}
+                  disabled={processingInvitation === `company-decline-${invitation.id}`}
                   className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
                 >
-                  <X className="w-3 h-3" />
+                  {processingInvitation === `company-decline-${invitation.id}` ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  ) : (
+                    <X className="w-3 h-3" />
+                  )}
                   Decline
                 </button>
               </div>
@@ -336,18 +360,26 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => handleJobInvitationAccept(invitation)}
-                  disabled={acceptJobInvitationMutation.isPending}
+                  disabled={processingInvitation === `job-${invitation.id}`}
                   className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded-md hover:bg-purple-700 disabled:opacity-50"
                 >
-                  <Check className="w-3 h-3" />
+                  {processingInvitation === `job-${invitation.id}` ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  ) : (
+                    <Check className="w-3 h-3" />
+                  )}
                   Accept
                 </button>
                 <button
                   onClick={() => handleJobInvitationDecline(invitation)}
-                  disabled={declineJobInvitationMutation.isPending}
+                  disabled={processingInvitation === `job-decline-${invitation.id}`}
                   className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
                 >
-                  <X className="w-3 h-3" />
+                  {processingInvitation === `job-decline-${invitation.id}` ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  ) : (
+                    <X className="w-3 h-3" />
+                  )}
                   Decline
                 </button>
               </div>
@@ -382,18 +414,26 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => handleEventInvitationRespond(invitation.id, 'accepted')}
-                  disabled={respondToEventInvitationMutation.isPending}
+                  disabled={processingInvitation === `event-${invitation.id}-accepted`}
                   className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 disabled:opacity-50"
                 >
-                  <Check className="w-3 h-3" />
+                  {processingInvitation === `event-${invitation.id}-accepted` ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  ) : (
+                    <Check className="w-3 h-3" />
+                  )}
                 </button>
                 
                 <button
                   onClick={() => handleEventInvitationRespond(invitation.id, 'declined')}
-                  disabled={respondToEventInvitationMutation.isPending}
+                  disabled={processingInvitation === `event-${invitation.id}-declined`}
                   className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 disabled:opacity-50"
                 >
-                  <X className="w-3 h-3" />
+                  {processingInvitation === `event-${invitation.id}-declined` ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  ) : (
+                    <X className="w-3 h-3" />
+                  )}
                 </button>
               </div>
             </div>
@@ -408,7 +448,7 @@ export const PendingInvitations: React.FC<PendingInvitationsProps> = ({
         {totalInvitations > 3 && (
           <div className="pt-2 border-t border-gray-200">
             <Link 
-              to="/dashboard/calendar" 
+              to="/invitations" 
               className="block text-center text-sm text-purple-600 hover:text-purple-800 font-medium"
             >
               View {totalInvitations - 3} more invitation{totalInvitations - 3 !== 1 ? 's' : ''} →

@@ -4,6 +4,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { GmailStatusProvider } from './contexts/GmailStatusContext';
 import { JobNotificationProvider } from './contexts/JobNotificationContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { JobsWebSocketProvider } from './contexts/JobsWebSocketContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoutePermissionGuard from './components/RoutePermissionGuard';
@@ -113,11 +114,12 @@ function App() {
           <AuthProvider>
             <GmailStatusProvider>
               <NotificationProvider>
-                <JobNotificationProvider enabled={true}>
-                  <Router>
-                    <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/jobs" element={<JobBoardPage />} />
+                <JobsWebSocketProvider>
+                  <JobNotificationProvider enabled={true}>
+                    <Router>
+                      <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/jobs" element={<JobBoardPage />} />
             <Route path="/careers/jobs/:jobId" element={<JobDetailPage />} />
             <Route
               path="/signin"
@@ -632,8 +634,9 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
-              </JobNotificationProvider>
-            </NotificationProvider>
+                  </JobNotificationProvider>
+                </JobsWebSocketProvider>
+              </NotificationProvider>
             </GmailStatusProvider>
           </AuthProvider>
         </ToastProvider>

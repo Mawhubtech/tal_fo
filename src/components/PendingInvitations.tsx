@@ -1,42 +1,86 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Building2, Calendar, CheckCircle2, XCircle, Clock, Briefcase } from 'lucide-react';
 import Button from './Button';
 import { CompanyMember } from '../services/companyApiService';
-import { useMyPendingInvitations, useAcceptInvitation } from '../hooks/useCompany';
-import { useMyPendingJobInvitations, useAcceptInvitation as useAcceptJobInvitation } from '../hooks/useJobCollaborators';
+import { useMyPendingInvitations, useAcceptInvitation, useDeclineInvitation } from '../hooks/useCompany';
+import { useMyPendingJobInvitations, useAcceptInvitation as useAcceptJobInvitation, useDeclineInvitation as useDeclineJobInvitation } from '../hooks/useJobCollaborators';
 import { toast } from './ToastContainer';
 import type { JobCollaborator } from '../services/jobCollaboratorApiService';
 
 const PendingInvitations: React.FC = () => {
-  const { data: companyInvitationsData, isLoading: companyLoading, refetch: refetchCompany } = useMyPendingInvitations();
-  const { data: jobInvitations = [], isLoading: jobLoading, refetch: refetchJob } = useMyPendingJobInvitations();
+  const [processingInvitation, setProcessingInvitation] = useState<string | null>(null);
+  
+  const { data: companyInvitationsData, isLoading: companyLoading } = useMyPendingInvitations();
+  const { data: jobInvitations = [], isLoading: jobLoading } = useMyPendingJobInvitations();
   const acceptCompanyInvitation = useAcceptInvitation();
+  const declineCompanyInvitation = useDeclineInvitation();
   const acceptJobInvitation = useAcceptJobInvitation();
+  const declineJobInvitation = useDeclineJobInvitation();
 
   const companyInvitations = companyInvitationsData?.invitations || [];
   const isLoading = companyLoading || jobLoading;
 
   const handleAcceptInvitation = async (invitation: CompanyMember) => {
+    const processingId = `company-accept-${invitation.id}`;
     try {
+      setProcessingInvitation(processingId);
       await acceptCompanyInvitation.mutateAsync(invitation.id);
       toast.success('Invitation Accepted', `Welcome to ${invitation.company.name}!`);
-      refetchCompany(); // Refresh the invitations list
+      // Query will be invalidated automatically by the mutation's onSuccess
     } catch (error: any) {
       console.error('Failed to accept invitation:', error);
       const errorMessage = error.response?.data?.message || 'Failed to accept invitation';
       toast.error('Accept Failed', errorMessage);
+    } finally {
+      setProcessingInvitation(null);
     }
   };
 
   const handleAcceptJobInvitation = async (invitation: JobCollaborator) => {
+    const processingId = `job-accept-${invitation.id}`;
     try {
+      setProcessingInvitation(processingId);
       await acceptJobInvitation.mutateAsync(invitation.invitationToken!);
       toast.success('Job Invitation Accepted', `You can now collaborate on ${invitation.job?.title}!`);
-      refetchJob(); // Refresh the invitations list
+      // Query will be invalidated automatically by the mutation's onSuccess
     } catch (error: any) {
       console.error('Failed to accept job invitation:', error);
       const errorMessage = error.response?.data?.message || 'Failed to accept invitation';
       toast.error('Accept Failed', errorMessage);
+    } finally {
+      setProcessingInvitation(null);
+    }
+  };
+
+  const handleDeclineInvitation = async (invitation: CompanyMember) => {
+    const processingId = `company-decline-${invitation.id}`;
+    try {
+      setProcessingInvitation(processingId);
+      await declineCompanyInvitation.mutateAsync(invitation.id);
+      toast.success('Invitation Declined', 'You have declined the invitation.');
+      // Query will be invalidated automatically by the mutation's onSuccess
+    } catch (error: any) {
+      console.error('Failed to decline invitation:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to decline invitation';
+      toast.error('Decline Failed', errorMessage);
+    } finally {
+      setProcessingInvitation(null);
+    }
+  };
+
+  const handleDeclineJobInvitation = async (invitation: JobCollaborator) => {
+    const processingId = `job-decline-${invitation.id}`;
+    try {
+      setProcessingInvitation(processingId);
+      await declineJobInvitation.mutateAsync(invitation.invitationToken!);
+      toast.success('Job Invitation Declined', 'You have declined the job invitation.');
+      // Query will be invalidated automatically by the mutation's onSuccess
+    } catch (error: any) {
+      console.error('Failed to decline job invitation:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to decline invitation';
+      toast.error('Decline Failed', errorMessage);
+    } finally {
+      setProcessingInvitation(null);
     }
   };
 
@@ -160,12 +204,12 @@ const PendingInvitations: React.FC = () => {
               <div className="flex space-x-2 ml-4">
                 <Button
                   onClick={() => handleAcceptInvitation(invitation)}
-                  disabled={acceptCompanyInvitation.isPending}
+                  disabled={processingInvitation === `company-accept-${invitation.id}`}
                   variant="primary"
                   size="sm"
                   className="flex items-center space-x-1"
                 >
-                  {acceptCompanyInvitation.isPending ? (
+                  {processingInvitation === `company-accept-${invitation.id}` ? (
                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                   ) : (
                     <CheckCircle2 className="h-3 w-3" />
@@ -174,11 +218,17 @@ const PendingInvitations: React.FC = () => {
                 </Button>
                 
                 <Button
+                  onClick={() => handleDeclineInvitation(invitation)}
+                  disabled={processingInvitation === `company-decline-${invitation.id}`}
                   variant="outline"
                   size="sm"
                   className="flex items-center space-x-1 text-gray-600 hover:text-red-600"
                 >
-                  <XCircle className="h-3 w-3" />
+                  {processingInvitation === `company-decline-${invitation.id}` ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                  ) : (
+                    <XCircle className="h-3 w-3" />
+                  )}
                   <span>Decline</span>
                 </Button>
               </div>
@@ -242,12 +292,12 @@ const PendingInvitations: React.FC = () => {
               <div className="flex space-x-2 ml-4">
                 <Button
                   onClick={() => handleAcceptJobInvitation(invitation)}
-                  disabled={acceptJobInvitation.isPending}
+                  disabled={processingInvitation === `job-accept-${invitation.id}`}
                   variant="primary"
                   size="sm"
                   className="flex items-center space-x-1"
                 >
-                  {acceptJobInvitation.isPending ? (
+                  {processingInvitation === `job-accept-${invitation.id}` ? (
                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                   ) : (
                     <CheckCircle2 className="h-3 w-3" />
@@ -256,11 +306,17 @@ const PendingInvitations: React.FC = () => {
                 </Button>
                 
                 <Button
+                  onClick={() => handleDeclineJobInvitation(invitation)}
+                  disabled={processingInvitation === `job-decline-${invitation.id}`}
                   variant="outline"
                   size="sm"
                   className="flex items-center space-x-1 text-gray-600 hover:text-red-600"
                 >
-                  <XCircle className="h-3 w-3" />
+                  {processingInvitation === `job-decline-${invitation.id}` ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                  ) : (
+                    <XCircle className="h-3 w-3" />
+                  )}
                   <span>Decline</span>
                 </Button>
               </div>

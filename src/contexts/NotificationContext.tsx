@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Notification } from '../types/notification.types';
+import { NotificationType } from '../types/notification.types';
 
 interface NotificationContextValue {
   notifications: Notification[];
@@ -24,6 +26,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const backendUrl =
@@ -77,6 +80,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         // Keep only last MAX_NOTIFICATIONS
         return updated.slice(0, MAX_NOTIFICATIONS);
       });
+
+      // Invalidate pending invitations queries when team invitation events occur
+      if (
+        notification.type === NotificationType.TEAM_INVITATION_RECEIVED ||
+        notification.type === NotificationType.TEAM_INVITATION_ACCEPTED ||
+        notification.type === NotificationType.TEAM_INVITATION_REJECTED
+      ) {
+        console.log('[Notifications] Invalidating pending invitations queries');
+        queryClient.invalidateQueries({ queryKey: ['my-pending-invitations'] });
+        queryClient.invalidateQueries({ queryKey: ['myPendingJobInvitations'] });
+      }
 
       // Show browser notification if permitted
       if ('Notification' in window && Notification.permission === 'granted') {
