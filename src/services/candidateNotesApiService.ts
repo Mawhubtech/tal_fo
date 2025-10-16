@@ -8,6 +8,7 @@ export interface CandidateNote {
   isPrivate: boolean;
   sharedWithTeamId?: string;
   isImportant: boolean;
+  jobId?: string; // NEW: Job-specific notes
   metadata?: any;
   createdAt: string;
   updatedAt: string;
@@ -21,6 +22,18 @@ export interface CandidateNote {
     id: string;
     name: string;
   };
+  job?: { // NEW: Job information
+    id: string;
+    title: string;
+    slug: string;
+  };
+  taggedUsers?: { // NEW: Tagged users
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    avatar?: string;
+  }[];
 }
 
 export interface CreateCandidateNoteDto {
@@ -30,6 +43,8 @@ export interface CreateCandidateNoteDto {
   sharedWithTeamId?: string;
   isImportant?: boolean;
   metadata?: any;
+  jobId?: string; // NEW: Job-specific notes
+  taggedUserIds?: string[]; // NEW: Tagged users
 }
 
 export interface UpdateCandidateNoteDto {
@@ -38,6 +53,8 @@ export interface UpdateCandidateNoteDto {
   sharedWithTeamId?: string;
   isImportant?: boolean;
   metadata?: any;
+  jobId?: string; // NEW: Job-specific notes
+  taggedUserIds?: string[]; // NEW: Tagged users
 }
 
 export interface CandidateNotesQueryDto {
@@ -50,6 +67,7 @@ export interface CandidateNotesQueryDto {
   limit?: number;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
+  jobId?: string; // NEW: Filter by job
 }
 
 export interface CandidateNotesResponse {
@@ -81,6 +99,7 @@ class CandidateNotesApiService {
     if (query?.isPrivate !== undefined) params.append('isPrivate', query.isPrivate.toString());
     if (query?.sharedWithTeamId) params.append('sharedWithTeamId', query.sharedWithTeamId);
     if (query?.isImportant !== undefined) params.append('isImportant', query.isImportant.toString());
+    if (query?.jobId) params.append('jobId', query.jobId); // NEW: Add jobId filter
     if (query?.page) params.append('page', query.page.toString());
     if (query?.limit) params.append('limit', query.limit.toString());
     if (query?.sortBy) params.append('sortBy', query.sortBy);

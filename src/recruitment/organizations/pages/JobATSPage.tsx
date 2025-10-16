@@ -1667,6 +1667,14 @@ const JobATSPage: React.FC = () => {
 			  onStateChange={handlePanelStateChange}
 			  candidateId={selectedCandidateId}
 			  hideAddToJob={true}
+			  jobId={jobId} // Pass job context for job-specific notes
+			  teamMembers={teamMembers.map(member => ({ // Transform team members for tagging
+			    id: member.id,
+			    firstName: member.name.split(' ')[0] || member.name,
+			    lastName: member.name.split(' ').slice(1).join(' ') || '',
+			    email: '', // Email not available in TeamMember interface
+			    avatar: member.avatar
+			  }))}
 			/>
 		  )}
 		</>

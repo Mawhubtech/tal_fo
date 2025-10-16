@@ -5,6 +5,7 @@ import 'react-quill/dist/quill.snow.css';
 import './ProfileSidePanel.css';
 import Button from './Button'; // Adjust path to your Button component if necessary
 import ConfirmationModal from './ConfirmationModal';
+import { TeamMemberMention } from './TeamMemberMention'; // NEW: Team member tagging component
 import { candidateNotesApiService, CandidateNote } from '../services/candidateNotesApiService';
 import { emailApiService, SendCandidateEmailDto, EmailLogEntry, EmailHistoryResponse } from '../services/emailApiService';
 import { jobApiService } from '../services/jobApiService';
@@ -225,9 +226,17 @@ interface ProfileSidePanelProps {
   isShortlisting?: boolean; // Add shortlisting state prop
   preventCloseOnClickOutside?: boolean; // Prevent closing when modals are open
   hideAddToJob?: boolean; // Hide "Add to Job" button (e.g., when already in a job)
+  jobId?: string; // NEW: Job context for job-specific notes
+  teamMembers?: Array<{ // NEW: Team members for tagging
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    avatar?: string;
+  }>;
 }
 
-const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false, candidateId, onShortlist, isShortlisting = false, preventCloseOnClickOutside = false, hideAddToJob = false }) => {
+const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelState, onStateChange, isLoading = false, candidateId, onShortlist, isShortlisting = false, preventCloseOnClickOutside = false, hideAddToJob = false, jobId, teamMembers = [] }) => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState(0); // For main profile tabs
   const [activeSideTab, setActiveSideTab] = useState(0); // For side panel tabs - default to Communication tab
@@ -248,6 +257,9 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  // NEW: Tagged users state
+  const [taggedUserIds, setTaggedUserIds] = useState<string[]>([]);
+  const [editingTaggedUserIds, setEditingTaggedUserIds] = useState<string[]>([]);
   
   // Email history state
   const [emailHistory, setEmailHistory] = useState<EmailLogEntry[]>([]);
@@ -467,7 +479,8 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     
     try {
       setIsLoadingNotes(true);
-      const response = await candidateNotesApiService.getNotes(candidateId);
+      // Filter notes by jobId if in job context
+      const response = await candidateNotesApiService.getNotes(candidateId, jobId ? { jobId } : undefined);
       setNotes(response.notes);
     } catch (error) {
       console.error('Failed to load notes:', error);
@@ -484,14 +497,19 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
         candidateId,
         content: content.trim(),
         isPrivate: false,
-        isImportant: false
+        isImportant: false,
+        jobId: jobId, // Include job context
+        taggedUserIds: taggedUserIds.length > 0 ? taggedUserIds : undefined, // Include tagged users
       });
       setNotes([newNote, ...notes]);
       setNewNote('');
+      setTaggedUserIds([]); // Clear tagged users
       addToast({
         type: 'success',
         title: 'Note Saved',
-        message: 'Your note has been saved successfully.',
+        message: taggedUserIds.length > 0 
+          ? 'Your note has been saved and team members have been notified.'
+          : 'Your note has been saved successfully.',
         duration: 3000
       });
     } catch (error) {
@@ -510,11 +528,13 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
 
     try {
       const updatedNote = await candidateNotesApiService.updateNote(candidateId, noteId, {
-        content: content.trim()
+        content: content.trim(),
+        taggedUserIds: editingTaggedUserIds.length > 0 ? editingTaggedUserIds : undefined, // Include updated tagged users
       });
       setNotes(notes.map(n => n.id === noteId ? updatedNote : n));
       setEditingNoteId(null);
       setEditingNoteContent('');
+      setEditingTaggedUserIds([]); // Clear editing tagged users
       addToast({
         type: 'success',
         title: 'Note Updated',
@@ -2263,7 +2283,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
                       <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
                         <FileText className="w-4 h-4 text-purple-500 mr-2" />
-                        Add Note
+                        Add Note {jobId && <span className="ml-2 text-xs font-normal text-gray-500">(Job-specific)</span>}
                       </h4>
                       <div className="space-y-3">
                         <textarea
@@ -2273,6 +2293,28 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none resize-none"
                           rows={3}
                         />
+                        {/* NEW: Team Member Tagging */}
+                        {teamMembers.length > 0 && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Tag Team Members (Optional)
+                            </label>
+                            <TeamMemberMention
+                              teamMembers={teamMembers}
+                              selectedUserIds={taggedUserIds}
+                              onUserToggle={(userId) => {
+                                setTaggedUserIds((prev) =>
+                                  prev.includes(userId)
+                                    ? prev.filter((id) => id !== userId)
+                                    : [...prev, userId]
+                                );
+                              }}
+                              onUsersChange={setTaggedUserIds}
+                              placeholder="Search team members to tag..."
+                              className="w-full"
+                            />
+                          </div>
+                        )}
                         <button
                           onClick={() => {
                             if (newNote.trim()) {
@@ -2310,6 +2352,28 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none resize-none"
                                   rows={3}
                                 />
+                                {/* NEW: Team Member Tagging in Edit Mode */}
+                                {teamMembers.length > 0 && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                      Tag Team Members
+                                    </label>
+                                    <TeamMemberMention
+                                      teamMembers={teamMembers}
+                                      selectedUserIds={editingTaggedUserIds}
+                                      onUserToggle={(userId) => {
+                                        setEditingTaggedUserIds((prev) =>
+                                          prev.includes(userId)
+                                            ? prev.filter((id) => id !== userId)
+                                            : [...prev, userId]
+                                        );
+                                      }}
+                                      onUsersChange={setEditingTaggedUserIds}
+                                      placeholder="Search team members to tag..."
+                                      className="w-full"
+                                    />
+                                  </div>
+                                )}
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => {
@@ -2325,6 +2389,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                                     onClick={() => {
                                       setEditingNoteId(null);
                                       setEditingNoteContent('');
+                                      setEditingTaggedUserIds([]);
                                     }}
                                     className="px-3 py-1 border border-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-50"
                                   >
@@ -2349,6 +2414,8 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                                       onClick={() => {
                                         setEditingNoteId(note.id);
                                         setEditingNoteContent(note.content);
+                                        // Pre-populate tagged users in edit mode
+                                        setEditingTaggedUserIds(note.taggedUsers?.map(u => u.id) || []);
                                       }}
                                       className="p-1 text-gray-400 hover:text-blue-600"
                                       title="Edit note"
@@ -2365,6 +2432,40 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                                   </div>
                                 </div>
                                 <p className="text-sm text-gray-700 leading-relaxed">{note.content}</p>
+                                {/* NEW: Display Tagged Users */}
+                                {note.taggedUsers && note.taggedUsers.length > 0 && (
+                                  <div className="mt-3 pt-3 border-t border-gray-100">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-xs text-gray-500">Tagged:</span>
+                                      {note.taggedUsers.map((user) => (
+                                        <div
+                                          key={user.id}
+                                          className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded"
+                                        >
+                                          {user.avatar ? (
+                                            <img
+                                              src={user.avatar}
+                                              alt={`${user.firstName} ${user.lastName}`}
+                                              className="w-4 h-4 rounded-full"
+                                            />
+                                          ) : (
+                                            <User className="w-3 h-3" />
+                                          )}
+                                          <span>{user.firstName} {user.lastName}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {/* NEW: Display Job Context */}
+                                {note.job && (
+                                  <div className="mt-2">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-purple-50 text-purple-700 rounded">
+                                      <Briefcase className="w-3 h-3" />
+                                      {note.job.title}
+                                    </span>
+                                  </div>
+                                )}
                               </>
                             )}
                           </div>

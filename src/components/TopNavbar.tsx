@@ -8,7 +8,7 @@ import { isSuperAdmin } from '../utils/roleUtils';
 import Button from './Button';
 import { useMyPendingEventInvitations } from '../hooks/useCalendarInvitations';
 import { useMyPendingJobInvitations } from '../hooks/useJobCollaborators';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEmailService } from '../hooks/useEmailService';
 import { useGmailStatus } from '../contexts/GmailStatusContext';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -91,6 +91,7 @@ interface TopNavbarProps {
 const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
   const { user } = useAuthContext();
   const logout = useLogout();
+  const navigate = useNavigate();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -332,6 +333,12 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
                         const handleClick = () => {
                           if (!notification.read) {
                             markAsRead(notification.id);
+                          }
+                          
+                          // Navigate to actionUrl if present
+                          if (notification.actionUrl) {
+                            setShowNotifications(false); // Close notifications dropdown
+                            navigate(notification.actionUrl);
                           }
                         };
 
