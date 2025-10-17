@@ -202,6 +202,8 @@ export interface SendEmailData {
   content: string;
   plainText?: string;
   variables?: Record<string, string>;
+  threadId?: string; // Gmail thread ID for replies
+  replyToMessageId?: string; // Specific message ID being replied to
 }
 
 export interface GmailIntegration {
@@ -394,6 +396,8 @@ export const emailSendingApi = {
       body: data.plainText || data.content, // Use plainText if available, otherwise content as fallback
       htmlBody: data.content, // Use content for HTML body
       replyTo: undefined, // Can be added later if needed
+      threadId: data.threadId, // Gmail thread ID for replies
+      replyToMessageId: data.replyToMessageId, // Specific message being replied to
     };
     const response = await apiClient.post('/email-management/send-email', requestData);
     return response.data;
@@ -875,5 +879,19 @@ export const useSourcingTemplates = () => {
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Email Thread hook - Get all messages in a thread
+export const useEmailThread = (threadId: string | undefined) => {
+  return useQuery({
+    queryKey: ['email-thread', threadId],
+    queryFn: async () => {
+      if (!threadId) return null;
+      const response = await apiClient.get(`/email/gmail/thread/${threadId}`);
+      return response.data;
+    },
+    enabled: !!threadId,
+    staleTime: 30 * 1000, // 30 seconds
   });
 };

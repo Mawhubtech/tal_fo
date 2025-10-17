@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -29,14 +30,29 @@ import { useToast } from '../contexts/ToastContext';
 const CommunicationPage: React.FC = () => {
   const { user } = useAuthContext();
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const sendEmailMutation = useSendEmail();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedEmail, setSelectedEmail] = useState<any | null>(null);
-  const [showEmailModal, setShowEmailModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [showComposeModal, setShowComposeModal] = useState(false);
-  const [showReplySection, setShowReplySection] = useState(false);
+
+  // Prevent body scroll when compose modal is open
+  React.useEffect(() => {
+    if (showComposeModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showComposeModal]);
+  
+  // Platform filter state - Active by default
+  const [isPlatformFilterActive, setIsPlatformFilterActive] = useState(true);
   
   // Compose email form state
   const [emailForm, setEmailForm] = useState({
@@ -47,49 +63,10 @@ const CommunicationPage: React.FC = () => {
     content: '', // HTML content from Quill
   });
 
-  // Reply form state
-  const [replyForm, setReplyForm] = useState({
-    providerId: '',
-    to: '',
-    cc: '',
-    bcc: '',
-    subject: '',
-    content: '',
-  });
-
   // Helper function to check if HTML content is empty
   const isContentEmpty = (htmlContent: string): boolean => {
     const strippedContent = htmlContent.replace(/<[^>]*>/g, '').trim();
     return !strippedContent;
-  };
-
-  // Helper function to reset reply form
-  const resetReplyForm = () => {
-    setReplyForm({
-      providerId: '',
-      to: '',
-      cc: '',
-      bcc: '',
-      subject: '',
-      content: '',
-    });
-  };
-
-  // Helper function to initialize reply form with email data
-  const initializeReplyForm = (email: any) => {
-    const fromEmail = email.from || email.sender;
-    const subject = email.subject?.startsWith('Re:') 
-      ? email.subject 
-      : `Re: ${email.subject || '(No Subject)'}`;
-    
-    setReplyForm({
-      providerId: selectedProvider || '',
-      to: fromEmail || '',
-      cc: email.cc || '',
-      bcc: '',
-      subject: subject,
-      content: '',
-    });
   };
   
   const [filters, setFilters] = useState<EmailLogFilters>({
@@ -97,6 +74,7 @@ const CommunicationPage: React.FC = () => {
     limit: 20,
     type: 'all',
     sortBy: 'sentAt',
+    search: '(TAL OR tal OR Tal)', // Platform filter active by default
   });
 
   // Fetch connected email providers
@@ -110,17 +88,20 @@ const CommunicationPage: React.FC = () => {
     }
   }, [providers, selectedProvider]);
 
-  // Reset filters when provider changes
+  // Reset filters when provider changes, but preserve platform filter if active
   React.useEffect(() => {
     if (selectedProvider) {
+      const platformQuery = isPlatformFilterActive ? '(TAL OR tal OR Tal)' : '';
+      
       setFilters({
         page: 1,
         limit: 20,
         type: 'all',
         sortBy: 'sentAt',
+        search: platformQuery,
       });
     }
-  }, [selectedProvider]);
+  }, [selectedProvider, isPlatformFilterActive]);
 
   // Fetch emails from selected provider with auto-refresh every 30 seconds
   const { 
@@ -136,7 +117,51 @@ const CommunicationPage: React.FC = () => {
   const totalEmails = emailLogsData?.total || 0;
   const totalPages = emailLogsData?.totalPages || 1;
 
+  // Group Gmail emails by threadId
+  const groupedEmails = React.useMemo(() => {
+    const threadsMap = new Map<string, any[]>();
+    const standaloneEmails: any[] = [];
+
+    emails.forEach((email) => {
+      // Only group emails with threadId (Gmail threads)
+      if (email.threadId) {
+        if (!threadsMap.has(email.threadId)) {
+          threadsMap.set(email.threadId, []);
+        }
+        threadsMap.get(email.threadId)!.push(email);
+      } else {
+        // Emails without threadId display as standalone
+        standaloneEmails.push(email);
+      }
+    });
+
+    // Convert threads map to array and sort each thread by date
+    const threads = Array.from(threadsMap.entries()).map(([threadId, threadEmails]) => {
+      // Sort emails in thread by date (newest first)
+      const sortedThreadEmails = [...threadEmails].sort((a, b) => 
+        new Date(b.date || b.sentAt || 0).getTime() - new Date(a.date || a.sentAt || 0).getTime()
+      );
+      
+      return {
+        threadId,
+        emails: sortedThreadEmails,
+        latestEmail: sortedThreadEmails[0],
+        count: sortedThreadEmails.length,
+      };
+    });
+
+    // Sort threads by latest email date
+    threads.sort((a, b) => 
+      new Date(b.latestEmail.date || b.latestEmail.sentAt || 0).getTime() - 
+      new Date(a.latestEmail.date || a.latestEmail.sentAt || 0).getTime()
+    );
+
+    return { threads, standaloneEmails };
+  }, [emails]);
+
   const handleSearch = () => {
+    // Clear platform filter when manually searching
+    setIsPlatformFilterActive(false);
     setFilters(prev => ({
       ...prev,
       search: searchTerm,
@@ -159,9 +184,40 @@ const CommunicationPage: React.FC = () => {
     }));
   };
 
+  // Handle platform filter toggle
+  const handlePlatformFilterToggle = () => {
+    const newFilterState = !isPlatformFilterActive;
+    setIsPlatformFilterActive(newFilterState);
+    
+    if (newFilterState) {
+      // Apply platform filter - search for TAL in subject or body
+      const platformQuery = '(TAL OR tal OR Tal)';
+      // Don't show the query in search bar, keep it clean
+      setSearchTerm('');
+      setFilters(prev => ({
+        ...prev,
+        search: platformQuery,
+        page: 1,
+      }));
+    } else {
+      // Clear filter
+      setSearchTerm('');
+      setFilters(prev => ({
+        ...prev,
+        search: '',
+        page: 1,
+      }));
+    }
+  };
+
   const handleViewEmail = (email: any) => {
-    setSelectedEmail(email);
-    setShowEmailModal(true);
+    // Navigate to email detail page with email data
+    navigate(`/communication/email/${email.id}`, {
+      state: {
+        email,
+        providerId: selectedProvider,
+      },
+    });
   };
 
   const handleSendEmail = async () => {
@@ -277,13 +333,17 @@ const CommunicationPage: React.FC = () => {
   }
 
   return (
-    <div className="p-2 sm:p-4 space-y-4 max-w-7xl mx-auto">
+    <div className="p-2 sm:p-4 space-y-4 max-w-screen mx-auto">
       {/* Header */}
       <div className="bg-white border-2 border-purple-500 rounded-lg p-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Email Communications</h1>
-            <p className="text-sm text-gray-600">View emails from your connected email accounts</p>
+            <p className="text-sm text-gray-600">
+              {isPlatformFilterActive 
+                ? 'Showing: Platform-specific emails (TAL)' 
+                : 'View emails from your connected email accounts'}
+            </p>
           </div>
         </div>
       </div>
@@ -341,15 +401,44 @@ const CommunicationPage: React.FC = () => {
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex flex-col gap-3">
+          {/* Platform Filter Button */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePlatformFilterToggle}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                isPlatformFilterActive
+                  ? 'bg-purple-600 text-white hover:bg-purple-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span>Platform Specific Emails</span>
+              {isPlatformFilterActive && (
+                <span className="ml-1 text-xs opacity-90">(Active)</span>
+              )}
+            </button>
+            {isPlatformFilterActive && (
+              <span className="text-sm text-gray-600">
+                Filtering for: TAL
+              </span>
+            )}
+          </div>
+
           {/* Search */}
           <div className="w-full">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search by subject, recipient, or sender..."
+                placeholder="Search by subject, recipient, or sender... (use Gmail query syntax for advanced search)"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  // Clear platform filter when user types in search
+                  if (isPlatformFilterActive) {
+                    setIsPlatformFilterActive(false);
+                  }
+                }}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 w-full text-sm"
               />
@@ -405,9 +494,86 @@ const CommunicationPage: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Email List */}
+            {/* Email List with Thread Support */}
             <div className="divide-y divide-gray-200">
-              {emails.map((email) => (
+              {/* Render Gmail Threads */}
+              {groupedEmails.threads.map((thread) => {
+                const latestEmail = thread.latestEmail;
+                const hasUnread = thread.emails.some(e => !e.isRead);
+                
+                return (
+                  <div 
+                    key={thread.threadId} 
+                    className="px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => handleViewEmail(latestEmail)}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                      {/* Email Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          {latestEmail.type === 'sent' ? (
+                            <Send className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                          ) : (
+                            <Inbox className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                          )}
+                          <h3 className="text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
+                            {latestEmail.subject || '(No Subject)'}
+                          </h3>
+                          {thread.count > 1 && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 flex-shrink-0">
+                              {thread.count} emails
+                            </span>
+                          )}
+                          {hasUnread && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
+                              Unread
+                            </span>
+                          )}
+                          {latestEmail.type === 'received' && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 flex-shrink-0">
+                              Received
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">
+                              {latestEmail.type === 'sent' ? 'To:' : 'From:'}
+                            </span>
+                            <span className="truncate">
+                              {latestEmail.type === 'sent' ? latestEmail.to : latestEmail.from}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>{formatDate(latestEmail.date)}</span>
+                          </div>
+                        </div>
+                        {latestEmail.snippet && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2 sm:truncate">
+                            {latestEmail.snippet}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewEmail(latestEmail);
+                        }}
+                        className="self-end sm:self-auto p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="View Thread"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Render Standalone Emails (Non-Gmail or no threadId) */}
+              {groupedEmails.standaloneEmails.map((email) => (
                 <div 
                   key={email.id} 
                   className="px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -531,381 +697,6 @@ const CommunicationPage: React.FC = () => {
           </>
         )}
       </div>
-
-      {/* Email Detail Modal */}
-      {showEmailModal && selectedEmail && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-xl w-full max-w-7xl h-[95vh] sm:h-[85vh] overflow-hidden shadow-2xl">
-            {/* Modal Header */}
-            <div className="bg-white border-b border-gray-200 p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-2xl font-bold text-gray-900 break-words">Email Details</h3>
-                  <p className="text-gray-500 text-xs sm:text-sm mt-1">
-                    {selectedEmail.type === 'sent' || selectedEmail.type === 'outbound' ? 'Sent' : 'Received'} on {new Date(selectedEmail.date || selectedEmail.sentAt || selectedEmail.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-auto">
-                  {/* Show Reply button only for received emails */}
-                  {(selectedEmail.type === 'received' || selectedEmail.type === 'inbound' || !selectedEmail.type || selectedEmail.type === 'all') && (
-                    <button
-                      onClick={() => {
-                        if (!showReplySection) {
-                          initializeReplyForm(selectedEmail);
-                        }
-                        setShowReplySection(!showReplySection);
-                      }}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm whitespace-nowrap"
-                    >
-                      <Reply className="w-4 h-4" />
-                      <span className="hidden sm:inline">{showReplySection ? 'Hide Reply' : 'Reply'}</span>
-                      <span className="sm:hidden">Reply</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setShowEmailModal(false);
-                      setShowReplySection(false);
-                      resetReplyForm();
-                    }}
-                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors"
-                  >
-                    <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="flex flex-col lg:flex-row overflow-hidden" style={{ height: 'calc(95vh - 90px)' }}>
-              {/* Email Meta Information - Left Sidebar */}
-              <div className="lg:w-80 border-b lg:border-b-0 lg:border-r border-gray-200 p-4 sm:p-6 overflow-y-auto bg-gray-50 max-h-[40vh] lg:max-h-none">
-                <h4 className="text-xs sm:text-sm font-bold text-gray-900 mb-4 uppercase tracking-wide">Details</h4>
-                <div className="space-y-3 sm:space-y-4 text-xs sm:text-sm">
-                  <div>
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject</span>
-                    <p className="text-sm text-gray-900 mt-1 break-words">{selectedEmail.subject || '(No Subject)'}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">From</span>
-                    <p className="text-sm text-gray-900 mt-1 break-all">{selectedEmail.from || selectedEmail.sender}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">To</span>
-                    <p className="text-sm text-gray-900 mt-1 break-all">{selectedEmail.to || selectedEmail.recipient}</p>
-                  </div>
-                  {selectedEmail.cc && (
-                    <div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">CC</span>
-                      <p className="text-sm text-gray-900 mt-1 break-all">{selectedEmail.cc}</p>
-                    </div>
-                  )}
-                  {selectedEmail.bcc && (
-                    <div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">BCC</span>
-                      <p className="text-sm text-gray-900 mt-1 break-all">{selectedEmail.bcc}</p>
-                    </div>
-                  )}
-                  {selectedEmail.isRead !== undefined && (
-                    <div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Read</span>
-                      <p className="text-sm text-gray-900 mt-1">{selectedEmail.isRead ? 'Yes' : 'No'}</p>
-                    </div>
-                  )}
-                  {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
-                    <div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Attachments</span>
-                      <div className="mt-2 space-y-2">
-                        {selectedEmail.attachments.map((attachment: any, index: number) => (
-                          <div key={index} className="text-sm text-gray-900 flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
-                            <Download className="w-4 h-4 text-gray-400" />
-                            <div className="flex-1 min-w-0">
-                              <p className="truncate">{attachment.filename}</p>
-                              {attachment.size && (
-                                <span className="text-gray-400 text-xs">
-                                  {(attachment.size / 1024).toFixed(1)} KB
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {selectedEmail.sizeEstimate && (
-                    <div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Size</span>
-                      <p className="text-sm text-gray-900 mt-1">
-                        {(selectedEmail.sizeEstimate / 1024).toFixed(1)} KB
-                      </p>
-                    </div>
-                  )}
-                  {selectedEmail.deliveredAt && (
-                    <div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Delivered</span>
-                      <p className="text-sm text-gray-900 mt-1">{new Date(selectedEmail.deliveredAt).toLocaleString()}</p>
-                    </div>
-                  )}
-                  {selectedEmail.failedReason && (
-                    <div>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Error</span>
-                      <p className="text-sm text-red-600 mt-1">{selectedEmail.failedReason}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Email Body - Right Content Area */}
-              <div className="flex-1 bg-white overflow-y-auto">
-                <div className="p-4 sm:p-6">
-                  <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Message</h4>
-                  <div>
-                  {(() => {
-                    const htmlContent = selectedEmail.bodyHtml || selectedEmail.body;
-                    const textContent = selectedEmail.bodyText;
-                    const snippetContent = selectedEmail.snippet;
-
-                    // Try HTML content first
-                    if (htmlContent && htmlContent.trim() !== '') {
-                      try {
-                        // Sanitize HTML to remove problematic meta tags that cause console warnings
-                        const cleanHtml = htmlContent.replace(
-                          /<meta[^>]*viewport[^>]*>/gi,
-                          '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
-                        );
-                        
-                        return (
-                          <div className="mb-6">
-                            <iframe
-                              srcDoc={cleanHtml}
-                              className="w-full border-0 rounded-lg"
-                              sandbox="allow-same-origin"
-                              title="Email Content"
-                              style={{ height: '600px', colorScheme: 'light' }}
-                            />
-                          </div>
-                        );
-                      } catch (error) {
-                        console.error('Error rendering HTML email:', error);
-                      }
-                    }
-                    
-                    // Fallback to plain text
-                    if (textContent && textContent.trim() !== '') {
-                      return (
-                        <div className="mb-6 text-gray-900 bg-gray-50 p-6 rounded-lg whitespace-pre-wrap border border-gray-200">
-                          {textContent}
-                        </div>
-                      );
-                    }
-                    
-                    // Fallback to snippet
-                    if (snippetContent && snippetContent.trim() !== '') {
-                      return (
-                        <div className="mb-6 text-gray-900 bg-gray-50 p-6 rounded-lg whitespace-pre-wrap border border-gray-200">
-                          {snippetContent}
-                        </div>
-                      );
-                    }
-                    
-                    // No content available
-                    return (
-                      <div className="mb-6 text-gray-500 bg-gray-50 p-6 rounded-lg text-center italic py-20">
-                        No content available
-                      </div>
-                    );
-                  })()}
-                  </div>
-                </div>
-
-                {/* Reply Section */}
-                {showReplySection && (
-                  <div className="border-t border-gray-200 p-4 sm:p-6">
-                    <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-4">Reply</h4>
-                    <div className="space-y-3 sm:space-y-4">
-                      {/* Provider Selection */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Send From <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={replyForm.providerId}
-                          onChange={(e) => setReplyForm({ ...replyForm, providerId: e.target.value })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          required
-                        >
-                          <option value="">Select email account</option>
-                          {providers?.map((provider) => (
-                            <option key={provider.id} value={provider.id}>
-                              {provider.name} ({provider.fromEmail})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* To Field */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          To <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={replyForm.to}
-                          onChange={(e) => setReplyForm({ ...replyForm, to: e.target.value })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          placeholder="recipient@example.com"
-                          required
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
-                      </div>
-
-                      {/* CC Field */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          CC (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={replyForm.cc}
-                          onChange={(e) => setReplyForm({ ...replyForm, cc: e.target.value })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          placeholder="cc@example.com"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
-                      </div>
-
-                      {/* BCC Field */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          BCC (Optional)
-                        </label>
-                        <input
-                          type="text"
-                          value={replyForm.bcc}
-                          onChange={(e) => setReplyForm({ ...replyForm, bcc: e.target.value })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          placeholder="bcc@example.com"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
-                      </div>
-
-                      {/* Subject Field */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Subject <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={replyForm.subject}
-                          onChange={(e) => setReplyForm({ ...replyForm, subject: e.target.value })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          placeholder="Subject"
-                          required
-                        />
-                      </div>
-
-                      {/* Message Content */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Your Reply <span className="text-red-500">*</span>
-                        </label>
-                        <ReactQuill
-                          value={replyForm.content}
-                          onChange={(value) => setReplyForm({ ...replyForm, content: value })}
-                          modules={{
-                            toolbar: [
-                              [{ 'header': [1, 2, 3, false] }],
-                              ['bold', 'italic', 'underline', 'strike'],
-                              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                              [{ 'color': [] }, { 'background': [] }],
-                              ['link'],
-                              ['clean']
-                            ],
-                          }}
-                          className="bg-white"
-                          theme="snow"
-                          placeholder="Type your reply here..."
-                          style={{ minHeight: '200px' }}
-                        />
-                      </div>
-                      <div className="flex justify-end gap-3 pt-4">
-                        <button
-                          onClick={() => {
-                            setShowReplySection(false);
-                            resetReplyForm();
-                          }}
-                          className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={async () => {
-                            // Validation
-                            if (!replyForm.providerId) {
-                              addToast({ type: 'error', title: 'Please select an email account' });
-                              return;
-                            }
-                            if (!replyForm.to.trim()) {
-                              addToast({ type: 'error', title: 'Please enter recipient email' });
-                              return;
-                            }
-                            if (!replyForm.subject.trim()) {
-                              addToast({ type: 'error', title: 'Please enter a subject' });
-                              return;
-                            }
-                            if (isContentEmpty(replyForm.content)) {
-                              addToast({ type: 'error', title: 'Please enter a reply message' });
-                              return;
-                            }
-
-                            try {
-                              // Parse multiple recipients
-                              const toEmails = replyForm.to.split(',').map(email => email.trim()).filter(email => email);
-                              const ccEmails = replyForm.cc ? replyForm.cc.split(',').map(email => email.trim()).filter(email => email) : undefined;
-                              const bccEmails = replyForm.bcc ? replyForm.bcc.split(',').map(email => email.trim()).filter(email => email) : undefined;
-                              
-                              await sendEmailMutation.mutateAsync({
-                                providerId: replyForm.providerId,
-                                to: toEmails,
-                                cc: ccEmails,
-                                bcc: bccEmails,
-                                subject: replyForm.subject,
-                                content: replyForm.content,
-                              });
-                              
-                              addToast({ type: 'success', title: 'Reply sent successfully!' });
-                              setShowReplySection(false);
-                              resetReplyForm();
-                            } catch (error) {
-                              console.error('Failed to send reply:', error);
-                              addToast({ type: 'error', title: 'Failed to send reply' });
-                            }
-                          }}
-                          disabled={sendEmailMutation.isPending || !replyForm.providerId || !replyForm.to.trim() || !replyForm.subject.trim() || isContentEmpty(replyForm.content)}
-                          className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
-                        >
-                          {sendEmailMutation.isPending ? (
-                            <>
-                              <Loader className="w-4 h-4 animate-spin" />
-                              <span>Sending...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4" />
-                              <span>Send Reply</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Compose Email Modal */}
       {showComposeModal && createPortal(

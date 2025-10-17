@@ -79,6 +79,7 @@ import DepartmentJobsPage from './recruitment/organizations/pages/DepartmentJobs
 import JobATSPage from './recruitment/organizations/pages/JobATSPage';
 import CandidatesPage from './pages/candidates';
 import CommunicationPage from './pages/CommunicationPage';
+import EmailDetailPage from './pages/EmailDetailPage';
 import ClientOutreachRouter from './pages/client-outreach/ClientOutreachRouter';
 import { ResourcesPage } from './pages/resources';
 import ContactSupportPage from './pages/ContactSupportPage';
@@ -397,6 +398,13 @@ function App() {
               <Route path="/communication" element={
                 <RoutePermissionGuard>
                   <CommunicationPage />
+                </RoutePermissionGuard>
+              } />
+              
+              {/* Email Detail */}
+              <Route path="/communication/email/:emailId" element={
+                <RoutePermissionGuard>
+                  <EmailDetailPage />
                 </RoutePermissionGuard>
               } />
               
