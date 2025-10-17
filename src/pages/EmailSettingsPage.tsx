@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, RefreshCw, ArrowLeft, Settings, Power, Star, Eye, TestTube, Trash2 } from 'lucide-react';
+import { Mail, RefreshCw, ArrowLeft, Settings, Power, Star, Eye, TestTube, Trash2, Unplug } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEmailService } from '../hooks/useEmailService';
 import { useGmailStatus } from '../contexts/GmailStatusContext';
@@ -24,8 +24,12 @@ const EmailSettingsPage: React.FC = () => {
     refetchSettings, 
     connectGmail, 
     isConnectingGmail,
+    disconnectGmail,
+    isDisconnectingGmail,
     connectOutlook,
-    isConnectingOutlook
+    isConnectingOutlook,
+    disconnectOutlook,
+    isDisconnectingOutlook
   } = useEmailService(true);
   const { checkGmailStatus } = useGmailStatus();
   const { data: providersData, isLoading: isLoadingProviders, error: providersError, refetch: refetchProviders } = useEmailProviders();
@@ -215,6 +219,38 @@ const EmailSettingsPage: React.FC = () => {
     }
   };
 
+  const handleDisconnectGmail = async () => {
+    try {
+      await disconnectGmail();
+      await refetchSettings();
+      await refetchProviders();
+      addToast({ 
+        type: 'success', 
+        title: 'Gmail Disconnected', 
+        message: 'Your Gmail account has been disconnected. Please reconnect to use the new label permissions.' 
+      });
+    } catch (error) {
+      console.error('Failed to disconnect Gmail:', error);
+      addToast({ type: 'error', title: 'Failed to disconnect Gmail' });
+    }
+  };
+
+  const handleDisconnectOutlook = async () => {
+    try {
+      await disconnectOutlook();
+      await refetchSettings();
+      await refetchProviders();
+      addToast({ 
+        type: 'success', 
+        title: 'Outlook Disconnected', 
+        message: 'Your Outlook account has been disconnected.' 
+      });
+    } catch (error) {
+      console.error('Failed to disconnect Outlook:', error);
+      addToast({ type: 'error', title: 'Failed to disconnect Outlook' });
+    }
+  };
+
   const handleEditProvider = (provider: EmailProvider) => {
     setSelectedProvider(provider);
     setSelectedProviderType(provider.type as 'gmail' | 'outlook' | 'smtp');
@@ -396,6 +432,46 @@ const EmailSettingsPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Gmail Label Feature Notice */}
+        {emailSettings?.isGmailConnected && (
+          <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <Mail className="w-5 h-5 text-purple-600 mt-0.5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-purple-900 mb-1">
+                  🎉 New Feature: TAL Platform Email Labels
+                </h3>
+                <p className="text-sm text-purple-800 mb-2">
+                  All emails sent from TAL are now automatically labeled in <strong>your Gmail</strong> for easy filtering! 
+                  This label is <strong>private to you</strong> - recipients won't see it.
+                  {!emailSettings?.isGmailConnected && (
+                    <span> To enable this feature, please <strong>disconnect and reconnect</strong> your Gmail account to grant the necessary permissions.</span>
+                  )}
+                </p>
+                <div className="flex items-center gap-2">
+                  {!emailSettings?.isGmailConnected && (
+                    <>
+                      <button
+                        onClick={handleDisconnectGmail}
+                        disabled={isDisconnectingGmail}
+                        className="text-xs font-medium text-purple-600 hover:text-purple-700 underline"
+                      >
+                        {isDisconnectingGmail ? 'Disconnecting...' : 'Disconnect & Reconnect Gmail'}
+                      </button>
+                      <span className="text-xs text-purple-600">•</span>
+                    </>
+                  )}
+                  <span className="text-xs text-purple-700">
+                    Find your sent TAL emails with: <code className="bg-purple-100 px-1.5 py-0.5 rounded">label:"TAL Platform"</code>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Provider Connection Buttons */}
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -554,14 +630,39 @@ const EmailSettingsPage: React.FC = () => {
                       <Star className={provider.isDefault ? 'w-4 h-4 fill-current' : 'w-4 h-4'} />
                     </button>
 
-                    {/* Gmail Reconnect Button */}
-                    {provider.type === 'gmail' && !emailSettings?.isGmailConnected && (
+                    {/* Gmail Connect/Disconnect Buttons */}
+                    {provider.type === 'gmail' && (
+                      <>
+                        {emailSettings?.isGmailConnected ? (
+                          <button 
+                            onClick={handleDisconnectGmail} 
+                            className="p-2 text-gray-400 hover:text-red-500"
+                            disabled={isDisconnectingGmail}
+                            title="Disconnect Gmail (Reconnect to get new label permissions)"
+                          >
+                            <Unplug className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={handleConnectGmail} 
+                            className="text-xs inline-flex items-center px-2.5 py-1.5 border border-transparent font-medium rounded shadow-sm text-white bg-purple-600 hover:bg-purple-700"
+                            disabled={isConnectingGmail}
+                          >
+                            {isConnectingGmail ? 'Connecting...' : 'Reconnect'}
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {/* Outlook Disconnect Button */}
+                    {provider.type === 'outlook' && (
                       <button 
-                        onClick={handleConnectGmail} 
-                        className="text-xs inline-flex items-center px-2.5 py-1.5 border border-transparent font-medium rounded shadow-sm text-white bg-purple-600 hover:bg-purple-700"
-                        disabled={isConnectingGmail}
+                        onClick={handleDisconnectOutlook} 
+                        className="p-2 text-gray-400 hover:text-red-500"
+                        disabled={isDisconnectingOutlook}
+                        title="Disconnect Outlook"
                       >
-                        {isConnectingGmail ? 'Connecting...' : 'Reconnect'}
+                        <Unplug className="w-4 h-4" />
                       </button>
                     )}
                     

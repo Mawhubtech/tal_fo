@@ -16,6 +16,9 @@ export interface SendEmailDto {
   recipients: string[];
   subject: string;
   body: string;
+  providerId?: string; // Optional provider ID, uses default if not specified
+  cc?: string[]; // CC recipients
+  bcc?: string[]; // BCC recipients
 }
 
 export interface EmailResponse {

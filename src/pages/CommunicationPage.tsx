@@ -74,7 +74,7 @@ const CommunicationPage: React.FC = () => {
     limit: 20,
     type: 'all',
     sortBy: 'sentAt',
-    search: '(TAL OR tal OR Tal)', // Platform filter active by default
+    search: 'label:"TAL Platform"', // Platform filter active by default (uses Gmail label)
   });
 
   // Fetch connected email providers
@@ -91,7 +91,7 @@ const CommunicationPage: React.FC = () => {
   // Reset filters when provider changes, but preserve platform filter if active
   React.useEffect(() => {
     if (selectedProvider) {
-      const platformQuery = isPlatformFilterActive ? '(TAL OR tal OR Tal)' : '';
+      const platformQuery = isPlatformFilterActive ? 'label:"TAL Platform"' : '';
       
       setFilters({
         page: 1,
@@ -190,8 +190,10 @@ const CommunicationPage: React.FC = () => {
     setIsPlatformFilterActive(newFilterState);
     
     if (newFilterState) {
-      // Apply platform filter - search for TAL in subject or body
-      const platformQuery = '(TAL OR tal OR Tal)';
+      // Apply platform filter - use Gmail label for accurate filtering
+      // Gmail: searches by "TAL Platform" label (only Gmail supports this)
+      // Outlook/SMTP: falls back to text search
+      const platformQuery = 'label:"TAL Platform"';
       // Don't show the query in search bar, keep it clean
       setSearchTerm('');
       setFilters(prev => ({
