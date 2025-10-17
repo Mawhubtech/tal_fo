@@ -34,7 +34,10 @@ const CommunicationPage: React.FC = () => {
   const sendEmailMutation = useSendEmail();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(() => {
+    // Initialize from sessionStorage to persist across navigation
+    return sessionStorage.getItem('selectedEmailProvider') || null;
+  });
   const [showComposeModal, setShowComposeModal] = useState(false);
 
   // Prevent body scroll when compose modal is open
@@ -85,6 +88,8 @@ const CommunicationPage: React.FC = () => {
     if (providers && providers.length > 0 && !selectedProvider) {
       const defaultProvider = providers.find(p => p.isDefault) || providers[0];
       setSelectedProvider(defaultProvider.id);
+      // Persist to sessionStorage
+      sessionStorage.setItem('selectedEmailProvider', defaultProvider.id);
     }
   }, [providers, selectedProvider]);
 
@@ -363,7 +368,12 @@ const CommunicationPage: React.FC = () => {
                 <Mail className="w-5 h-5 text-purple-600 flex-shrink-0" />
                 <select
                   value={selectedProvider || ''}
-                  onChange={(e) => setSelectedProvider(e.target.value)}
+                  onChange={(e) => {
+                    const newProviderId = e.target.value;
+                    setSelectedProvider(newProviderId);
+                    // Persist to sessionStorage
+                    sessionStorage.setItem('selectedEmailProvider', newProviderId);
+                  }}
                   className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm font-medium bg-white min-w-0"
                 >
                   {providers.map((provider) => (
