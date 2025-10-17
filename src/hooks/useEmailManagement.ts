@@ -883,15 +883,30 @@ export const useSourcingTemplates = () => {
 };
 
 // Email Thread hook - Get all messages in a thread
-export const useEmailThread = (threadId: string | undefined) => {
+export const useEmailThread = (
+  threadId: string | undefined,
+  providerId?: string,
+  providerType?: string
+) => {
   return useQuery({
-    queryKey: ['email-thread', threadId],
+    queryKey: ['email-thread', threadId, providerId],
     queryFn: async () => {
       if (!threadId) return null;
+      
+      // For Outlook, we don't need a separate thread fetch
+      // Outlook messages include the full conversation in the body
+      // Only Gmail needs thread fetching
+      if (providerType && providerType.toLowerCase() === 'outlook') {
+        // Return null - Outlook doesn't support thread fetching
+        // The email detail page should show the full conversation from the message body
+        return null;
+      }
+      
+      // For Gmail, fetch the thread
       const response = await apiClient.get(`/email/gmail/thread/${threadId}`);
       return response.data;
     },
-    enabled: !!threadId,
+    enabled: !!threadId && providerType !== 'outlook',
     staleTime: 30 * 1000, // 30 seconds
   });
 };

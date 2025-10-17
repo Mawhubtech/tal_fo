@@ -33,8 +33,16 @@ const EmailDetailPage: React.FC = () => {
   const selectedEmail = location?.email;
   const selectedProvider = location?.providerId;
 
-  // Fetch thread messages if threadId exists
-  const { data: threadData, isLoading: threadLoading } = useEmailThread(selectedEmail?.threadId);
+  // Find the provider details to get the type
+  const provider = providers?.find(p => p.id === selectedProvider);
+  const providerType = provider?.type;
+
+  // Fetch thread messages if threadId exists (only for Gmail)
+  const { data: threadData, isLoading: threadLoading } = useEmailThread(
+    selectedEmail?.threadId,
+    selectedProvider,
+    providerType
+  );
 
   // Reply form state
   const [replyForm, setReplyForm] = useState({
