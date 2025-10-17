@@ -341,33 +341,16 @@ const CommunicationPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Email Communications</h1>
-            <p className="text-sm text-gray-600">
-              {isPlatformFilterActive 
-                ? 'Showing: Platform-specific emails (TAL)' 
-                : 'View emails from your connected email accounts'}
+            <p className="text-sm text-gray-600">          
+                View emails from your connected email accounts
             </p>
           </div>
         </div>
       </div>
 
-      {/* Actions and Provider Selector - Moved here */}
+      {/* Actions and Provider Selector - All in one row */}
       <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-          {/* Send Email Button */}
-          <button
-            onClick={() => {
-              // Set default provider when opening compose modal
-              const defaultProvider = selectedProvider || (providers && providers.length > 0 ? providers[0].id : '');
-              setEmailForm({ providerId: defaultProvider, to: '', cc: '', subject: '', content: '' });
-              setShowComposeModal(true);
-            }}
-            disabled={!providers || providers.length === 0}
-            className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg transition-colors text-sm sm:text-base font-medium whitespace-nowrap"
-          >
-            <Send className="w-4 h-4" />
-            <span>Send Email</span>
-          </button>
-
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
           {/* Email Provider Selector */}
           <div className="flex-1 min-w-0">
             {providersLoading ? (
@@ -397,37 +380,45 @@ const CommunicationPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Platform Filter Button */}
+          <button
+            onClick={handlePlatformFilterToggle}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ${
+              isPlatformFilterActive
+                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            <span>Platform Emails</span>
+            {isPlatformFilterActive && (
+              <span className="ml-1 text-xs opacity-90">(Active)</span>
+            )}
+          </button>
+
+          {/* Send Email Button */}
+          <button
+            onClick={() => {
+              // Set default provider when opening compose modal
+              const defaultProvider = selectedProvider || (providers && providers.length > 0 ? providers[0].id : '');
+              setEmailForm({ providerId: defaultProvider, to: '', cc: '', subject: '', content: '' });
+              setShowComposeModal(true);
+            }}
+            disabled={!providers || providers.length === 0}
+            className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
+          >
+            <Send className="w-4 h-4" />
+            <span>Send Email</span>
+          </button>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <div className="flex flex-col gap-3">
-          {/* Platform Filter Button */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePlatformFilterToggle}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                isPlatformFilterActive
-                  ? 'bg-purple-600 text-white hover:bg-purple-700'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-              <span>Platform Specific Emails</span>
-              {isPlatformFilterActive && (
-                <span className="ml-1 text-xs opacity-90">(Active)</span>
-              )}
-            </button>
-            {isPlatformFilterActive && (
-              <span className="text-sm text-gray-600">
-                Filtering for: TAL
-              </span>
-            )}
-          </div>
-
-          {/* Search */}
-          <div className="w-full">
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
+          {/* Search Bar */}
+          <div className="flex-1 min-w-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
@@ -452,26 +443,25 @@ const CommunicationPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Filter Controls */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <select
-              value={filters.type || 'all'}
-              onChange={(e) => handleFilterChange({ type: e.target.value as any })}
-              className="flex-1 sm:flex-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm"
-            >
-              <option value="all">All Emails</option>
-              <option value="sent">Sent</option>
-              <option value="inbox">Inbox</option>
-            </select>
+          {/* Email Type Filter */}
+          <select
+            value={filters.type || 'all'}
+            onChange={(e) => handleFilterChange({ type: e.target.value as any })}
+            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm whitespace-nowrap"
+          >
+            <option value="all">All Emails</option>
+            <option value="sent">Sent</option>
+            <option value="inbox">Inbox</option>
+          </select>
 
-            <button
-              onClick={handleSearch}
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center justify-center space-x-2 text-sm font-medium"
-            >
-              <Filter className="h-4 w-4" />
-              <span>Apply Filters</span>
-            </button>
-          </div>
+          {/* Apply Filters Button */}
+          <button
+            onClick={handleSearch}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap"
+          >
+            <Filter className="h-4 w-4" />
+            <span>Apply Filters</span>
+          </button>
         </div>
       </div>
 
