@@ -19,13 +19,16 @@ import {
   Loader,
   Eye,
   Download,
-  Reply
+  Reply,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { useEmailProviders, useProviderMessages } from '../hooks/useEmailLogs';
 import { useAuthContext } from '../contexts/AuthContext';
 import { EmailLogFilters, EmailProvider } from '../services/emailLogApiService';
 import { useSendEmail } from '../hooks/useEmailManagement';
 import { useToast } from '../contexts/ToastContext';
+import { useEmailWebSocket } from '../hooks/useEmailWebSocket';
 
 const CommunicationPage: React.FC = () => {
   const { user } = useAuthContext();
@@ -108,14 +111,36 @@ const CommunicationPage: React.FC = () => {
     }
   }, [selectedProvider, isPlatformFilterActive]);
 
-  // Fetch emails from selected provider with auto-refresh every 30 seconds
+  // WebSocket connection for real-time email updates
+  const { isConnected: isEmailSocketConnected } = useEmailWebSocket({
+    providerId: selectedProvider || undefined,
+    enabled: !!selectedProvider,
+    onNewEmail: (data) => {
+      console.log('📧 New email notification:', data.email);
+      // Show toast notification for new email
+      addToast({
+        type: 'info',
+        title: 'New Email Received',
+        message: data.email.subject || 'No subject',
+      });
+      // Query will auto-refetch due to invalidation in the hook
+    },
+    onEmailSent: (data) => {
+      console.log('✉️ Email sent confirmation:', data.email);
+      // Query will auto-refetch to show sent email
+    },
+  });
+
+  // Fetch emails from selected provider
+  // Polling disabled when WebSocket is connected (hybrid approach)
   const { 
     data: emailLogsData, 
     isLoading, 
     error,
     refetch 
   } = useProviderMessages(selectedProvider || '', filters, {
-    refetchInterval: selectedProvider ? 30000 : false // Only refresh if provider selected
+    // Only poll if WebSocket is disconnected (fallback mechanism)
+    refetchInterval: selectedProvider && !isEmailSocketConnected ? 30000 : false
   });
 
   const emails = emailLogsData?.data || [];
@@ -390,6 +415,24 @@ const CommunicationPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* WebSocket Connection Status */}
+          {selectedProvider && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200">
+              {isEmailSocketConnected ? (
+                <>
+                  <Wifi className="w-4 h-4 text-green-600" />
+                  <span className="text-xs font-medium text-green-700">Live</span>
+                  <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-4 h-4 text-orange-500" />
+                  <span className="text-xs font-medium text-orange-600">Polling</span>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Platform Filter Button */}
           <button
