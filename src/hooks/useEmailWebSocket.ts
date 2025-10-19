@@ -8,6 +8,7 @@ interface UseEmailWebSocketProps {
   onNewEmail?: (data: { providerId: string; email: any }) => void;
   onEmailUpdated?: (data: { providerId: string; emailId: string; updates: any }) => void;
   onEmailSent?: (data: { providerId: string; email: any }) => void;
+  onProviderExpired?: (data: { providerId: string; providerType: 'gmail' | 'outlook'; providerName: string; message: string }) => void;
 }
 
 interface UseEmailWebSocketReturn {
@@ -21,6 +22,7 @@ export const useEmailWebSocket = ({
   onNewEmail,
   onEmailUpdated,
   onEmailSent,
+  onProviderExpired,
 }: UseEmailWebSocketProps): UseEmailWebSocketReturn => {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -31,6 +33,7 @@ export const useEmailWebSocket = ({
     onNewEmail,
     onEmailUpdated,
     onEmailSent,
+    onProviderExpired,
   });
 
   // Update callbacks ref when props change
@@ -39,8 +42,9 @@ export const useEmailWebSocket = ({
       onNewEmail,
       onEmailUpdated,
       onEmailSent,
+      onProviderExpired,
     };
-  }, [onNewEmail, onEmailUpdated, onEmailSent]);
+  }, [onNewEmail, onEmailUpdated, onEmailSent, onProviderExpired]);
 
   useEffect(() => {
     if (!enabled) {
@@ -152,6 +156,30 @@ export const useEmailWebSocket = ({
         if (callbacksRef.current.onEmailSent) {
           callbacksRef.current.onEmailSent(data);
         }
+      }
+    });
+
+    // Listen for provider expiration notifications
+    socket.on('providerExpired', (data: { 
+      providerId: string; 
+      providerType: 'gmail' | 'outlook'; 
+      providerName: string; 
+      message: string;
+      timestamp: Date;
+    }) => {
+      console.warn('[EmailWebSocket] ⚠️ Provider expired:', data);
+
+      // Invalidate provider queries to update UI
+      queryClient.invalidateQueries({
+        queryKey: ['emailProviders'],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ['providerMessages', data.providerId],
+      });
+
+      if (callbacksRef.current.onProviderExpired) {
+        callbacksRef.current.onProviderExpired(data);
       }
     });
 

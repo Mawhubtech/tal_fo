@@ -129,6 +129,26 @@ const CommunicationPage: React.FC = () => {
       console.log('✉️ Email sent confirmation:', data.email);
       // Query will auto-refetch to show sent email
     },
+    onProviderExpired: (data) => {
+      console.warn('⚠️ Provider expired:', data);
+      // Show error toast with reconnection prompt
+      addToast({
+        type: 'error',
+        title: 'Email Connection Expired',
+        message: `${data.message} Please reconnect your account.`,
+        duration: 10000, // Show for 10 seconds
+      });
+      
+      // If the expired provider is currently selected, show additional error
+      if (data.providerId === selectedProvider) {
+        addToast({
+          type: 'error',
+          title: 'Current Provider Disconnected',
+          message: `${data.providerName} has been disconnected. Please reconnect to continue using this account.`,
+          duration: 0, // Persistent until dismissed
+        });
+      }
+    },
   });
 
   // Fetch emails from selected provider
@@ -346,19 +366,75 @@ const CommunicationPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  // Check if no providers are connected after loading
+  if (!providersLoading && (!providers || providers.length === 0)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Communications</h2>
-          <p className="text-gray-600 mb-4">Failed to load email communications. Please try again.</p>
+        <div className="text-center max-w-md mx-auto px-4">
+          <Mail className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Email Accounts Connected</h2>
+          <p className="text-gray-600 mb-6">
+            Connect your Gmail or Outlook account to start managing your email communications from the TAL platform.
+          </p>
           <button
-            onClick={() => refetch()}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+            onClick={() => navigate('/settings/email')}
+            className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
           >
-            Try Again
+            Connect Email Account
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    // Check if error is due to expired provider
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isExpiredProvider = errorMessage.includes('expired') || errorMessage.includes('reconnect');
+    
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md mx-auto px-4">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {isExpiredProvider ? 'Email Connection Expired' : 'Error Loading Communications'}
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {isExpiredProvider 
+              ? 'Your email provider connection has expired. Please reconnect your email account to continue.'
+              : 'Failed to load email communications. Please try again.'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {isExpiredProvider ? (
+              <button
+                onClick={() => navigate('/settings/email')}
+                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Reconnect Email
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => refetch()}
+                  className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={() => navigate('/settings/email')}
+                  className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Email Settings
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Go to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -432,46 +432,6 @@ const EmailSettingsPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Gmail Label Feature Notice */}
-        {emailSettings?.isGmailConnected && (
-          <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0">
-                <Mail className="w-5 h-5 text-purple-600 mt-0.5" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-purple-900 mb-1">
-                  🎉 New Feature: TAL Platform Email Labels
-                </h3>
-                <p className="text-sm text-purple-800 mb-2">
-                  All emails sent from TAL are now automatically labeled in <strong>your Gmail</strong> for easy filtering! 
-                  This label is <strong>private to you</strong> - recipients won't see it.
-                  {!emailSettings?.isGmailConnected && (
-                    <span> To enable this feature, please <strong>disconnect and reconnect</strong> your Gmail account to grant the necessary permissions.</span>
-                  )}
-                </p>
-                <div className="flex items-center gap-2">
-                  {!emailSettings?.isGmailConnected && (
-                    <>
-                      <button
-                        onClick={handleDisconnectGmail}
-                        disabled={isDisconnectingGmail}
-                        className="text-xs font-medium text-purple-600 hover:text-purple-700 underline"
-                      >
-                        {isDisconnectingGmail ? 'Disconnecting...' : 'Disconnect & Reconnect Gmail'}
-                      </button>
-                      <span className="text-xs text-purple-600">•</span>
-                    </>
-                  )}
-                  <span className="text-xs text-purple-700">
-                    Find your sent TAL emails with: <code className="bg-purple-100 px-1.5 py-0.5 rounded">label:"TAL Platform"</code>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Provider Connection Buttons */}
         <div className="mb-6 flex items-center justify-between">
           <div>
