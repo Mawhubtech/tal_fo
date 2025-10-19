@@ -80,7 +80,7 @@ const CommunicationPage: React.FC = () => {
     limit: 20,
     type: 'all',
     sortBy: 'sentAt',
-    search: 'label:"TAL Platform"', // Platform filter active by default (uses Gmail label)
+    search: 'label:"TAL Platform" OR (TAL OR Tal OR tal)', // Platform filter with Gmail label + keyword fallback
   });
 
   // Fetch connected email providers
@@ -105,7 +105,22 @@ const CommunicationPage: React.FC = () => {
   // Reset filters when provider changes, but preserve platform filter if active
   React.useEffect(() => {
     if (selectedProvider) {
-      const platformQuery = isPlatformFilterActive ? 'label:"TAL Platform"' : '';
+      // Build platform filter query that works across all provider types
+      // Gmail: Use label search
+      // Outlook/Others: Use keyword search for "TAL" in subject/body
+      const selectedProviderData = providers?.find(p => p.id === selectedProvider);
+      const providerType = selectedProviderData?.type;
+      
+      let platformQuery = '';
+      if (isPlatformFilterActive) {
+        if (providerType === 'gmail') {
+          // Gmail: Use label-based filtering (AND keyword search as fallback)
+          platformQuery = 'label:"TAL Platform" OR (TAL OR Tal OR tal)';
+        } else {
+          // Outlook/SMTP/Others: Use keyword search for TAL in subject or body
+          platformQuery = '(TAL OR Tal OR tal)';
+        }
+      }
       
       setFilters({
         page: 1,
@@ -115,7 +130,7 @@ const CommunicationPage: React.FC = () => {
         search: platformQuery,
       });
     }
-  }, [selectedProvider, isPlatformFilterActive]);
+  }, [selectedProvider, isPlatformFilterActive, providers]);
 
   // WebSocket connection for real-time email updates
   const { isConnected: isEmailSocketConnected } = useEmailWebSocket({
@@ -246,10 +261,19 @@ const CommunicationPage: React.FC = () => {
     setIsPlatformFilterActive(newFilterState);
     
     if (newFilterState) {
-      // Apply platform filter - use Gmail label for accurate filtering
-      // Gmail: searches by "TAL Platform" label (only Gmail supports this)
-      // Outlook/SMTP: falls back to text search
-      const platformQuery = 'label:"TAL Platform"';
+      // Apply platform filter with provider-specific query
+      const selectedProviderData = providers?.find(p => p.id === selectedProvider);
+      const providerType = selectedProviderData?.type;
+      
+      let platformQuery = '';
+      if (providerType === 'gmail') {
+        // Gmail: Use label-based filtering (AND keyword search as fallback)
+        platformQuery = 'label:"TAL Platform" OR (TAL OR Tal OR tal)';
+      } else {
+        // Outlook/SMTP/Others: Use keyword search for TAL in subject or body
+        platformQuery = '(TAL OR Tal OR tal)';
+      }
+      
       // Don't show the query in search bar, keep it clean
       setSearchTerm('');
       setFilters(prev => ({
