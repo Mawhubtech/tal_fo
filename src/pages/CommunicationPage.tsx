@@ -86,13 +86,19 @@ const CommunicationPage: React.FC = () => {
   // Fetch connected email providers
   const { data: providers, isLoading: providersLoading } = useEmailProviders();
 
-  // Set default provider when providers load
+  // Set default provider when providers load and validate cached provider still exists
   React.useEffect(() => {
-    if (providers && providers.length > 0 && !selectedProvider) {
-      const defaultProvider = providers.find(p => p.isDefault) || providers[0];
-      setSelectedProvider(defaultProvider.id);
-      // Persist to sessionStorage
-      sessionStorage.setItem('selectedEmailProvider', defaultProvider.id);
+    if (providers && providers.length > 0) {
+      // Check if cached provider ID is still valid
+      const cachedProviderId = sessionStorage.getItem('selectedEmailProvider');
+      const cachedProviderExists = cachedProviderId && providers.some(p => p.id === cachedProviderId);
+      
+      if (!selectedProvider || !cachedProviderExists) {
+        // Either no provider selected, or the cached provider no longer exists
+        const defaultProvider = providers.find(p => p.isDefault) || providers[0];
+        setSelectedProvider(defaultProvider.id);
+        sessionStorage.setItem('selectedEmailProvider', defaultProvider.id);
+      }
     }
   }, [providers, selectedProvider]);
 
