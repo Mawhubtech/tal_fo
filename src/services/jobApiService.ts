@@ -20,6 +20,7 @@ export interface CreateJobData {
   salaryMin?: number;
   salaryMax?: number;
   currency?: string;
+  salaryPeriod?: 'monthly' | 'annual';
   remote?: boolean;
   skills?: string[];
   benefits?: string[];

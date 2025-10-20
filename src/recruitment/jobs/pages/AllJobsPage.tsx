@@ -15,9 +15,14 @@ import {
   Edit3,
   Trash2,
   Eye,
-  Globe
+  Globe,
+  MoreVertical,
+  CheckCircle,
+  PauseCircle,
+  XCircle,
+  Archive
 } from 'lucide-react';
-import { useJobs, useDeleteJob } from '../../../hooks/useJobs';
+import { useJobs, useDeleteJob, useUpdateJob } from '../../../hooks/useJobs';
 import { useJobsWebSocket } from '../../../hooks/useJobsWebSocket';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyAssignment } from '../../../hooks/useUserAssignment';
@@ -46,6 +51,10 @@ const AllJobsPage: React.FC = () => {
   // Preview modal states
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [jobToPreview, setJobToPreview] = useState<Job | null>(null);
+  
+  // Status change states
+  const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
+  const [jobStatusChanging, setJobStatusChanging] = useState<string | null>(null);
 
   // Get user's organization assignment for navigation purposes
   const { data: userAssignment, isLoading: assignmentLoading } = useMyAssignment();
@@ -108,6 +117,7 @@ const AllJobsPage: React.FC = () => {
   } = useMyCollaboratorJobs();
 
   const deleteJobMutation = useDeleteJob();
+  const updateJobMutation = useUpdateJob();
 
   // Extract data from response or use defaults
   const organizationJobs = (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.data || [];
@@ -212,6 +222,33 @@ const AllJobsPage: React.FC = () => {
     setJobToDelete(null);
   };
 
+  const handleStatusChange = async (job: Job, newStatus: Job['status']) => {
+    try {
+      setJobStatusChanging(job.id);
+      setShowStatusMenu(null);
+      
+      await updateJobMutation.mutateAsync({
+        id: job.id,
+        data: { status: newStatus }
+      });
+    } catch (error) {
+      console.error('Error changing job status:', error);
+    } finally {
+      setJobStatusChanging(null);
+    }
+  };
+
+  const getStatusIcon = (status: Job['status']) => {
+    switch (status) {
+      case 'Published': return CheckCircle;
+      case 'Draft': return Edit3;
+      case 'Paused': return PauseCircle;
+      case 'Closed': return XCircle;
+      case 'Archived': return Archive;
+      default: return CheckCircle;
+    }
+  };
+
   const getStatusColor = (status: Job['status']) => {
     switch (status) {
       case 'Published': return 'bg-green-100 text-green-800';
@@ -232,11 +269,16 @@ const AllJobsPage: React.FC = () => {
     }
   };
   const formatSalary = (job: Job) => {
+    // Determine the salary period suffix
+    const periodSuffix = (job as any).salaryPeriod 
+      ? ` (${(job as any).salaryPeriod === 'monthly' ? '/mo' : '/yr'})` 
+      : '';
+    
     // Handle both new backend format and legacy format
     if (job.salaryMin && job.salaryMax) {
-      return `${job.currency}${job.salaryMin.toLocaleString()} - ${job.currency}${job.salaryMax.toLocaleString()}`;
+      return `${job.currency}${job.salaryMin.toLocaleString()} - ${job.currency}${job.salaryMax.toLocaleString()}${periodSuffix}`;
     } else if (job.salary?.min && job.salary?.max) {
-      return `${job.salary.currency}${job.salary.min.toLocaleString()} - ${job.salary.currency}${job.salary.max.toLocaleString()}`;
+      return `${job.salary.currency}${job.salary.min.toLocaleString()} - ${job.salary.currency}${job.salary.max.toLocaleString()}${periodSuffix}`;
     }
     return 'Salary not specified';
   };
@@ -544,6 +586,69 @@ const AllJobsPage: React.FC = () => {
                         >
                           <Edit3 className="h-4 w-4" />
                         </button>
+                        
+                        {/* Status Change Menu */}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowStatusMenu(showStatusMenu === job.id ? null : job.id);
+                            }}
+                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            title="Change Status"
+                            disabled={jobStatusChanging === job.id}
+                          >
+                            {jobStatusChanging === job.id ? (
+                              <Loader className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <MoreVertical className="h-4 w-4" />
+                            )}
+                          </button>
+                          
+                          {showStatusMenu === job.id && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-10" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowStatusMenu(null);
+                                }}
+                              />
+                              <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                                <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-b border-gray-100">
+                                  Change Status
+                                </div>
+                                {(['Published', 'Draft', 'Paused', 'Closed', 'Archived'] as const).map((status) => {
+                                  const StatusIcon = getStatusIcon(status);
+                                  const isCurrentStatus = job.status === status;
+                                  
+                                  return (
+                                    <button
+                                      key={status}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStatusChange(job, status);
+                                      }}
+                                      disabled={isCurrentStatus}
+                                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                                        isCurrentStatus
+                                          ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                          : 'hover:bg-gray-50 text-gray-700'
+                                      }`}
+                                    >
+                                      <StatusIcon className="h-4 w-4" />
+                                      <span>{status}</span>
+                                      {isCurrentStatus && (
+                                        <span className="ml-auto text-xs text-gray-400">(current)</span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

@@ -55,13 +55,18 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
   const skills = parseStringOrArray(job.skills);
 
   const formatSalary = (job: any) => {
+    // Determine the salary period suffix
+    const periodSuffix = job.salaryPeriod 
+      ? ` (${job.salaryPeriod === 'monthly' ? 'per month' : 'per year'})` 
+      : '';
+    
     // Handle the newer schema with salaryMin/salaryMax
     if (job.salaryMin && job.salaryMax) {
-      return `${job.currency || '$'}${job.salaryMin.toLocaleString()} - ${job.currency || '$'}${job.salaryMax.toLocaleString()}`;
+      return `${job.currency || '$'}${job.salaryMin.toLocaleString()} - ${job.currency || '$'}${job.salaryMax.toLocaleString()}${periodSuffix}`;
     } else if (job.salaryMin) {
-      return `${job.currency || '$'}${job.salaryMin.toLocaleString()}+`;
+      return `${job.currency || '$'}${job.salaryMin.toLocaleString()}+${periodSuffix}`;
     } else if (job.salaryMax) {
-      return `Up to ${job.currency || '$'}${job.salaryMax.toLocaleString()}`;
+      return `Up to ${job.currency || '$'}${job.salaryMax.toLocaleString()}${periodSuffix}`;
     }
     // Handle the older schema with just salary string
     else if (job.salary && typeof job.salary === 'string') {
@@ -71,11 +76,11 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
     else if (job.salary && typeof job.salary === 'object') {
       const sal = job.salary;
       if (sal.min && sal.max) {
-        return `${sal.currency || '$'}${sal.min.toLocaleString()} - ${sal.currency || '$'}${sal.max.toLocaleString()}`;
+        return `${sal.currency || '$'}${sal.min.toLocaleString()} - ${sal.currency || '$'}${sal.max.toLocaleString()}${periodSuffix}`;
       } else if (sal.min) {
-        return `${sal.currency || '$'}${sal.min.toLocaleString()}+`;
+        return `${sal.currency || '$'}${sal.min.toLocaleString()}+${periodSuffix}`;
       } else if (sal.max) {
-        return `Up to ${sal.currency || '$'}${sal.max.toLocaleString()}`;
+        return `Up to ${sal.currency || '$'}${sal.max.toLocaleString()}${periodSuffix}`;
       }
     }
     return 'Salary not specified';

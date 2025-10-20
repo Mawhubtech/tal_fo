@@ -128,6 +128,7 @@ const CreateJobPage: React.FC = () => {
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
   const [currency, setCurrency] = useState('USD');
+  const [salaryPeriod, setSalaryPeriod] = useState<'monthly' | 'annual'>('annual');
   const [remote, setRemote] = useState(false);
   const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState('');
@@ -323,6 +324,7 @@ const CreateJobPage: React.FC = () => {
       setSalaryMin(editingJob.salaryMin ? editingJob.salaryMin.toString() : '');
       setSalaryMax(editingJob.salaryMax ? editingJob.salaryMax.toString() : '');
       setCurrency(editingJob.currency || 'USD');
+      setSalaryPeriod((editingJob as any).salaryPeriod || 'annual');
       setRemote(editingJob.remote || false);
       setSkills(Array.isArray(editingJob.skills) ? editingJob.skills : editingJob.skills ? [editingJob.skills] : []);
       setBenefits(Array.isArray(editingJob.benefits) ? editingJob.benefits : editingJob.benefits ? [editingJob.benefits] : []);
@@ -596,14 +598,15 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
   }, [aiError, isGeneratingFromPrompt]);
 
   const handleSubmit = async (publish: boolean) => {
-    if (publish) {
-      // Show publishing modal for publish action
-      setShowPublishingModal(true);
-      return;
-    }
+    // Commenting out publish modal - directly submit the job
+    // if (publish) {
+    //   // Show publishing modal for publish action
+    //   setShowPublishingModal(true);
+    //   return;
+    // }
 
-    // For draft, submit directly
-    await submitJob(false, publishingOptions);
+    // Submit directly without modal
+    await submitJob(publish, publishingOptions);
   };
 
   const handlePublishWithOptions = async (options: JobPublishingOptions) => {
@@ -658,6 +661,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
         salaryMin: minSalary,
         salaryMax: maxSalary,
         currency: currency,
+        salaryPeriod: salaryPeriod,
         remote: remote,
         skills: skills.length > 0 ? skills : undefined,
         benefits: benefits.length > 0 ? benefits : undefined,
@@ -1028,12 +1032,12 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                 {submitLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent mr-2"></div>
-                    {isEditMode ? 'Updating...' : 'Publishing...'}
+                    {isEditMode ? 'Updating...' : 'Creating...'}
                   </>
                 ) : (
                   <>
                     <Globe className="h-3.5 w-3.5 mr-2" />
-                    {isEditMode ? 'Update & Publish' : 'Publish Job'}
+                    {isEditMode ? 'Update Job' : 'Create Job'}
                   </>
                 )}
               </button>
@@ -1399,6 +1403,54 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                 </div>
               </div>
               <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="currency" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Currency
+                    </label>
+                    <select
+                      id="currency"
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    >
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                      <option value="CAD">CAD (C$)</option>
+                      <option value="AUD">AUD (A$)</option>
+                      
+                      {/* Middle East Currencies */}
+                      <option value="AED">AED (د.إ) - UAE Dirham</option>
+                      <option value="SAR">SAR (﷼) - Saudi Riyal</option>
+                      <option value="QAR">QAR (ر.ق) - Qatari Riyal</option>
+                      <option value="KWD">KWD (د.ك) - Kuwaiti Dinar</option>
+                      <option value="BHD">BHD (د.ب) - Bahraini Dinar</option>
+                      <option value="OMR">OMR (ر.ع.) - Omani Rial</option>
+                      <option value="JOD">JOD (د.ا) - Jordanian Dinar</option>
+                      <option value="EGP">EGP (£) - Egyptian Pound</option>
+                      <option value="LBP">LBP (ل.ل) - Lebanese Pound</option>
+                      <option value="ILS">ILS (₪) - Israeli Shekel</option>
+                      <option value="TRY">TRY (₺) - Turkish Lira</option>
+                      <option value="IRR">IRR (﷼) - Iranian Rial</option>
+                      <option value="IQD">IQD (ع.د) - Iraqi Dinar</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="salaryPeriod" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Salary Period
+                    </label>
+                    <select
+                      id="salaryPeriod"
+                      value={salaryPeriod}
+                      onChange={(e) => setSalaryPeriod(e.target.value as 'monthly' | 'annual')}
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    >
+                      <option value="annual">Annual</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+                </div>
                 <div>
                   <label htmlFor="salaryMin" className="block text-sm font-semibold text-gray-700 mb-2">
                     Minimum Salary
@@ -1424,38 +1476,6 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="80000"
                   />
-                </div>
-                <div>
-                  <label htmlFor="currency" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Currency
-                  </label>
-                  <select
-                    id="currency"
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="CAD">CAD (C$)</option>
-                    <option value="AUD">AUD (A$)</option>
-                    
-                    {/* Middle East Currencies */}
-                    <option value="AED">AED (د.إ) - UAE Dirham</option>
-                    <option value="SAR">SAR (﷼) - Saudi Riyal</option>
-                    <option value="QAR">QAR (ر.ق) - Qatari Riyal</option>
-                    <option value="KWD">KWD (د.ك) - Kuwaiti Dinar</option>
-                    <option value="BHD">BHD (د.ب) - Bahraini Dinar</option>
-                    <option value="OMR">OMR (ر.ع.) - Omani Rial</option>
-                    <option value="JOD">JOD (د.ا) - Jordanian Dinar</option>
-                    <option value="EGP">EGP (£) - Egyptian Pound</option>
-                    <option value="LBP">LBP (ل.ل) - Lebanese Pound</option>
-                    <option value="ILS">ILS (₪) - Israeli Shekel</option>
-                    <option value="TRY">TRY (₺) - Turkish Lira</option>
-                    <option value="IRR">IRR (﷼) - Iranian Rial</option>
-                    <option value="IQD">IQD (ع.د) - Iraqi Dinar</option>
-                  </select>
                 </div>
               </div>
             </div>
@@ -1791,15 +1811,15 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
       </div>
       </div>
 
-      {/* Publishing Options Modal */}
-      <JobPublishingModal
+      {/* Publishing Options Modal - COMMENTED OUT */}
+      {/* <JobPublishingModal
         isOpen={showPublishingModal}
         onClose={() => setShowPublishingModal(false)}
         onPublish={handlePublishWithOptions}
         isLoading={submitLoading}
         currentOptions={publishingOptions}
         availableJobBoards={availableJobBoards}
-      />
+      /> */}
 
       {/* AI Job Generator Dialog */}
       <AIJobGeneratorDialog
