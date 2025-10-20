@@ -98,6 +98,8 @@ import RecruiterJobBoardDashboard from './recruiter/RecruiterJobBoardDashboard';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuthContext();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Initialize sidebar state based on screen size
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
     // On small screens (< 1024px), start collapsed
@@ -105,21 +107,35 @@ const Dashboard: React.FC = () => {
   });
   const isExternal = isExternalUser(user);
   
-  // Handle window resize to auto-collapse on small screens
+  // Handle window resize to detect mobile/desktop and auto-collapse sidebar
   useEffect(() => {
     const handleResize = () => {
       const isSmallScreen = window.innerWidth < 1024;
-      if (isSmallScreen && isSidebarExpanded) {
+      setIsMobile(isSmallScreen);
+      
+      // Close mobile menu on resize to desktop
+      if (!isSmallScreen) {
+        setIsMobileMenuOpen(false);
+        setIsSidebarExpanded(true);
+      } else {
         setIsSidebarExpanded(false);
       }
     };
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isSidebarExpanded]);
+  }, []);
   
   const toggleSidebar = () => {
-    setIsSidebarExpanded(!isSidebarExpanded);
+    if (isMobile) {
+      setIsMobileMenuOpen(!isMobileMenuOpen);
+    } else {
+      setIsSidebarExpanded(!isSidebarExpanded);
+    }
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   const handleNewSearch = () => {
@@ -130,12 +146,34 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-white">
-      {/* Sidebar Component - Hidden for external users */}
-      {!isExternal && (
+      {/* Desktop Sidebar - Hidden on mobile and for external users */}
+      {!isExternal && !isMobile && (
         <Sidebar
           isExpanded={isSidebarExpanded}
           onToggle={toggleSidebar}
         />
+      )}
+
+      {/* Mobile Menu Overlay - Only for internal users on mobile */}
+      {!isExternal && isMobile && isMobileMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={closeMobileMenu}
+          />
+          
+          {/* Mobile Sidebar - Full width container without borders */}
+          <div className="fixed inset-y-0 left-0 w-72 bg-white shadow-xl z-50 lg:hidden overflow-y-auto">
+            <div className="h-full w-full">
+              <Sidebar
+                isExpanded={true}
+                onToggle={closeMobileMenu}
+                isMobile={true}
+              />
+            </div>
+          </div>
+        </>
       )}
 
       {/* Main content flex container */}
@@ -162,6 +200,8 @@ const Dashboard: React.FC = () => {
         ) : (
           <TopNavbar
             onNewSearch={handleNewSearch}
+            onMenuToggle={toggleSidebar}
+            showMobileMenu={isMobile}
           />
         )}        {/* Main content area */}        
         <main className="flex-1  overflow-y-auto"> {/* padding p-4 removed as per mo's request */}          

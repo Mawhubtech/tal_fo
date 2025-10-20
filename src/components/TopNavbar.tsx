@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell, Calendar, CheckSquare, HelpCircle, UserPlus, Mail, MailCheck, MailX, X, Briefcase, Users, UserCheck, UserX } from 'lucide-react';
+import { LogOut, User, Search, Shield, Info, Settings, ChevronDown, Check, Building2, Bell, Calendar, CheckSquare, HelpCircle, UserPlus, Mail, MailCheck, MailX, X, Briefcase, Users, UserCheck, UserX, Menu, MoreVertical } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useLogout } from '../hooks/useAuth';
 import { AccountSettingsModal } from './AccountSettingsModal';
@@ -86,15 +86,18 @@ const getNotificationColor = (type: NotificationType): string => {
 
 interface TopNavbarProps {
   onNewSearch?: () => void;
+  onMenuToggle?: () => void;
+  showMobileMenu?: boolean;
 }
 
-const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
+const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch, onMenuToggle, showMobileMenu = false }) => {
   const { user } = useAuthContext();
   const logout = useLogout();
   const navigate = useNavigate();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // Notification system
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotification } = useNotifications();
@@ -169,7 +172,18 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
   };
   return (
     <div className="border-b border-gray-200 flex items-center justify-between p-3">
-      <div className="flex-1 flex items-center">
+      <div className="flex-1 flex items-center gap-3">
+        {/* Mobile Menu Toggle - Show only on mobile */}
+        {showMobileMenu && onMenuToggle && (
+          <button
+            onClick={onMenuToggle}
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors lg:hidden"
+            aria-label="Toggle menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        
         <Link to="/dashboard" className="hover:opacity-80 transition-opacity">
           <span 
             className="text-3xl font-black text-gray-900 hover:text-purple-600 transition-colors duration-200" 
@@ -180,9 +194,9 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
         </Link>
       </div>
       
-      {/* Company Info - Show if user has a company */}
+      {/* Company Info - Show if user has a company - Hidden on mobile */}
       {primaryCompany && !isUserSuperAdmin && (
-        <div className="flex items-center gap-3 mx-4 px-3 py-2 bg-gray-50 rounded-lg border">
+        <div className="hidden lg:flex items-center gap-3 mx-4 px-3 py-2 bg-gray-50 rounded-lg border">
           {/* Company Logo */}
           {primaryCompany.logoUrl ? (
             <img 
@@ -205,9 +219,9 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
         </div>
       )}
       
-      <div className="flex items-center gap-4">
-        {/* Quick Action Icons */}
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 md:gap-4">
+        {/* Quick Action Icons - Desktop: Show all, Mobile: Show priority only */}
+        <div className="hidden md:flex items-center gap-2">
           <Link 
             to="/calendar"
             className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -262,10 +276,10 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
           </Link>
         </div>
 
-        {/* Pending Invitations */}
+        {/* Pending Invitations - Desktop only */}
         <Link 
           to="/invitations"
-          className="relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+          className="hidden md:flex relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
           title="Pending Invitations"
         >
           <UserPlus className="w-5 h-5" />
@@ -276,7 +290,97 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch }) => {
           )}
         </Link>
 
-        {/* Notifications */}
+        {/* Mobile "More" Menu - Shows on smaller screens */}
+        <div className="md:hidden relative">
+          <button
+            onClick={() => setShowMoreMenu(!showMoreMenu)}
+            className="relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            title="More actions"
+          >
+            <MoreVertical className="w-5 h-5" />
+            {/* Badge for pending invitations on mobile */}
+            {totalPendingInvitations > 0 && (
+              <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                {totalPendingInvitations > 9 ? '9+' : totalPendingInvitations}
+              </span>
+            )}
+          </button>
+
+          {/* More Menu Dropdown - Fixed positioning to prevent cutoff */}
+          {showMoreMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setShowMoreMenu(false)}
+              />
+              <div className="fixed right-2 top-16 w-64 bg-white border border-gray-200 shadow-lg z-20 rounded-md py-1 max-h-[calc(100vh-5rem)] overflow-y-auto">
+                {/* Pending Invitations */}
+                <Link
+                  to="/invitations"
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+                  onClick={() => setShowMoreMenu(false)}
+                >
+                  <div className="flex items-center gap-3">
+                    <UserPlus className="w-4 h-4" />
+                    <span>Pending Invitations</span>
+                  </div>
+                  {totalPendingInvitations > 0 && (
+                    <span className="bg-purple-500 text-white text-xs rounded-full px-2 py-0.5 font-semibold">
+                      {totalPendingInvitations > 9 ? '9+' : totalPendingInvitations}
+                    </span>
+                  )}
+                </Link>
+                
+                <Link
+                  to="/calendar"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setShowMoreMenu(false)}
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Calendar</span>
+                </Link>
+                
+                <Link
+                  to="/tasks"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setShowMoreMenu(false)}
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  <span>Tasks</span>
+                </Link>
+                
+                <Link
+                  to="/settings/email"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setShowMoreMenu(false)}
+                >
+                  {emailSettings?.isGmailConnected && !isGmailConnectionExpired ? (
+                    <>
+                      <MailCheck className="w-4 h-4 text-green-600" />
+                      <span>Email Connected</span>
+                    </>
+                  ) : (
+                    <>
+                      <MailX className="w-4 h-4 text-red-600" />
+                      <span>Email Disconnected</span>
+                    </>
+                  )}
+                </Link>
+                
+                <Link
+                  to="/contact-support?tab=email"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setShowMoreMenu(false)}
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  <span>Submit Ticket</span>
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Notifications - Always visible */}
         <div className="relative">
           <button 
             className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md"

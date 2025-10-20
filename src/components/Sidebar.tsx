@@ -14,9 +14,10 @@ import { isInternalUser } from '../utils/userUtils';
 interface SidebarProps {
   isExpanded: boolean;
   onToggle: () => void;
+  isMobile?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle, isMobile = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -76,9 +77,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
   };
 
   return (
-    <div className={`${isExpanded ? 'w-52' : 'w-16'} border-r border-gray-200 flex flex-col transition-all duration-300 flex-shrink-0`}>
+    <div className={`${isMobile ? 'w-full' : isExpanded ? 'w-52' : 'w-16'} ${isMobile ? '' : 'border-r border-gray-200'} flex flex-col transition-all duration-300 flex-shrink-0`}>
       {/* Sidebar toggle */}
-      <div className="border-b border-gray-200">
+      <div className={`${isMobile ? '' : 'border-b border-gray-200'}`}>
         <button 
           onClick={onToggle}
           className="w-full p-3 text-gray-500 hover:text-purple-700 hover:bg-purple-50 transition-colors flex justify-center"
