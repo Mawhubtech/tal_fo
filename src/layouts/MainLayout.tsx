@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import TopNavbar from '../components/TopNavbar';
+import MobileExperienceBanner from '../components/MobileExperienceBanner';
 import { useAuthContext } from '../contexts/AuthContext';
 import { isExternalUser } from '../utils/userUtils';
 
@@ -77,6 +78,9 @@ const MainLayout: React.FC = () => {
         ) : (
           <TopNavbar onNewSearch={handleNewSearch} />
         )}
+
+        {/* Mobile Experience Banner - Shows on screens ≤1000px */}
+        <MobileExperienceBanner />
 
         {/* Main content area */}
         <main className="flex-1 overflow-y-auto">
