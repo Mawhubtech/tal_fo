@@ -120,99 +120,99 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
       onClick={handleOverlayClick}
     >
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Briefcase className="w-6 h-6 text-purple-600" />
+        <div className="flex items-center justify-between p-3 sm:p-4 md:p-6 border-b border-gray-200">
+          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">{job.title}</h2>
-              <p className="text-gray-600">{job.department}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 truncate">{job.title}</h2>
+              <p className="text-xs sm:text-sm text-gray-600 truncate">{job.department}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors flex-shrink-0 ml-2"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="space-y-6">
+        <div className="p-3 sm:p-4 md:p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div className="space-y-4 sm:space-y-6">
             {/* Job Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                <MapPin className="w-5 h-5 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Location</p>
-                  <p className="font-medium text-gray-900">{job.location}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+              <div className="flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 md:p-4 bg-gray-50 rounded-lg">
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-gray-500">Location</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{job.location}</p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                <DollarSign className="w-5 h-5 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Salary</p>
-                  <p className="font-medium text-gray-900">{formatSalary(job)}</p>
+              <div className="flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 md:p-4 bg-gray-50 rounded-lg">
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-gray-500">Salary</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{formatSalary(job)}</p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                <Briefcase className="w-5 h-5 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Type</p>
-                  <p className="font-medium text-gray-900 capitalize">{(job.type || job.employmentType || 'Not specified').replace('-', ' ')}</p>
+              <div className="flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 md:p-4 bg-gray-50 rounded-lg">
+                <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-gray-500">Type</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-900 capitalize truncate">{(job.type || job.employmentType || 'Not specified').replace('-', ' ')}</p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                <Users className="w-5 h-5 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Applicants</p>
-                  <p className="font-medium text-gray-900">{job.applicantsCount || job.applicantCount || 0}</p>
+              <div className="flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 md:p-4 bg-gray-50 rounded-lg">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-gray-500">Applicants</p>
+                  <p className="text-sm sm:text-base font-medium text-gray-900">{job.applicantsCount || job.applicantCount || 0}</p>
                 </div>
               </div>
             </div>
 
             {/* Status and Dates */}
-            <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-gray-500" />
-                <span className="text-sm text-gray-500">Status:</span>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(job.status)}`}>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 p-2.5 sm:p-3 md:p-4 bg-gray-50 rounded-lg text-xs sm:text-sm">
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" />
+                <span className="text-gray-500">Status:</span>
+                <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(job.status)}`}>
                   {job.status}
                 </span>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-5 h-5 text-gray-500" />
-                <span className="text-sm text-gray-500">Posted:</span>
-                <span className="font-medium text-gray-900">{formatDate(getPostedDate(job))}</span>
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" />
+                <span className="text-gray-500">Posted:</span>
+                <span className="font-medium text-gray-900 whitespace-nowrap">{formatDate(getPostedDate(job))}</span>
               </div>
               
               {job.applicationDeadline && (
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-5 h-5 text-gray-500" />
-                  <span className="text-sm text-gray-500">Deadline:</span>
-                  <span className="font-medium text-gray-900">{formatDate(job.applicationDeadline)}</span>
+                <div className="flex items-center space-x-1.5 sm:space-x-2">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" />
+                  <span className="text-gray-500">Deadline:</span>
+                  <span className="font-medium text-gray-900 whitespace-nowrap">{formatDate(job.applicationDeadline)}</span>
                 </div>
               )}
               
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">Experience:</span>
-                <span className="font-medium text-gray-900 capitalize">{job.experienceLevel || job.experience || 'Not specified'} Level</span>
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <span className="text-gray-500">Experience:</span>
+                <span className="font-medium text-gray-900 capitalize whitespace-nowrap">{job.experienceLevel || job.experience || 'Not specified'} Level</span>
               </div>
               
               {job.remote && (
-                <div className="flex items-center space-x-2">
-                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                <div className="flex items-center">
+                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full whitespace-nowrap">
                     Remote
                   </span>
                 </div>
@@ -222,9 +222,9 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             {/* Job Description */}
             {job.description && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Job Description</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Job Description</h3>
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-gray-700 whitespace-pre-wrap">{job.description}</p>
+                  <p className="text-sm sm:text-base text-gray-700 whitespace-pre-wrap">{job.description}</p>
                 </div>
               </div>
             )}
@@ -232,12 +232,12 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             {/* Requirements */}
             {requirements.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h3>
-                <ul className="space-y-2">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Requirements</h3>
+                <ul className="space-y-1.5 sm:space-y-2">
                   {requirements.map((requirement, index) => (
                     <li key={index} className="flex items-start space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{requirement}</span>
+                      <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm sm:text-base text-gray-700">{requirement}</span>
                     </li>
                   ))}
                 </ul>
@@ -247,12 +247,12 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             {/* Responsibilities */}
             {responsibilities.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Responsibilities</h3>
-                <ul className="space-y-2">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Responsibilities</h3>
+                <ul className="space-y-1.5 sm:space-y-2">
                   {responsibilities.map((responsibility, index) => (
                     <li key={index} className="flex items-start space-x-2">
-                      <CheckCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{responsibility}</span>
+                      <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm sm:text-base text-gray-700">{responsibility}</span>
                     </li>
                   ))}
                 </ul>
@@ -262,12 +262,12 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             {/* Skills */}
             {skills.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Required Skills</h3>
-                <div className="flex flex-wrap gap-2">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Required Skills</h3>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {skills.map((skill, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full"
+                      className="px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-100 text-purple-800 text-xs sm:text-sm font-medium rounded-full"
                     >
                       {skill}
                     </span>
@@ -279,12 +279,12 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
             {/* Benefits */}
             {benefits.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Benefits</h3>
-                <ul className="space-y-2">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Benefits</h3>
+                <ul className="space-y-1.5 sm:space-y-2">
                   {benefits.map((benefit, index) => (
                     <li key={index} className="flex items-start space-x-2">
-                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{benefit}</span>
+                      <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm sm:text-base text-gray-700">{benefit}</span>
                     </li>
                   ))}
                 </ul>
@@ -294,10 +294,10 @@ const JobPreviewModal: React.FC<JobPreviewModalProps> = ({ isOpen, onClose, job 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end space-x-2 sm:space-x-3 p-3 sm:p-4 md:p-6 border-t border-gray-200 bg-gray-50">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
           >
             Close
           </button>

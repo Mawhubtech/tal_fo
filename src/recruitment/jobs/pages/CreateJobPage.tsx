@@ -945,9 +945,9 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Breadcrumbs */}
       <div className="bg-white border-b flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-3">
-            <div className="flex items-center text-sm text-gray-500">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="py-2 sm:py-3">
+            <div className="flex items-center text-xs sm:text-sm text-gray-500 overflow-x-auto whitespace-nowrap">
               <Link to="/my-jobs" className="hover:text-gray-700">Jobs</Link>
               <span className="mx-2">/</span>
               {organizationId ? (
@@ -987,21 +987,21 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
           </div>
         </div>
       </div>      {/* Header */}      <div className="bg-white shadow-sm border-b flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <h1 className="text-2xl font-bold text-gray-900">Create New Job</h1>           
-			 <div className="flex gap-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-3 sm:py-4 gap-2 sm:gap-0 min-h-[4rem] sm:min-h-[4rem]">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate max-w-full sm:max-w-md">Create New Job</h1>           
+			 <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               {error && (
-                <div className="flex items-center text-red-600 bg-red-50 px-3 py-2 rounded-lg mr-4">
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  <span className="text-sm">{error}</span>
+                <div className="flex items-center text-red-600 bg-red-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm w-full sm:w-auto">
+                  <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  <span className="truncate">{error}</span>
                 </div>
               )}
               <button
                 type="button"
                 onClick={() => handleSubmit(false)}
                 disabled={submitLoading}
-                className="px-3 py-2 border-2 border-purple-600 text-purple-700 rounded-md hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 border-2 border-purple-600 text-purple-700 rounded-md hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center whitespace-nowrap flex-1 sm:flex-initial"
               >
                 {submitLoading ? (
                   <>
@@ -1018,16 +1018,17 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
               <button
                 type="button"
                 onClick={() => setShowCollaboratorForm(true)}
-                className="px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs shadow-sm flex items-center"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs shadow-sm flex items-center justify-center whitespace-nowrap flex-1 sm:flex-initial"
               >
-                <UserPlus className="h-3.5 w-3.5 mr-2" />
-                Invite Team
+                <UserPlus className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5 sm:mr-2" />
+                <span className="hidden sm:inline">Invite Team</span>
+                <span className="sm:hidden">Invite</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSubmit(true)}
                 disabled={submitLoading}
-                className="px-3 py-2 bg-purple-600 border border-purple-600 text-white rounded-md hover:bg-purple-700 hover:border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-purple-600 border border-purple-600 text-white rounded-md hover:bg-purple-700 hover:border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-200 font-medium text-xs shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center whitespace-nowrap flex-1 sm:flex-initial"
               >
                 {submitLoading ? (
                   <>
@@ -1036,8 +1037,9 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   </>
                 ) : (
                   <>
-                    <Globe className="h-3.5 w-3.5 mr-2" />
-                    {isEditMode ? 'Update Job' : 'Create Job'}
+                    <Globe className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5 sm:mr-2" />
+                    <span className="hidden sm:inline">{isEditMode ? 'Update Job' : 'Create Job'}</span>
+                    <span className="sm:hidden">{isEditMode ? 'Update' : 'Create'}</span>
                   </>
                 )}
               </button>
@@ -1046,19 +1048,19 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
         </div>
       </div>
 
-      <div className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex-1 w-full px-2 sm:px-4 lg:px-8 py-3 sm:py-4 md:py-6">
         {/* Team Members Display - Show invited collaborators at the top */}
         {(invitedCollaborators.length > 0 || pendingCollaborators.length > 0) && (
-          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setIsTeamMembersExpanded(!isTeamMembersExpanded)}>
-              <div className="flex items-center">
+          <div className="mb-3 sm:mb-4 md:mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between p-3 sm:p-4 md:p-6 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setIsTeamMembersExpanded(!isTeamMembersExpanded)}>
+              <div className="flex items-center min-w-0 flex-1">
                 {isTeamMembersExpanded ? (
-                  <ChevronDown className="text-gray-400 mr-2" size={20} />
+                  <ChevronDown className="text-gray-400 mr-1.5 sm:mr-2 flex-shrink-0" size={18} />
                 ) : (
-                  <ChevronRight className="text-gray-400 mr-2" size={20} />
+                  <ChevronRight className="text-gray-400 mr-1.5 sm:mr-2 flex-shrink-0" size={18} />
                 )}
-                <Users className="text-purple-600 mr-3" size={20} />
-                <h3 className="text-lg font-semibold text-gray-900">
+                <Users className="text-purple-600 mr-2 sm:mr-3 flex-shrink-0" size={18} />
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 truncate">
                   Team Members ({invitedCollaborators.length})
                 </h3>
               </div>
@@ -1067,33 +1069,34 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   e.stopPropagation();
                   setShowCollaboratorForm(true);
                 }}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap ml-2"
               >
-                <UserPlus className="w-4 h-4" />
-                Invite More
+                <UserPlus className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Invite More</span>
+                <span className="sm:hidden">Invite</span>
               </button>
             </div>
             {isTeamMembersExpanded && (
-              <div className="px-6 pb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
                   {invitedCollaborators.map((email, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg group hover:bg-purple-100 transition-colors">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Users className="w-5 h-5 text-purple-600" />
+                    <div key={index} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-purple-50 border border-purple-200 rounded-lg group hover:bg-purple-100 transition-colors">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{email}</p>
-                        <p className="text-xs text-gray-500">Team Member</p>
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{email}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">Team Member</p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Check className="w-5 h-5 text-purple-600" />
+                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                         <button
                           onClick={() => handleRemoveCollaborator(email)}
-                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-0.5 sm:p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                           title="Remove team member"
                           type="button"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     </div>
@@ -1106,23 +1109,23 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
         
         {/* AI Prompt Display - Show the prompt that was used to generate this job */}
         {aiPrompt && (
-          <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="mb-3 sm:mb-4 md:mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div 
-              className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 transition-colors"
             >
               <div 
-                className="flex items-center flex-1 cursor-pointer"
+                className="flex items-center flex-1 cursor-pointer min-w-0"
                 onClick={() => setIsAIPromptExpanded(!isAIPromptExpanded)}
               >
                 {isAIPromptExpanded ? (
-                  <ChevronDown className="text-gray-400 mr-2" size={20} />
+                  <ChevronDown className="text-gray-400 mr-1.5 sm:mr-2 flex-shrink-0" size={18} />
                 ) : (
-                  <ChevronRight className="text-gray-400 mr-2" size={20} />
+                  <ChevronRight className="text-gray-400 mr-1.5 sm:mr-2 flex-shrink-0" size={18} />
                 )}
-                <Sparkles className="text-purple-600 mr-3" size={20} />
-                <h3 className="text-lg font-semibold text-gray-900">AI Generated Content</h3>
+                <Sparkles className="text-purple-600 mr-2 sm:mr-3 flex-shrink-0" size={18} />
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 truncate">AI Generated Content</h3>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2 ml-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1131,11 +1134,12 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     setIsAIPromptExpanded(true);
                   }}
                   disabled={isGeneratingFromPrompt || aiLoading || isEditingPrompt}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-all text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   type="button"
                 >
-                  <Edit2 className="w-4 h-4" />
-                  Edit Prompt
+                  <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Edit Prompt</span>
+                  <span className="sm:hidden">Edit</span>
                 </button>
                 <button
                   onClick={(e) => {
@@ -1143,11 +1147,12 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     handleRegenerateFromPrompt(aiPrompt);
                   }}
                   disabled={isGeneratingFromPrompt || aiLoading || isEditingPrompt}
-                  className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   type="button"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isGeneratingFromPrompt || aiLoading ? 'animate-spin' : ''}`} />
-                  {isGeneratingFromPrompt || aiLoading ? 'Regenerating...' : 'Regenerate'}
+                  <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${isGeneratingFromPrompt || aiLoading ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{isGeneratingFromPrompt || aiLoading ? 'Regenerating...' : 'Regenerate'}</span>
+                  <span className="sm:hidden">{isGeneratingFromPrompt || aiLoading ? '...' : 'Regen'}</span>
                 </button>
               </div>
             </div>
@@ -1207,19 +1212,19 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
 
         <form onSubmit={(e) => e.preventDefault()}>
           {/* Job Overview & Compensation - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6">
             {/* Job Overview */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-200 px-6 py-4">
+              <div className="border-b border-gray-200 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
                 <div className="flex items-center">
-                  <Building className="text-purple-600 mr-3" size={20} />
-                  <h2 className="text-lg font-semibold text-gray-900">Job Overview</h2>
+                  <Building className="text-purple-600 mr-2 sm:mr-3 flex-shrink-0" size={18} />
+                  <h2 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">Job Overview</h2>
                 </div>
               </div>
-              <div className="p-6 space-y-6">
+              <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
               {/* Job Title */}
               <div>
-                <label htmlFor="jobTitle" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="jobTitle" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                   Job Title *
                 </label>
                 <input
@@ -1227,7 +1232,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   id="jobTitle"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                   placeholder="e.g., Senior Software Engineer"
                   required
                 />
@@ -1236,7 +1241,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                 {/* Organization selector - HIDDEN */}
                 {false && !organizationId && (
                   <div>
-                    <label htmlFor="organization" className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="organization" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                       Organization <span className="text-gray-400 font-normal">(Optional)</span>
                     </label>
                     <select
@@ -1248,7 +1253,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                         setDepartmentIdForm('');
                         setSelectedDepartment(null);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                       disabled={allOrganizationsLoading}
                     >
                       <option value="">Select Organization</option>
@@ -1259,16 +1264,16 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                       ))}
                     </select>
                     {allOrganizationsLoading && (
-                      <p className="text-xs text-gray-500 mt-1">Loading organizations...</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Loading organizations...</p>
                     )}
                   </div>
                 )}
 
               {/* Department field - HIDDEN */}
               {false && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                 <div className={!organizationId ? "lg:col-span-2" : ""}>
-                  <label htmlFor="department" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="department" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                     Department <span className="text-gray-400 font-normal">(Optional)</span>
                   </label>
                   <select
@@ -1279,7 +1284,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                       const selected = departments.find(dept => dept.id === e.target.value);
                       setSelectedDepartment(selected || null);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                     disabled={loading || departments.length === 0}
                   >
                     <option value="">
@@ -1294,20 +1299,20 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     ))}
                   </select>
                   {loading && (
-                    <p className="text-xs text-gray-500 mt-1">Loading departments...</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Loading departments...</p>
                   )}
                   {!loading && effectiveOrgId && departments.length === 0 && (
-                    <p className="text-xs text-red-500 mt-1">No departments found for this organization.</p>
+                    <p className="text-[10px] sm:text-xs text-red-500 mt-1">No departments found for this organization.</p>
                   )}
                 </div>
               </div>
               )}
 
               {/* Location and Employment Type */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                 <div>
-                  <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-2">
-                    <MapPin className="inline mr-1" size={16} />
+                  <label htmlFor="location" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
+                    <MapPin className="inline mr-1" size={14} />
                     Location *
                   </label>
                   <input
@@ -1315,21 +1320,21 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     id="location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="e.g., New York, NY"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="employmentType" className="block text-sm font-semibold text-gray-700 mb-2">
-                    <Clock className="inline mr-1" size={16} />
+                  <label htmlFor="employmentType" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
+                    <Clock className="inline mr-1" size={14} />
                     Employment Type *
                   </label>
                   <select
                     id="employmentType"
                     value={employmentType}
                     onChange={(e) => setEmploymentType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   >
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
@@ -1341,16 +1346,16 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
               </div>
 
               {/* Experience Level and Remote */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                 <div>
-                  <label htmlFor="experienceLevel" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="experienceLevel" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                     Experience Level
                   </label>
                   <select
                     id="experienceLevel"
                     value={experienceLevel}
                     onChange={(e) => setExperienceLevel(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                   >
                     <option value="">Select Experience Level</option>
                     <option value="Entry Level">Entry Level (0-2 years)</option>
@@ -1361,15 +1366,15 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   </select>
                 </div>
                 
-                <div className="flex items-center pt-8">
+                <div className="flex items-center sm:pt-6 md:pt-8">
                   <input
                     type="checkbox"
                     id="remote"
                     checked={remote}
                     onChange={(e) => setRemote(e.target.checked)}
-                    className="h-5 w-5 text-purple-600 focus:ring-purple-500 focus:outline-none border-gray-300 rounded"
+                    className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 focus:ring-purple-500 focus:outline-none border-gray-300 rounded"
                   />
-                  <label htmlFor="remote" className="ml-3 text-sm font-semibold text-gray-700">
+                  <label htmlFor="remote" className="ml-2 sm:ml-3 text-xs sm:text-sm font-semibold text-gray-700">
                     Remote work available
                   </label>
                 </div>
@@ -1377,8 +1382,8 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                 {/* Application Deadline - HIDDEN */}
                 {false && (
                 <div>
-                  <label htmlFor="applicationDeadline" className="block text-sm font-semibold text-gray-700 mb-2">
-                    <Calendar className="inline mr-1" size={16} />
+                  <label htmlFor="applicationDeadline" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
+                    <Calendar className="inline mr-1" size={14} />
                     Application Deadline
                   </label>
                   <input
@@ -1386,7 +1391,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     id="applicationDeadline"
                     value={applicationDeadline}
                     onChange={(e) => setApplicationDeadline(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                   />
                 </div>
                 )}
@@ -1396,23 +1401,23 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
 
             {/* Compensation */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-200 px-6 py-4">
+              <div className="border-b border-gray-200 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
                 <div className="flex items-center">
-                  <DollarSign className="text-purple-600 mr-3" size={20} />
-                  <h2 className="text-lg font-semibold text-gray-900">Compensation</h2>
+                  <DollarSign className="text-purple-600 mr-2 sm:mr-3 flex-shrink-0" size={18} />
+                  <h2 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">Compensation</h2>
                 </div>
               </div>
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label htmlFor="currency" className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="currency" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                       Currency
                     </label>
                     <select
                       id="currency"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                     >
                       <option value="USD">USD ($)</option>
                       <option value="EUR">EUR (€)</option>
@@ -1437,14 +1442,14 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="salaryPeriod" className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="salaryPeriod" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                       Salary Period
                     </label>
                     <select
                       id="salaryPeriod"
                       value={salaryPeriod}
                       onChange={(e) => setSalaryPeriod(e.target.value as 'monthly' | 'annual')}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400 bg-white"
                     >
                       <option value="annual">Annual</option>
                       <option value="monthly">Monthly</option>
@@ -1452,7 +1457,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="salaryMin" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="salaryMin" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                     Minimum Salary
                   </label>
                   <input
@@ -1460,12 +1465,12 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     id="salaryMin"
                     value={salaryMin}
                     onChange={(e) => setSalaryMin(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="50000"
                   />
                 </div>
                 <div>
-                  <label htmlFor="salaryMax" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="salaryMax" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                     Maximum Salary
                   </label>
                   <input
@@ -1473,7 +1478,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                     id="salaryMax"
                     value={salaryMax}
                     onChange={(e) => setSalaryMax(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                     placeholder="80000"
                   />
                 </div>
@@ -1482,18 +1487,18 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
           </div>
 
           {/* Job Description & Skills - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6">
             {/* Job Description */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-200 px-6 py-4">
+              <div className="border-b border-gray-200 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
                 <div className="flex items-center">
-                  <FileText className="text-purple-600 mr-3" size={20} />
-                  <h2 className="text-lg font-semibold text-gray-900">Job Description</h2>
+                  <FileText className="text-purple-600 mr-2 sm:mr-3 flex-shrink-0" size={18} />
+                  <h2 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900">Job Description</h2>
                 </div>
               </div>
-            <div className="p-6 space-y-6">
+            <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
               <div>
-                <label htmlFor="jobDescription" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="jobDescription" className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                   Job Overview *
                 </label>
                 <textarea
@@ -1501,7 +1506,7 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none transition-all duration-200 hover:border-gray-400"
                   placeholder="Provide a compelling overview of the role, company culture, and what makes this position exciting..."
                   required
                 />

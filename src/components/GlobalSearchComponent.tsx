@@ -588,88 +588,90 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex justify-center items-start pt-20 min-h-screen">
+      <div className="flex justify-center items-start pt-6 sm:pt-12 md:pt-20 min-h-screen px-3 sm:px-4 md:px-6">
         {/* Centered Search Section */}
-        <div className="w-full max-w-2xl bg-white rounded-lg shadow-2xl border-2 border-purple-400 p-8">
+        <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg sm:shadow-xl md:shadow-2xl border sm:border-2 border-purple-300 sm:border-purple-400 p-4 sm:p-6 md:p-8">
           {/* Logo and title */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div></div> {/* Spacer */}
-              <h1 className="text-2xl font-bold text-gray-900">Talent Search</h1>
+          <div className="text-center mb-4 sm:mb-6 md:mb-8">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="flex-1"></div> {/* Spacer */}
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 text-center flex-1">Talent Search</h1>
               {searchQuery.trim() && (
                 <button
                   onClick={() => {
                     setSearchQuery('');
                   }}
-                  className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-gray-100 text-gray-700 rounded-md sm:rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors flex-shrink-0"
                   title="Clear search and start fresh"
                 >
-                  <X className="w-4 h-4 mr-1" />
-                  Clear
+                  <X className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Clear</span>
                 </button>
               )}
-              {!searchQuery.trim() && <div></div>} {/* Spacer when no clear button */}
+              {!searchQuery.trim() && <div className="flex-1"></div>} {/* Spacer when no clear button */}
             </div>
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 text-xs sm:text-sm px-2 sm:px-0">
               Search across all talent databases and discover top talent.
             </p>
           </div>
           
           {/* Who are you looking for section */}
-          <div className="w-full mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <SearchIcon className="w-5 h-5 text-purple-600" />
-              <h2 className="text-lg font-medium text-gray-700">Who are you looking for?</h2>
+          <div className="w-full mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
+              <h2 className="text-sm sm:text-base md:text-lg font-medium text-gray-700">Who are you looking for?</h2>
             </div>
             
             <div className="relative">
-              <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3 border border-gray-200 hover:border-purple-300 transition-colors">
-                <SearchIcon className="w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Software Engineers with 5+ yrs of experience at fintech companies..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent border-none outline-none flex-1 text-gray-800 placeholder-gray-400"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && searchQuery.trim() && !isSearching) {
-                      handleAISearch();
-                    }
-                  }}
-                  disabled={isSearching}
-                />
-                {searchQuery.trim() && !isSearching && (
-                  <button 
-                    onClick={() => {
-                      setSearchQuery('');
+              <div className="bg-gray-50 p-2.5 sm:p-4 md:p-4 rounded-lg flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 border border-gray-200 hover:border-purple-300 focus-within:border-purple-400 transition-colors">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="e.g. Software Engineers with 5+ years..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-transparent border-none outline-none flex-1 text-sm sm:text-base md:text-lg text-gray-800 placeholder-gray-400 min-w-0 py-0.5 sm:py-1"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim() && !isSearching) {
+                        handleAISearch();
+                      }
                     }}
-                    className="text-gray-400 hover:text-gray-600 p-1 rounded-md transition-colors"
-                    title="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-                {/* Small search button next to input */}
+                    disabled={isSearching}
+                  />
+                  {searchQuery.trim() && !isSearching && (
+                    <button 
+                      onClick={() => {
+                        setSearchQuery('');
+                      }}
+                      className="text-gray-400 hover:text-gray-600 active:text-gray-700 p-1 rounded-md transition-colors flex-shrink-0 sm:hidden"
+                      title="Clear search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {/* Search button */}
                 <button 
                   onClick={handleAISearch}
                   disabled={!searchQuery.trim() || isSearching}
-                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                  className="bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 text-white px-3 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-2.5 rounded-md text-sm sm:text-base md:text-base font-medium transition-colors flex items-center justify-center gap-2 flex-shrink-0 w-full sm:w-auto"
                   title="Search candidates"
                 >
-                  <SearchIcon className="w-4 h-4" />
-                  Search
+                  <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Search</span>
                 </button>
               </div>
             </div>
           </div>
 
           {/* Loading Status Display */}
-          <div className="w-full mb-3">
+          <div className="w-full mb-2 sm:mb-3">
             {isSearching ? (
               <div className="text-center py-2">
-                <div className="flex items-center justify-center gap-3 mb-1">
-                  <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-lg font-bold text-purple-600">
+                <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm sm:text-base md:text-lg font-bold text-purple-600">
                     {searchLoadingMessage || 'Searching...'}
                   </span>
                 </div>
@@ -679,33 +681,33 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
 
           {/* Action buttons */}
           <div className="w-full">
-            <p className="text-sm text-gray-600 text-center mb-4">Or use advanced search options:</p>
-            <div className="flex justify-center space-x-4">
+            <p className="text-xs sm:text-sm text-gray-600 text-center mb-3 sm:mb-4 px-2">Or use advanced search options:</p>
+            <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 md:gap-4">
               <button
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-purple-700 border border-purple-300 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
                 onClick={() => setIsJobDescriptionDialogOpen(true)}
                 title="Search from Job Description"
               >
-                <FileText className="w-4 h-4" />
-                Job Description
+                <FileText className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Job Description</span>
               </button>
 
               <button
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-purple-700 border border-purple-300 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
                 onClick={() => setIsBooleanDialogOpen(true)}
                 title="Boolean Search"
               >
-                <ToggleRight className="w-4 h-4" />
-                Boolean Search
+                <ToggleRight className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Boolean Search</span>
               </button>
               
               <button
-                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-purple-700 border border-purple-300 px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-purple-700 border border-purple-300 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
                 onClick={toggleAdvancedFilters}
                 title="Advanced Filters"
               >
-                <Filter className="w-4 h-4" />
-                Advanced Filters
+                <Filter className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Advanced Filters</span>
               </button>
             </div>
           </div>
