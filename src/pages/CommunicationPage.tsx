@@ -473,11 +473,11 @@ const CommunicationPage: React.FC = () => {
   return (
     <div className="p-2 sm:p-4 space-y-4 max-w-screen mx-auto">
       {/* Header */}
-      <div className="bg-white border-2 border-purple-500 rounded-lg p-4">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <div className="flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Email Communications</h1>
-            <p className="text-sm text-gray-600">          
+      <div className="bg-white border-2 border-purple-500 rounded-lg p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">Email Communications</h1>
+            <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">          
                 View emails from your connected email accounts
             </p>
           </div>
@@ -485,18 +485,18 @@ const CommunicationPage: React.FC = () => {
       </div>
 
       {/* Actions and Provider Selector - All in one row */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
+      <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
           {/* Email Provider Selector */}
           <div className="flex-1 min-w-0">
             {providersLoading ? (
               <div className="flex items-center justify-center gap-2 py-2">
-                <Loader className="w-4 h-4 animate-spin text-purple-600" />
-                <span className="text-xs text-gray-500">Loading providers...</span>
+                <Loader className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-purple-600" />
+                <span className="text-[10px] sm:text-xs text-gray-500">Loading providers...</span>
               </div>
             ) : providers && providers.length > 0 ? (
               <div className="flex items-center gap-2">
-                <Mail className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
                 <select
                   value={selectedProvider || ''}
                   onChange={(e) => {
@@ -505,7 +505,7 @@ const CommunicationPage: React.FC = () => {
                     // Persist to sessionStorage
                     sessionStorage.setItem('selectedEmailProvider', newProviderId);
                   }}
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm font-medium bg-white min-w-0"
+                  className="flex-1 border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 focus:outline-none focus:border-purple-500 text-xs sm:text-sm font-medium bg-white min-w-0"
                 >
                   {providers.map((provider) => (
                     <option key={provider.id} value={provider.id}>
@@ -516,7 +516,7 @@ const CommunicationPage: React.FC = () => {
                 </select>
               </div>
             ) : (
-              <div className="text-xs text-gray-500 text-center py-2">
+              <div className="text-[10px] sm:text-xs text-gray-500 text-center py-2">
                 No email providers connected
               </div>
             )}
@@ -524,24 +524,24 @@ const CommunicationPage: React.FC = () => {
 
           {/* WebSocket Connection Status */}
           {selectedProvider && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200">
+            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-gray-50 border border-gray-200">
               {isEmailSocketConnected ? (
                 <>
-                  <Wifi className="w-4 h-4 text-green-600" />
-                  <span className="text-xs font-medium text-green-700">Live</span>
-                  <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
+                  <Wifi className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs font-medium text-green-700">Live</span>
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-600 rounded-full animate-pulse flex-shrink-0"></div>
                 </>
               ) : (
                 <>
-                  <WifiOff className="w-4 h-4 text-orange-500" />
-                  <span className="text-xs font-medium text-orange-600">Polling</span>
+                  <WifiOff className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs font-medium text-orange-600">Polling</span>
                 </>
               )}
             </div>
           )}
 
-          {/* Platform Filter Button */}
-          <button
+          {/* Platform Filter Button - Commented out */}
+          {/* <button
             onClick={handlePlatformFilterToggle}
             className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ${
               isPlatformFilterActive
@@ -554,9 +554,9 @@ const CommunicationPage: React.FC = () => {
             {isPlatformFilterActive && (
               <span className="ml-1 text-xs opacity-90">(Active)</span>
             )}
-          </button>
+          </button> */}
 
-          {/* Send Email Button */}
+          {/* Compose Button (renamed from Send Email) */}
           <button
             onClick={() => {
               // Set default provider when opening compose modal
@@ -565,24 +565,24 @@ const CommunicationPage: React.FC = () => {
               setShowComposeModal(true);
             }}
             disabled={!providers || providers.length === 0}
-            className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
+            className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg transition-colors text-xs sm:text-sm font-medium whitespace-nowrap"
           >
             <Send className="w-4 h-4" />
-            <span>Send Email</span>
+            <span>Compose</span>
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
+      <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
           {/* Search Bar */}
           <div className="flex-1 min-w-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
               <input
                 type="text"
-                placeholder="Search by subject, recipient, or sender... (use Gmail query syntax for advanced search)"
+                placeholder="Search by subject, recipient, or sender..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -592,11 +592,11 @@ const CommunicationPage: React.FC = () => {
                   }
                 }}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 w-full text-sm"
+                className="pl-8 sm:pl-10 pr-8 sm:pr-10 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 w-full text-xs sm:text-sm"
               />
               {isLoading && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <Loader className="h-4 w-4 text-purple-500 animate-spin" />
+                <div className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2">
+                  <Loader className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500 animate-spin" />
                 </div>
               )}
             </div>
@@ -606,7 +606,7 @@ const CommunicationPage: React.FC = () => {
           <select
             value={filters.type || 'all'}
             onChange={(e) => handleFilterChange({ type: e.target.value as any })}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 text-sm whitespace-nowrap"
+            className="border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 focus:outline-none focus:border-purple-500 text-xs sm:text-sm whitespace-nowrap"
           >
             <option value="all">All Emails</option>
             <option value="sent">Sent</option>
@@ -616,32 +616,33 @@ const CommunicationPage: React.FC = () => {
           {/* Apply Filters Button */}
           <button
             onClick={handleSearch}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap"
+            className="bg-purple-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium whitespace-nowrap"
           >
-            <Filter className="h-4 w-4" />
-            <span>Apply Filters</span>
+            <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Apply Filters</span>
+            <span className="sm:hidden">Apply</span>
           </button>
         </div>
       </div>
 
       {/* Email List */}
       <div className="bg-white rounded-lg shadow">
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">
-            {totalEmails} {totalEmails === 1 ? 'Email' : 'Emails'} Found
+        <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0">
+          <h2 className="text-sm sm:text-base font-semibold text-gray-900">
+            {totalEmails} {totalEmails === 1 ? 'Email' : 'Emails'}
           </h2>
           {totalPages > 1 && (
-            <div className="text-sm text-gray-600">
+            <div className="text-xs sm:text-sm text-gray-600">
               Page {filters.page} of {totalPages}
             </div>
           )}
         </div>
 
         {emails.length === 0 ? (
-          <div className="p-12 text-center">
-            <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No emails found</h3>
-            <p className="text-gray-600">Try adjusting your search criteria or filters.</p>
+          <div className="p-8 sm:p-12 text-center">
+            <Mail className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">No emails found</h3>
+            <p className="text-sm sm:text-base text-gray-600">Try adjusting your search criteria or filters.</p>
           </div>
         ) : (
           <>
@@ -655,53 +656,48 @@ const CommunicationPage: React.FC = () => {
                 return (
                   <div 
                     key={thread.threadId} 
-                    className="px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => handleViewEmail(latestEmail)}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                       {/* Email Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
                           {latestEmail.type === 'sent' ? (
-                            <Send className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            <Send className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
                           ) : (
-                            <Inbox className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                            <Inbox className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
                           )}
-                          <h3 className="text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
+                          <h3 className="text-xs sm:text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
                             {latestEmail.subject || '(No Subject)'}
                           </h3>
                           {thread.count > 1 && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 flex-shrink-0">
-                              {thread.count} emails
+                            <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 text-green-800 flex-shrink-0">
+                              {thread.count}
                             </span>
                           )}
                           {hasUnread && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
-                              Unread
-                            </span>
-                          )}
-                          {latestEmail.type === 'received' && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 flex-shrink-0">
-                              Received
+                            <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
+                              New
                             </span>
                           )}
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-4 text-[10px] sm:text-xs text-gray-600">
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="font-medium flex-shrink-0">
                               {latestEmail.type === 'sent' ? 'To:' : 'From:'}
                             </span>
                             <span className="truncate">
                               {latestEmail.type === 'sent' ? latestEmail.to : latestEmail.from}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDate(latestEmail.date)}</span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            <span className="whitespace-nowrap">{formatDate(latestEmail.date)}</span>
                           </div>
                         </div>
                         {latestEmail.snippet && (
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2 sm:truncate">
+                          <p className="text-[10px] sm:text-xs text-gray-500 mt-1 line-clamp-2">
                             {latestEmail.snippet}
                           </p>
                         )}
@@ -713,10 +709,10 @@ const CommunicationPage: React.FC = () => {
                           e.stopPropagation();
                           handleViewEmail(latestEmail);
                         }}
-                        className="self-end sm:self-auto p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        className="self-end sm:self-auto p-1.5 sm:p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                         title="View Thread"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                   </div>
@@ -727,48 +723,43 @@ const CommunicationPage: React.FC = () => {
               {groupedEmails.standaloneEmails.map((email) => (
                 <div 
                   key={email.id} 
-                  className="px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hover:bg-gray-50 transition-colors cursor-pointer"
                   onClick={() => handleViewEmail(email)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                     {/* Email Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
                         {email.type === 'sent' ? (
-                          <Send className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                          <Send className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
                         ) : (
-                          <Inbox className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                          <Inbox className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
                         )}
-                        <h3 className="text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
+                        <h3 className="text-xs sm:text-sm font-semibold text-gray-900 truncate flex-1 min-w-0">
                           {email.subject || '(No Subject)'}
                         </h3>
                         {!email.isRead && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
-                            Unread
-                          </span>
-                        )}
-                        {email.type === 'received' && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 flex-shrink-0">
-                            Received
+                          <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
+                            New
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-4 text-[10px] sm:text-xs text-gray-600">
+                        <div className="flex items-center gap-1 truncate">
+                          <span className="font-medium flex-shrink-0">
                             {email.type === 'sent' ? 'To:' : 'From:'}
                           </span>
                           <span className="truncate">
                             {email.type === 'sent' ? email.to : email.from}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>{formatDate(email.date)}</span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span className="whitespace-nowrap">{formatDate(email.date)}</span>
                         </div>
                       </div>
                       {email.snippet && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2 sm:truncate">
+                        <p className="text-[10px] sm:text-xs text-gray-500 mt-1 line-clamp-2">
                           {email.snippet}
                         </p>
                       )}
@@ -780,10 +771,10 @@ const CommunicationPage: React.FC = () => {
                         e.stopPropagation();
                         handleViewEmail(email);
                       }}
-                      className="self-end sm:self-auto p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                      className="self-end sm:self-auto p-1.5 sm:p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                       title="View Email"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </button>
                   </div>
                 </div>
@@ -792,19 +783,20 @@ const CommunicationPage: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="px-3 sm:px-4 py-3 border-t border-gray-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-                    Showing {((filters.page || 1) - 1) * (filters.limit || 20) + 1} to {Math.min((filters.page || 1) * (filters.limit || 20), totalEmails)} of {totalEmails}
+              <div className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                  <div className="text-[10px] sm:text-xs md:text-sm text-gray-600 text-center sm:text-left">
+                    <span className="hidden sm:inline">Showing </span>
+                    {((filters.page || 1) - 1) * (filters.limit || 20) + 1}-{Math.min((filters.page || 1) * (filters.limit || 20), totalEmails)} of {totalEmails}
                   </div>
 
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
                     <button
                       onClick={() => handlePageChange((filters.page || 1) - 1)}
                       disabled={filters.page === 1}
-                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                      className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-[10px] sm:text-xs md:text-sm"
                     >
-                      <ChevronLeft className="h-4 w-4" />
+                      <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span className="hidden sm:inline">Previous</span>
                       <span className="sm:hidden">Prev</span>
                     </button>
@@ -816,7 +808,7 @@ const CommunicationPage: React.FC = () => {
                           <button
                             key={pageNum}
                             onClick={() => handlePageChange(pageNum)}
-                            className={`px-3 py-1.5 rounded-lg text-sm ${
+                            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm ${
                               filters.page === pageNum
                                 ? 'bg-purple-600 text-white'
                                 : 'border border-gray-300 hover:bg-gray-50'
@@ -829,17 +821,17 @@ const CommunicationPage: React.FC = () => {
                     </div>
 
                     {/* Mobile page indicator */}
-                    <div className="sm:hidden px-3 py-1.5 border border-gray-300 rounded-lg text-xs">
+                    <div className="sm:hidden px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-300 rounded-lg text-[10px] sm:text-xs">
                       {filters.page} / {totalPages}
                     </div>
 
                     <button
                       onClick={() => handlePageChange((filters.page || 1) + 1)}
                       disabled={filters.page === totalPages}
-                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                      className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-[10px] sm:text-xs md:text-sm"
                     >
                       <span>Next</span>
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
                 </div>
