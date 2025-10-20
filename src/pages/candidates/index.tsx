@@ -513,26 +513,27 @@ const CandidatesPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 p-4 sm:p-6 max-w-full overflow-hidden">
         <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb Navigation */}
-        <div className="flex items-center text-sm text-gray-500 mb-4">
-          <Link to="/dashboard" className="flex items-center hover:text-purple-600 transition-colors">
-            <Home className="w-4 h-4 mr-1" />
-            Dashboard
+        <div className="flex items-center text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4 overflow-x-auto pb-1">
+          <Link to="/dashboard" className="flex items-center hover:text-purple-600 transition-colors whitespace-nowrap flex-shrink-0">
+            <Home className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            <span className="hidden sm:inline">Dashboard</span>
+            <span className="sm:hidden">Home</span>
           </Link>
-          <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-gray-900 font-medium">Candidate Management</span>
+          <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 mx-1 sm:mx-2 flex-shrink-0" />
+          <span className="text-gray-900 font-medium truncate">Candidate Management</span>
         </div>
         
         {/* Header */}
-        <div className="bg-white rounded-lg border p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+        <div className="bg-white rounded-lg border p-3 sm:p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">
                 {isUserSuperAdmin 
                   ? (includeJobseekers ? 'All Candidates + Job Seekers' : 'Company Candidates') 
                   : 'Candidate Management'
                 }
               </h1>
-              <p className="text-gray-600 mt-1 text-sm">
+              <p className="text-gray-600 mt-1 text-xs sm:text-sm line-clamp-2">
                 {isUserSuperAdmin 
                   ? (includeJobseekers 
                       ? 'Manage candidates from companies and independent job seekers' 
@@ -542,46 +543,46 @@ const CandidatesPage: React.FC = () => {
                 }
               </p>
             </div>
-            <div className="flex items-center space-x-4 mt-2 sm:mt-0">
+            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
               <div className="text-right">
-                <div className="text-xl font-bold text-purple-600">{totalItems}</div>
-                <div className="text-xs text-gray-500">Total Candidates</div>
+                <div className="text-lg sm:text-xl font-bold text-purple-600">{totalItems}</div>
+                <div className="text-[10px] sm:text-xs text-gray-500">Total</div>
               </div>
-              <div className="w-px h-10 bg-gray-300 hidden sm:block"></div>
+              <div className="w-px h-8 sm:h-10 bg-gray-300"></div>
               <div className="text-right">
-                <div className="text-xl font-bold text-green-600">{stats.active}</div>
-                <div className="text-xs text-gray-500">Active</div>
+                <div className="text-lg sm:text-xl font-bold text-green-600">{stats.active}</div>
+                <div className="text-[10px] sm:text-xs text-gray-500">Active</div>
               </div>
             </div>
           </div>
         </div>
         
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">         
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xl font-bold text-purple-600 mb-1">{stats.total}</div>
-            <div className="text-xs font-medium text-gray-600">Total</div>
-            <div className="text-xs text-gray-500 mt-1 hidden sm:block">All applications</div>
+        {/* Stats Cards - Hidden on mobile */}
+        <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">         
+          <div className="bg-white p-2 sm:p-3 rounded-lg border shadow-sm">
+            <div className="text-lg sm:text-xl font-bold text-purple-600 mb-0.5 sm:mb-1">{stats.total}</div>
+            <div className="text-[10px] sm:text-xs font-medium text-gray-600">Total</div>
+            <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">All applications</div>
           </div>
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xl font-bold text-green-600 mb-1">{stats.active}</div>
-            <div className="text-xs font-medium text-gray-600">Active</div>
-            <div className="text-xs text-gray-500 mt-1 hidden sm:block">Ready to interview</div>
+          <div className="bg-white p-2 sm:p-3 rounded-lg border shadow-sm">
+            <div className="text-lg sm:text-xl font-bold text-green-600 mb-0.5 sm:mb-1">{stats.active}</div>
+            <div className="text-[10px] sm:text-xs font-medium text-gray-600">Active</div>
+            <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Ready to interview</div>
           </div>
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xl font-bold text-yellow-600 mb-1">{stats.interviewing}</div>
-            <div className="text-xs font-medium text-gray-600">Interviewing</div>
-            <div className="text-xs text-gray-500 mt-1 hidden sm:block">In process</div>
+          <div className="bg-white p-2 sm:p-3 rounded-lg border shadow-sm">
+            <div className="text-lg sm:text-xl font-bold text-yellow-600 mb-0.5 sm:mb-1">{stats.interviewing}</div>
+            <div className="text-[10px] sm:text-xs font-medium text-gray-600">Interviewing</div>
+            <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">In process</div>
           </div>          
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xl font-bold text-purple-600 mb-1">{stats.hired}</div>
-            <div className="text-xs font-medium text-gray-600">Hired</div>
-            <div className="text-xs text-gray-500 mt-1 hidden sm:block">Successfully placed</div>
+          <div className="bg-white p-2 sm:p-3 rounded-lg border shadow-sm">
+            <div className="text-lg sm:text-xl font-bold text-purple-600 mb-0.5 sm:mb-1">{stats.hired}</div>
+            <div className="text-[10px] sm:text-xs font-medium text-gray-600">Hired</div>
+            <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Successfully placed</div>
           </div>
-          <div className="bg-white p-3 rounded-lg border shadow-sm sm:col-span-1 col-span-2">
-            <div className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600 mb-1">{stats.rejected}</div>
-            <div className="text-xs sm:text-sm text-gray-600 font-medium">Rejected</div>
-            <div className="text-xs text-gray-500 mt-1 hidden sm:block">Not suitable</div>
+          <div className="bg-white p-2 sm:p-3 rounded-lg border shadow-sm sm:col-span-1 col-span-2">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-red-600 mb-0.5 sm:mb-1">{stats.rejected}</div>
+            <div className="text-[10px] sm:text-xs text-gray-600 font-medium">Rejected</div>
+            <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Not suitable</div>
           </div>
         </div>
         
@@ -687,26 +688,33 @@ const CandidatesPage: React.FC = () => {
           ''
         }`}>
           <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+            {/* Mobile: Show scroll hint */}
+            <div className="sm:hidden px-3 py-2 bg-purple-50 border-b border-purple-100">
+              <p className="text-[10px] text-purple-700 flex items-center">
+                <span>← Swipe to see more →</span>
+              </p>
+            </div>
+            
             <div className="overflow-x-auto">
-              <table className="w-full" style={{minWidth: '750px', tableLayout: 'fixed'}}>
+              <table className="w-full" style={{minWidth: '700px', tableLayout: 'fixed'}}>
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[150px]">
+                    <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[140px] sm:w-[150px]">
                       Candidate
                     </th>
-                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[110px]">
-                      Position & Company
+                    <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[100px] sm:w-[110px]">
+                      Position
                     </th>
-                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[110px]">
+                    <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[100px] sm:w-[110px]">
                       Location
                     </th>
-                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[80px]">
+                    <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[70px] sm:w-[80px]">
                       Status
                     </th>
-                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-[100px]">
+                    <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[90px] sm:w-[100px]">
                       Skills
                     </th>
-                    <th className="px-3 sm:px-4 lg:px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[90px]">
+                    <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-center text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[80px] sm:w-[90px]">
                       Actions
                     </th>
                   </tr>
@@ -777,9 +785,9 @@ const CandidatesPage: React.FC = () => {
                           </div>
                         </div>
                       </td>                      
-					  <td className="px-3 sm:px-4 lg:px-6 py-3">
+					  <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3">
                         <div>
-                          <div className="text-xs sm:text-sm font-medium text-gray-900 truncate" title={candidate.currentPosition || 
+                          <div className="text-[11px] sm:text-xs md:text-sm font-medium text-gray-900 truncate" title={candidate.currentPosition || 
                              (candidate.experience && Array.isArray(candidate.experience) && candidate.experience.length > 0 
                               ? candidate.experience[0].position 
                               : 'No position data')}>
@@ -788,7 +796,7 @@ const CandidatesPage: React.FC = () => {
                               ? candidate.experience[0].position 
                               : 'No position data')}
                           </div>
-                          <div className="text-xs sm:text-sm text-gray-500 truncate" title={
+                          <div className="text-[10px] sm:text-xs text-gray-500 truncate mt-0.5" title={
                             candidate.experience && Array.isArray(candidate.experience) && candidate.experience.length > 0 
                               ? candidate.experience[0].company 
                               : 'No company data'
@@ -799,30 +807,30 @@ const CandidatesPage: React.FC = () => {
                           </div>
                         </div>
                       </td>                      
-                      <td className="px-3 sm:px-4 lg:px-6 py-3">
-                        <div className="text-xs sm:text-sm text-gray-900 flex items-center truncate">
-                          <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3">
+                        <div className="text-[11px] sm:text-xs md:text-sm text-gray-900 flex items-center truncate">
+                          <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />
                           <span className="truncate" title={candidate.location}>{candidate.location}</span>
                         </div>
                       </td>
                       
-                      <td className="px-3 sm:px-4 lg:px-6 py-3 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(candidate.status)}`}>
+                      <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 whitespace-nowrap">
+                        <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold rounded-full ${getStatusBadgeColor(candidate.status)}`}>
                           {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
                         </span>
                       </td>                      
-					  <td className="px-3 sm:px-4 lg:px-6 py-3">
-                        <div className="flex flex-wrap gap-1">
+					  <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3">
+                        <div className="flex flex-wrap gap-0.5 sm:gap-1">
                           {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.slice(0, 2).map((skill: string, index: number) => (
-                            <span key={index} className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded truncate max-w-16 sm:max-w-20" title={skill}>
+                            <span key={index} className="inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-purple-100 text-purple-700 rounded truncate max-w-14 sm:max-w-16 md:max-w-20" title={skill}>
                               {skill}
                             </span>
                           ))}
                           {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.length > 2 && (
-                            <span className="text-xs text-gray-500 whitespace-nowrap">+{candidate.skills.length - 2}</span>
+                            <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">+{candidate.skills.length - 2}</span>
                           )}
                           {(!candidate.skills || !Array.isArray(candidate.skills) || candidate.skills.length === 0) && (
-                            <span className="text-xs text-gray-500">No skills</span>
+                            <span className="text-[10px] sm:text-xs text-gray-500">No skills</span>
                           )}
                         </div>
                       </td>                      
@@ -832,19 +840,19 @@ const CandidatesPage: React.FC = () => {
                           <div className="text-sm text-gray-500 truncate">Last: {candidate.lastActivity ? formatDate(candidate.lastActivity) : 'N/A'}</div>
                         </div>
                       </td>                       */}
-					  <td className="px-3 sm:px-4 lg:px-6 py-3 text-xs sm:text-sm font-medium text-center">
+					  <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 text-[10px] sm:text-xs md:text-sm font-medium text-center">
                         <div className="relative dropdown-container inline-block">
                           <button 
-                            className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 hover:border-purple-300 transition-colors"
+                            className="flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 text-[10px] sm:text-xs md:text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 hover:border-purple-300 transition-colors"
                             onClick={() => setOpenDropdownId(openDropdownId === candidate.id ? null : candidate.id)}
                           >
-                            <span className="hidden sm:inline">Actions</span>
-                            <span className="sm:hidden">Act</span>
-                            <ChevronDown className={`w-3 h-3 ml-0.5 transition-transform ${openDropdownId === candidate.id ? 'rotate-180' : ''}`} />
+                            <span className="hidden md:inline">Actions</span>
+                            <span className="md:hidden">Act</span>
+                            <ChevronDown className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 transition-transform ${openDropdownId === candidate.id ? 'rotate-180' : ''}`} />
                           </button>{openDropdownId === candidate.id && (
-                            <div className="absolute right-0 mt-1 w-36 sm:w-40 bg-white rounded-md shadow-lg border border-gray-200 z-50 dropdown-menu" style={{maxWidth: "180px"}}>
+                            <div className="absolute right-0 mt-1 w-32 sm:w-36 md:w-40 bg-white rounded-md shadow-lg border border-gray-200 z-50 dropdown-menu" style={{maxWidth: "180px"}}>
                               <div className="py-1">                                <button 
-                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-purple-700 hover:bg-purple-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm text-purple-700 hover:bg-purple-50 transition-colors"
                                   onClick={() => {
                                     handleOpenProfilePanel(candidate);
                                     setOpenDropdownId(null);
@@ -852,76 +860,75 @@ const CandidatesPage: React.FC = () => {
                                   disabled={selectedCandidateQuery.isLoading && selectedCandidateId === candidate.id}
                                 >
                                   {selectedCandidateQuery.isLoading && selectedCandidateId === candidate.id ? (
-                                    <div className="w-3 h-3 border border-purple-300 border-t-purple-600 rounded-full animate-spin mr-1 sm:mr-2 flex-shrink-0"></div>
+                                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 border border-purple-300 border-t-purple-600 rounded-full animate-spin mr-1 sm:mr-2 flex-shrink-0"></div>
                                   ) : (
-                                    <Eye className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                    <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-2 flex-shrink-0" />
                                   )}
                                   <span className="truncate">View Profile</span>
                                 </button>
                                 <button 
-                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-blue-700 hover:bg-blue-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm text-blue-700 hover:bg-blue-50 transition-colors"
                                   onClick={() => {
                                     handleEditCandidate(candidate);
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <Edit className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <Edit className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-2 flex-shrink-0" />
                                   <span className="truncate">Edit Profile</span>
                                 </button>
 
-                                <div className="border-t border-gray-100 my-1"></div>
-                                <div className="px-2 sm:px-3 py-1 text-xs font-semibold text-gray-500">Status</div>
+                                <div className="border-t border-gray-100 my-0.5 sm:my-1"></div>
+                                <div className="px-2 sm:px-3 py-0.5 sm:py-1 text-[9px] sm:text-xs font-semibold text-gray-500">Status</div>
                                 <button 
-                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-green-700 hover:bg-green-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm text-green-700 hover:bg-green-50 transition-colors"
                                   onClick={() => {
                                     handleStatusChange(candidate.id, 'active');
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <CheckCircle className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-2 flex-shrink-0" />
                                   <span className="truncate">Active</span>
                                 </button>
                                 <button 
-                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-yellow-700 hover:bg-yellow-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm text-yellow-700 hover:bg-yellow-50 transition-colors"
                                   onClick={() => {
                                     handleStatusChange(candidate.id, 'interviewing');
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <Clock className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-2 flex-shrink-0" />
                                   <span className="truncate">Interviewing</span>
                                 </button>
                                 <button 
-                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-blue-700 hover:bg-blue-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm text-blue-700 hover:bg-blue-50 transition-colors"
                                   onClick={() => {
                                     handleStatusChange(candidate.id, 'hired');
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <UserCheck className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <UserCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-2 flex-shrink-0" />
                                   <span className="truncate">Hired</span>
                                 </button>
                                 <button 
-                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm text-red-700 hover:bg-red-50 transition-colors"
                                   onClick={() => {
                                     handleStatusChange(candidate.id, 'rejected');
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <XCircle className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <XCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-2 flex-shrink-0" />
                                   <span className="truncate">Rejected</span>
                                 </button>
-                                <div className="border-t border-gray-100 my-1"></div>
+                                <div className="border-t border-gray-100 my-0.5 sm:my-1"></div>
 
-                                <div className="border-t border-gray-100 my-1"></div>
                                 <button 
-                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-red-700 hover:bg-red-50 transition-colors"
+                                  className="flex items-center w-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm text-red-700 hover:bg-red-50 transition-colors"
                                   onClick={() => {
                                     handleDeleteCandidate(candidate);
                                     setOpenDropdownId(null);
                                   }}
                                 >
-                                  <Trash2 className="w-3 h-3 mr-1 sm:mr-2 flex-shrink-0" />
+                                  <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-2 flex-shrink-0" />
                                   <span className="truncate">Delete</span>
                                 </button>
                               </div>
@@ -944,38 +951,39 @@ const CandidatesPage: React.FC = () => {
         </div> {/* End of table container that gets affected by panel */}        
         
         {/* Pagination - This stays fixed and doesn't move with the panel */}
-        <div className="bg-white rounded-lg border p-3 sm:p-4 overflow-hidden">
+        <div className="bg-white rounded-lg border p-2 sm:p-3 md:p-4 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">
-              Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{endIndex}</span> of <span className="font-medium">{totalItems}</span> candidates
+            <div className="text-[10px] sm:text-xs md:text-sm text-gray-700 whitespace-nowrap">
+              <span className="hidden sm:inline">Showing </span>
+              <span className="font-medium">{startIndex + 1}</span>-<span className="font-medium">{endIndex}</span> of <span className="font-medium">{totalItems}</span>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-3">
               {/* Items per page selector */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs sm:text-sm text-gray-700">Show:</span>
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <span className="text-[10px] sm:text-xs md:text-sm text-gray-700 whitespace-nowrap">Show:</span>
                 <select
                   value={itemsPerPage}
                   onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                  className="border border-gray-300 rounded px-1 sm:px-2 py-1 text-xs sm:text-sm"
+                  className="border border-gray-300 rounded px-1 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs md:text-sm"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
                   <option value={20}>20</option>
                   <option value={50}>50</option>
                 </select>
-                <span className="text-xs sm:text-sm text-gray-700">per page</span>
+                <span className="text-[10px] sm:text-xs md:text-sm text-gray-700 hidden sm:inline">per page</span>
               </div>
               
               {/* Pagination controls */}
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-0.5 sm:space-x-1">
                 <button 
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage <= 1}
-                  className="px-2 py-1 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-xs sm:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-1.5 sm:px-2 py-1 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>Prev</span>
                 </button>
-                <div className="flex space-x-1">
+                <div className="flex space-x-0.5 sm:space-x-1">
                   {Array.from({ length: Math.min(totalPages <= 3 ? totalPages : 3, totalPages) }, (_, i) => {
                     let pageNumber;
                     if (totalPages <= 3) {
@@ -992,7 +1000,7 @@ const CandidatesPage: React.FC = () => {
                       <button
                         key={pageNumber}
                         onClick={() => handlePageChange(pageNumber)}
-                        className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-xs sm:text-sm font-medium ${
+                        className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg text-[10px] sm:text-xs md:text-sm font-medium ${
                           currentPage === pageNumber
                             ? 'bg-purple-600 text-white'
                             : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
@@ -1003,12 +1011,12 @@ const CandidatesPage: React.FC = () => {
                     );
                   })}
                   {totalPages > 3 && currentPage < totalPages - 1 && (
-                    <span className="flex items-center justify-center px-1 text-xs sm:text-sm">...</span>
+                    <span className="flex items-center justify-center px-0.5 sm:px-1 text-[10px] sm:text-xs md:text-sm">...</span>
                   )}
                   {totalPages > 3 && currentPage < totalPages - 1 && (
                     <button
                       onClick={() => handlePageChange(totalPages)}
-                      className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-xs sm:text-sm font-medium border border-gray-300 hover:bg-gray-50 text-gray-700"
+                      className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg text-[10px] sm:text-xs md:text-sm font-medium border border-gray-300 hover:bg-gray-50 text-gray-700"
                     >
                       {totalPages}
                     </button>
@@ -1017,7 +1025,7 @@ const CandidatesPage: React.FC = () => {
                 <button 
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages}
-                  className="px-2 py-1 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-xs sm:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-1.5 sm:px-2 py-1 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-[10px] sm:text-xs md:text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>Next</span>
                 </button>              
