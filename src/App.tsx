@@ -120,8 +120,9 @@ function App() {
                     <Router>
                       <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/jobs" element={<JobBoardPage />} />
-            <Route path="/careers/jobs/:jobId" element={<JobDetailPage />} />
+              {/* Commented out: Public job board route */}
+              {/* <Route path="/jobs" element={<JobBoardPage />} /> */}
+              {/* <Route path="/careers/jobs/:jobId" element={<JobDetailPage />} /> */}
             <Route
               path="/signin"
               element={<SignIn />}
@@ -578,10 +579,11 @@ function App() {
                 } />
               </Route>
             </Route>
-            <Route
+            {/* Commented out: Request demo route */}
+            {/* <Route
               path="/request-demo"
               element={<RequestDemoPage />}
-            />
+            /> */}
             {/* Public Hiring Team Invitation Routes */}
             <Route
               path="/hiring-teams/accept-invitation"

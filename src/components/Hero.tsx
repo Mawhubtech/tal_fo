@@ -8,7 +8,6 @@ const Hero: React.FC = () => {
   
   const cyclingWords = [
     "Recruiters",
-    "Job Seekers", 
     "TA Agencies",
     "HR Teams",
     "Leaders"
@@ -54,6 +53,28 @@ const Hero: React.FC = () => {
             <span className="text-purple-600 font-semibold"> Connect with 800M+ professionals worldwide.</span>
           </p>
 
+		            {/* Search Input Box */}
+          <div className="max-w-4xl mx-auto mb-16">
+            <div className="relative bg-white rounded-2xl shadow-lg border border-purple-200 p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <input 
+                    type="text" 
+                    placeholder="Find AI Research Scientists in New York working at companies with 5,000 or more employees"
+                    className="w-full text-lg text-gray-600 placeholder-gray-400 bg-transparent border-none outline-none"
+                  />
+                </div>
+                <Button 
+              variant="primary" 
+              size="lg" 
+              className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-8 py-3 text-base font-medium transition-colors"
+            >
+              Search
+            </Button>
+              </div>
+            </div>
+          </div>
+
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Button 
@@ -72,23 +93,7 @@ const Hero: React.FC = () => {
             </Button>
           </div>
 
-          {/* Search Input Box */}
-          <div className="max-w-4xl mx-auto mb-16">
-            <div className="relative bg-white rounded-2xl shadow-lg border border-purple-200 p-6">
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <input 
-                    type="text" 
-                    placeholder="Find AI Research Scientists in New York working at companies with 5,000 or more employees"
-                    className="w-full text-lg text-gray-600 placeholder-gray-400 bg-transparent border-none outline-none"
-                  />
-                </div>
-                <button className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition-colors">
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
+
 
 
         </div>
