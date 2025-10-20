@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, Search as SearchIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Button from './Button';
+import { useToast } from '../contexts/ToastContext';
+import apiClient from '../lib/api';
 
 const Hero: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   
   const cyclingWords = [
     "Recruiters",
@@ -25,6 +32,68 @@ const Hero: React.FC = () => {
     
     return () => clearInterval(interval);
   }, [cyclingWords.length]);
+
+  // Handle hero search
+  const handleHeroSearch = async () => {
+    if (!searchQuery.trim()) {
+      addToast({
+        type: 'error',
+        title: 'Search Required',
+        message: 'Please enter a search query.'
+      });
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      console.log("🚀 Hero search initiated with query:", searchQuery);
+      
+      // Use the new public search endpoint
+      const response = await apiClient.post('/public/search/hero', {
+        searchText: searchQuery,
+        contextualHints: {
+          urgency: 'medium',
+          flexibility: 'moderate',
+          primaryFocus: 'balanced',
+          isLocationAgnostic: false,
+          balanceMode: 'recall_optimized'
+        }
+      }, {
+        params: {
+          page: 1,
+          limit: 3,
+          disableCache: true
+        }
+      });
+      
+      const searchResults = response.data;
+      console.log("✅ Hero search completed:", searchResults);
+      
+      // Navigate to search results with requiresAuth flag
+      navigate('/search-results', {
+        state: {
+          query: searchQuery,
+          filters: { searchText: searchQuery },
+          searchMode: 'external',
+          isGlobalSearch: true,
+          isEnhanced: true,
+          singleCallOptimized: true,
+          preloadedResults: searchResults,
+          requiresAuth: true, // Flag to show registration modal
+          fromHeroSearch: true
+        }
+      });
+    } catch (error) {
+      console.error('❌ Hero search error:', error);
+      addToast({
+        type: 'error',
+        title: 'Search Failed',
+        message: 'Failed to process search. Please try again.'
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   return (
     <section className="relative overflow-hidden min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-purple-50">
@@ -62,15 +131,32 @@ const Hero: React.FC = () => {
                     type="text" 
                     placeholder="Find AI Research Scientists in New York working at companies with 5,000 or more employees"
                     className="w-full text-lg text-gray-600 placeholder-gray-400 bg-transparent border-none outline-none"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim() && !isSearching) {
+                        handleHeroSearch();
+                      }
+                    }}
+                    disabled={isSearching}
                   />
                 </div>
                 <Button 
-              variant="primary" 
-              size="lg" 
-              className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-8 py-3 text-base font-medium transition-colors"
-            >
-              Search
-            </Button>
+                  variant="primary" 
+                  size="lg" 
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-8 py-3 text-base font-medium transition-colors disabled:bg-gray-400"
+                  onClick={handleHeroSearch}
+                  disabled={!searchQuery.trim() || isSearching}
+                >
+                  {isSearching ? (
+                    <>
+                      <SearchIcon className="w-5 h-5 mr-2 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    'Search'
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -81,8 +167,9 @@ const Hero: React.FC = () => {
               variant="primary" 
               size="lg" 
               className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-8 py-3 text-base font-medium transition-colors"
+              onClick={() => navigate('/register')}
             >
-              Start Free Trial
+              Start For Free
             </Button>
             <Button 
               variant="outline" 

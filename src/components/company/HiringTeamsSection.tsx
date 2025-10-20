@@ -60,7 +60,7 @@ export const HiringTeamsSection: React.FC<HiringTeamsSectionProps> = ({
   const isUserSuperAdmin = isSuperAdmin(user);
 
   const handleTeamClick = (teamId: string) => {
-    navigate(`/dashboard/admin/companies/${companyId}/hiring-teams/${teamId}`);
+    navigate(`/admin/companies/${companyId}/hiring-teams/${teamId}`);
   };
 
   const handleCreateTeam = async (data: CreateHiringTeamData) => {

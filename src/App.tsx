@@ -15,6 +15,7 @@ import OAuthCallback from './components/OAuthCallback';
 import GmailOAuthCallback from './pages/GmailOAuthCallback';
 import OutlookOAuthCallback from './pages/OutlookOAuthCallback';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import RegisterPage from './pages/RegisterPage';
 import LandingPage from './pages/LandingPage';
 import InvitationResponsePage from './pages/InvitationResponsePage';
 import JobBoardPage from './pages/jobSeeker/JobBoardPage';
@@ -128,6 +129,10 @@ function App() {
               element={<SignIn />}
             />
             <Route
+              path="/register"
+              element={<RegisterPage />}
+            />
+            <Route
               path="/reset-password"
               element={<ResetPasswordPage />}
             />
@@ -140,10 +145,10 @@ function App() {
               path="/job-seeker/login"
               element={<JobSeekerLoginPage />}
             />
-            <Route
+            {/* <Route
               path="/job-seeker/register"
               element={<JobSeekerRegisterPage />}
-            />
+            /> */}
             <Route 
               path="/job-seeker/admin" 
               element={

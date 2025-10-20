@@ -201,8 +201,10 @@ const RecruiterLoginForm: React.FC<RecruiterLoginFormProps> = ({ onClose }) => {
       <div className="text-center">
         <p className="text-sm text-gray-500">
           New to recruiting?{' '}
-          <button className="text-purple-600 hover:text-purple-500 font-medium">
-            Start your free trial
+          <button className="text-purple-600 hover:text-purple-500 font-medium"
+          onClick={() => navigate('/register')}
+          >
+            Register here
           </button>
         </p>
       </div>

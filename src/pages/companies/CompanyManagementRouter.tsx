@@ -29,7 +29,7 @@ const CompanyManagementRouter: React.FC = () => {
     // Only navigate if all conditions are met
     if (!isLoading && !isSuperAdmin && companies.length === 1) {
       const company = companies[0];
-      navigate(`/dashboard/admin/companies/${company.id}`, { replace: true });
+      navigate(`/admin/companies/${company.id}`, { replace: true });
     }
   }, [companies, isLoading, isSuperAdmin, navigate]);
 

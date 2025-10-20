@@ -12,9 +12,10 @@ import Button from './Button';
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
   onClose: () => void;
+  defaultUserRole?: string;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, defaultUserRole = 'user' }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -31,7 +32,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose })
     resolver: zodResolver(registerSchema),
   });  const onSubmit = async (data: RegisterFormData) => {
     try {
-      const { confirmPassword, ...registerData } = data;
+      const { confirmPassword, ...rest } = data;
+      const registerData = {
+        email: rest.email,
+        password: rest.password,
+        firstName: rest.firstName,
+        lastName: rest.lastName,
+        userRole: defaultUserRole
+      };
       await register_mutation.mutateAsync(registerData);
       // Welcome toast is now shown in the useRegister hook
       onClose();

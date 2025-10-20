@@ -359,7 +359,7 @@ const CompanyManagementPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         <Link
-                          to={`/dashboard/admin/companies/${company.id}`}
+                          to={`/admin/companies/${company.id}`}
                           className="text-primary-600 hover:text-primary-900"
                         >
                           View Details

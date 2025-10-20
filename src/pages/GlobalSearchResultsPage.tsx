@@ -16,6 +16,7 @@ import JobSelectionModal from '../components/JobSelectionModal';
 import SourcingProfileSidePanel, { type PanelState } from '../sourcing/outreach/components/SourcingProfileSidePanel';
 import type { UserStructuredData } from '../components/ProfileSidePanel';
 import { GmailReconnectionModal } from '../components/email/GmailReconnectionModal';
+import SearchRegistrationModal from '../components/SearchRegistrationModal';
 
 import AdvancedFilterPanel, { type AdvancedFilters } from '../components/AdvancedFilterPanel';
 import { convertAdvancedFiltersToQuery, generateFilterSummary } from '../services/advancedFilterService';
@@ -428,6 +429,9 @@ const GlobalSearchResultsPage: React.FC = () => {
   // State for Gmail reconnection modal
   const [showGmailReconnectModal, setShowGmailReconnectModal] = useState(false);
 
+  // State for registration modal (for unauthenticated hero searches)
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [pendingSearchResults, setPendingSearchResults] = useState<any>(null);
   
   // State for search criteria card expansion
   const [isSearchCriteriaExpanded, setIsSearchCriteriaExpanded] = useState(false);
@@ -468,7 +472,9 @@ const GlobalSearchResultsPage: React.FC = () => {
         newProjectId,
         candidateToShortlist,
         shouldAutoShortlist,
-        preloadedResults
+        preloadedResults,
+        requiresAuth,
+        fromHeroSearch
       } = location.state;
       
       setSearchQuery(query || '');
@@ -480,6 +486,15 @@ const GlobalSearchResultsPage: React.FC = () => {
       setCriticalRequirements(criticalRequirements || null);
       setPreferredCriteria(preferredCriteria || null);
       setContextualHints(contextualHints || null);
+      
+      // Check if this is from hero search and user is not authenticated
+      if (requiresAuth && fromHeroSearch && !user) {
+        console.log('🔒 Hero search requires authentication, showing registration modal');
+        setPendingSearchResults(preloadedResults);
+        setShowRegistrationModal(true);
+        setIsLoading(false);
+        return;
+      }
       
       if (isGlobalSearch && (query || preloadedResults)) {
         console.log('GlobalSearchResults: Executing search for:', query || 'filter search');
@@ -2001,6 +2016,54 @@ const GlobalSearchResultsPage: React.FC = () => {
     }
   };
 
+  // Handle successful registration from modal
+  const handleRegistrationSuccess = () => {
+    console.log('✅ Registration successful, showing search results');
+    setShowRegistrationModal(false);
+    
+    // Display the pending search results
+    if (pendingSearchResults) {
+      const resultsToSet = pendingSearchResults.results || [];
+      setResults(resultsToSet);
+      
+      // Extract metadata and query hash if available
+      const preloadedQueryHash = pendingSearchResults?.metadata?.queryHash || 
+                               pendingSearchResults?.queryHash || 
+                               pendingSearchResults?.data?.metadata?.queryHash;
+      
+      if (preloadedQueryHash) {
+        setQueryHash(preloadedQueryHash);
+      }
+      
+      // Extract generated query and metadata
+      let extractedQuery = null;
+      if (pendingSearchResults.generatedQuery) {
+        extractedQuery = pendingSearchResults.generatedQuery;
+      } else if (pendingSearchResults.metadata?.generatedQuery) {
+        extractedQuery = pendingSearchResults.metadata.generatedQuery;
+      }
+      
+      if (extractedQuery) {
+        setGeneratedQuery(extractedQuery);
+        setLastSearchMetadata(pendingSearchResults.metadata || null);
+      }
+      
+      // Set pagination data
+      setNextCursor(pendingSearchResults.nextCursor || undefined);
+      setHasNextPage(!!pendingSearchResults.hasNextPage);
+      
+      // Clear pending results
+      setPendingSearchResults(null);
+      
+      addToast({
+        type: 'success',
+        title: 'Welcome!',
+        message: 'Your account has been created successfully.',
+        duration: 5000
+      });
+    }
+  };
+
 
 
   if (isLoading) {
@@ -2058,7 +2121,7 @@ const GlobalSearchResultsPage: React.FC = () => {
         panelState === 'expanded' ? 'mr-[66.666667%] overflow-hidden' : 
         panelState === 'collapsed' ? 'mr-[33.333333%] overflow-hidden' : 
         ''
-      } ${isAdvancedFilterVisible ? 'ml-80' : ''}`}>
+      } ${isAdvancedFilterVisible ? 'ml-80' : ''} ${showRegistrationModal ? 'blur-sm pointer-events-none' : ''}`}>
         <div className="container mx-auto px-6 py-4">
           {/* Header */}
         <div className="flex items-center justify-between py-6 mb-4">
@@ -2596,6 +2659,12 @@ const GlobalSearchResultsPage: React.FC = () => {
         }}
         title="Gmail Connection Expired"
         message="Your Gmail connection has expired. Please reconnect your Gmail account to continue sending emails."
+      />
+      
+      {/* Registration Modal for Hero Search */}
+      <SearchRegistrationModal
+        isOpen={showRegistrationModal}
+        onSuccess={handleRegistrationSuccess}
       />
     </div>
   );

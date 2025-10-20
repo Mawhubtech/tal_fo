@@ -7,12 +7,14 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialView?: 'login' | 'register';
+  defaultUserRole?: string;
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ 
   isOpen, 
   onClose, 
-  initialView = 'login' 
+  initialView = 'login',
+  defaultUserRole = 'user'
 }) => {
   const [currentView, setCurrentView] = useState(initialView);
 
@@ -51,6 +53,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <RegisterForm 
                 onSwitchToLogin={handleSwitchToLogin}
                 onClose={onClose}
+                defaultUserRole={defaultUserRole}
               />
             )}
           </div>
