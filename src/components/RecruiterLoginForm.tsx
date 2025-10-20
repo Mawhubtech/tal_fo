@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { loginSchema, LoginFormData } from '../lib/validations';
 import { useLogin, useGoogleLogin } from '../hooks/useAuth';
@@ -177,9 +177,9 @@ const RecruiterLoginForm: React.FC<RecruiterLoginFormProps> = ({ onClose }) => {
             />
             <span className="ml-2 text-sm text-gray-600">Remember me</span>
           </label>
-          <a href="#" className="text-sm text-purple-600 hover:text-purple-500">
+          <Link to="/forgot-password" className="text-sm text-purple-600 hover:text-purple-500">
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         <Button

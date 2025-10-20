@@ -15,6 +15,8 @@ import OAuthCallback from './components/OAuthCallback';
 import GmailOAuthCallback from './pages/GmailOAuthCallback';
 import OutlookOAuthCallback from './pages/OutlookOAuthCallback';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordWithTokenPage from './pages/auth/ResetPasswordPage';
 import RegisterPage from './pages/RegisterPage';
 import LandingPage from './pages/LandingPage';
 import InvitationResponsePage from './pages/InvitationResponsePage';
@@ -133,8 +135,12 @@ function App() {
               element={<RegisterPage />}
             />
             <Route
+              path="/forgot-password"
+              element={<ForgotPasswordPage />}
+            />
+            <Route
               path="/reset-password"
-              element={<ResetPasswordPage />}
+              element={<ResetPasswordWithTokenPage />}
             />
             <Route
               path="/organization/signin"
