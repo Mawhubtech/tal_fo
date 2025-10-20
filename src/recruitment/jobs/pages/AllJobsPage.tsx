@@ -20,14 +20,15 @@ import {
   CheckCircle,
   PauseCircle,
   XCircle,
-  Archive
+  Archive,
+  User,
+  UserCheck
 } from 'lucide-react';
 import { useJobs, useDeleteJob, useUpdateJob } from '../../../hooks/useJobs';
 import { useJobsWebSocket } from '../../../hooks/useJobsWebSocket';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { useMyAssignment } from '../../../hooks/useUserAssignment';
 import { useUserTeamMemberships } from '../../../hooks/useHiringTeam';
-import { useMyCollaboratorJobs } from '../../../hooks/useJobCollaborators';
 import JobPreviewModal from '../../../components/modals/JobPreviewModal';
 import { createJobUrl } from '../../../lib/urlUtils';
 import type { JobFilters } from '../../../services/jobApiService';
@@ -110,39 +111,20 @@ const AllJobsPage: React.FC = () => {
     },
   });
 
-  // Fetch jobs where user is a collaborator
-  const { 
-    data: collaboratorJobsData = [],
-    isLoading: collaboratorJobsLoading
-  } = useMyCollaboratorJobs();
-
   const deleteJobMutation = useDeleteJob();
   const updateJobMutation = useUpdateJob();
 
-  // Extract data from response or use defaults
-  const organizationJobs = (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.data || [];
-  
-  // Extract jobs from collaborator data
-  const collaboratorJobs: Job[] = collaboratorJobsData
-    .filter(collab => collab.job)
-    .map(collab => collab.job!);
-  
-  // Merge organizational jobs and collaborator jobs, removing duplicates by job ID
-  const jobsMap = new Map<string, Job>();
-  
-  // Add organizational jobs first
-  organizationJobs.forEach(job => jobsMap.set(job.id, job));
-  
-  // Add collaborator jobs (won't duplicate if already in map)
-  collaboratorJobs.forEach(job => jobsMap.set(job.id, job));
-  
-  // Convert map back to array
-  const jobs = Array.from(jobsMap.values());
+  // Extract data from response - backend now includes collaborator jobs automatically
+  // No need to fetch and merge separately since backend handles all access control
+  const jobs = jobsResponse?.data || [];
+  const backendTotal = jobsResponse?.total || 0;
+  const backendPage = jobsResponse?.page || 1;
+  const backendLimit = jobsResponse?.limit || 20;
   
   const pagination = {
-    total: jobs.length, // Use combined total
-    page: (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.page || 1,
-    limit: (jobsResponse as { data: Job[]; total: number; page: number; limit: number })?.limit || 10
+    total: backendTotal, // ✅ Use backend total, not merged array length
+    page: backendPage,
+    limit: backendLimit
   };
   
   // Convert error to string format
@@ -268,6 +250,33 @@ const AllJobsPage: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+
+  const getUserRoleBadge = (job: Job) => {
+    if (!user) return null;
+
+    // Check if user is the creator
+    const isCreator = job.createdBy?.id === user.id;
+    
+    // Check if user is a collaborator
+    const isCollaborator = job.collaborators?.some(collab => collab.email === user.email);
+
+    if (isCreator) {
+      return {
+        text: 'Creator',
+        color: 'bg-blue-100 text-blue-800',
+        icon: User
+      };
+    } else if (isCollaborator) {
+      return {
+        text: 'Collaborator',
+        color: 'bg-purple-100 text-purple-800',
+        icon: UserCheck
+      };
+    }
+
+    return null;
+  };
+
   const formatSalary = (job: Job) => {
     // Determine the salary period suffix
     const periodSuffix = (job as any).salaryPeriod 
@@ -321,7 +330,7 @@ const AllJobsPage: React.FC = () => {
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
-  if (loading || assignmentLoading || teamMembershipsLoading || collaboratorJobsLoading) {
+  if (loading || assignmentLoading || teamMembershipsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex items-center space-x-2">
@@ -511,6 +520,15 @@ const AllJobsPage: React.FC = () => {
                         {job.title}
                       </h3>
                       <div className="flex items-center gap-1 flex-shrink-0">
+                        {(() => {
+                          const roleBadge = getUserRoleBadge(job);
+                          return roleBadge ? (
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-0.5 ${roleBadge.color}`}>
+                              <roleBadge.icon className="h-2.5 w-2.5" />
+                              {roleBadge.text}
+                            </span>
+                          ) : null;
+                        })()}
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusColor(job.status)}`}>
                           {job.status}
                         </span>
@@ -671,6 +689,15 @@ const AllJobsPage: React.FC = () => {
                         <h3 className="text-base font-semibold text-gray-900 hover:text-purple-600 truncate">
                           {job.title}
                         </h3>
+                        {(() => {
+                          const roleBadge = getUserRoleBadge(job);
+                          return roleBadge ? (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 flex-shrink-0 ${roleBadge.color}`}>
+                              <roleBadge.icon className="h-3 w-3" />
+                              {roleBadge.text}
+                            </span>
+                          ) : null;
+                        })()}
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${getStatusColor(job.status)}`}>
                           {job.status}
                         </span>
