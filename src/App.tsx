@@ -90,6 +90,7 @@ import TasksPage from './pages/TasksPage';
 import PendingInvitationsPage from './pages/PendingInvitationsPage';
 import GlobalSearchPage from './pages/GlobalSearchPage';
 import GlobalSearchResultsPage from './pages/GlobalSearchResultsPage';
+import PublicSearchResultsPage from './pages/PublicSearchResultsPage';
 import AdminLayout from './layouts/AdminLayout';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
@@ -123,6 +124,8 @@ function App() {
                     <Router>
                       <Routes>
               <Route path="/" element={<LandingPage />} />
+              {/* Public Search Results - No Auth Required */}
+              <Route path="/public-search-results" element={<PublicSearchResultsPage />} />
               {/* Commented out: Public job board route */}
               {/* <Route path="/jobs" element={<JobBoardPage />} /> */}
               {/* <Route path="/careers/jobs/:jobId" element={<JobDetailPage />} /> */}

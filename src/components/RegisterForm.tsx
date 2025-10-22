@@ -44,6 +44,15 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
       // Welcome toast is now shown in the useRegister hook
       onClose();
       
+      // Check if there's pending search data from hero search
+      const pendingSearchData = sessionStorage.getItem('pendingSearchData');
+      if (pendingSearchData) {
+        const searchData = JSON.parse(pendingSearchData);
+        sessionStorage.removeItem('pendingSearchData');
+        navigate('/search-results', { state: searchData, replace: true });
+        return;
+      }
+      
       // Navigate to the intended destination or dashboard
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
@@ -55,7 +64,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Create your account</h2>
+        <h2 className="text-2xl font-bold text-purple-600">Create your account</h2>
         <p className="mt-2 text-sm text-gray-600">
           Join TalGPT to revolutionize your hiring process
         </p>
@@ -82,7 +91,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
                 {...register('firstName')}
                 type="text"
                 id="firstName"
-                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                   errors.firstName ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="First name"
@@ -105,7 +114,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
                 {...register('lastName')}
                 type="text"
                 id="lastName"
-                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                   errors.lastName ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Last name"
@@ -129,7 +138,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
               {...register('email')}
               type="email"
               id="email"
-              className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+              className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                 errors.email ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter your email"
@@ -152,7 +161,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
               id="password"
-              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                 errors.password ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Create a password"
@@ -186,7 +195,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
               {...register('confirmPassword')}
               type={showConfirmPassword ? 'text' : 'password'}
               id="confirmPassword"
-              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                 errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Confirm your password"
@@ -212,16 +221,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
           <input
             type="checkbox"
             id="terms"
-            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mt-1"
+            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded mt-1"
             required
           />
           <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
             I agree to the{' '}
-            <a href="/terms" className="text-primary-600 hover:text-primary-500">
+            <a href="/terms" className="text-purple-600 hover:text-purple-700">
               Terms of Service
             </a>{' '}
             and{' '}
-            <a href="/privacy" className="text-primary-600 hover:text-primary-500">
+            <a href="/privacy" className="text-purple-600 hover:text-purple-700">
               Privacy Policy
             </a>
           </label>
@@ -229,7 +238,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
 
         <Button
           type="submit"
-          className="w-full"
+          variant="primary"
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
           disabled={register_mutation.isPending}
         >
           {register_mutation.isPending ? (
@@ -248,7 +258,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
           Already have an account?{' '}
           <button
             onClick={onSwitchToLogin}
-            className="text-primary-600 hover:text-primary-500 font-medium"
+            className="text-purple-600 hover:text-purple-700 font-medium"
           >
             Sign in
           </button>

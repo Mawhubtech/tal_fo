@@ -69,18 +69,12 @@ const Hero: React.FC = () => {
       const searchResults = response.data;
       console.log("✅ Hero search completed:", searchResults);
       
-      // Navigate to search results with requiresAuth flag
-      navigate('/search-results', {
+      // Navigate to PUBLIC search results page (no auth required)
+      navigate('/public-search-results', {
         state: {
           query: searchQuery,
-          filters: { searchText: searchQuery },
-          searchMode: 'external',
-          isGlobalSearch: true,
-          isEnhanced: true,
-          singleCallOptimized: true,
           preloadedResults: searchResults,
-          requiresAuth: true, // Flag to show registration modal
-          fromHeroSearch: true
+          fromHeroSearch: true // Auto-show registration modal
         }
       });
     } catch (error) {

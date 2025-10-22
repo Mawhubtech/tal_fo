@@ -34,6 +34,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) =>
       // Welcome toast is now shown in the useLogin hook
       onClose();
       
+      // Check if there's pending search data from hero search
+      const pendingSearchData = sessionStorage.getItem('pendingSearchData');
+      if (pendingSearchData) {
+        const searchData = JSON.parse(pendingSearchData);
+        sessionStorage.removeItem('pendingSearchData');
+        navigate('/search-results', { state: searchData, replace: true });
+        return;
+      }
+      
       // Navigate to the intended destination or dashboard
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
@@ -45,7 +54,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) =>
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
+        <h2 className="text-2xl font-bold text-purple-600">Welcome back</h2>
         <p className="mt-2 text-sm text-gray-600">
           Sign in to your account to continue
         </p>
@@ -71,7 +80,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) =>
               {...register('email')}
               type="email"
               id="email"
-              className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+              className={`w-full pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                 errors.email ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter your email"
@@ -94,7 +103,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) =>
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
               id="password"
-              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+              className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none ${
                 errors.password ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter your password"
@@ -120,18 +129,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) =>
           <label className="flex items-center">
             <input
               type="checkbox"
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
             />
             <span className="ml-2 text-sm text-gray-600">Remember me</span>
           </label>
-          <a href="#" className="text-sm text-primary-600 hover:text-primary-500">
+          <a href="#" className="text-sm text-purple-600 hover:text-purple-700">
             Forgot password?
           </a>
         </div>
 
         <Button
           type="submit"
-          className="w-full"
+          variant="primary"
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
           disabled={login.isPending}
         >
           {login.isPending ? (
@@ -150,7 +160,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onClose }) =>
           Don't have an account?{' '}
           <button
             onClick={onSwitchToRegister}
-            className="text-primary-600 hover:text-primary-500 font-medium"
+            className="text-purple-600 hover:text-purple-700 font-medium"
           >
             Sign up
           </button>
