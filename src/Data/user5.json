@@ -1,0 +1,72 @@
+{
+  "fileName": "user5_stark_brief.pdf",
+  "fileSize": 500600,
+  "extractedText": "Tony Stark: Innovator, Philanthropist, Developer...",
+  "structuredData": {    "personalInfo": {
+      "fullName": "Anthony Stark",
+      "email": "tony.stark@starkindustries.com",
+      "phone": "567-890-1234",
+      "location": "Malibu, CA / New York, NY",
+      "website": "starkindustries.com",
+      "linkedIn": "linkedin.com/in/tonystark",
+      "github": "github.com/ironman-dev",
+      "avatar": "https://randomuser.me/api/portraits/men/5.jpg"
+    },
+    "summary": "Genius inventor, billionaire, philanthropist, and hands-on Full Stack Engineer. Specializes in AI, robotics, and creating groundbreaking technologies that push the boundaries of science. Currently focused on sustainable energy solutions and advanced AI assistants.",
+    "experience": [
+      {
+        "position": "CEO & Chief Architect",
+        "company": "Stark Industries",
+        "startDate": "2008-01-01",
+        "endDate": "Present",
+        "location": "Global",
+        "description": "Leading innovation in defense, clean energy, and AI. Directly involved in the design and development of core technologies.",
+        "responsibilities": [
+          "Inventing next-generation hardware and software",
+          "Managing R&D for multiple high-tech divisions",
+          "Saving the world (occasionally)"
+        ],
+        "achievements": [
+          "Developed the Arc Reactor technology",
+          "Created the Iron Man suit and subsequent AI systems (J.A.R.V.I.S., F.R.I.D.A.Y.)",
+          "Pioneered global clean energy initiatives"
+        ],
+        "technologies": ["Proprietary AI Frameworks", "Robotics", "Advanced Materials Science", "Python", "C++", "Holographic UI Design"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Multiple PhDs (Physics, Electrical Engineering, Computer Science)",
+        "institution": "Massachusetts Institute of Technology (MIT)",
+        "graduationDate": "Age 17 (approx)",
+        "location": "Cambridge, MA",
+        "honors": ["Graduated Summa Cum Laude (multiple times)"]
+      }
+    ],
+    "skills": ["AI Development", "Robotics Engineering", "Full Stack Engineering", "Hardware Design", "Problem Solving", "Public Speaking", "Sarcasm"],
+    "certifications": [
+      {
+        "name": "Honorary Doctorate of Engineering",
+        "issuer": "Various Prestigious Universities",
+        "dateIssued": "Ongoing"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Numerous Innovation Awards",
+        "issuer": "Global Tech & Science Community",
+        "date": "Various",
+        "description": "For contributions to technology and humanity."
+      }
+    ],
+    "interests": ["Fast Cars", "Rock Music", "Philanthropy", "Theoretical Physics", "Inventing"],
+    "projects": [
+      {
+        "name": "Global Climate Control Initiative",
+        "description": "AI-driven system to mitigate climate change effects.",
+        "technologies": ["AI", "Satellite Networks", "Clean Energy Tech"],
+        "url": "starkrelief.org/climate"
+      }
+    ]
+  }
+}

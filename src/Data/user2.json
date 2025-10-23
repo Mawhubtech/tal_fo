@@ -1,0 +1,92 @@
+{
+  "fileName": "user2_cv.docx",
+  "fileSize": 234567,
+  "extractedText": "Complete CV for Bob The Builder...",
+  "structuredData": {    "personalInfo": {
+      "fullName": "Bob The Builder",
+      "email": "bob.builder@example.com",
+      "phone": "234-567-8901",
+      "location": "Fixham, UK",
+      "website": "bobbuilds.com",
+      "linkedIn": "linkedin.com/in/bobthebuilder",
+      "github": "github.com/bobbuilder",
+      "avatar": "https://randomuser.me/api/portraits/men/2.jpg"
+    },
+    "summary": "Dedicated and skilled Construction Manager and Software Developer, bridging the gap between physical and digital construction. Proven ability to manage teams and deliver projects on time.",
+    "experience": [
+      {
+        "position": "Lead Digital Architect",
+        "company": "Can-Do Crew Innovations",
+        "startDate": "2021-01-01",
+        "endDate": "Present",
+        "location": "Fixham",
+        "description": "Overseeing the development of construction management software.",
+        "responsibilities": [
+          "Designing software blueprints",
+          "Managing a team of tool-savvy developers",
+          "Ensuring code quality and structural integrity"
+        ],
+        "achievements": [
+          "Reduced project planning time by 30%",
+          "Successfully integrated AR for on-site visualization"
+        ],
+        "technologies": ["Python", "Django", "React", "AutoCAD API", "Unity"]
+      },
+      {
+        "position": "Foreman",
+        "company": "Wendy's Renovations",
+        "startDate": "2018-05-01",
+        "endDate": "2020-12-31",
+        "location": "Bobsville",
+        "description": "Managed on-site construction projects.",
+        "responsibilities": [
+          "Leading construction team",
+          "Ensuring safety standards",
+          "Brick-laying and problem-solving"
+        ],
+        "technologies": ["Project Management", "Blueprint Reading", "Heavy Machinery Operation"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.Eng. in Civil Engineering & Software",
+        "institution": "Fixham Polytechnic",
+        "graduationDate": "2017-07-01",
+        "location": "Fixham",
+        "major": "Structural Engineering with Computer Science minor",
+        "courses": ["Advanced Concrete Design", "Data Structures and Algorithms"],
+        "honors": ["Top Project Award for 'Smart Hardhat'"]
+      }
+    ],
+    "skills": ["Project Management", "Python", "JavaScript", "Team Leadership", "Problem Solving", "CAD"],
+    "certifications": [
+      {
+        "name": "Certified Scrum Master (CSM)",
+        "issuer": "Scrum Alliance",
+        "dateIssued": "2022-02-15"
+      },
+      {
+        "name": "Licensed General Contractor",
+        "issuer": "Fixham County",
+        "dateIssued": "2018-01-10"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Builder of the Year",
+        "issuer": "Fixham Town Council",
+        "date": "2023-11-01",
+        "description": "For outstanding contributions to local infrastructure."
+      }
+    ],
+    "interests": ["DIY Projects", "Robotics", "Mentoring Young Builders"],
+    "projects": [
+      {
+        "name": "BuildItRight PM Software",
+        "description": "A project management tool tailored for small construction businesses.",
+        "technologies": ["Django", "React", "PostgreSQL"],
+        "url": "bobbuilds.com/builditright"
+      }
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "fileName": "user4_resume_diana.pdf",
+  "fileSize": 150200,
+  "extractedText": "Resume of Diana Prince, focusing on diplomacy and software solutions...",
+  "structuredData": {    "personalInfo": {
+      "fullName": "Diana Prince",
+      "email": "diana.prince@example.com",
+      "phone": "456-789-0123",
+      "location": "Washington D.C. / Themyscira",
+      "website": "princeconsulting.org",
+      "linkedIn": "linkedin.com/in/dianaprince",
+      "github": "github.com/wonderdev",
+      "avatar": "https://randomuser.me/api/portraits/women/4.jpg"
+    },
+    "summary": "Experienced Diplomat and Software Engineer specializing in secure communication platforms and conflict resolution algorithms. Passionate about leveraging technology for global peace and understanding.",
+    "experience": [
+      {
+        "position": "Senior Software Strategist",
+        "company": "A.R.G.U.S. Tech Division",
+        "startDate": "2019-06-01",
+        "endDate": "Present",
+        "location": "Classified",
+        "description": "Developing secure and resilient software systems for international relations and crisis management.",
+        "responsibilities": [
+          "Designing cryptographic protocols",
+          "Building cross-cultural communication tools",
+          "Leading rapid response development teams"
+        ],
+        "achievements": [
+          "Successfully deployed a global peace-keeping communication network",
+          "Averted 3 international crises through timely data analysis"
+        ],
+        "technologies": ["Java", "Spring Boot", "Cybersecurity", "Blockchain", "Ancient Languages"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "M.A. in International Relations & B.S. in Computer Science",
+        "institution": "Themyscira Academy & Gateway City University (concurrently)",
+        "graduationDate": "2018-05-01",
+        "location": "Themyscira / Gateway City",
+        "major": "Diplomacy, Software Engineering",
+        "honors": ["Valedictorian (Themyscira)", "Summa Cum Laude (GCU)"]
+      }
+    ],
+    "skills": ["Java", "Cybersecurity", "Diplomacy", "Negotiation", "Multilingual Communication", "Lasso of Truth (for debugging)"],
+    "certifications": [
+      {
+        "name": "Certified Ethical Hacker (CEH)",
+        "issuer": "EC-Council",
+        "dateIssued": "2020-01-10"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Ambassador's Award for Technological Innovation in Peace",
+        "issuer": "United Nations",
+        "date": "2023-09-15"
+      }
+    ],
+    "interests": ["Archaeology", "Philosophy", "Combat Training", "Promoting Equality"],
+    "projects": [
+      {
+        "name": "Project Ares Shield",
+        "description": "A defensive cybersecurity framework for NGOs.",
+        "technologies": ["AI", "Threat Intelligence", "Decentralized Networks"],
+        "url": "princeconsulting.org/ares-shield"
+      }
+    ]
+  }
+}

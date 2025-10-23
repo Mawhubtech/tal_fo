@@ -1,0 +1,71 @@
+{
+  "fileName": "user10_maximoff_notes.txt",
+  "fileSize": 300100,
+  "extractedText": "Wanda Maximoff - Reality Warper and UI/UX Specialist...",
+  "structuredData": {    "personalInfo": {
+      "fullName": "Wanda Maximoff",
+      "email": "w.maximoff@realitydesign.example.com",
+      "phone": "012-345-6789",
+      "location": "Westview, NJ (formerly) / Sokovia (formerly)",
+      "website": "hexdesigns.io",
+      "linkedIn": "linkedin.com/in/wandamaximoff (Conceptual)",
+      "github": "github.com/scarletdev",
+      "avatar": "https://randomuser.me/api/portraits/women/10.jpg"
+    },
+    "summary": "Highly intuitive UI/UX Designer and Frontend Developer with a unique ability to reshape user experiences and digital realities. Passionate about creating emotionally resonant and immersive interfaces. Exploring the ethical implications of persuasive design.",
+    "experience": [
+      {
+        "position": "Lead Reality Interface Designer",
+        "company": "Hex UX Studios",
+        "startDate": "2021-01-01",
+        "endDate": "Present (on hiatus)",
+        "location": "Remote / Conceptual Space",
+        "description": "Designing and implementing user interfaces that adapt dynamically to user emotions and intentions. Specializing in augmented and virtual reality experiences.",
+        "responsibilities": [
+          "Crafting user-centric design philosophies",
+          "Developing frontend components with adaptive logic",
+          "Conducting A/B/Ω testing across realities"
+        ],
+        "achievements": [
+          "Created a UI that achieved a 99% user satisfaction rate (in a controlled environment)",
+          "Successfully manifested a 'perfect' user experience for a limited audience"
+        ],
+        "technologies": ["React", "Vue.js", "Figma", "Chaos Magic (for inspiration)", "Empathy-Driven Design"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Self-Taught & Experiential Learning",
+        "institution": "School of Hard Knocks / Avengers Compound Library",
+        "graduationDate": "Ongoing",
+        "location": "Various",
+        "major": "UI/UX Design, Frontend Development, Existential Philosophy"
+      }
+    ],
+    "skills": ["UI/UX Design", "Frontend Development (React, Vue)", "Empathy", "Rapid Prototyping", "User Research", "Reality Warping (use with caution)"],
+    "certifications": [
+      {
+        "name": "Advanced Figma Prototyping",
+        "issuer": "DesignLab Institute",
+        "dateIssued": "2022-06-01"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Most Innovative Interface Design (Conceptual)",
+        "issuer": "Alternate Reality Design Awards",
+        "date": "2023-03-15",
+        "description": "For the Westview Experience."
+      }
+    ],
+    "interests": ["Old Sitcoms", "Philosophy of Mind", "Gardening", "Finding Peace"],
+    "projects": [
+      {
+        "name": "Project Chimera",
+        "description": "An experimental UI that blends multiple realities and user perspectives.",
+        "technologies": ["WebXR", "AI-driven personalization", "Probability Fields"],
+        "url": "hexdesigns.io/chimera"
+      }
+    ]
+  }
+}

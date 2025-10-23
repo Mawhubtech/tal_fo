@@ -1,0 +1,13 @@
+// Client outreach module exports - Project-based structure
+export { default as ClientOutreachRouter } from './ClientOutreachRouter';
+export { default as ClientOutreachProjectsPage } from './ClientOutreachProjectsPage';
+export { default as CreateProjectPage } from './CreateProjectPage';
+export { default as ProjectDetailPage } from './ProjectDetailPage';
+export { default as ProjectSearchesPage } from './ProjectSearchesPage';
+export { default as ClientSearchPage } from './ClientSearchPage';
+export { default as SearchResultsPage } from './SearchResultsPage';
+export { default as ProjectProspectsPage } from './ProjectProspectsPage';
+export { default as ProjectAnalyticsPage } from './ProjectAnalyticsPage';
+export { default as ProjectEmailCampaignsPage } from './ProjectEmailCampaignsPage';
+export { default as ProjectEmailTemplatesPage } from './ProjectEmailTemplatesPage';
+export { default as CreateEmailCampaignPage } from './CreateEmailCampaignPage';

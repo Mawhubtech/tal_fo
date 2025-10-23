@@ -1,0 +1,72 @@
+{
+  "fileName": "user3_profile.pdf",
+  "fileSize": 345678,
+  "extractedText": "Professional profile of Charles Xavier...",
+  "structuredData": {    "personalInfo": {
+      "fullName": "Charles Xavier",
+      "email": "charles.xavier@example.com",
+      "phone": "345-678-9012",
+      "location": "Westchester, NY",
+      "website": "xavierinstitute.edu",
+      "linkedIn": "linkedin.com/in/professorx",
+      "github": "github.com/profx",
+      "avatar": "https://randomuser.me/api/portraits/men/3.jpg"
+    },
+    "summary": "Visionary leader and Full Stack Developer with expertise in AI and human-computer interaction. Dedicated to fostering talent and building a better future through technology and education.",
+    "experience": [
+      {
+        "position": "Founder & Lead Developer",
+        "company": "X-Tech Innovations",
+        "startDate": "2015-09-01",
+        "endDate": "Present",
+        "location": "Remote / Westchester",
+        "description": "Developing advanced AI-powered educational tools and assistive technologies.",
+        "responsibilities": [
+          "Architecting scalable software solutions",
+          "Mentoring a diverse team of developers",
+          "Pioneering ethical AI frameworks"
+        ],
+        "achievements": [
+          "Launched 'CerebroLearn', an AI tutoring platform",
+          "Secured Series A funding for mutant-friendly tech"
+        ],
+        "technologies": ["Python", "TensorFlow", "React", "GraphQL", "Cybernetics"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Ph.D. in Computer Science & Genetics",
+        "institution": "Oxford University",
+        "graduationDate": "2014-06-01",
+        "location": "Oxford, UK",
+        "thesis": "Synergies between Human and Artificial Intelligence",
+        "honors": ["Rhodes Scholar"]
+      }
+    ],
+    "skills": ["AI/ML", "Full Stack Development", "Leadership", "Ethics in AI", "Telepathic Debugging (allegedly)"],
+    "certifications": [
+      {
+        "name": "Advanced AI Ethics",
+        "issuer": "Future of Humanity Institute",
+        "dateIssued": "2020-05-01"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Humanitarian Award for Technology",
+        "issuer": "Global Tech Council",
+        "date": "2024-01-20",
+        "description": "For work in assistive AI."
+      }
+    ],
+    "interests": ["Chess", "Genetic Research", "Teaching", "Advocacy for Inclusivity"],
+    "projects": [
+      {
+        "name": "Project Cerebro",
+        "description": "A global talent identification and networking platform (conceptual).",
+        "technologies": ["AI", "Big Data", "Next-Gen UI"],
+        "url": "xavierinstitute.edu/cerebro"
+      }
+    ]
+  }
+}

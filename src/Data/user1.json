@@ -1,0 +1,86 @@
+{
+  "fileName": "user1_resume.pdf",
+  "fileSize": 123456,
+  "extractedText": "Full resume text for Alice Wonderland...",
+  "structuredData": {    "personalInfo": {
+      "fullName": "Alice Wonderland",
+      "email": "alice.wonderland@example.com",
+      "phone": "123-456-7890",
+      "location": "New York, NY",
+      "website": "alicein.dev",
+      "linkedIn": "linkedin.com/in/alicew",
+      "github": "github.com/alicew",
+      "avatar": "https://randomuser.me/api/portraits/women/1.jpg"
+    },
+    "summary": "Creative Software Engineer with 5 years of experience in developing whimsical web applications and exploring new technologies. Passionate about user experience and magical interfaces.",
+    "experience": [
+      {
+        "position": "Software Sorceress",
+        "company": "Mad Hatter Tech",
+        "startDate": "2022-03-01",
+        "endDate": "Present",
+        "location": "Remote",
+        "description": "Developing and maintaining core features for a tea party scheduling application.",
+        "responsibilities": [
+          "Brewing fresh code daily",
+          "Conjuring new UI elements",
+          "Debugging mischievous sprites"
+        ],
+        "achievements": [
+          "Increased tea party attendance by 200%",
+          "Successfully unraveled the Cheshire Cat's code"
+        ],
+        "technologies": ["React", "Node.js", "PostgreSQL", "Magic"]
+      },
+      {
+        "position": "Junior Potion Mixer",
+        "company": "Queen of Hearts Solutions",
+        "startDate": "2020-01-15",
+        "endDate": "2022-02-28",
+        "location": "Wonderland",
+        "description": "Assisted senior developers in crafting potent software solutions.",
+        "responsibilities": [
+          "Stirring the codebase",
+          "Measuring ingredients (data)"
+        ],
+        "technologies": ["JavaScript", "HTML", "CSS", "Herbalism"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "M.S. in Computer Curiosities",
+        "institution": "Wonderland University",
+        "graduationDate": "2019-12-01",
+        "location": "Wonderland",
+        "major": "Impossible Algorithms",
+        "courses": ["Advanced Potion Brewing", "Theoretical Teleportation"],
+        "honors": ["Dean's List of Curious Creatures"]
+      }
+    ],
+    "skills": ["JavaScript", "React", "Python", "Storytelling", "Riddle Solving", "Croquet"],
+    "certifications": [
+      {
+        "name": "Certified Tea Party Host",
+        "issuer": "Wonderland Tea Association",
+        "dateIssued": "2021-06-01"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Most Curious Coder",
+        "issuer": "Annual Wonderland Tech Fair",
+        "date": "2023-05-01",
+        "description": "For exceptional creativity in coding."
+      }
+    ],
+    "interests": ["Gardening", "Reading Fantasy Novels", "Playing Chess with Flamingos"],
+    "projects": [
+      {
+        "name": "Personal Portfolio of Peculiarities",
+        "description": "A website showcasing my various magical and technical projects.",
+        "technologies": ["React", "Three.js", "Enchantments"],
+        "url": "alicein.dev/portfolio"
+      }
+    ]
+  }
+}

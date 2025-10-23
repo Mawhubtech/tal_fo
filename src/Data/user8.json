@@ -1,0 +1,73 @@
+{
+  "fileName": "user8_parker_portfolio.html",
+  "fileSize": 210980,
+  "extractedText": "Peter Parker - Freelance Photographer and Web Developer...",
+  "structuredData": {    "personalInfo": {
+      "fullName": "Peter Parker",
+      "email": "peter.parker@dailybugle.example.com",
+      "phone": "890-123-4567",
+      "location": "Queens, NY",
+      "website": "spideyswebdev.com",
+      "linkedIn": "linkedin.com/in/peterbparker",
+      "github": "github.com/webslinger",
+      "avatar": "https://randomuser.me/api/portraits/men/8.jpg"
+    },
+    "summary": "Resourceful and agile Full Stack Web Developer with a knack for creative problem-solving and a strong background in physics and chemistry. Passionate about building intuitive user experiences and helping small businesses get online. Also a freelance photographer.",
+    "experience": [
+      {
+        "position": "Freelance Web Developer & Photographer",
+        "company": "Self-Employed / Daily Bugle (Photography)",
+        "startDate": "2020-08-01",
+        "endDate": "Present",
+        "location": "New York City",
+        "description": "Developing websites for local businesses and capturing compelling news photography.",
+        "responsibilities": [
+          "Full lifecycle web development (React, Node.js)",
+          "Creating custom WordPress themes and plugins",
+          "Agile project management (for myself)",
+          "Getting the perfect shot (often at great personal risk)"
+        ],
+        "achievements": [
+          "Helped 15+ local businesses establish their online presence",
+          "Captured exclusive photos of Spider-Man (somehow)"
+        ],
+        "technologies": ["React", "Node.js", "JavaScript", "HTML/CSS", "PHP", "Photoshop", "Web-Fluid Dynamics"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.S. in Biophysics (incomplete)",
+        "institution": "Empire State University (ESU)",
+        "expectedGraduation": "Ongoing",
+        "location": "New York, NY",
+        "major": "Biophysics, Chemistry minor",
+        "relevantCoursework": ["Organic Chemistry", "Advanced Mechanics", "Optics"]
+      }
+    ],
+    "skills": ["JavaScript", "React", "Python", "Photography", "Physics", "Chemistry", "Acrobatics", "Quick Learner"],
+    "certifications": [
+      {
+        "name": "Certified Web Developer Associate",
+        "issuer": "Web Professionals Org",
+        "dateIssued": "2021-05-12"
+      }
+    ],
+    "awards": [
+      {
+        "name": "ESU Science Fair Grand Prize",
+        "issuer": "Empire State University",
+        "date": "Pre-College",
+        "description": "For 'Advanced Web-Shooter Design'."
+      }
+    ],
+    "interests": ["Science Photography", "Inventing Gadgets", "Helping Aunt May", "Pizza"],
+    "projects": [
+      {
+        "name": "Neighborhood Watch App",
+        "description": "A community alert system (conceptual, needs funding).",
+        "technologies": ["React Native", "Firebase", "Geo-fencing"],
+        "url": "spideyswebdev.com/nwa"
+      }
+    ]
+  }
+}

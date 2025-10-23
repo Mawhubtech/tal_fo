@@ -1,0 +1,394 @@
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { X, Save, Loader2 } from 'lucide-react';
+import { clientApi } from '../../../services/api';
+import { Client } from '../data/clientService';
+
+interface ClientFormProps {
+  client?: Client | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (client: Client) => void;
+  mode: 'add' | 'edit';
+}
+
+interface ClientFormData {
+  name: string;
+  industry: string;
+  size: string;
+  location: string;
+  website: string;
+  email: string;
+  phone: string;
+  status: string;
+  employees: number;
+  description: string;
+}
+
+interface FormErrors {
+  name?: string;
+  industry?: string;
+  size?: string;
+  location?: string;
+  website?: string;
+  email?: string;
+  phone?: string;
+  status?: string;
+  description?: string;
+}
+
+const ClientForm: React.FC<ClientFormProps> = ({
+  client,
+  isOpen,
+  onClose,
+  onSave,
+  mode
+}) => {  const [formData, setFormData] = useState<ClientFormData>({
+    name: '',
+    industry: '',
+    size: 'Small (1-50 employees)',
+    location: '',
+    website: '',
+    email: '',
+    phone: '',
+    status: 'active',
+    employees: 0,
+    description: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  useEffect(() => {
+    if (client && mode === 'edit') {
+      setFormData({
+        name: client.name || '',
+        industry: client.industry || '',
+        size: client.size || 'Small (1-50 employees)',
+        location: client.location || '',
+        website: client.website ? client.website.replace(/^https?:\/\//, '') : '',
+        email: client.email || '',
+        phone: client.phone || '',
+        status: client.status || 'active',
+        employees: client.employees || 0,
+        description: client.description || ''
+      });
+    } else {
+      // Reset form for add mode
+      setFormData({
+        name: '',
+        industry: '',
+        size: 'Small (1-50 employees)',
+        location: '',
+        website: '',
+        email: '',
+        phone: '',
+        status: 'active',
+        employees: 0,
+        description: ''
+      });
+    }
+    setErrors({});
+  }, [client, mode, isOpen]);
+
+  // Body scroll prevention and ESC key handler
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent body scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // ESC key handler
+      const handleEsc = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEsc);
+      
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleEsc);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  // Overlay click handler
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.industry.trim()) newErrors.industry = 'Industry is required';
+    if (!formData.location.trim()) newErrors.location = 'Location is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
+    
+    // Website validation - check for valid domain format
+    if (formData.website && formData.website.trim()) {
+      const domain = formData.website.trim();
+      // Basic domain validation: allows subdomains, requires at least one dot and valid TLD
+      if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(domain)) {
+        newErrors.website = 'Please enter a valid domain name (e.g., company.com)';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      let savedClient: Client;
+      
+      // Prepare the data for submission
+      const submitData = {
+        ...formData,
+        // Automatically prepend https:// to website if provided
+        website: formData.website.trim() ? `https://${formData.website.trim()}` : ''
+      };
+      
+      if (mode === 'edit' && client) {
+        savedClient = await clientApi.update(client.id, submitData);
+      } else {
+        savedClient = await clientApi.create(submitData);
+      }
+      
+      onSave(savedClient);
+      onClose();
+    } catch (error: any) {
+      console.error('Error saving client:', error);
+      // Handle API errors
+      if (error.response?.data?.message) {
+        if (error.response.data.message.includes('name already exists')) {
+          setErrors({ name: 'A client with this name already exists' });
+        } else if (error.response.data.message.includes('email already exists')) {
+          setErrors({ email: 'A client with this email already exists' });
+        } else {
+          setErrors({ name: error.response.data.message });
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleInputChange = (field: keyof ClientFormData, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const modalContent = (
+    <div className="fixed top-0 right-0 bottom-0 left-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[9999]" onClick={handleOverlayClick}>
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {mode === 'edit' ? 'Edit Client' : 'Add New Client'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Company Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  errors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter company name"
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
+
+            {/* Industry */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Industry *
+              </label>
+              <input
+                type="text"
+                value={formData.industry}
+                onChange={(e) => handleInputChange('industry', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  errors.industry ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="e.g., Technology, Healthcare"
+              />
+              {errors.industry && <p className="text-red-500 text-sm mt-1">{errors.industry}</p>}
+            </div>
+
+            {/* Company Size */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Company Size
+              </label>
+              <select
+                value={formData.size}
+                onChange={(e) => handleInputChange('size', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+              >
+                <option value="Small (1-50 employees)">Small (1-50 employees)</option>
+                <option value="Medium (51-200 employees)">Medium (51-200 employees)</option>
+                <option value="Large (201-1000 employees)">Large (201-1000 employees)</option>
+                <option value="Enterprise (1000+ employees)">Enterprise (1000+ employees)</option>
+              </select>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Location *
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => handleInputChange('location', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  errors.location ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="e.g., San Francisco, CA"
+              />
+              {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email *
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="contact@company.com"
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone
+              </label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg  focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+                placeholder="+1 (555) 123-4567"
+              />
+            </div>
+
+            {/* Website */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Website
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-gray-500 text-sm">https://</span>
+                <input
+                  type="text"
+                  value={formData.website}
+                  onChange={(e) => handleInputChange('website', e.target.value)}
+                  className={`w-full pl-20 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.website ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="company.com"
+                />
+              </div>
+              {errors.website && <p className="text-red-500 text-sm mt-1">{errors.website}</p>}
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg  focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg  focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
+              placeholder="Brief description of the company..."
+            />
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {mode === 'edit' ? 'Update Client' : 'Create Client'}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
+  // Render modal content in a portal to bypass any parent z-index issues
+  return createPortal(modalContent, document.body);
+};
+
+export default ClientForm;

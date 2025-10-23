@@ -1,0 +1,86 @@
+{
+  "fileName": "user9_strange_manuscript.docx",
+  "fileSize": 450320,
+  "extractedText": "Dr. Stephen Strange - Master of Mystic Arts and Quantum Computing...",
+  "structuredData": {    "personalInfo": {
+      "fullName": "Dr. Stephen Strange",
+      "email": "stephen.strange@sanctum.example.com",
+      "phone": "901-234-5678",
+      "location": "New York, NY (Bleecker Street)",
+      "website": "masterofthemysticarts.io",
+      "linkedIn": "linkedin.com/in/drstephenstrange",
+      "github": "github.com/sorcerersupreme",
+      "avatar": "https://randomuser.me/api/portraits/men/9.jpg"
+    },
+    "summary": "Former neurosurgeon turned Master of the Mystic Arts, now exploring the intersection of magic and technology, particularly in quantum computing and alternate dimension data analysis. Seeking to apply unique insights to complex computational problems.",
+    "experience": [
+      {
+        "position": "Sorcerer Supreme & Quantum Systems Architect",
+        "company": "Sanctum Sanctorum Research",
+        "startDate": "2016-11-01",
+        "endDate": "Present",
+        "location": "Global / Multiple Dimensions",
+        "description": "Protecting Earth from mystical threats and researching the computational underpinnings of reality.",
+        "responsibilities": [
+          "Developing algorithms for dimensional breach detection",
+          "Architecting quantum-entangled communication networks",
+          "Debugging spells with logical errors"
+        ],
+        "achievements": [
+          "Averted several apocalypses (details classified)",
+          "Published 'The Book of Cagliostro: A Computational Perspective'"
+        ],
+        "technologies": ["Quantum Computing", "Python", "LISP (for ancient incantations)", "Metaphysics API", "Temporal Mechanics"]
+      },
+      {
+        "position": "Chief Neurosurgeon",
+        "company": "Metro-General Hospital",
+        "startDate": "Pre-2016",
+        "endDate": "2016-02-02",
+        "location": "New York, NY",
+        "description": "Performed complex neurological surgeries.",
+        "responsibilities": ["Saving lives", "Pushing boundaries of medical science"],
+        "technologies": ["Surgical Robotics", "Advanced Imaging"]
+      }
+    ],
+    "education": [
+      {
+        "degree": "M.D., Ph.D. (Neurosurgery)",
+        "institution": "Columbia University Vagelos College of Physicians and Surgeons",
+        "graduationDate": "Years Ago",
+        "location": "New York, NY"
+      },
+      {
+        "degree": "Master of Mystic Arts",
+        "institution": "Kamar-Taj",
+        "graduationDate": "2016 (Accelerated Program)",
+        "location": "Kathmandu, Nepal"
+      }
+    ],
+    "skills": ["Quantum Computing", "Mystic Arts", "Neurosurgery (formerly)", "Problem Solving", "Pattern Recognition", "Astral Projection"],
+    "certifications": [
+      {
+        "name": "Board Certified Neurosurgeon (Inactive)",
+        "issuer": "American Board of Neurological Surgery",
+        "dateIssued": "Pre-2016"
+      }
+    ],
+    "awards": [
+      {
+        "name": "Guardian of the Time Stone (Temporary)",
+        "issuer": "Ancient One",
+        "date": "2017-2018",
+        "description": "Heavy responsibility, good for the resume."
+      }
+    ],
+    "interests": ["Ancient Texts", "Quantum Physics", "Meditation", "Protecting Reality"],
+    "projects": [
+      {
+        "name": "Eye of Agamotto Simulation",
+        "description": "A quantum computer model simulating temporal probabilities.",
+        "technologies": ["Quantum Algorithms", "Mystic Energy Matrix"],
+        "url": "masterofthemysticarts.io/eye-sim"
+      }
+    ]
+  }
+}
