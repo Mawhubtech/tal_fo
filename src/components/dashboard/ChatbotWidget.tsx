@@ -11,16 +11,25 @@ import {
   Wifi,
   WifiOff,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Loader2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useAIChatWebSocket } from '../../hooks/useAIChatWebSocket';
+import { CandidateCard } from '../CandidateCard';
+import SourcingProfileSidePanel from '../../sourcing/outreach/components/SourcingProfileSidePanel';
 
 interface ChatMessage {
   id: string;
   content: string;
   sender: 'user' | 'ai';
   timestamp: Date;
+  type?: 'text' | 'search_results';
+  searchResults?: any[];
+  searchQuery?: string; // Store the original search query
+  currentPage?: number; // Track current page for pagination
+  hasMore?: boolean; // Whether more results are available
+  totalResults?: number; // Total number of results
 }
 
 interface ChatHistory {
@@ -47,16 +56,27 @@ const ChatbotWidget: React.FC = () => {
     }
   ]);
   
+  // Profile panel state
+  const [panelState, setPanelState] = useState<'closed' | 'collapsed' | 'expanded'>('closed');
+  const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<any>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  
+  // Load more state
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
   const {
     isConnected,
     isStreaming,
     error: wsError,
     sendMessage,
     createChat,
+    loadMoreCandidates,
     onMessageReceived,
     onAIChunk,
     onAIComplete,
     onChatCreated,
+    onSearchingCandidates,
+    onSearchResults,
     onError,
   } = useAIChatWebSocket();
   
@@ -219,7 +239,68 @@ When helping users, be specific about TAL's features and provide actionable solu
       setChatMessages(prev => [...prev, errorMessage]);
       setCurrentStreamingMessage('');
     });
-  }, [onMessageReceived, onAIChunk, onAIComplete, onError]);
+
+    // Handle candidate search initiation
+    onSearchingCandidates((data) => {
+      console.log('🔍 Searching for candidates:', data);
+      // Show searching indicator
+      const searchingMessage: ChatMessage = {
+        id: `searching-${Date.now()}`,
+        content: `Searching for candidates matching: "${data.query}"...`,
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'text'
+      };
+      setChatMessages(prev => [...prev, searchingMessage]);
+    });
+
+    // Handle search results
+    onSearchResults((data) => {
+      console.log('✅ Received search results:', data);
+      
+      setIsLoadingMore(false);
+      
+      // Check if this is the first page or load more
+      const isFirstPage = data.currentPage === 1;
+      
+      if (isFirstPage) {
+        // Remove searching indicator
+        setChatMessages(prev => prev.filter(msg => !msg.id.startsWith('searching-')));
+        
+        // Add results as a special message type
+        const resultsMessage: ChatMessage = {
+          id: `results-${Date.now()}`,
+          content: `I found ${data.totalResults || data.results.length} candidate${data.totalResults !== 1 ? 's' : ''} matching your search criteria. Showing ${data.results.length} results.`,
+          sender: 'ai',
+          timestamp: new Date(),
+          type: 'search_results',
+          searchResults: data.results,
+          searchQuery: data.query,
+          currentPage: data.currentPage,
+          hasMore: data.hasMore,
+          totalResults: data.totalResults
+        };
+        setChatMessages(prev => [...prev, resultsMessage]);
+      } else {
+        // Append to existing search results
+        setChatMessages(prev => 
+          prev.map(msg => {
+            if (msg.type === 'search_results' && msg.searchQuery === data.query) {
+              return {
+                ...msg,
+                searchResults: [...(msg.searchResults || []), ...data.results],
+                currentPage: data.currentPage,
+                hasMore: data.hasMore,
+                content: `I found ${data.totalResults || 0} candidate${data.totalResults !== 1 ? 's' : ''} matching your search criteria. Showing ${(msg.searchResults?.length || 0) + data.results.length} results.`
+              };
+            }
+            return msg;
+          })
+        );
+      }
+    });
+
+  }, [onMessageReceived, onAIChunk, onAIComplete, onError, onSearchingCandidates, onSearchResults]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -322,6 +403,129 @@ When helping users, be specific about TAL's features and provide actionable solu
       setActiveChatId(chatId);
       setChatMessages(selectedChat.messages);
     }
+  };
+
+  // Convert candidate data to user data format for profile panel
+  const convertCandidateToUserData = (candidateMatch: any) => {
+    const candidateData = candidateMatch.candidate || candidateMatch;
+    
+    // Convert skillMappings to skills array
+    const skills = candidateData.skillMappings 
+      ? candidateData.skillMappings.map((mapping: any) => ({
+          id: mapping.skill?.id || mapping.skillId,
+          name: mapping.skill?.name || mapping.name || 'Unknown Skill',
+          category: mapping.skill?.category || 'other',
+          level: mapping.level || 'intermediate',
+          yearsOfExperience: mapping.yearsOfExperience || 0,
+          isHighlighted: mapping.isHighlighted || false
+        }))
+      : (candidateData.skills ? candidateData.skills.map((skill: any) => 
+          typeof skill === 'string' ? { name: skill, category: 'other' } : skill
+        ) : []);
+
+    // Convert interests to proper format
+    const interests = candidateData.interests 
+      ? candidateData.interests.map((interest: any) => ({
+          id: interest.id || Math.random().toString(),
+          name: interest.name || interest,
+          category: interest.category || 'personal',
+          description: interest.description || null
+        }))
+      : [];
+
+    // Convert languages to proper format  
+    const languages = candidateData.languages 
+      ? candidateData.languages.map((lang: any) => ({
+          language: lang.language || lang.name || lang,
+          proficiency: lang.proficiency || 'unknown'
+        }))
+      : [];
+
+    // Convert certifications to proper format
+    const certifications = candidateData.certifications 
+      ? candidateData.certifications.map((cert: any) => ({
+          name: cert.name || cert.title || 'Unknown Certification',
+          issuer: cert.issuer || cert.organization || 'Unknown Issuer',
+          dateIssued: cert.dateIssued || cert.date || cert.startDate || '',
+          expirationDate: cert.expirationDate || cert.endDate
+        }))
+      : [];
+
+    // Convert awards to proper format
+    const awards = candidateData.awards 
+      ? candidateData.awards.map((award: any) => ({
+          name: award.name || award.title || 'Unknown Award',
+          issuer: award.issuer || award.organization || 'Unknown Issuer',
+          date: award.date || award.dateReceived || '',
+          description: award.description || ''
+        }))
+      : [];
+
+    // Convert references to proper format
+    const references = candidateData.references 
+      ? candidateData.references.map((ref: any) => ({
+          name: ref.name || 'Unknown Reference',
+          position: ref.position || ref.title || 'Unknown Position',
+          company: ref.company || ref.organization || 'Unknown Company',
+          email: ref.email || '',
+          phone: ref.phone || '',
+          relationship: ref.relationship || 'colleague'
+        }))
+      : [];
+
+    return {
+      personalInfo: {
+        fullName: candidateData.fullName || 'Unknown',
+        email: typeof candidateData.email === 'boolean' ? '' : (candidateData.email || ''),
+        phone: candidateData.phone || '',
+        location: typeof candidateData.location === 'boolean' ? 'Location Available' : (candidateData.location || 'Not specified'),
+        website: candidateData.website || '',
+        linkedIn: candidateData.linkedIn || candidateData.linkedinUrl || '',
+        github: candidateData.github || '',
+        facebook: candidateData.facebook || candidateData.facebookUrl || candidateData.facebook_url || '',
+        twitter: candidateData.twitter || candidateData.twitterUrl || candidateData.twitter_url || '',
+        avatar: candidateData.avatar || ''
+      },
+      summary: candidateData.summary || candidateData.profileSummary || '',
+      experience: candidateData.experience || candidateData.workExperience || [],
+      education: candidateData.education || [],
+      skills: skills,
+      projects: candidateData.projects || [],
+      certifications: certifications,
+      awards: awards,
+      interests: interests,
+      languages: languages,
+      references: references,
+      customFields: [],
+      coreSignalId: candidateData.coreSignalId || undefined,
+      rawCandidateData: candidateMatch,
+      ...(candidateData.notesData && { notesData: candidateData.notesData })
+    };
+  };
+
+  // Handle opening profile panel
+  const handleOpenProfilePanel = (candidateMatch: any) => {
+    const userData = convertCandidateToUserData(candidateMatch);
+    setSelectedUserDataForPanel(userData);
+    setSelectedCandidateId(candidateMatch.candidate?.id || null);
+    setPanelState('collapsed');
+  };
+
+  // Handle panel state changes
+  const handlePanelStateChange = (newState: 'closed' | 'collapsed' | 'expanded') => {
+    setPanelState(newState);
+    if (newState === 'closed') {
+      setSelectedUserDataForPanel(null);
+      setSelectedCandidateId(null);
+    }
+  };
+
+  // Handle load more candidates
+  const handleLoadMore = (searchQuery: string, currentPage: number) => {
+    if (!activeChatId || isLoadingMore) return;
+    
+    setIsLoadingMore(true);
+    loadMoreCandidates(activeChatId, searchQuery, currentPage);
   };
 
   const handleDeleteChat = (chatId: string, e: React.MouseEvent) => {
@@ -499,50 +703,112 @@ When helping users, be specific about TAL's features and provide actionable solu
                   className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
                 >
                   {chatMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[70%] px-4 py-3 rounded-lg shadow-sm ${
-                          message.sender === 'user'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white text-gray-900 border border-gray-200'
-                        }`}
-                      >
-                        <div className="text-sm">
-                          {message.sender === 'ai' ? (
-                            <div className="markdown-content">
-                              <ReactMarkdown 
-                                components={{
-                                  p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
-                                  h1: ({children}) => <h1 className="text-base font-bold mb-2">{children}</h1>,
-                                  h2: ({children}) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
-                                  h3: ({children}) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
-                                  strong: ({children}) => <strong className="font-semibold">{children}</strong>,
-                                  em: ({children}) => <em className="italic">{children}</em>,
-                                  code: ({children}) => <code className="bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
-                                  ul: ({children}) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
-                                  ol: ({children}) => <ol className="list-decimal list-inside space-y-1 mb-2">{children}</ol>,
-                                  li: ({children}) => <li className="text-sm">{children}</li>,
-                                  blockquote: ({children}) => <blockquote className="border-l-4 border-gray-300 pl-3 italic text-gray-700 mb-2">{children}</blockquote>,
-                                }}
-                              >
-                                {message.content}
-                              </ReactMarkdown>
-                            </div>
-                          ) : (
-                            <p className="whitespace-pre-wrap">{message.content}</p>
-                          )}
-                        </div>
-                        <p
-                          className={`text-xs mt-2 ${
-                            message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
-                          }`}
+                    <div key={message.id}>
+                      {/* Regular text message */}
+                      {(!message.type || message.type === 'text') && (
+                        <div
+                          className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
                         >
-                          {message.timestamp.toLocaleTimeString()}
-                        </p>
-                      </div>
+                          <div
+                            className={`max-w-[70%] px-4 py-3 rounded-lg shadow-sm ${
+                              message.sender === 'user'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white text-gray-900 border border-gray-200'
+                            }`}
+                          >
+                            <div className="text-sm">
+                              {message.sender === 'ai' ? (
+                                <div className="markdown-content">
+                                  <ReactMarkdown 
+                                    components={{
+                                      p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                                      h1: ({children}) => <h1 className="text-base font-bold mb-2">{children}</h1>,
+                                      h2: ({children}) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
+                                      h3: ({children}) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
+                                      strong: ({children}) => <strong className="font-semibold">{children}</strong>,
+                                      em: ({children}) => <em className="italic">{children}</em>,
+                                      code: ({children}) => <code className="bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
+                                      ul: ({children}) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
+                                      ol: ({children}) => <ol className="list-decimal list-inside space-y-1 mb-2">{children}</ol>,
+                                      li: ({children}) => <li className="text-sm">{children}</li>,
+                                      blockquote: ({children}) => <blockquote className="border-l-4 border-gray-300 pl-3 italic text-gray-700 mb-2">{children}</blockquote>,
+                                    }}
+                                  >
+                                    {message.content}
+                                  </ReactMarkdown>
+                                </div>
+                              ) : (
+                                <p className="whitespace-pre-wrap">{message.content}</p>
+                              )}
+                            </div>
+                            <p
+                              className={`text-xs mt-2 ${
+                                message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
+                              }`}
+                            >
+                              {message.timestamp.toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Search results display */}
+                      {message.type === 'search_results' && message.searchResults && (
+                        <div className="mb-4">
+                          {/* Results summary */}
+                          <div className="flex justify-start mb-2">
+                            <div className="bg-white text-gray-900 px-4 py-3 rounded-lg border border-gray-200 shadow-sm">
+                              <div className="text-sm">
+                                <p className="font-medium text-purple-600">{message.content}</p>
+                                <p className="text-xs text-gray-500 mt-1">{message.timestamp.toLocaleTimeString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Candidate cards */}
+                          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                            <div className="divide-y divide-gray-200 max-h-[500px] overflow-y-auto">
+                              {message.searchResults.map((candidate, idx) => (
+                                <CandidateCard
+                                  key={candidate.candidate?.id || idx}
+                                  candidate={candidate}
+                                  compact={true}
+                                  onViewProfile={(cand) => {
+                                    handleOpenProfilePanel(cand);
+                                  }}
+                                  onShortlist={(cand) => {
+                                    console.log('Shortlist candidate:', cand);
+                                    // TODO: Implement shortlist functionality
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            
+                            {/* Load More Button */}
+                            {message.hasMore && (
+                              <div className="p-3 border-t border-gray-200 bg-gray-50">
+                                <button
+                                  onClick={() => handleLoadMore(message.searchQuery!, message.currentPage!)}
+                                  disabled={isLoadingMore}
+                                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  {isLoadingMore ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      Loading...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus className="w-4 h-4" />
+                                      Load More Candidates
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {isStreaming && (
@@ -594,7 +860,26 @@ When helping users, be specific about TAL's features and provide actionable solu
     </>
   );
 
-  return createPortal(chatContent, document.body);
+  return (
+    <>
+      {createPortal(chatContent, document.body)}
+      {/* Profile Side Panel */}
+      {panelState !== 'closed' && selectedUserDataForPanel && createPortal(
+        <SourcingProfileSidePanel
+          userData={selectedUserDataForPanel}
+          panelState={panelState}
+          onStateChange={handlePanelStateChange}
+          candidateId={selectedCandidateId || undefined}
+          projectId={undefined}
+          onShortlist={() => {
+            console.log('Shortlist candidate from panel');
+            // TODO: Implement shortlist functionality
+          }}
+        />,
+        document.body
+      )}
+    </>
+  );
 };
 
 export default ChatbotWidget;

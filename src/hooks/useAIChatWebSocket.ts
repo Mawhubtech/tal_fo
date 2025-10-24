@@ -17,6 +17,7 @@ interface UseAIChatWebSocketResult {
   getChats: () => void;
   getChat: (chatId: string) => void;
   deleteChat: (chatId: string) => void;
+  loadMoreCandidates: (chatId: string, query: string, currentPage: number) => void;
   onMessageReceived: (callback: (data: any) => void) => void;
   onAIChunk: (callback: (data: any) => void) => void;
   onAIComplete: (callback: (data: any) => void) => void;
@@ -24,6 +25,8 @@ interface UseAIChatWebSocketResult {
   onChatsList: (callback: (data: any) => void) => void;
   onChatData: (callback: (data: any) => void) => void;
   onChatDeleted: (callback: (data: any) => void) => void;
+  onSearchingCandidates: (callback: (data: any) => void) => void;
+  onSearchResults: (callback: (data: any) => void) => void;
   onError: (callback: (data: any) => void) => void;
 }
 
@@ -41,12 +44,18 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
   const chatsListCallbackRef = useRef<((data: any) => void) | null>(null);
   const chatDataCallbackRef = useRef<((data: any) => void) | null>(null);
   const chatDeletedCallbackRef = useRef<((data: any) => void) | null>(null);
+  const searchingCandidatesCallbackRef = useRef<((data: any) => void) | null>(null);
+  const searchResultsCallbackRef = useRef<((data: any) => void) | null>(null);
   const errorCallbackRef = useRef<((data: any) => void) | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     
+    console.log('🔌 Initializing AI Chat WebSocket connection...');
+    console.log('📝 Token available:', !!token);
+    
     if (!token) {
+      console.error('❌ No authentication token found');
       setError('No authentication token found');
       return;
     }
@@ -54,6 +63,9 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     // Get base URL from environment or construct it
     const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
     const wsURL = baseURL.replace('/api/v1', '');
+    
+    console.log('🌐 WebSocket URL:', `${wsURL}/ai-chat`);
+    console.log('🔑 Using token:', token.substring(0, 20) + '...');
 
     // Initialize socket connection
     const socket = io(`${wsURL}/ai-chat`, {
@@ -67,6 +79,8 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     });
 
     socketRef.current = socket;
+    
+    console.log('📡 Socket instance created, waiting for connection...');
 
     // Connection event handlers
     socket.on('connect', () => {
@@ -87,6 +101,8 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
 
     socket.on('connect_error', (err) => {
       console.error('❌ WebSocket connection error:', err);
+      console.error('❌ Error message:', err.message);
+      console.error('❌ Error details:', JSON.stringify(err, null, 2));
       setError(err.message);
       setIsConnected(false);
     });
@@ -151,6 +167,23 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
       }
     });
 
+    // Search event handlers
+    socket.on('searching_candidates', (data) => {
+      console.log('🔍 Searching candidates:', data);
+      setIsStreaming(true); // Show loading state while searching
+      if (searchingCandidatesCallbackRef.current) {
+        searchingCandidatesCallbackRef.current(data);
+      }
+    });
+
+    socket.on('search_results', (data) => {
+      console.log('✅ Search results received:', data);
+      setIsStreaming(false);
+      if (searchResultsCallbackRef.current) {
+        searchResultsCallbackRef.current(data);
+      }
+    });
+
     // Cleanup on unmount
     return () => {
       socket.disconnect();
@@ -207,6 +240,15 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     socketRef.current.emit('delete_chat', { chatId });
   }, [isConnected]);
 
+  const loadMoreCandidates = useCallback((chatId: string, query: string, currentPage: number) => {
+    if (!socketRef.current || !isConnected) {
+      setError('Not connected to WebSocket');
+      return;
+    }
+
+    socketRef.current.emit('load_more_candidates', { chatId, query, currentPage });
+  }, [isConnected]);
+
   // Event callback setters
   const onMessageReceived = useCallback((callback: (data: any) => void) => {
     messageReceivedCallbackRef.current = callback;
@@ -240,6 +282,14 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     errorCallbackRef.current = callback;
   }, []);
 
+  const onSearchingCandidates = useCallback((callback: (data: any) => void) => {
+    searchingCandidatesCallbackRef.current = callback;
+  }, []);
+
+  const onSearchResults = useCallback((callback: (data: any) => void) => {
+    searchResultsCallbackRef.current = callback;
+  }, []);
+
   return {
     isConnected,
     isStreaming,
@@ -249,6 +299,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     getChats,
     getChat,
     deleteChat,
+    loadMoreCandidates,
     onMessageReceived,
     onAIChunk,
     onAIComplete,
@@ -256,6 +307,8 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     onChatsList,
     onChatData,
     onChatDeleted,
+    onSearchingCandidates,
+    onSearchResults,
     onError,
   };
 };

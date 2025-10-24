@@ -1003,14 +1003,14 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
       <>
         {/* Backdrop - clicking this will close the panel */}
         <div 
-          className="fixed inset-0 bg-black bg-opacity-25 z-40"
+          className="fixed inset-0 bg-black bg-opacity-25 z-[60]"
           onClick={() => onStateChange('closed')}
         />
         
         {/* Side Panel - Dynamic width based on actions panel state */}
         <div 
           ref={panelRef}
-          className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-full sm:w-1/2 md:w-5/12 lg:w-1/3' : 'w-full sm:w-3/4 md:w-2/3 lg:w-1/2'} bg-white shadow-2xl z-50 flex transition-all duration-300 ease-in-out`}
+          className={`fixed inset-y-0 right-0 ${isCandidateActionsCollapsed ? 'w-full sm:w-1/2 md:w-5/12 lg:w-1/3' : 'w-full sm:w-3/4 md:w-2/3 lg:w-1/2'} bg-white shadow-2xl z-[70] flex transition-all duration-300 ease-in-out`}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -1193,7 +1193,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
                     </div>
                   )}
                   
-                  {notesData.yearsOfExperience && (
+                  {notesData.yearsOfExperience && notesData.yearsOfExperience > 0 && (
                     <div className="flex items-center gap-2 bg-green-50 rounded-lg px-2 py-1.5">
                       <Briefcase className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
                       <div>
@@ -2733,7 +2733,7 @@ const SourcingProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, p
 
       {/* Email View Modal */}
       {isEmailViewModalOpen && selectedEmailForView && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[80] p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
