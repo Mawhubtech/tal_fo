@@ -179,6 +179,24 @@ class SearchApiService {
       throw error;
     }
   }
+
+  /**
+   * Load more candidates from cache using queryHash
+   */
+  async loadCandidatesFromCache(queryHash: string, page: number, limit: number = 3): Promise<SearchResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', limit.toString());
+      
+      const url = `/search/candidates/advanced-filters/cache?${queryParams.toString()}`;
+      const response = await apiClient.post(url, { queryHash });
+      return response.data;
+    } catch (error) {
+      console.error('Error loading candidates from cache:', error);
+      throw error;
+    }
+  }
 }
 
 export const searchApiService = new SearchApiService();

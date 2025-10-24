@@ -18,18 +18,20 @@ import ReactMarkdown from 'react-markdown';
 import { useAIChatWebSocket } from '../../hooks/useAIChatWebSocket';
 import { CandidateCard } from '../CandidateCard';
 import SourcingProfileSidePanel from '../../sourcing/outreach/components/SourcingProfileSidePanel';
+import { searchApiService } from '../../services/searchApiService';
 
 interface ChatMessage {
   id: string;
   content: string;
   sender: 'user' | 'ai';
   timestamp: Date;
-  type?: 'text' | 'search_results';
+  type?: 'text' | 'search_results' | 'load_more_results';
   searchResults?: any[];
   searchQuery?: string; // Store the original search query
   currentPage?: number; // Track current page for pagination
   hasMore?: boolean; // Whether more results are available
-  totalResults?: number; // Total number of results
+  totalResults?: number;
+  queryHash?: string; // For cache-based pagination
 }
 
 interface ChatHistory {
@@ -278,7 +280,8 @@ When helping users, be specific about TAL's features and provide actionable solu
           searchQuery: data.query,
           currentPage: data.currentPage,
           hasMore: data.hasMore,
-          totalResults: data.totalResults
+          totalResults: data.totalResults,
+          queryHash: data.queryHash // Store queryHash for cache-based pagination
         };
         setChatMessages(prev => [...prev, resultsMessage]);
       } else {
@@ -329,6 +332,110 @@ When helping users, be specific about TAL's features and provide actionable solu
     const currentInput = chatInput;
     setChatInput('');
 
+    // Check if user is asking for more candidates
+    const isAskingForMore = /\b(more|show more|load more|next|additional|another|more candidates|see more)\b/i.test(currentInput);
+    
+    console.log('🔍 Checking if asking for more:', { isAskingForMore, currentInput });
+    
+    if (isAskingForMore && activeChatId) {
+      // Find the last search results message
+      const lastSearchMessage = [...chatMessages].reverse().find(msg => msg.type === 'search_results');
+      
+      console.log('📋 Last search message:', { 
+        hasMessage: !!lastSearchMessage,
+        hasMore: lastSearchMessage?.hasMore,
+        queryHash: lastSearchMessage?.queryHash,
+        currentPage: lastSearchMessage?.currentPage
+      });
+      
+      if (lastSearchMessage && lastSearchMessage.hasMore && lastSearchMessage.queryHash) {
+        console.log('✅ Using cache-based load more with queryHash:', lastSearchMessage.queryHash);
+        // User is asking for more candidates from previous search
+        const userMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: currentInput,
+          sender: 'user',
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, userMessage]);
+        
+        // Load more candidates from cache
+        setIsLoadingMore(true);
+        try {
+          const nextPage = (lastSearchMessage.currentPage || 1) + 1;
+          const response = await searchApiService.loadCandidatesFromCache(
+            lastSearchMessage.queryHash,
+            nextPage,
+            3
+          );
+          
+          // Add the new results as a separate "load_more_results" message
+          const loadMoreMessage: ChatMessage = {
+            id: `load-more-${Date.now()}`,
+            content: `Here are ${response.results.length} more candidate${response.results.length !== 1 ? 's' : ''}.`,
+            sender: 'ai',
+            timestamp: new Date(),
+            type: 'load_more_results',
+            searchResults: response.results,
+            currentPage: nextPage,
+            hasMore: response.page < response.totalPages,
+            totalResults: response.total,
+            queryHash: lastSearchMessage.queryHash,
+            searchQuery: lastSearchMessage.searchQuery
+          };
+          
+          setChatMessages(prev => [...prev, loadMoreMessage]);
+          
+          // Update the original search message to reflect the new page count
+          setChatMessages(prev => 
+            prev.map(msg => {
+              if (msg.id === lastSearchMessage.id) {
+                return {
+                  ...msg,
+                  currentPage: nextPage,
+                  hasMore: response.page < response.totalPages
+                };
+              }
+              return msg;
+            })
+          );
+        } catch (error) {
+          console.error('Error loading more candidates:', error);
+          const errorMessage: ChatMessage = {
+            id: `error-${Date.now()}`,
+            content: 'Sorry, I couldn\'t load more candidates. Please try again.',
+            sender: 'ai',
+            timestamp: new Date()
+          };
+          setChatMessages(prev => [...prev, errorMessage]);
+        } finally {
+          setIsLoadingMore(false);
+        }
+        return;
+      } else if (lastSearchMessage && lastSearchMessage.hasMore) {
+        // queryHash is missing, inform user
+        console.warn('⚠️ No queryHash available for cache-based pagination');
+        const userMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: currentInput,
+          sender: 'user',
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, userMessage]);
+        
+        const warningMessage: ChatMessage = {
+          id: `warning-${Date.now()}`,
+          content: 'I\'m sorry, but I can\'t load more candidates right now. The search session has expired. Please start a new search.',
+          sender: 'ai',
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, warningMessage]);
+        return;
+      }
+    }
+
+    console.log('💬 Proceeding with normal message handling');
+    
     // If no active chat, create one first
     if (!activeChatId) {
       setIsCreatingChat(true);
@@ -784,26 +891,62 @@ When helping users, be specific about TAL's features and provide actionable solu
                               ))}
                             </div>
                             
-                            {/* Load More Button */}
+                            {/* Show hint if more results available */}
                             {message.hasMore && (
-                              <div className="p-3 border-t border-gray-200 bg-gray-50">
-                                <button
-                                  onClick={() => handleLoadMore(message.searchQuery!, message.currentPage!)}
-                                  disabled={isLoadingMore}
-                                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                                >
-                                  {isLoadingMore ? (
-                                    <>
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                      Loading...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Plus className="w-4 h-4" />
-                                      Load More Candidates
-                                    </>
-                                  )}
-                                </button>
+                              <div className="p-3 border-t border-gray-200 bg-purple-50">
+                                <p className="text-xs text-purple-700 text-center">
+                                  💬 Ask me to "show more candidates" to see additional results
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Load more results display - shown separately */}
+                      {message.type === 'load_more_results' && message.searchResults && (
+                        <div className="mb-4">
+                          {/* Load more summary */}
+                          <div className="flex justify-start mb-2">
+                            <div className="bg-white text-gray-900 px-4 py-3 rounded-lg border border-gray-200 shadow-sm">
+                              <div className="text-sm">
+                                <p className="font-medium text-green-600">{message.content}</p>
+                                <p className="text-xs text-gray-500 mt-1">{message.timestamp.toLocaleTimeString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* New candidate cards with distinct styling */}
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-200 shadow-sm overflow-hidden">
+                            <div className="px-3 py-2 bg-green-100 border-b border-green-200">
+                              <p className="text-xs font-semibold text-green-700 flex items-center gap-2">
+                                <Plus className="w-3 h-3" />
+                                Newly Loaded Candidates
+                              </p>
+                            </div>
+                            <div className="divide-y divide-green-100 max-h-[500px] overflow-y-auto">
+                              {message.searchResults.map((candidate, idx) => (
+                                <CandidateCard
+                                  key={candidate.candidate?.id || idx}
+                                  candidate={candidate}
+                                  compact={true}
+                                  onViewProfile={(cand) => {
+                                    handleOpenProfilePanel(cand);
+                                  }}
+                                  onShortlist={(cand) => {
+                                    console.log('Shortlist candidate:', cand);
+                                    // TODO: Implement shortlist functionality
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            
+                            {/* Show hint if more results available */}
+                            {message.hasMore && (
+                              <div className="p-3 border-t border-green-200 bg-green-50">
+                                <p className="text-xs text-green-700 text-center">
+                                  💬 Ask me to "show more candidates" to see additional results
+                                </p>
                               </div>
                             )}
                           </div>
@@ -817,6 +960,16 @@ When helping users, be specific about TAL's features and provide actionable solu
                         <div className="flex items-center space-x-2">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
                           <span className="text-sm">AI is responding...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {isLoadingMore && (
+                    <div className="flex justify-start">
+                      <div className="bg-white text-gray-900 px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                          <span className="text-sm">Loading more candidates...</span>
                         </div>
                       </div>
                     </div>
