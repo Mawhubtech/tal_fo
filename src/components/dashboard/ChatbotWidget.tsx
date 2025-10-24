@@ -519,21 +519,38 @@ When helping users, be specific about TAL's features and provide actionable solu
       }
 
       // Convert backend messages to frontend format
-      const loadedMessages: ChatMessage[] = chatData.messages.map((msg: any, index: number) => {
+      const loadedMessages: ChatMessage[] = chatData.messages
+        .filter((msg: any) => msg.role !== 'system') // Filter out system messages
+        .map((msg: any, index: number) => {
         // Backend stores messages with metadata field if available
         const metadata = (msg as any).metadata;
         let messageType: ChatMessage['type'] = 'text';
         let content = msg.content;
+        let searchResults: any[] | undefined;
+        let jobMatches: any[] | undefined;
+        let searchQuery: string | undefined;
+        let currentPage: number | undefined;
+        let hasMore: boolean | undefined;
+        let totalResults: number | undefined;
+        let queryHash: string | undefined;
 
-        // Check metadata for message type
+        // Check metadata for message type and full data
         if (metadata) {
           if (metadata.type === 'search_results') {
             messageType = 'search_results';
-            // Note: Full search results are not saved in chat history currently
-            // Only the summary is saved. Full results come from real-time search events.
+            searchResults = metadata.candidates || []; // Full candidate data from backend
+            searchQuery = metadata.query;
+            currentPage = metadata.currentPage || 1;
+            hasMore = metadata.hasMore || false;
+            totalResults = metadata.totalResults;
+            queryHash = metadata.queryHash;
+            
+            console.log(`📋 Restored ${searchResults.length} candidates from chat history`);
           } else if (metadata.type === 'job_match_results') {
             messageType = 'job_match_results';
-            // Note: Full job matches are not saved in chat history currently
+            jobMatches = metadata.matches || []; // Full job match data from backend
+            
+            console.log(`📋 Restored ${jobMatches.length} job matches from chat history`);
           } else if (metadata.type === 'conversation') {
             messageType = 'text';
           }
@@ -545,11 +562,27 @@ When helping users, be specific about TAL's features and provide actionable solu
           sender: msg.role === 'user' ? 'user' : 'ai',
           timestamp: new Date(msg.timestamp),
           type: messageType,
+          searchResults: searchResults,
+          searchQuery: searchQuery,
+          currentPage: currentPage,
+          hasMore: hasMore,
+          totalResults: totalResults,
+          queryHash: queryHash,
+          jobMatches: jobMatches,
         };
       });
 
       // Update chat messages with loaded history
-      setChatMessages(loadedMessages);
+      // Only update if we don't already have local messages (to preserve user's message before backend saves it)
+      setChatMessages(prev => {
+        // If we already have messages locally, keep them (don't overwrite with incomplete backend history)
+        if (prev.length > 0) {
+          console.log('📌 Keeping local messages, not overwriting with backend history');
+          return prev;
+        }
+        // Otherwise, load from backend
+        return loadedMessages;
+      });
       
       console.log(`✅ Loaded ${loadedMessages.length} messages from history`);
     });
