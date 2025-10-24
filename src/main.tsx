@@ -34,7 +34,7 @@ createRoot(document.getElementById('root')!).render(
   <AppWrapper>
     <QueryClientProvider client={queryClient}>
       <App />
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      {/* {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />} */}
     </QueryClientProvider>
   </AppWrapper>
 );

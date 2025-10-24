@@ -11,6 +11,7 @@ import { dashboardApiService } from '../services/dashboardApiService';
 import { PendingInvitations } from '../components/calendar/PendingEventInvitations';
 import CalendarWidget from '../components/dashboard/CalendarWidget';
 import TodoListWidget from '../components/dashboard/TodoListWidget';
+import ChatbotWidget from '../components/dashboard/ChatbotWidget';
 import CreateTaskModal from '../components/CreateTaskModal';
 import { toast } from '../components/ToastContainer';
 import { useAuthContext } from '../contexts/AuthContext';
@@ -327,6 +328,9 @@ const DashboardOverview: React.FC = () => {
         onClose={() => setShowCreateTaskModal(false)}
         onTaskCreated={handleTaskCreated}
       />
+
+      {/* Chatbot Widget */}
+      <ChatbotWidget />
     </div>
   );
 };
