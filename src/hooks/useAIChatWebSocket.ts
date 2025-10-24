@@ -21,6 +21,7 @@ interface UseAIChatWebSocketResult {
   onMessageReceived: (callback: (data: any) => void) => void;
   onAIChunk: (callback: (data: any) => void) => void;
   onAIComplete: (callback: (data: any) => void) => void;
+  onIntentDetected: (callback: (data: any) => void) => void;
   onChatCreated: (callback: (data: any) => void) => void;
   onChatsList: (callback: (data: any) => void) => void;
   onChatData: (callback: (data: any) => void) => void;
@@ -42,6 +43,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
   const messageReceivedCallbackRef = useRef<((data: any) => void) | null>(null);
   const aiChunkCallbackRef = useRef<((data: any) => void) | null>(null);
   const aiCompleteCallbackRef = useRef<((data: any) => void) | null>(null);
+  const intentDetectedCallbackRef = useRef<((data: any) => void) | null>(null);
   const chatCreatedCallbackRef = useRef<((data: any) => void) | null>(null);
   const chatsListCallbackRef = useRef<((data: any) => void) | null>(null);
   const chatDataCallbackRef = useRef<((data: any) => void) | null>(null);
@@ -131,6 +133,14 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
       setIsStreaming(false);
       if (aiCompleteCallbackRef.current) {
         aiCompleteCallbackRef.current(data);
+      }
+    });
+
+    socket.on('intent_detected', (data) => {
+      console.log('🎯 Intent detected:', data);
+      setIsStreaming(true); // Show loading state
+      if (intentDetectedCallbackRef.current) {
+        intentDetectedCallbackRef.current(data);
       }
     });
 
@@ -299,6 +309,10 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     chatDeletedCallbackRef.current = callback;
   }, []);
 
+  const onIntentDetected = useCallback((callback: (data: any) => void) => {
+    intentDetectedCallbackRef.current = callback;
+  }, []);
+
   const onError = useCallback((callback: (data: any) => void) => {
     errorCallbackRef.current = callback;
   }, []);
@@ -332,6 +346,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     onMessageReceived,
     onAIChunk,
     onAIComplete,
+    onIntentDetected,
     onChatCreated,
     onChatsList,
     onChatData,

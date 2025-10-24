@@ -83,6 +83,7 @@ const ChatbotWidget: React.FC = () => {
     onMessageReceived,
     onAIChunk,
     onAIComplete,
+    onIntentDetected,
     onChatCreated,
     onSearchingCandidates,
     onSearchResults,
@@ -197,6 +198,20 @@ When helping users, be specific about TAL's features and provide actionable solu
       console.log('✅ Message received by server:', data);
     });
 
+    // Handle intent detection - show loading message
+    onIntentDetected((data) => {
+      console.log('🎯 Intent detected:', data);
+      
+      // Add loading message based on intent
+      const loadingMessage: ChatMessage = {
+        id: `loading-${Date.now()}`,
+        content: data.message, // "🔍 Searching for candidates..." or "💼 Finding matching jobs..."
+        sender: 'ai',
+        timestamp: new Date(data.timestamp || Date.now()),
+      };
+      setChatMessages(prev => [...prev, loadingMessage]);
+    });
+
     // Handle AI response chunks
     onAIChunk((data) => {
       if (data.content) {
@@ -228,14 +243,28 @@ When helping users, be specific about TAL's features and provide actionable solu
       console.log('✅ AI response complete:', data);
       setCurrentStreamingMessage('');
       
-      // Update the streaming message with final ID
-      setChatMessages(prev => 
-        prev.map(msg => 
-          msg.id.startsWith('streaming-') 
-            ? { ...msg, id: `ai-${Date.now()}` }
-            : msg
-        )
-      );
+      // Check if we have a fullResponse and no streaming message exists
+      const hasStreamingMessage = chatMessages.some(msg => msg.id.startsWith('streaming-'));
+      
+      if (data.fullResponse && !hasStreamingMessage) {
+        // No streaming occurred, add the complete response as a new message
+        const aiMessage: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          content: data.fullResponse,
+          sender: 'ai',
+          timestamp: new Date(data.timestamp || Date.now())
+        };
+        setChatMessages(prev => [...prev, aiMessage]);
+      } else if (hasStreamingMessage) {
+        // Update the streaming message with final ID
+        setChatMessages(prev => 
+          prev.map(msg => 
+            msg.id.startsWith('streaming-') 
+              ? { ...msg, id: `ai-${Date.now()}`, content: data.fullResponse || msg.content }
+              : msg
+          )
+        );
+      }
     });
 
     // Handle errors
@@ -275,8 +304,8 @@ When helping users, be specific about TAL's features and provide actionable solu
       const isFirstPage = data.currentPage === 1;
       
       if (isFirstPage) {
-        // Remove searching indicator
-        setChatMessages(prev => prev.filter(msg => !msg.id.startsWith('searching-')));
+        // Remove searching indicator AND loading message
+        setChatMessages(prev => prev.filter(msg => !msg.id.startsWith('searching-') && !msg.id.startsWith('loading-')));
         
         // Add results as a special message type
         const resultsMessage: ChatMessage = {
@@ -330,8 +359,8 @@ When helping users, be specific about TAL's features and provide actionable solu
     onJobMatchResults((data) => {
       console.log('✅ Received job match results:', data);
       
-      // Remove matching indicator
-      setChatMessages(prev => prev.filter(msg => !msg.id.startsWith('matching-')));
+      // Remove matching indicator AND loading message
+      setChatMessages(prev => prev.filter(msg => !msg.id.startsWith('matching-') && !msg.id.startsWith('loading-')));
       
       // Add job matches as a special message type
       const matchCount = data.matches?.length || 0;
@@ -348,7 +377,7 @@ When helping users, be specific about TAL's features and provide actionable solu
       setChatMessages(prev => [...prev, resultsMessage]);
     });
 
-  }, [onMessageReceived, onAIChunk, onAIComplete, onError, onSearchingCandidates, onSearchResults, onMatchingJobs, onJobMatchResults]);
+  }, [onMessageReceived, onAIChunk, onAIComplete, onIntentDetected, onError, onSearchingCandidates, onSearchResults, onMatchingJobs, onJobMatchResults]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
