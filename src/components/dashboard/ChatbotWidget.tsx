@@ -73,18 +73,51 @@ const ChatbotWidget: React.FC = () => {
   // Load more state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
+  // Track current intent for better loading messages
+  const [currentIntent, setCurrentIntent] = useState<string | null>(null);
+  const [currentLoadingMessageIndex, setCurrentLoadingMessageIndex] = useState(0);
+  
+  // Loading messages for different intents
+  const loadingMessages = {
+    sourcing: [
+      'Analyzing your search criteria...',
+      'Scanning candidate database...',
+      'Matching skills and experience...',
+      'Filtering qualified candidates...',
+      'Ranking results by relevance...'
+    ],
+    job_matching: [
+      'Analyzing candidate profile...',
+      'Scanning available job postings...',
+      'Matching skills with requirements...',
+      'Evaluating compatibility scores...',
+      'Ranking best job matches...'
+    ],
+    conversation: [
+      'Processing your question...',
+      'Understanding context...',
+      'Analyzing request...',
+      'Preparing response...',
+      'Thinking...'
+    ]
+  };
+  
   const {
     isConnected,
     isStreaming,
     error: wsError,
     sendMessage,
     createChat,
+    getChat,
+    getChats,
     loadMoreCandidates,
     onMessageReceived,
     onAIChunk,
     onAIComplete,
     onIntentDetected,
     onChatCreated,
+    onChatData,
+    onChatsList,
     onSearchingCandidates,
     onSearchResults,
     onMatchingJobs,
@@ -97,6 +130,7 @@ const ChatbotWidget: React.FC = () => {
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<string>('');
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const pendingMessageRef = useRef<string | null>(null);
+  const loadingMessageIdRef = useRef<string | null>(null);
 
   // System prompt for the chatbot
   const SYSTEM_PROMPT = `You are the TAL Platform AI Assistant. TAL (Talent Acquisition Labs) is a comprehensive talent acquisition and recruitment platform designed for organizations, recruiters, and job seekers.
@@ -141,6 +175,54 @@ TAL provides end-to-end recruitment solutions including candidate sourcing, appl
 
 **Response Format:**
 When helping users, be specific about TAL's features and provide actionable solutions. If asked about topics outside TAL Platform scope or if you encounter complex technical issues, direct them to contact support for detailed assistance.`;
+
+  // Cycle through loading messages when streaming
+  useEffect(() => {
+    if (!isStreaming || !currentIntent) {
+      setCurrentLoadingMessageIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentLoadingMessageIndex((prevIndex) => {
+        const messages = loadingMessages[currentIntent as keyof typeof loadingMessages] || loadingMessages.conversation;
+        return (prevIndex + 1) % messages.length;
+      });
+    }, 4000); // Change message every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [isStreaming, currentIntent]);
+
+  // Load chat list when connected
+  useEffect(() => {
+    if (isConnected) {
+      console.log('📋 Loading chat list from backend...');
+      getChats();
+    }
+  }, [isConnected, getChats]);
+
+  // Handle chat list response
+  useEffect(() => {
+    onChatsList((chats) => {
+      console.log('📋 Chat list received:', chats);
+      
+      // Convert backend chat list to frontend format
+      const chatHistoriesFromBackend: ChatHistory[] = chats.map((chat: any) => ({
+        id: chat.id,
+        title: chat.title || 'Untitled Chat',
+        messages: [], // Messages will be loaded when chat is selected
+        timestamp: new Date(chat.updatedAt || chat.createdAt)
+      }));
+
+      setChatHistories(chatHistoriesFromBackend);
+      
+      // If no active chat and there are chats, select the most recent one
+      if (!activeChatId && chatHistoriesFromBackend.length > 0) {
+        const mostRecentChat = chatHistoriesFromBackend[0];
+        setActiveChatId(mostRecentChat.id);
+      }
+    });
+  }, [onChatsList, activeChatId]);
 
   // WebSocket event handlers
   useEffect(() => {
@@ -198,38 +280,27 @@ When helping users, be specific about TAL's features and provide actionable solu
       console.log('✅ Message received by server:', data);
     });
 
-    // Handle intent detection - show loading message
-    onIntentDetected((data) => {
-      console.log('🎯 Intent detected:', data);
-      
-      // Add loading message based on intent
-      const loadingMessage: ChatMessage = {
-        id: `loading-${Date.now()}`,
-        content: data.message, // "🔍 Searching for candidates..." or "💼 Finding matching jobs..."
-        sender: 'ai',
-        timestamp: new Date(data.timestamp || Date.now()),
-      };
-      setChatMessages(prev => [...prev, loadingMessage]);
-    });
-
-    // Handle AI response chunks
+    // Handle AI response chunks - streaming clean tokens from config.writer
     onAIChunk((data) => {
-      if (data.content) {
-        setCurrentStreamingMessage(prev => prev + data.content);
+      const token = data.chunk || data.content;
+      if (token) {
+        setCurrentStreamingMessage(prev => prev + token);
         
-        // Update or create streaming message
+        // Update or create streaming message with clean tokens
         setChatMessages(prev => {
           const lastMessage = prev[prev.length - 1];
           if (lastMessage && lastMessage.sender === 'ai' && lastMessage.id.startsWith('streaming-')) {
+            // Update existing streaming message
             return prev.map(msg => 
               msg.id === lastMessage.id 
-                ? { ...msg, content: msg.content + data.content }
+                ? { ...msg, content: msg.content + token }
                 : msg
             );
           } else {
+            // Create new streaming message
             return [...prev, {
               id: `streaming-${Date.now()}`,
-              content: data.content,
+              content: token,
               sender: 'ai',
               timestamp: new Date()
             }];
@@ -238,32 +309,67 @@ When helping users, be specific about TAL's features and provide actionable solu
       }
     });
 
+    // Handle intent detected (no loading message, just track intent for spinner)
+    onIntentDetected((data) => {
+      console.log('🎯 Intent detected (widget):', data);
+      
+      // Store current intent for cycling spinner messages
+      setCurrentIntent(data.intent);
+      setCurrentLoadingMessageIndex(0); // Reset to first message
+    });
+
     // Handle AI response completion
     onAIComplete((data) => {
       console.log('✅ AI response complete:', data);
+      console.log('🗑️ Loading message ID to remove:', loadingMessageIdRef.current);
       setCurrentStreamingMessage('');
+      setCurrentIntent(null); // Clear intent when workflow completes
       
-      // Check if we have a fullResponse and no streaming message exists
-      const hasStreamingMessage = chatMessages.some(msg => msg.id.startsWith('streaming-'));
-      
-      if (data.fullResponse && !hasStreamingMessage) {
-        // No streaming occurred, add the complete response as a new message
-        const aiMessage: ChatMessage = {
-          id: `ai-${Date.now()}`,
-          content: data.fullResponse,
-          sender: 'ai',
-          timestamp: new Date(data.timestamp || Date.now())
-        };
-        setChatMessages(prev => [...prev, aiMessage]);
-      } else if (hasStreamingMessage) {
-        // Update the streaming message with final ID
-        setChatMessages(prev => 
-          prev.map(msg => 
-            msg.id.startsWith('streaming-') 
-              ? { ...msg, id: `ai-${Date.now()}`, content: data.fullResponse || msg.content }
+      // Remove any loading message and finalize streaming message
+      setChatMessages(prev => {
+        console.log('📋 Current messages before cleanup:', prev.map(m => ({ id: m.id, content: m.content.substring(0, 30) })));
+        
+        // Remove ALL loading messages
+        let messages = prev.filter(msg => {
+          const isLoadingById = loadingMessageIdRef.current && msg.id === loadingMessageIdRef.current;
+          const isLoadingByPrefix = msg.id.startsWith('loading-');
+          const isLoadingByContent = msg.content === 'Thinking...' || msg.content.includes('Searching') || msg.content.includes('Analyzing');
+          
+          if (isLoadingById || (isLoadingByPrefix && isLoadingByContent)) {
+            console.log('🗑️ Removing loading message:', msg.id, msg.content);
+            return false;
+          }
+          return true;
+        });
+        
+        const streamingMsg = messages.find(msg => msg.id.startsWith('streaming-'));
+        
+        if (streamingMsg) {
+          // Finalize streaming message - just update ID, keep content as-is (already clean)
+          console.log('✏️ Finalizing streaming message');
+          return messages.map(msg => 
+            msg.id === streamingMsg.id
+              ? { ...msg, id: `ai-${Date.now()}` }
               : msg
-          )
-        );
+          );
+        } else if (data.fullResponse) {
+          // No streaming occurred, add complete response as new message
+          console.log('➕ Adding complete response as new message');
+          return [...messages, {
+            id: `ai-${Date.now()}`,
+            content: data.fullResponse,
+            sender: 'ai',
+            timestamp: new Date(data.timestamp || Date.now())
+          }];
+        }
+        
+        return messages;
+      });
+      
+      // Clear loading message ref
+      if (loadingMessageIdRef.current) {
+        console.log('✅ Clearing loading message ref');
+        loadingMessageIdRef.current = null;
       }
     });
 
@@ -304,10 +410,7 @@ When helping users, be specific about TAL's features and provide actionable solu
       const isFirstPage = data.currentPage === 1;
       
       if (isFirstPage) {
-        // Remove searching indicator AND loading message
-        setChatMessages(prev => prev.filter(msg => !msg.id.startsWith('searching-') && !msg.id.startsWith('loading-')));
-        
-        // Add results as a special message type
+        // Create new results message
         const resultsMessage: ChatMessage = {
           id: `results-${Date.now()}`,
           content: `I found ${data.totalResults || data.results.length} candidate${data.totalResults !== 1 ? 's' : ''} matching your search criteria. Showing ${data.results.length} results.`,
@@ -321,7 +424,16 @@ When helping users, be specific about TAL's features and provide actionable solu
           totalResults: data.totalResults,
           queryHash: data.queryHash // Store queryHash for cache-based pagination
         };
-        setChatMessages(prev => [...prev, resultsMessage]);
+        
+        // Remove loading messages and add new results in a SINGLE setState call
+        // Keep previous search results (different queryHash) for chat history
+        setChatMessages(prev => [
+          ...prev.filter(msg => 
+            !msg.id.startsWith('searching-') && 
+            !msg.id.startsWith('loading-')
+          ),
+          resultsMessage
+        ]);
       } else {
         // Append to existing search results
         setChatMessages(prev => 
@@ -359,10 +471,7 @@ When helping users, be specific about TAL's features and provide actionable solu
     onJobMatchResults((data) => {
       console.log('✅ Received job match results:', data);
       
-      // Remove matching indicator AND loading message
-      setChatMessages(prev => prev.filter(msg => !msg.id.startsWith('matching-') && !msg.id.startsWith('loading-')));
-      
-      // Add job matches as a special message type
+      // Create job match results message
       const matchCount = data.matches?.length || 0;
       const resultsMessage: ChatMessage = {
         id: `job-matches-${Date.now()}`,
@@ -374,10 +483,81 @@ When helping users, be specific about TAL's features and provide actionable solu
         type: 'job_match_results',
         jobMatches: data.matches || []
       };
-      setChatMessages(prev => [...prev, resultsMessage]);
+      
+      // Remove old results and add new ones in a SINGLE setState call
+      // This prevents stale state issues from multiple setState calls
+      setChatMessages(prev => [
+        ...prev.filter(msg => 
+          !msg.id.startsWith('matching-') && 
+          !msg.id.startsWith('loading-') && 
+          msg.type !== 'job_match_results'
+        ),
+        resultsMessage
+      ]);
     });
 
   }, [onMessageReceived, onAIChunk, onAIComplete, onIntentDetected, onError, onSearchingCandidates, onSearchResults, onMatchingJobs, onJobMatchResults]);
+
+  // Load chat history when activeChatId changes
+  useEffect(() => {
+    if (!activeChatId || !isConnected) {
+      return;
+    }
+
+    console.log('📥 Loading chat history for:', activeChatId);
+    
+    // Request chat data from backend
+    getChat(activeChatId);
+
+    // Handle chat data response
+    const unsubscribe = onChatData((chatData) => {
+      console.log('📄 Chat history loaded:', chatData);
+      
+      if (chatData.id !== activeChatId) {
+        // Ignore if it's for a different chat
+        return;
+      }
+
+      // Convert backend messages to frontend format
+      const loadedMessages: ChatMessage[] = chatData.messages.map((msg: any, index: number) => {
+        // Backend stores messages with metadata field if available
+        const metadata = (msg as any).metadata;
+        let messageType: ChatMessage['type'] = 'text';
+        let content = msg.content;
+
+        // Check metadata for message type
+        if (metadata) {
+          if (metadata.type === 'search_results') {
+            messageType = 'search_results';
+            // Note: Full search results are not saved in chat history currently
+            // Only the summary is saved. Full results come from real-time search events.
+          } else if (metadata.type === 'job_match_results') {
+            messageType = 'job_match_results';
+            // Note: Full job matches are not saved in chat history currently
+          } else if (metadata.type === 'conversation') {
+            messageType = 'text';
+          }
+        }
+
+        return {
+          id: `history-${index}-${msg.timestamp}`,
+          content: content,
+          sender: msg.role === 'user' ? 'user' : 'ai',
+          timestamp: new Date(msg.timestamp),
+          type: messageType,
+        };
+      });
+
+      // Update chat messages with loaded history
+      setChatMessages(loadedMessages);
+      
+      console.log(`✅ Loaded ${loadedMessages.length} messages from history`);
+    });
+
+    return () => {
+      // Cleanup if needed
+    };
+  }, [activeChatId, isConnected, getChat, onChatData]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -729,11 +909,16 @@ Please provide a natural, conversational summary highlighting their strengths, e
   };
 
   const handleSelectChat = (chatId: string) => {
-    const selectedChat = chatHistories.find(chat => chat.id === chatId);
-    if (selectedChat) {
-      setActiveChatId(chatId);
-      setChatMessages(selectedChat.messages);
-    }
+    // Set active chat - the useEffect will automatically load chat history from backend
+    setActiveChatId(chatId);
+    
+    // Clear current messages and show loading state
+    setChatMessages([{
+      id: 'loading-history',
+      content: 'Loading chat history...',
+      sender: 'ai',
+      timestamp: new Date()
+    }]);
   };
 
   // Convert candidate data to user data format for profile panel
@@ -1282,12 +1467,15 @@ Please provide a natural, conversational summary highlighting their strengths, e
                       )}
                     </div>
                   ))}
-                  {isStreaming && (
+                  {/* Cycling spinner messages based on current intent */}
+                  {isStreaming && !chatMessages.some(msg => msg.id.startsWith('streaming-')) && currentIntent && (
                     <div className="flex justify-start">
                       <div className="bg-white text-gray-900 px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
                         <div className="flex items-center space-x-2">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-                          <span className="text-sm">AI is responding...</span>
+                          <span className="text-sm">
+                            {loadingMessages[currentIntent as keyof typeof loadingMessages]?.[currentLoadingMessageIndex] || 'Processing...'}
+                          </span>
                         </div>
                       </div>
                     </div>

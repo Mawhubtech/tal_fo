@@ -22,6 +22,7 @@ interface UseAIChatWebSocketResult {
   onAIChunk: (callback: (data: any) => void) => void;
   onAIComplete: (callback: (data: any) => void) => void;
   onIntentDetected: (callback: (data: any) => void) => void;
+  onCustomEvent: (callback: (data: any) => void) => void;
   onChatCreated: (callback: (data: any) => void) => void;
   onChatsList: (callback: (data: any) => void) => void;
   onChatData: (callback: (data: any) => void) => void;
@@ -44,6 +45,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
   const aiChunkCallbackRef = useRef<((data: any) => void) | null>(null);
   const aiCompleteCallbackRef = useRef<((data: any) => void) | null>(null);
   const intentDetectedCallbackRef = useRef<((data: any) => void) | null>(null);
+  const customEventCallbackRef = useRef<((data: any) => void) | null>(null);
   const chatCreatedCallbackRef = useRef<((data: any) => void) | null>(null);
   const chatsListCallbackRef = useRef<((data: any) => void) | null>(null);
   const chatDataCallbackRef = useRef<((data: any) => void) | null>(null);
@@ -141,6 +143,21 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
       setIsStreaming(true); // Show loading state
       if (intentDetectedCallbackRef.current) {
         intentDetectedCallbackRef.current(data);
+      }
+    });
+
+    socket.on('ai_chunk', (data) => {
+      console.log('📨 AI chunk received:', data.chunk);
+      setIsStreaming(true);
+      if (aiChunkCallbackRef.current) {
+        aiChunkCallbackRef.current(data);
+      }
+    });
+
+    socket.on('custom_event', (data) => {
+      console.log('🎨 Custom event received:', data);
+      if (customEventCallbackRef.current) {
+        customEventCallbackRef.current(data);
       }
     });
 
@@ -313,6 +330,10 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     intentDetectedCallbackRef.current = callback;
   }, []);
 
+  const onCustomEvent = useCallback((callback: (data: any) => void) => {
+    customEventCallbackRef.current = callback;
+  }, []);
+
   const onError = useCallback((callback: (data: any) => void) => {
     errorCallbackRef.current = callback;
   }, []);
@@ -347,6 +368,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     onAIChunk,
     onAIComplete,
     onIntentDetected,
+    onCustomEvent,
     onChatCreated,
     onChatsList,
     onChatData,
