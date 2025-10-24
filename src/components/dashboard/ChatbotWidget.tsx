@@ -25,13 +25,20 @@ interface ChatMessage {
   content: string;
   sender: 'user' | 'ai';
   timestamp: Date;
-  type?: 'text' | 'search_results' | 'load_more_results';
+  type?: 'text' | 'search_results' | 'load_more_results' | 'job_match_results';
   searchResults?: any[];
   searchQuery?: string; // Store the original search query
   currentPage?: number; // Track current page for pagination
   hasMore?: boolean; // Whether more results are available
   totalResults?: number;
   queryHash?: string; // For cache-based pagination
+  jobMatches?: Array<{
+    jobId: string;
+    matchScore: number;
+    matchReason: string;
+    keyMatchPoints: string[];
+    job: any;
+  }>;
 }
 
 interface ChatHistory {
@@ -79,6 +86,8 @@ const ChatbotWidget: React.FC = () => {
     onChatCreated,
     onSearchingCandidates,
     onSearchResults,
+    onMatchingJobs,
+    onJobMatchResults,
     onError,
   } = useAIChatWebSocket();
   
@@ -303,7 +312,43 @@ When helping users, be specific about TAL's features and provide actionable solu
       }
     });
 
-  }, [onMessageReceived, onAIChunk, onAIComplete, onError, onSearchingCandidates, onSearchResults]);
+    // Handle job matching initiation
+    onMatchingJobs((data) => {
+      console.log('🔍 Matching jobs:', data);
+      // Show matching indicator
+      const matchingMessage: ChatMessage = {
+        id: `matching-${Date.now()}`,
+        content: `Analyzing ${data.totalJobs || 'available'} jobs to find the best matches for your profile...`,
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'text'
+      };
+      setChatMessages(prev => [...prev, matchingMessage]);
+    });
+
+    // Handle job match results
+    onJobMatchResults((data) => {
+      console.log('✅ Received job match results:', data);
+      
+      // Remove matching indicator
+      setChatMessages(prev => prev.filter(msg => !msg.id.startsWith('matching-')));
+      
+      // Add job matches as a special message type
+      const matchCount = data.matches?.length || 0;
+      const resultsMessage: ChatMessage = {
+        id: `job-matches-${Date.now()}`,
+        content: matchCount > 0 
+          ? `I found ${matchCount} job${matchCount !== 1 ? 's' : ''} that match your profile! Here are the details with match scores and reasons:`
+          : 'I couldn\'t find any jobs that closely match your profile at the moment. You may want to update your profile or check back later for new opportunities.',
+        sender: 'ai',
+        timestamp: new Date(),
+        type: 'job_match_results',
+        jobMatches: data.matches || []
+      };
+      setChatMessages(prev => [...prev, resultsMessage]);
+    });
+
+  }, [onMessageReceived, onAIChunk, onAIComplete, onError, onSearchingCandidates, onSearchResults, onMatchingJobs, onJobMatchResults]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -331,6 +376,156 @@ When helping users, be specific about TAL's features and provide actionable solu
 
     const currentInput = chatInput;
     setChatInput('');
+
+    // Check if user is asking about a specific candidate from search results
+    const candidateQuestionPatterns = [
+      /tell me about\s+(.+)/i,
+      /what (?:do you know )?about\s+(.+)/i,
+      /who is\s+(.+)/i,
+      /tell me more about\s+(.+)/i,
+      /(?:give me |show me )?(?:info|information|details) (?:about|on)\s+(.+)/i,
+      /can you tell me about\s+(.+)/i,
+      /(?:describe|explain)\s+(.+)/i
+    ];
+
+    let candidateName: string | null = null;
+    for (const pattern of candidateQuestionPatterns) {
+      const match = currentInput.match(pattern);
+      if (match && match[1]) {
+        candidateName = match[1].trim();
+        break;
+      }
+    }
+
+    if (candidateName) {
+      console.log('🔍 User asking about candidate:', candidateName);
+      
+      // Search through all recent search results (both initial and load_more_results)
+      const allSearchResults: any[] = [];
+      chatMessages.forEach(msg => {
+        if ((msg.type === 'search_results' || msg.type === 'load_more_results') && msg.searchResults) {
+          allSearchResults.push(...msg.searchResults);
+        }
+      });
+
+      // Find candidate by name (case-insensitive partial match)
+      const foundCandidate = allSearchResults.find(result => 
+        result.candidate?.fullName?.toLowerCase().includes(candidateName!.toLowerCase())
+      );
+
+      if (foundCandidate) {
+        console.log('✅ Found candidate in search results:', foundCandidate.candidate.fullName);
+        
+        // Add user message (original question)
+        const userMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: currentInput,
+          sender: 'user',
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        // Prepare candidate data for AI
+        const candidate = foundCandidate.candidate;
+        const matchCriteria = foundCandidate.matchCriteria || {};
+        
+        // Build structured candidate data for AI context
+        const candidateContext = {
+          fullName: candidate.fullName,
+          location: candidate.location,
+          email: candidate.email,
+          phone: candidate.phone,
+          summary: candidate.summary,
+          experience: candidate.experience?.map((exp: any) => ({
+            title: exp.title,
+            company: exp.company,
+            startDate: exp.startDate,
+            endDate: exp.endDate,
+            current: exp.current,
+            description: exp.description,
+            location: exp.location
+          })) || [],
+          education: candidate.education?.map((edu: any) => ({
+            institution: edu.institution,
+            degree: edu.degree,
+            fieldOfStudy: edu.fieldOfStudy,
+            startDate: edu.startDate,
+            endDate: edu.endDate
+          })) || [],
+          skills: candidate.skillMappings?.map((sm: any) => ({
+            name: sm.skill?.name,
+            level: sm.level,
+            yearsOfExperience: sm.yearsOfExperience
+          })) || candidate.skills || [],
+          certifications: candidate.certifications,
+          projects: candidate.projects,
+          languages: candidate.languages,
+          matchedSkills: matchCriteria.skillMatch || [],
+          matchScore: foundCandidate.score
+        };
+
+        // Create a concise prompt that won't trigger sourcing detection
+        // Use "CANDIDATE_INFO:" prefix to help backend identify this is not a sourcing query
+        const enhancedPrompt = `Based on this candidate profile, ${currentInput.toLowerCase().includes('tell me') || currentInput.toLowerCase().includes('about') ? 'provide a comprehensive summary' : currentInput}
+
+CANDIDATE_INFO:
+Name: ${candidate.fullName}
+Location: ${candidate.location || 'Not specified'}
+Summary: ${candidate.summary || 'No summary available'}
+
+Experience: ${candidate.experience?.length || 0} positions
+${candidate.experience?.slice(0, 3).map((exp: any, idx: number) => 
+  `${idx + 1}. ${exp.title} at ${exp.company} (${exp.current ? 'Current' : exp.endDate ? new Date(exp.endDate).getFullYear() : 'N/A'})`
+).join('\n') || 'No experience listed'}
+
+Skills: ${candidateContext.skills.map((s: any) => s.name).join(', ') || 'Not specified'}
+
+Education: ${candidate.education?.[0] ? `${candidate.education[0].degree} from ${candidate.education[0].institution}` : 'Not specified'}
+
+Please provide a natural, conversational summary highlighting their strengths, experience, and fit.`;
+
+        // Send to AI via WebSocket with candidate context
+        if (activeChatId) {
+          try {
+            sendMessage(activeChatId, enhancedPrompt, {
+              max_tokens: 1024,
+              temperature: 0.7
+            });
+          } catch (error) {
+            console.error('❌ Error sending candidate info to AI:', error);
+            const errorMessage: ChatMessage = {
+              id: `error-${Date.now()}`,
+              content: 'Sorry, I encountered an error while analyzing this candidate. Please try again.',
+              sender: 'ai',
+              timestamp: new Date()
+            };
+            setChatMessages(prev => [...prev, errorMessage]);
+          }
+        }
+        return;
+      } else {
+        console.log('❌ Candidate not found in recent search results');
+        
+        // Add user message
+        const userMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: currentInput,
+          sender: 'user',
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, userMessage]);
+
+        // Inform user that candidate wasn't found
+        const notFoundMessage: ChatMessage = {
+          id: `not-found-${Date.now()}`,
+          content: `I couldn't find a candidate named "${candidateName}" in the recent search results. Please make sure you've searched for candidates first, or try asking about a different candidate from the results.`,
+          sender: 'ai',
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, notFoundMessage]);
+        return;
+      }
+    }
 
     // Check if user is asking for more candidates
     const isAskingForMore = /\b(more|show more|load more|next|additional|another|more candidates|see more)\b/i.test(currentInput);
@@ -950,6 +1145,110 @@ When helping users, be specific about TAL's features and provide actionable solu
                               </div>
                             )}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Job match results display */}
+                      {message.type === 'job_match_results' && (
+                        <div className="mb-4">
+                          {/* Results summary */}
+                          <div className="flex justify-start mb-2">
+                            <div className="bg-white text-gray-900 px-4 py-3 rounded-lg border border-gray-200 shadow-sm">
+                              <div className="text-sm">
+                                <p className="font-medium text-blue-600">{message.content}</p>
+                                <p className="text-xs text-gray-500 mt-1">{message.timestamp.toLocaleTimeString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Job match cards - Ultra compact container */}
+                          {message.jobMatches && message.jobMatches.length > 0 && (
+                            <div className="bg-white rounded-lg border border-blue-200 shadow-sm overflow-hidden">
+                              <div className="divide-y divide-blue-100 max-h-[400px] overflow-y-auto">
+                                {message.jobMatches.map((match, idx) => (
+                                  <div 
+                                    key={match.jobId || idx}
+                                    className="p-2 hover:bg-blue-50 transition-colors cursor-pointer"
+                                    onClick={() => {
+                                      console.log('View job:', match.jobId);
+                                      window.open(`/dashboard/jobs/${match.jobId}`, '_blank');
+                                    }}
+                                  >
+                                    {/* Header with Match Score */}
+                                    <div className="flex items-start justify-between mb-1">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-xs font-semibold text-gray-900 truncate">
+                                          {match.job?.title || 'Job Title'}
+                                        </h4>
+                                        <div className="flex flex-wrap gap-1 mt-0.5 text-[10px] text-gray-600">
+                                          {match.job?.location && (
+                                            <span className="flex items-center gap-0.5">
+                                              📍 {match.job.location}
+                                            </span>
+                                          )}
+                                          {match.job?.type && (
+                                            <span className="px-1 py-0.5 bg-gray-100 rounded">
+                                              {match.job.type}
+                                            </span>
+                                          )}
+                                          {match.job?.experienceLevel && (
+                                            <span className="px-1 py-0.5 bg-gray-100 rounded">
+                                              {match.job.experienceLevel}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ${
+                                        match.matchScore >= 90 ? 'bg-green-100 text-green-700' :
+                                        match.matchScore >= 75 ? 'bg-blue-100 text-blue-700' :
+                                        'bg-yellow-100 text-yellow-700'
+                                      }`}>
+                                        {match.matchScore}%
+                                      </div>
+                                    </div>
+
+                                    {/* Match Reason - Single line */}
+                                    <p className="text-[10px] text-gray-600 line-clamp-1 mb-1">
+                                      {match.matchReason}
+                                    </p>
+
+                                    {/* Key Match Points - Only 2 shown */}
+                                    {match.keyMatchPoints && match.keyMatchPoints.length > 0 && (
+                                      <div className="mb-1">
+                                        <ul className="space-y-0">
+                                          {match.keyMatchPoints.slice(0, 2).map((point, pointIdx) => (
+                                            <li key={pointIdx} className="flex items-start gap-1 text-[10px] text-gray-600">
+                                              <span className="text-green-500 text-[8px] mt-0.5">✓</span>
+                                              <span className="line-clamp-1">{point}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+
+                                    {/* Skills - Minimal */}
+                                    {match.job?.skills && match.job.skills.length > 0 && (
+                                      <div className="flex flex-wrap gap-0.5">
+                                        {match.job.skills.slice(0, 3).map((skill: string, skillIdx: number) => (
+                                          <span 
+                                            key={skillIdx}
+                                            className="px-1 py-0.5 text-[9px] bg-blue-50 text-blue-700 rounded"
+                                          >
+                                            {skill}
+                                          </span>
+                                        ))}
+                                        {match.job.skills.length > 3 && (
+                                          <span className="px-1 py-0.5 text-[9px] text-gray-500">
+                                            +{match.job.skills.length - 3}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

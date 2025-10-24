@@ -27,6 +27,8 @@ interface UseAIChatWebSocketResult {
   onChatDeleted: (callback: (data: any) => void) => void;
   onSearchingCandidates: (callback: (data: any) => void) => void;
   onSearchResults: (callback: (data: any) => void) => void;
+  onMatchingJobs: (callback: (data: any) => void) => void;
+  onJobMatchResults: (callback: (data: any) => void) => void;
   onError: (callback: (data: any) => void) => void;
 }
 
@@ -46,6 +48,8 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
   const chatDeletedCallbackRef = useRef<((data: any) => void) | null>(null);
   const searchingCandidatesCallbackRef = useRef<((data: any) => void) | null>(null);
   const searchResultsCallbackRef = useRef<((data: any) => void) | null>(null);
+  const matchingJobsCallbackRef = useRef<((data: any) => void) | null>(null);
+  const jobMatchResultsCallbackRef = useRef<((data: any) => void) | null>(null);
   const errorCallbackRef = useRef<((data: any) => void) | null>(null);
 
   useEffect(() => {
@@ -184,6 +188,23 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
       }
     });
 
+    // Job matching event handlers
+    socket.on('matching_jobs', (data) => {
+      console.log('🔍 Matching jobs:', data);
+      setIsStreaming(true); // Show loading state while matching
+      if (matchingJobsCallbackRef.current) {
+        matchingJobsCallbackRef.current(data);
+      }
+    });
+
+    socket.on('job_match_results', (data) => {
+      console.log('✅ Job match results received:', data);
+      setIsStreaming(false);
+      if (jobMatchResultsCallbackRef.current) {
+        jobMatchResultsCallbackRef.current(data);
+      }
+    });
+
     // Cleanup on unmount
     return () => {
       socket.disconnect();
@@ -290,6 +311,14 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     searchResultsCallbackRef.current = callback;
   }, []);
 
+  const onMatchingJobs = useCallback((callback: (data: any) => void) => {
+    matchingJobsCallbackRef.current = callback;
+  }, []);
+
+  const onJobMatchResults = useCallback((callback: (data: any) => void) => {
+    jobMatchResultsCallbackRef.current = callback;
+  }, []);
+
   return {
     isConnected,
     isStreaming,
@@ -309,6 +338,8 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     onChatDeleted,
     onSearchingCandidates,
     onSearchResults,
+    onMatchingJobs,
+    onJobMatchResults,
     onError,
   };
 };
