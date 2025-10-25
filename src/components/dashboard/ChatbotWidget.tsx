@@ -32,6 +32,7 @@ interface ChatMessage {
   hasMore?: boolean; // Whether more results are available
   totalResults?: number;
   queryHash?: string; // For cache-based pagination
+  matchingId?: string; // For tracking job matching results
   jobMatches?: Array<{
     jobId: string;
     matchScore: number;
@@ -474,26 +475,42 @@ When helping users, be specific about TAL's features and provide actionable solu
       // Create job match results message
       const matchCount = data.matches?.length || 0;
       const resultsMessage: ChatMessage = {
-        id: `job-matches-${Date.now()}`,
+        id: `job-matches-${data.matchingId || Date.now()}`, // Use matchingId for unique ID
         content: matchCount > 0 
           ? `I found ${matchCount} job${matchCount !== 1 ? 's' : ''} that match your profile! Here are the details with match scores and reasons:`
           : 'I couldn\'t find any jobs that closely match your profile at the moment. You may want to update your profile or check back later for new opportunities.',
         sender: 'ai',
         timestamp: new Date(),
         type: 'job_match_results',
+        matchingId: data.matchingId, // Store matchingId for tracking
         jobMatches: data.matches || []
       };
       
-      // Remove old results and add new ones in a SINGLE setState call
-      // This prevents stale state issues from multiple setState calls
-      setChatMessages(prev => [
-        ...prev.filter(msg => 
-          !msg.id.startsWith('matching-') && 
-          !msg.id.startsWith('loading-') && 
-          msg.type !== 'job_match_results'
-        ),
-        resultsMessage
-      ]);
+      // Remove ONLY the most recent loading/matching message (not all job_match_results)
+      // This way each job matching request creates a separate component
+      setChatMessages(prev => {
+        // Find the index of the last matching/loading message
+        let lastMatchingIndex = -1;
+        for (let i = prev.length - 1; i >= 0; i--) {
+          if (prev[i].id.startsWith('matching-') || 
+              (prev[i].id.startsWith('loading-') && prev[i].content.includes('Analyzing'))) {
+            lastMatchingIndex = i;
+            break;
+          }
+        }
+        
+        // Remove only that last matching/loading message, keep all other messages including previous job_match_results
+        if (lastMatchingIndex !== -1) {
+          return [
+            ...prev.slice(0, lastMatchingIndex),
+            ...prev.slice(lastMatchingIndex + 1),
+            resultsMessage
+          ];
+        }
+        
+        // If no matching message found, just append the results
+        return [...prev, resultsMessage];
+      });
     });
 
   }, [onMessageReceived, onAIChunk, onAIComplete, onIntentDetected, onError, onSearchingCandidates, onSearchResults, onMatchingJobs, onJobMatchResults]);
