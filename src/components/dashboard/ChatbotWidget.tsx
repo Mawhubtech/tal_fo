@@ -80,6 +80,11 @@ const ChatbotWidget: React.FC = () => {
   
   // Loading messages for different intents
   const loadingMessages = {
+    processing: [
+      'Processing your request...',
+      'Analyzing...',
+      'Working on it...'
+    ],
     sourcing: [
       'Analyzing your search criteria...',
       'Scanning candidate database...',
@@ -310,7 +315,7 @@ When helping users, be specific about TAL's features and provide actionable solu
       }
     });
 
-    // Handle intent detected (no loading message, just track intent for spinner)
+    // Handle intent detected - just update the intent for spinner cycling
     onIntentDetected((data) => {
       console.log('🎯 Intent detected (widget):', data);
       
@@ -385,6 +390,7 @@ When helping users, be specific about TAL's features and provide actionable solu
       };
       setChatMessages(prev => [...prev, errorMessage]);
       setCurrentStreamingMessage('');
+      setCurrentIntent(null); // Clear intent on error
     });
 
     // Handle candidate search initiation
@@ -406,6 +412,27 @@ When helping users, be specific about TAL's features and provide actionable solu
 
       
       setIsLoadingMore(false);
+      
+      // Check if there's an error
+      if (data.error) {
+        // Show error message instead of results
+        const errorMessage: ChatMessage = {
+          id: `search-error-${Date.now()}`,
+          content: data.error,
+          sender: 'ai',
+          timestamp: new Date(),
+          type: 'text'
+        };
+        
+        setChatMessages(prev => [
+          ...prev.filter(msg => 
+            !msg.id.startsWith('searching-') && 
+            !msg.id.startsWith('loading-')
+          ),
+          errorMessage
+        ]);
+        return;
+      }
       
       // Check if this is the first page or load more
       const isFirstPage = data.currentPage === 1;
@@ -474,14 +501,24 @@ When helping users, be specific about TAL's features and provide actionable solu
       
       // Create job match results message
       const matchCount = data.matches?.length || 0;
+      
+      // Determine the content based on error or results
+      let content: string;
+      if (data.error) {
+        // Show the error message from backend
+        content = data.error;
+      } else if (matchCount > 0) {
+        content = `I found ${matchCount} job${matchCount !== 1 ? 's' : ''} that match the candidate profile! Here are the details with match scores and reasons:`;
+      } else {
+        content = 'I couldn\'t find any jobs that closely match the candidate profile at the moment. You may want to check back later for new opportunities.';
+      }
+      
       const resultsMessage: ChatMessage = {
         id: `job-matches-${data.matchingId || Date.now()}`, // Use matchingId for unique ID
-        content: matchCount > 0 
-          ? `I found ${matchCount} job${matchCount !== 1 ? 's' : ''} that match the candidate profile! Here are the details with match scores and reasons:`
-          : 'I couldn\'t find any jobs that closely match the candidate profile at the moment. You may want to check back later for new opportunities.',
+        content,
         sender: 'ai',
         timestamp: new Date(),
-        type: 'job_match_results',
+        type: data.error ? 'text' : 'job_match_results', // Show as text if error
         matchingId: data.matchingId, // Store matchingId for tracking
         jobMatches: data.matches || []
       };
@@ -521,7 +558,9 @@ When helping users, be specific about TAL's features and provide actionable solu
       return;
     }
 
-
+    // Clear loading state when switching chats
+    setCurrentIntent(null);
+    setCurrentLoadingMessageIndex(0);
     
     // Request chat data from backend
     getChat(activeChatId);
@@ -537,7 +576,22 @@ When helping users, be specific about TAL's features and provide actionable solu
 
       // Convert backend messages to frontend format
       const loadedMessages: ChatMessage[] = chatData.messages
-        .filter((msg: any) => msg.role !== 'system') // Filter out system messages
+        .filter((msg: any) => {
+          // Filter out system messages
+          if (msg.role === 'system') return false;
+          
+          // Filter out messages that look like enriched prompts (contain structured candidate profile)
+          if (msg.content && typeof msg.content === 'string') {
+            const hasEnrichedPrompt = msg.content.includes('CANDIDATE PROFILE FROM CACHE') ||
+                                     msg.content.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            if (hasEnrichedPrompt) {
+              console.warn('Filtered out enriched prompt from chat history:', msg.content.substring(0, 100));
+              return false;
+            }
+          }
+          
+          return true;
+        })
         .map((msg: any, index: number) => {
         // Backend stores messages with metadata field if available
         const metadata = (msg as any).metadata;
@@ -590,15 +644,18 @@ When helping users, be specific about TAL's features and provide actionable solu
       });
 
       // Update chat messages with loaded history
-      // Only update if we don't already have local messages (to preserve user's message before backend saves it)
       setChatMessages(prev => {
-        // If we already have messages locally, keep them (don't overwrite with incomplete backend history)
-        if (prev.length > 0) {
-
-          return prev;
+        // Check if we only have the loading message or if we have actual messages
+        const hasOnlyLoadingMessage = prev.length === 1 && prev[0].id === 'loading-history';
+        const hasOnlyWelcomeMessage = prev.length === 1 && prev[0].id === '1';
+        
+        // Replace if we only have loading/welcome message, otherwise keep existing messages
+        if (hasOnlyLoadingMessage || hasOnlyWelcomeMessage || prev.length === 0) {
+          return loadedMessages;
         }
-        // Otherwise, load from backend
-        return loadedMessages;
+        
+        // Keep existing messages if user has already started typing/interacting
+        return prev;
       });
       
 
@@ -915,6 +972,11 @@ Please provide a natural, conversational summary highlighting their strengths, e
     };
     setChatMessages(prev => [...prev, userMessage]);
 
+    // Set initial "processing" intent to show generic loading in spinner
+    // This will be updated when intent is received from supervisor
+    setCurrentIntent('processing');
+    setCurrentLoadingMessageIndex(0);
+
     // Update chat title if it's still "New Chat"
     if (activeChatId) {
       setChatHistories(prev => 
@@ -948,6 +1010,8 @@ Please provide a natural, conversational summary highlighting their strengths, e
     // Clear active chat and messages to start fresh
     // New chat will be created when user sends first message
     setActiveChatId(null);
+    setCurrentIntent(null); // Clear loading state when starting new chat
+    setCurrentLoadingMessageIndex(0); // Reset loading message index
     setChatMessages([
       {
         id: '1',
@@ -1518,7 +1582,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
                     </div>
                   ))}
                   {/* Cycling spinner messages based on current intent */}
-                  {isStreaming && !chatMessages.some(msg => msg.id.startsWith('streaming-')) && currentIntent && (
+                  {currentIntent && !chatMessages.some(msg => msg.id.startsWith('streaming-')) && (
                     <div className="flex justify-start">
                       <div className="bg-white text-gray-900 px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
                         <div className="flex items-center space-x-2">
