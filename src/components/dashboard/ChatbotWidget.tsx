@@ -197,7 +197,7 @@ When helping users, be specific about TAL's features and provide actionable solu
   // Load chat list when connected
   useEffect(() => {
     if (isConnected) {
-      console.log('📋 Loading chat list from backend...');
+
       getChats();
     }
   }, [isConnected, getChats]);
@@ -205,7 +205,7 @@ When helping users, be specific about TAL's features and provide actionable solu
   // Handle chat list response
   useEffect(() => {
     onChatsList((chats) => {
-      console.log('📋 Chat list received:', chats);
+
       
       // Convert backend chat list to frontend format
       const chatHistoriesFromBackend: ChatHistory[] = chats.map((chat: any) => ({
@@ -229,7 +229,7 @@ When helping users, be specific about TAL's features and provide actionable solu
   useEffect(() => {
     // Handle chat created
     onChatCreated((data) => {
-      console.log('✅ Chat created:', data);
+
       const newChat: ChatHistory = {
         id: data.chatId,
         title: data.title || 'New Chat',
@@ -278,7 +278,7 @@ When helping users, be specific about TAL's features and provide actionable solu
   useEffect(() => {
     // Handle user message acknowledgment
     onMessageReceived((data) => {
-      console.log('✅ Message received by server:', data);
+
     });
 
     // Handle AI response chunks - streaming clean tokens from config.writer
@@ -321,8 +321,8 @@ When helping users, be specific about TAL's features and provide actionable solu
 
     // Handle AI response completion
     onAIComplete((data) => {
-      console.log('✅ AI response complete:', data);
-      console.log('🗑️ Loading message ID to remove:', loadingMessageIdRef.current);
+
+
       setCurrentStreamingMessage('');
       setCurrentIntent(null); // Clear intent when workflow completes
       
@@ -337,7 +337,7 @@ When helping users, be specific about TAL's features and provide actionable solu
           const isLoadingByContent = msg.content === 'Thinking...' || msg.content.includes('Searching') || msg.content.includes('Analyzing');
           
           if (isLoadingById || (isLoadingByPrefix && isLoadingByContent)) {
-            console.log('🗑️ Removing loading message:', msg.id, msg.content);
+
             return false;
           }
           return true;
@@ -347,7 +347,7 @@ When helping users, be specific about TAL's features and provide actionable solu
         
         if (streamingMsg) {
           // Finalize streaming message - just update ID, keep content as-is (already clean)
-          console.log('✏️ Finalizing streaming message');
+
           return messages.map(msg => 
             msg.id === streamingMsg.id
               ? { ...msg, id: `ai-${Date.now()}` }
@@ -355,7 +355,7 @@ When helping users, be specific about TAL's features and provide actionable solu
           );
         } else if (data.fullResponse) {
           // No streaming occurred, add complete response as new message
-          console.log('➕ Adding complete response as new message');
+
           return [...messages, {
             id: `ai-${Date.now()}`,
             content: data.fullResponse,
@@ -369,7 +369,7 @@ When helping users, be specific about TAL's features and provide actionable solu
       
       // Clear loading message ref
       if (loadingMessageIdRef.current) {
-        console.log('✅ Clearing loading message ref');
+
         loadingMessageIdRef.current = null;
       }
     });
@@ -389,7 +389,7 @@ When helping users, be specific about TAL's features and provide actionable solu
 
     // Handle candidate search initiation
     onSearchingCandidates((data) => {
-      console.log('🔍 Searching for candidates:', data);
+
       // Show searching indicator
       const searchingMessage: ChatMessage = {
         id: `searching-${Date.now()}`,
@@ -403,7 +403,7 @@ When helping users, be specific about TAL's features and provide actionable solu
 
     // Handle search results
     onSearchResults((data) => {
-      console.log('✅ Received search results:', data);
+
       
       setIsLoadingMore(false);
       
@@ -456,7 +456,7 @@ When helping users, be specific about TAL's features and provide actionable solu
 
     // Handle job matching initiation
     onMatchingJobs((data) => {
-      console.log('🔍 Matching jobs:', data);
+
       // Show matching indicator
       const matchingMessage: ChatMessage = {
         id: `matching-${Date.now()}`,
@@ -470,15 +470,15 @@ When helping users, be specific about TAL's features and provide actionable solu
 
     // Handle job match results
     onJobMatchResults((data) => {
-      console.log('✅ Received job match results:', data);
+
       
       // Create job match results message
       const matchCount = data.matches?.length || 0;
       const resultsMessage: ChatMessage = {
         id: `job-matches-${data.matchingId || Date.now()}`, // Use matchingId for unique ID
         content: matchCount > 0 
-          ? `I found ${matchCount} job${matchCount !== 1 ? 's' : ''} that match your profile! Here are the details with match scores and reasons:`
-          : 'I couldn\'t find any jobs that closely match your profile at the moment. You may want to update your profile or check back later for new opportunities.',
+          ? `I found ${matchCount} job${matchCount !== 1 ? 's' : ''} that match the candidate profile! Here are the details with match scores and reasons:`
+          : 'I couldn\'t find any jobs that closely match the candidate profile at the moment. You may want to check back later for new opportunities.',
         sender: 'ai',
         timestamp: new Date(),
         type: 'job_match_results',
@@ -521,14 +521,14 @@ When helping users, be specific about TAL's features and provide actionable solu
       return;
     }
 
-    console.log('📥 Loading chat history for:', activeChatId);
+
     
     // Request chat data from backend
     getChat(activeChatId);
 
     // Handle chat data response
     const unsubscribe = onChatData((chatData) => {
-      console.log('📄 Chat history loaded:', chatData);
+
       
       if (chatData.id !== activeChatId) {
         // Ignore if it's for a different chat
@@ -562,12 +562,12 @@ When helping users, be specific about TAL's features and provide actionable solu
             totalResults = metadata.totalResults;
             queryHash = metadata.queryHash;
             
-            console.log(`📋 Restored ${searchResults.length} candidates from chat history`);
+
           } else if (metadata.type === 'job_match_results') {
             messageType = 'job_match_results';
             jobMatches = metadata.matches || []; // Full job match data from backend
             
-            console.log(`📋 Restored ${jobMatches.length} job matches from chat history`);
+
           } else if (metadata.type === 'conversation') {
             messageType = 'text';
           }
@@ -594,14 +594,14 @@ When helping users, be specific about TAL's features and provide actionable solu
       setChatMessages(prev => {
         // If we already have messages locally, keep them (don't overwrite with incomplete backend history)
         if (prev.length > 0) {
-          console.log('📌 Keeping local messages, not overwriting with backend history');
+
           return prev;
         }
         // Otherwise, load from backend
         return loadedMessages;
       });
       
-      console.log(`✅ Loaded ${loadedMessages.length} messages from history`);
+
     });
 
     return () => {
@@ -657,7 +657,7 @@ When helping users, be specific about TAL's features and provide actionable solu
     }
 
     if (candidateName) {
-      console.log('🔍 User asking about candidate:', candidateName);
+
       
       // Search through all recent search results (both initial and load_more_results)
       const allSearchResults: any[] = [];
@@ -673,7 +673,7 @@ When helping users, be specific about TAL's features and provide actionable solu
       );
 
       if (foundCandidate) {
-        console.log('✅ Found candidate in search results:', foundCandidate.candidate.fullName);
+
         
         // Add user message (original question)
         const userMessage: ChatMessage = {
@@ -763,7 +763,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
         }
         return;
       } else {
-        console.log('❌ Candidate not found in recent search results');
+
         
         // Add user message
         const userMessage: ChatMessage = {
@@ -789,7 +789,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
     // Check if user is asking for more candidates
     const isAskingForMore = /\b(more|show more|load more|next|additional|another|more candidates|see more)\b/i.test(currentInput);
     
-    console.log('🔍 Checking if asking for more:', { isAskingForMore, currentInput });
+
     
     if (isAskingForMore && activeChatId) {
       // Find the last search results message
@@ -803,7 +803,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
       });
       
       if (lastSearchMessage && lastSearchMessage.hasMore && lastSearchMessage.queryHash) {
-        console.log('✅ Using cache-based load more with queryHash:', lastSearchMessage.queryHash);
+
         // User is asking for more candidates from previous search
         const userMessage: ChatMessage = {
           id: Date.now().toString(),
@@ -888,7 +888,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
       }
     }
 
-    console.log('💬 Proceeding with normal message handling');
+
     
     // If no active chat, create one first
     if (!activeChatId) {
@@ -1343,7 +1343,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
                                     handleOpenProfilePanel(cand);
                                   }}
                                   onShortlist={(cand) => {
-                                    console.log('Shortlist candidate:', cand);
+
                                     // TODO: Implement shortlist functionality
                                   }}
                                 />
@@ -1393,7 +1393,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
                                     handleOpenProfilePanel(cand);
                                   }}
                                   onShortlist={(cand) => {
-                                    console.log('Shortlist candidate:', cand);
+
                                     // TODO: Implement shortlist functionality
                                   }}
                                 />
@@ -1434,7 +1434,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
                                     key={match.jobId || idx}
                                     className="p-2 hover:bg-blue-50 transition-colors cursor-pointer"
                                     onClick={() => {
-                                      console.log('View job:', match.jobId);
+
                                       window.open(`/dashboard/jobs/${match.jobId}`, '_blank');
                                     }}
                                   >
@@ -1591,7 +1591,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
           candidateId={selectedCandidateId || undefined}
           projectId={undefined}
           onShortlist={() => {
-            console.log('Shortlist candidate from panel');
+
             // TODO: Implement shortlist functionality
           }}
         />,

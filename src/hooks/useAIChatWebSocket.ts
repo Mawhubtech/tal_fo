@@ -59,8 +59,8 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     
-    console.log('🔌 Initializing AI Chat WebSocket connection...');
-    console.log('📝 Token available:', !!token);
+
+
     
     if (!token) {
       console.error('❌ No authentication token found');
@@ -72,8 +72,8 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
     const wsURL = baseURL.replace('/api/v1', '');
     
-    console.log('🌐 WebSocket URL:', `${wsURL}/ai-chat`);
-    console.log('🔑 Using token:', token.substring(0, 20) + '...');
+
+
 
     // Initialize socket connection
     const socket = io(`${wsURL}/ai-chat`, {
@@ -88,21 +88,21 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
 
     socketRef.current = socket;
     
-    console.log('📡 Socket instance created, waiting for connection...');
+
 
     // Connection event handlers
     socket.on('connect', () => {
-      console.log('✅ Connected to AI Chat WebSocket');
+
       setIsConnected(true);
       setError(null);
     });
 
     socket.on('connected', (data) => {
-      console.log('✅ WebSocket authenticated:', data);
+
     });
 
     socket.on('disconnect', () => {
-      console.log('❌ Disconnected from AI Chat WebSocket');
+
       setIsConnected(false);
       setIsStreaming(false);
     });
@@ -117,7 +117,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
 
     // Message event handlers
     socket.on('message_received', (data) => {
-      console.log('📩 User message received:', data);
+
       if (messageReceivedCallbackRef.current) {
         messageReceivedCallbackRef.current(data);
       }
@@ -131,7 +131,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     });
 
     socket.on('ai_response_complete', (data) => {
-      console.log('✅ AI response complete:', data);
+
       setIsStreaming(false);
       if (aiCompleteCallbackRef.current) {
         aiCompleteCallbackRef.current(data);
@@ -139,7 +139,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     });
 
     socket.on('intent_detected', (data) => {
-      console.log('🎯 Intent detected:', data);
+
       setIsStreaming(true); // Show loading state
       if (intentDetectedCallbackRef.current) {
         intentDetectedCallbackRef.current(data);
@@ -147,7 +147,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     });
 
     socket.on('ai_chunk', (data) => {
-      console.log('📨 AI chunk received:', data.chunk);
+
       setIsStreaming(true);
       if (aiChunkCallbackRef.current) {
         aiChunkCallbackRef.current(data);
@@ -155,35 +155,35 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     });
 
     socket.on('custom_event', (data) => {
-      console.log('🎨 Custom event received:', data);
+
       if (customEventCallbackRef.current) {
         customEventCallbackRef.current(data);
       }
     });
 
     socket.on('chat_created', (data) => {
-      console.log('✅ Chat created:', data);
+
       if (chatCreatedCallbackRef.current) {
         chatCreatedCallbackRef.current(data);
       }
     });
 
     socket.on('chats_list', (data) => {
-      console.log('📋 Chats list received:', data);
+
       if (chatsListCallbackRef.current) {
         chatsListCallbackRef.current(data);
       }
     });
 
     socket.on('chat_data', (data) => {
-      console.log('📄 Chat data received:', data);
+
       if (chatDataCallbackRef.current) {
         chatDataCallbackRef.current(data);
       }
     });
 
     socket.on('chat_deleted', (data) => {
-      console.log('🗑️ Chat deleted:', data);
+
       if (chatDeletedCallbackRef.current) {
         chatDeletedCallbackRef.current(data);
       }
@@ -200,7 +200,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
 
     // Search event handlers
     socket.on('searching_candidates', (data) => {
-      console.log('🔍 Searching candidates:', data);
+
       setIsStreaming(true); // Show loading state while searching
       if (searchingCandidatesCallbackRef.current) {
         searchingCandidatesCallbackRef.current(data);
@@ -208,7 +208,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     });
 
     socket.on('search_results', (data) => {
-      console.log('✅ Search results received:', data);
+
       setIsStreaming(false);
       if (searchResultsCallbackRef.current) {
         searchResultsCallbackRef.current(data);
@@ -217,7 +217,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
 
     // Job matching event handlers
     socket.on('matching_jobs', (data) => {
-      console.log('🔍 Matching jobs:', data);
+
       setIsStreaming(true); // Show loading state while matching
       if (matchingJobsCallbackRef.current) {
         matchingJobsCallbackRef.current(data);
@@ -225,7 +225,7 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     });
 
     socket.on('job_match_results', (data) => {
-      console.log('✅ Job match results received:', data);
+
       setIsStreaming(false);
       if (jobMatchResultsCallbackRef.current) {
         jobMatchResultsCallbackRef.current(data);
