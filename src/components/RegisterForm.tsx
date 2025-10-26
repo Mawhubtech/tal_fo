@@ -44,24 +44,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onClose, d
       // Welcome toast is now shown in the useRegister hook
       onClose();
       
-      // Small delay to ensure auth state is updated before navigation
-      // This prevents race conditions with ProtectedRoute
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
       // Check if there's pending search data from hero search
       const pendingSearchData = sessionStorage.getItem('pendingSearchData');
-      console.log('🔍 Checking for pending search data after registration:', pendingSearchData ? 'Found' : 'Not found');
-      
       if (pendingSearchData) {
-        try {
-          const searchData = JSON.parse(pendingSearchData);
-          sessionStorage.removeItem('pendingSearchData');
-          console.log('✅ Navigating to /search-results with data:', searchData);
-          navigate('/search-results', { state: searchData, replace: true });
-          return;
-        } catch (error) {
-          console.error('❌ Error parsing pending search data:', error);
-        }
+        const searchData = JSON.parse(pendingSearchData);
+        sessionStorage.removeItem('pendingSearchData');
+        navigate('/search-results', { state: searchData, replace: true });
+        return;
       }
       
       // Navigate to the intended destination or dashboard

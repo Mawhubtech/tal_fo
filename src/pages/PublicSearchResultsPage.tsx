@@ -41,7 +41,7 @@ const PublicSearchResultsPage: React.FC = () => {
 
   const handleSignUpClick = () => {
     // Store the search data in sessionStorage to retrieve after authentication
-    const searchData = {
+    sessionStorage.setItem('pendingSearchData', JSON.stringify({
       query,
       filters: { searchText: query },
       searchMode: 'external',
@@ -49,10 +49,7 @@ const PublicSearchResultsPage: React.FC = () => {
       isEnhanced: true,
       singleCallOptimized: true,
       preloadedResults
-    };
-    
-    console.log('📦 Storing pending search data:', searchData);
-    sessionStorage.setItem('pendingSearchData', JSON.stringify(searchData));
+    }));
     setShowAuthModal(true);
   };
 

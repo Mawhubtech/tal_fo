@@ -1,0 +1,35 @@
+{
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء",
+    "search": "بحث",
+    "filter": "تصفية",
+    "actions": "إجراءات",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "success": "نجاح"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "users": "المستخدمون",
+    "jobs": "الوظائف",
+    "candidates": "المرشحون",
+    "clients": "العملاء",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج"
+  },
+  "admin": {
+    "title": "لوحة الإدارة",
+    "overview": "نظرة عامة",
+    "userManagement": "إدارة المستخدمين",
+    "roleManagement": "إدارة الأدوار",
+    "teamManagement": "إدارة الفرق",
+    "analytics": "التحليلات"
+  }
+}

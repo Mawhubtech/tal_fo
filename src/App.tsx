@@ -1,10 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { GmailStatusProvider } from './contexts/GmailStatusContext';
 import { JobNotificationProvider } from './contexts/JobNotificationContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { JobsWebSocketProvider } from './contexts/JobsWebSocketContext';
+import { QueryProvider } from './providers/QueryProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoutePermissionGuard from './components/RoutePermissionGuard';
@@ -12,104 +14,118 @@ import ExternalUserGuard from './components/ExternalUserGuard';
 import SignIn from './components/SignIn';
 import OrganizationSignIn from './components/OrganizationSignIn';
 import OAuthCallback from './components/OAuthCallback';
-import GmailOAuthCallback from './pages/GmailOAuthCallback';
-import OutlookOAuthCallback from './pages/OutlookOAuthCallback';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordWithTokenPage from './pages/auth/ResetPasswordPage';
-import RegisterPage from './pages/RegisterPage';
-import LandingPage from './pages/LandingPage';
-import InvitationResponsePage from './pages/InvitationResponsePage';
-import JobBoardPage from './pages/jobSeeker/JobBoardPage';
-import JobDetailPage from './pages/jobSeeker/JobDetailPage';
-import JobSeekerLoginPage from './pages/jobSeeker/JobSeekerLoginPage';
-import JobSeekerRegisterPage from './pages/jobSeeker/JobSeekerRegisterPage';
-import JobSeekerAdminPage from './pages/jobSeeker/admin/JobSeekerAdminPage';
-import RequestDemoPage from './pages/RequestDemoPage';
-import AcceptInvitationPage from './pages/hiring-teams/AcceptInvitationPage';
-import InvitationAcceptedPage from './pages/hiring-teams/InvitationAcceptedPage';
-import CompanyInvitationPage from './pages/AcceptInvitationPage';
-import AcceptJobCollaboratorInvitationPage from './pages/AcceptJobCollaboratorInvitationPage';
-import ExternalTeamAccessPage from './pages/hiring-teams/ExternalTeamAccessPage';
-import ExternalUserLayout from './layouts/ExternalUserLayout';
-import ExternalJobsPage from './pages/external/ExternalJobsPage';
-import ExternalJobDetailPage from './pages/external/ExternalJobDetailPage';
-import ExternalSettingsPage from './pages/external/ExternalSettingsPage';
-import ExternalUserRegisterPage from './pages/external/ExternalUserRegisterPage';
-import JobEmailSequencesPage from './recruitment/organizations/pages/JobEmailSequencesPage';
-import JobSequenceDetailPage from './recruitment/organizations/pages/JobSequenceDetailPage';
-import JobSequenceStepsPage from './recruitment/organizations/pages/JobSequenceStepsPage';
-import JobSequenceEnrollmentsPage from './recruitment/organizations/pages/JobSequenceEnrollmentsPage';
-import JobEmailTemplatesPage from './recruitment/organizations/pages/JobEmailTemplatesPage';
-import CreateJobEmailSequencePage from './recruitment/organizations/pages/CreateJobEmailSequencePage';
-import EmailSettingsPage from './pages/EmailSettingsPage';
-import { QueryProvider } from './providers/QueryProvider';
+import LoadingSpinner from './components/LoadingSpinner';
 
-// Main Layout
-import MainLayout from './layouts/MainLayout';
+// Lazy load all pages for code-splitting
+const GmailOAuthCallback = lazy(() => import('./pages/GmailOAuthCallback'));
+const OutlookOAuthCallback = lazy(() => import('./pages/OutlookOAuthCallback'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordWithTokenPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const InvitationResponsePage = lazy(() => import('./pages/InvitationResponsePage'));
+const JobBoardPage = lazy(() => import('./pages/jobSeeker/JobBoardPage'));
+const JobDetailPage = lazy(() => import('./pages/jobSeeker/JobDetailPage'));
+const JobSeekerLoginPage = lazy(() => import('./pages/jobSeeker/JobSeekerLoginPage'));
+const JobSeekerRegisterPage = lazy(() => import('./pages/jobSeeker/JobSeekerRegisterPage'));
+const JobSeekerAdminPage = lazy(() => import('./pages/jobSeeker/admin/JobSeekerAdminPage'));
+const RequestDemoPage = lazy(() => import('./pages/RequestDemoPage'));
+const AcceptInvitationPage = lazy(() => import('./pages/hiring-teams/AcceptInvitationPage'));
+const InvitationAcceptedPage = lazy(() => import('./pages/hiring-teams/InvitationAcceptedPage'));
+const CompanyInvitationPage = lazy(() => import('./pages/AcceptInvitationPage'));
+const AcceptJobCollaboratorInvitationPage = lazy(() => import('./pages/AcceptJobCollaboratorInvitationPage'));
+const ExternalTeamAccessPage = lazy(() => import('./pages/hiring-teams/ExternalTeamAccessPage'));
+const ExternalUserLayout = lazy(() => import('./layouts/ExternalUserLayout'));
+const ExternalJobsPage = lazy(() => import('./pages/external/ExternalJobsPage'));
+const ExternalJobDetailPage = lazy(() => import('./pages/external/ExternalJobDetailPage'));
+const ExternalSettingsPage = lazy(() => import('./pages/external/ExternalSettingsPage'));
+const ExternalUserRegisterPage = lazy(() => import('./pages/external/ExternalUserRegisterPage'));
+const EmailSettingsPage = lazy(() => import('./pages/EmailSettingsPage'));
 
-// Internal Pages
-import DashboardOverview from './pages/DashboardOverview';
-import CalendarPage from './pages/CalendarPage';
+// Recruitment pages
+const JobEmailSequencesPage = lazy(() => import('./recruitment/organizations/pages/JobEmailSequencesPage'));
+const JobSequenceDetailPage = lazy(() => import('./recruitment/organizations/pages/JobSequenceDetailPage'));
+const JobSequenceStepsPage = lazy(() => import('./recruitment/organizations/pages/JobSequenceStepsPage'));
+const JobSequenceEnrollmentsPage = lazy(() => import('./recruitment/organizations/pages/JobSequenceEnrollmentsPage'));
+const JobEmailTemplatesPage = lazy(() => import('./recruitment/organizations/pages/JobEmailTemplatesPage'));
+const CreateJobEmailSequencePage = lazy(() => import('./recruitment/organizations/pages/CreateJobEmailSequencePage'));
+const MainLayout = lazy(() => import('./layouts/MainLayout'));
+const DashboardOverview = lazy(() => import('./pages/DashboardOverview'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+
+// Sourcing pages - import Search and SearchResults as regular modules first
 import { Search, SearchResults } from './sourcing';
-import UnifiedContactsPage from './sourcing/contacts/pages/UnifiedContactsPage';
-import SequencesPage from './pages/outreach/SequencesPage';
-import { 
-  CandidateOutreachOverview, 
-  CandidateOutreachProspects, 
-  CandidateOutreachCampaigns, 
-  CandidateOutreachTemplates, 
-  CandidateOutreachAnalytics 
-} from './sourcing/outreach';
-import SourcingProjectsPage from './pages/sourcing/SourcingProjectsPage';
-import ProjectDetailPage from './pages/sourcing/ProjectDetailPage';
-import CreateProjectPage from './pages/sourcing/CreateProjectPage';
-import CreateSearchPage from './pages/sourcing/CreateSearchPage';
-import CreateSequencePage from './pages/sourcing/CreateSequencePage';
-import SequenceDetailPage from './pages/sourcing/SequenceDetailPage';
-import ProjectSearchesPage from './pages/sourcing/ProjectSearchesPage';
-import ProjectProspectsPage from './pages/sourcing/ProjectProspectsPage';
-import ProjectSequencesPage from './pages/sourcing/ProjectSequencesPage';
-import ProjectEmailTemplatesPage from './pages/sourcing/ProjectEmailTemplatesPage';
-import ProjectAnalyticsPage from './pages/sourcing/ProjectAnalyticsPage';
-import ResumeProcessingPage from './pages/ResumeProcessingPage';
-import CreateJobPage from './recruitment/jobs/pages/CreateJobPage';
-import AllJobsPage from './recruitment/jobs/pages/AllJobsPage';
-import OrganizationsPage from './recruitment/organizations/pages/OrganizationsPage';
-import OrganizationDetailPage from './recruitment/organizations/pages/OrganizationDetailPage';
-import DepartmentsPage from './recruitment/organizations/pages/DepartmentsPage';
-import DepartmentJobsPage from './recruitment/organizations/pages/DepartmentJobsPage';
-import JobATSPage from './recruitment/organizations/pages/JobATSPage';
-import CandidatesPage from './pages/candidates';
-import CommunicationPage from './pages/CommunicationPage';
-import EmailDetailPage from './pages/EmailDetailPage';
-import ClientOutreachRouter from './pages/client-outreach/ClientOutreachRouter';
-import { ResourcesPage } from './pages/resources';
-import ContactSupportPage from './pages/ContactSupportPage';
-import TasksPage from './pages/TasksPage';
-import PendingInvitationsPage from './pages/PendingInvitationsPage';
-import GlobalSearchPage from './pages/GlobalSearchPage';
-import GlobalSearchResultsPage from './pages/GlobalSearchResultsPage';
-import PublicSearchResultsPage from './pages/PublicSearchResultsPage';
-import AdminLayout from './layouts/AdminLayout';
-import AdminOverviewPage from './pages/admin/AdminOverviewPage';
-import UserManagementPage from './pages/admin/UserManagementPage';
-import RoleManagementPage from './pages/admin/RoleManagementPage';
-import EmailManagementPage from './pages/admin/EmailManagementPage';
-import TeamManagementPage from './pages/admin/TeamManagementPage';
-import PipelinesPage from './pages/admin/PipelinesPage';
-import EmailSequencesPage from './pages/admin/EmailSequencesPage';
-import HiringTeamsPage from './pages/admin/HiringTeamsPage';
-import HiringTeamDetailPage from './pages/admin/HiringTeamDetailPage';
-import CandidateProfilesPage from './recruitment/candidates/pages/CandidateProfilesPage';
-import { ClientManagementPage, ClientDetailPage, CreateDepartmentPage } from './pages/clients';
-import JobBoardConfigPage from './pages/admin/JobBoardConfigPage';
-import AnalyticsPage from './pages/admin/AnalyticsPage';
-import SystemSettingsPage from './pages/admin/SystemSettingsPage';
-import SupportDashboardPage from './pages/admin/SupportDashboardPage';
-import { CompanyDetailPage, CompanyManagementRouter } from './pages/companies';
-import OrganizationJobBoardsPage from './recruitment/organizations/pages/OrganizationJobBoardsPage';
-import RecruiterJobBoardDashboard from './pages/recruiter/RecruiterJobBoardDashboard';
+const UnifiedContactsPage = lazy(() => import('./sourcing/contacts/pages/UnifiedContactsPage'));
+const SequencesPage = lazy(() => import('./pages/outreach/SequencesPage'));
+const CandidateOutreachOverview = lazy(() => import('./sourcing/outreach').then(m => ({ default: m.CandidateOutreachOverview })));
+const CandidateOutreachProspects = lazy(() => import('./sourcing/outreach').then(m => ({ default: m.CandidateOutreachProspects })));
+const CandidateOutreachCampaigns = lazy(() => import('./sourcing/outreach').then(m => ({ default: m.CandidateOutreachCampaigns })));
+const CandidateOutreachTemplates = lazy(() => import('./sourcing/outreach').then(m => ({ default: m.CandidateOutreachTemplates })));
+const CandidateOutreachAnalytics = lazy(() => import('./sourcing/outreach').then(m => ({ default: m.CandidateOutreachAnalytics })));
+const SourcingProjectsPage = lazy(() => import('./pages/sourcing/SourcingProjectsPage'));
+const ProjectDetailPage = lazy(() => import('./pages/sourcing/ProjectDetailPage'));
+const CreateProjectPage = lazy(() => import('./pages/sourcing/CreateProjectPage'));
+const CreateSearchPage = lazy(() => import('./pages/sourcing/CreateSearchPage'));
+const CreateSequencePage = lazy(() => import('./pages/sourcing/CreateSequencePage'));
+const SequenceDetailPage = lazy(() => import('./pages/sourcing/SequenceDetailPage'));
+const ProjectSearchesPage = lazy(() => import('./pages/sourcing/ProjectSearchesPage'));
+const ProjectProspectsPage = lazy(() => import('./pages/sourcing/ProjectProspectsPage'));
+const ProjectSequencesPage = lazy(() => import('./pages/sourcing/ProjectSequencesPage'));
+const ProjectEmailTemplatesPage = lazy(() => import('./pages/sourcing/ProjectEmailTemplatesPage'));
+const ProjectAnalyticsPage = lazy(() => import('./pages/sourcing/ProjectAnalyticsPage'));
+
+// Main app pages
+const ResumeProcessingPage = lazy(() => import('./pages/ResumeProcessingPage'));
+const CreateJobPage = lazy(() => import('./recruitment/jobs/pages/CreateJobPage'));
+const AllJobsPage = lazy(() => import('./recruitment/jobs/pages/AllJobsPage'));
+const OrganizationsPage = lazy(() => import('./recruitment/organizations/pages/OrganizationsPage'));
+const OrganizationDetailPage = lazy(() => import('./recruitment/organizations/pages/OrganizationDetailPage'));
+const DepartmentsPage = lazy(() => import('./recruitment/organizations/pages/DepartmentsPage'));
+const DepartmentJobsPage = lazy(() => import('./recruitment/organizations/pages/DepartmentJobsPage'));
+const JobATSPage = lazy(() => import('./recruitment/organizations/pages/JobATSPage'));
+const CandidatesPage = lazy(() => import('./pages/candidates'));
+const CommunicationPage = lazy(() => import('./pages/CommunicationPage'));
+const EmailDetailPage = lazy(() => import('./pages/EmailDetailPage'));
+const ClientOutreachRouter = lazy(() => import('./pages/client-outreach/ClientOutreachRouter'));
+const ResourcesPage = lazy(() => import('./pages/resources').then(m => ({ default: m.ResourcesPage })));
+const ContactSupportPage = lazy(() => import('./pages/ContactSupportPage'));
+const TasksPage = lazy(() => import('./pages/TasksPage'));
+const PendingInvitationsPage = lazy(() => import('./pages/PendingInvitationsPage'));
+const GlobalSearchPage = lazy(() => import('./pages/GlobalSearchPage'));
+const GlobalSearchResultsPage = lazy(() => import('./pages/GlobalSearchResultsPage'));
+const PublicSearchResultsPage = lazy(() => import('./pages/PublicSearchResultsPage'));
+
+// Admin pages
+const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
+const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'));
+const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
+const RoleManagementPage = lazy(() => import('./pages/admin/RoleManagementPage'));
+const EmailManagementPage = lazy(() => import('./pages/admin/EmailManagementPage'));
+const TeamManagementPage = lazy(() => import('./pages/admin/TeamManagementPage'));
+const PipelinesPage = lazy(() => import('./pages/admin/PipelinesPage'));
+const EmailSequencesPage = lazy(() => import('./pages/admin/EmailSequencesPage'));
+const HiringTeamsPage = lazy(() => import('./pages/admin/HiringTeamsPage'));
+const HiringTeamDetailPage = lazy(() => import('./pages/admin/HiringTeamDetailPage'));
+const CandidateProfilesPage = lazy(() => import('./recruitment/candidates/pages/CandidateProfilesPage'));
+const ClientManagementPage = lazy(() => import('./pages/clients').then(m => ({ default: m.ClientManagementPage })));
+const ClientDetailPage = lazy(() => import('./pages/clients').then(m => ({ default: m.ClientDetailPage })));
+const CreateDepartmentPage = lazy(() => import('./pages/clients').then(m => ({ default: m.CreateDepartmentPage })));
+const JobBoardConfigPage = lazy(() => import('./pages/admin/JobBoardConfigPage'));
+const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
+const SystemSettingsPage = lazy(() => import('./pages/admin/SystemSettingsPage'));
+const SupportDashboardPage = lazy(() => import('./pages/admin/SupportDashboardPage'));
+const CompanyDetailPage = lazy(() => import('./pages/companies').then(m => ({ default: m.CompanyDetailPage })));
+const CompanyManagementRouter = lazy(() => import('./pages/companies').then(m => ({ default: m.CompanyManagementRouter })));
+const OrganizationJobBoardsPage = lazy(() => import('./recruitment/organizations/pages/OrganizationJobBoardsPage'));
+const RecruiterJobBoardDashboard = lazy(() => import('./pages/recruiter/RecruiterJobBoardDashboard'));
+
+// Loading component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <LoadingSpinner size="lg" />
+  </div>
+);
 
 function App() {
   return (
@@ -121,14 +137,15 @@ function App() {
               <NotificationProvider>
                 <JobsWebSocketProvider>
                   <JobNotificationProvider enabled={true}>
-                    <Router>
-                      <Routes>
-              <Route path="/" element={<LandingPage />} />
-              {/* Public Search Results - No Auth Required */}
-              <Route path="/public-search-results" element={<PublicSearchResultsPage />} />
-              {/* Commented out: Public job board route */}
-              {/* <Route path="/jobs" element={<JobBoardPage />} /> */}
-              {/* <Route path="/careers/jobs/:jobId" element={<JobDetailPage />} /> */}
+                    <Suspense fallback={<PageLoader />}>
+                      <Router>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            {/* Public Search Results - No Auth Required */}
+            <Route path="/public-search-results" element={<PublicSearchResultsPage />} />
+            {/* Commented out: Public job board route */}
+            {/* <Route path="/jobs" element={<JobBoardPage />} /> */}
+            {/* <Route path="/careers/jobs/:jobId" element={<JobDetailPage />} /> */}
             <Route
               path="/signin"
               element={<SignIn />}
@@ -657,7 +674,8 @@ function App() {
             {/* Remove individual /dashboard/resume-processing and /dashboard/sequences routes as they are handled by Dashboard.tsx */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </Router>
+                      </Router>
+                    </Suspense>
                   </JobNotificationProvider>
                 </JobsWebSocketProvider>
               </NotificationProvider>

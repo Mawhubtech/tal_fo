@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import App from './App.tsx';
 import './index.css';
+import './i18n/config';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -34,7 +35,7 @@ createRoot(document.getElementById('root')!).render(
   <AppWrapper>
     <QueryClientProvider client={queryClient}>
       <App />
-      {/* {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />} */}
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   </AppWrapper>
 );

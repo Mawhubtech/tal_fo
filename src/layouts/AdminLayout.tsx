@@ -6,6 +6,7 @@ import {
   Activity, Database, Lock,
   LayoutDashboard
 } from 'lucide-react';
+import LanguageToggle from '../components/LanguageToggle';
 
 interface AdminLayoutProps {
   children?: React.ReactNode;
@@ -190,6 +191,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
             {/* Admin Actions */}
             <div className="flex items-center space-x-4">
+              {/* Language Toggle */}
+              <LanguageToggle />
+
               {/* Quick Actions */}
               <div className="hidden lg:flex items-center space-x-2">
                 {quickActions.map((action, index) => (

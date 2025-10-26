@@ -19,6 +19,30 @@
   body {
     @apply text-gray-900 antialiased;
   }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+  }
+
+  [dir="ltr"] {
+    direction: ltr;
+    text-align: left;
+  }
+
+  /* RTL-specific adjustments for Flexbox */
+  [dir="rtl"] .flex-row-reverse {
+    flex-direction: row;
+  }
+
+  [dir="rtl"] .space-x-1 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-3 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-right: 0;
+    margin-left: var(--tw-space-x-reverse);
+  }
 }
 
 @layer utilities {
