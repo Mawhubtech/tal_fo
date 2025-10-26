@@ -160,14 +160,8 @@ const AllJobsPage: React.FC = () => {
   };
 
   const handleCreateJob = () => {
-    // Check if user has any form of access
-    const hasAccess = isSuperAdmin || hasHiringTeamAccess || (hasAssignmentRole && userAssignment?.organizationId);
-    
-    if (!hasAccess) {
-      return; // Prevent users with no access from creating jobs
-    }
-    
     // Navigate to standalone job creation page
+    // Backend handles all access control and validation
     navigate('/jobs/create');
   };
 
