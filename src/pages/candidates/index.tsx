@@ -68,7 +68,6 @@ const CandidatesPage: React.FC = () => {
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [includeJobseekers, setIncludeJobseekers] = useState(false);
   // State for the profile side panel
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<UserStructuredData | null>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
@@ -98,10 +97,9 @@ const CandidatesPage: React.FC = () => {
     search: searchTerm || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     experienceLevel: experienceFilter !== 'all' ? experienceFilter : undefined,
-    includeJobseekers: isUserSuperAdmin ? includeJobseekers : false, // Only super admins can control this
   });
 
-  const statsQuery = useCandidateStats(isUserSuperAdmin ? includeJobseekers : false);
+  const statsQuery = useCandidateStats(false);
   
   // Hook for fetching individual candidate details
   const selectedCandidateQuery = useCandidate(selectedCandidateId || '');
@@ -467,9 +465,12 @@ const CandidatesPage: React.FC = () => {
   };
 
   // Reset to first page when filters change
+  // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, experienceFilter, includeJobseekers]);  // Get stats from React Query or provide fallback values
+  }, [searchTerm, statusFilter, experienceFilter]);
+  
+  // Get stats from React Query or provide fallback values
   const stats = statsQuery.data || {
     total: totalItems || 0, // Use total from pagination, not just current page
     active: 0, // Use 0 as fallback when real stats are loading
@@ -514,7 +515,7 @@ const CandidatesPage: React.FC = () => {
         <div className="space-y-4 sm:space-y-6">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4 overflow-x-auto pb-1">
-          <Link to="/dashboard" className="flex items-center hover:text-purple-600 transition-colors whitespace-nowrap flex-shrink-0">
+          <Link to="" className="flex items-center hover:text-purple-600 transition-colors whitespace-nowrap flex-shrink-0">
             <Home className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             <span className="hidden sm:inline">Dashboard</span>
             <span className="sm:hidden">Home</span>
@@ -528,19 +529,10 @@ const CandidatesPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex-1 min-w-0">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">
-                {isUserSuperAdmin 
-                  ? (includeJobseekers ? 'All Candidates + Job Seekers' : 'Company Candidates') 
-                  : 'Candidate Management'
-                }
+                Candidate Management
               </h1>
               <p className="text-gray-600 mt-1 text-xs sm:text-sm line-clamp-2">
-                {isUserSuperAdmin 
-                  ? (includeJobseekers 
-                      ? 'Manage candidates from companies and independent job seekers' 
-                      : 'Manage candidates from all companies'
-                    )
-                  : 'Manage and review candidate applications efficiently'
-                }
+                Manage and review all candidate applications efficiently
               </p>
             </div>
             <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
@@ -627,33 +619,18 @@ const CandidatesPage: React.FC = () => {
                   <option value="mid">Mid (3-5 years)</option>
                   <option value="senior">Senior (5+ years)</option>
                 </select>
-                
-                {isUserSuperAdmin && (
-                  <div className="flex items-center space-x-1">
-                    <input
-                      type="checkbox"
-                      id="includeJobseekers"
-                      checked={includeJobseekers}
-                      onChange={(e) => setIncludeJobseekers(e.target.checked)}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 focus:ring-offset-0 border-gray-300 rounded"
-                    />
-                    <label htmlFor="includeJobseekers" className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">
-                      Job Seekers
-                    </label>
-                  </div>
-                )}
               </div>
               
               {/* Action buttons section - always in a row */}
               <div className="flex flex-nowrap gap-1 sm:gap-2">
-                {isUserSuperAdmin && (
+                {/* {isUserSuperAdmin && (
                   <button
                     title="Export candidates to CSV" 
                     className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-xs sm:text-sm">
                     <Download className="h-4 w-4 sm:mr-1" />
                     <span className="hidden sm:inline">Export</span>
                   </button>
-                )}
+                )} */}
                 <button 
                   title="Import candidates from CSV"
                   className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-purple-100 text-purple-700 text-xs sm:text-sm"
@@ -662,11 +639,11 @@ const CandidatesPage: React.FC = () => {
                   <Upload className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Import</span>
                 </button>
-                <Link to="/dashboard/resume-processing" title="Process CV/Resume" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-gray-50 text-purple-700 text-xs sm:text-sm">
+                <Link to="/resume-processing" title="Process CV/Resume" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-gray-50 text-purple-700 text-xs sm:text-sm">
                   <FileText className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">CV</span>
                 </Link>
-                <Link to="/dashboard/search" title="Candidate Sourcing Search" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors text-xs sm:text-sm">
+                <Link to="/search" title="Candidate Sourcing Search" className="flex items-center justify-center px-2 sm:px-3 py-2 bg-purple-200 text-purple-600 rounded-lg hover:bg-purple-700 hover:text-white shadow-sm transition-colors text-xs sm:text-sm">
                   <SearchCheckIcon className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Source</span>
                 </Link>              

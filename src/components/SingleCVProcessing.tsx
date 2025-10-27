@@ -591,7 +591,7 @@ const SingleCVProcessing: React.FC = () => {
                   type="button"
                   className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700"
                 >
-                  <a href="/dashboard/candidates" className="flex items-center">
+                  <a href="/candidates" className="flex items-center">
                     <Users className="w-4 h-4 mr-2" />
                     View Candidates
                   </a>
