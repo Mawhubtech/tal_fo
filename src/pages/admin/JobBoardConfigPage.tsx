@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Save, Globe, Eye, Settings, Plus, Edit3, Trash2, AlertCircle, CheckCircle, XCircle, RefreshCw, ExternalLink, Monitor, ToggleLeft, ToggleRight } from 'lucide-react';
 import { jobBoardApiService, type JobBoard } from '../../services/jobBoardApiService';
 import { useAvailableJobBoards } from '../../hooks/useJobBoards';
+import { useToast } from '../../contexts/ToastContext';
 
 interface JobBoardStats {
   totalBoards: number;
@@ -13,6 +14,7 @@ interface JobBoardStats {
 
 const JobBoardConfigPage: React.FC = () => {
   const { data: jobBoardsResponse, isLoading, error, refetch } = useAvailableJobBoards();
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<'boards' | 'analytics' | 'settings'>('boards');
   const [selectedBoard, setSelectedBoard] = useState<JobBoard | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -127,8 +129,21 @@ const JobBoardConfigPage: React.FC = () => {
       console.log('Toggle board availability:', board.id, !board.isAvailable);
       // For now, just refresh to see if there are changes
       refetch();
-    } catch (error) {
+      addToast({
+        type: 'success',
+        title: 'Status Updated',
+        message: `Job board ${board.isAvailable ? 'deactivated' : 'activated'} successfully`,
+        duration: 3000
+      });
+    } catch (error: any) {
       console.error('Failed to toggle job board status:', error);
+      const errorMessage = error?.response?.data?.message || 'Failed to update job board status. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: errorMessage,
+        duration: 5000
+      });
     }
   };
 

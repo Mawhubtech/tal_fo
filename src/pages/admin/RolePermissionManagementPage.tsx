@@ -424,8 +424,9 @@ const RolePermissionManagementPage: React.FC = () => {
       await createRole.mutateAsync(data);
       toast.success('Role Created', 'New role has been created successfully.');
       setIsRoleModalOpen(false);
-    } catch (error) {
-      toast.error('Creation Failed', 'Failed to create role. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to create role. Please try again.';
+      toast.error('Creation Failed', errorMessage);
     }
   };
 
@@ -438,8 +439,9 @@ const RolePermissionManagementPage: React.FC = () => {
       setIsRoleModalOpen(false);
       setSelectedRole(null);
       setIsEditing(false);
-    } catch (error) {
-      toast.error('Update Failed', 'Failed to update role. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to update role. Please try again.';
+      toast.error('Update Failed', errorMessage);
     }
   };
 
@@ -451,8 +453,9 @@ const RolePermissionManagementPage: React.FC = () => {
     try {
       await deleteRole.mutateAsync(roleId);
       toast.success('Role Deleted', 'Role has been deleted successfully.');
-    } catch (error) {
-      toast.error('Delete Failed', 'Failed to delete role. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to delete role. Please try again.';
+      toast.error('Delete Failed', errorMessage);
     }
   };
 
@@ -460,8 +463,9 @@ const RolePermissionManagementPage: React.FC = () => {
     try {
       await toggleRoleStatus.mutateAsync(roleId);
       toast.success('Status Updated', 'Role status has been updated successfully.');
-    } catch (error) {
-      toast.error('Status Update Failed', 'Failed to update role status. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to update role status. Please try again.';
+      toast.error('Status Update Failed', errorMessage);
     }
   };
 
@@ -470,8 +474,9 @@ const RolePermissionManagementPage: React.FC = () => {
       await createPermission.mutateAsync(data);
       toast.success('Permission Created', 'New permission has been created successfully.');
       setIsPermissionModalOpen(false);
-    } catch (error) {
-      toast.error('Creation Failed', 'Failed to create permission. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to create permission. Please try again.';
+      toast.error('Creation Failed', errorMessage);
     }
   };
 
@@ -484,8 +489,9 @@ const RolePermissionManagementPage: React.FC = () => {
       setIsPermissionModalOpen(false);
       setSelectedPermission(null);
       setIsEditing(false);
-    } catch (error) {
-      toast.error('Update Failed', 'Failed to update permission. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to update permission. Please try again.';
+      toast.error('Update Failed', errorMessage);
     }
   };
 
@@ -497,8 +503,9 @@ const RolePermissionManagementPage: React.FC = () => {
     try {
       await deletePermission.mutateAsync(permissionId);
       toast.success('Permission Deleted', 'Permission has been deleted successfully.');
-    } catch (error) {
-      toast.error('Delete Failed', 'Failed to delete permission. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to delete permission. Please try again.';
+      toast.error('Delete Failed', errorMessage);
     }
   };
 

@@ -59,8 +59,15 @@ const BulkCVProcessing: React.FC = () => {
         });
         setExpandedResults(expanded);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error processing bulk CVs:', err);
+      const errorMessage = err?.response?.data?.message || 'Failed to process bulk CVs. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Bulk Processing Failed',
+        message: errorMessage,
+        duration: 5000
+      });
     }
   };
 
@@ -97,8 +104,22 @@ const BulkCVProcessing: React.FC = () => {
         
         return updated;
       });
-    } catch (err) {
+
+      addToast({
+        type: 'success',
+        title: 'Candidate Created',
+        message: 'Candidate profile has been successfully created',
+        duration: 3000
+      });
+    } catch (err: any) {
       console.error('Error creating candidate:', err);
+      const errorMessage = err?.response?.data?.message || 'Failed to create candidate. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Creation Failed',
+        message: errorMessage,
+        duration: 5000
+      });
     }
   };
 
@@ -159,8 +180,15 @@ const BulkCVProcessing: React.FC = () => {
             if (i < processedResults.length - 1) {
               await new Promise(resolve => setTimeout(resolve, 200));
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error(`Error creating candidate for ${result.filename}:`, err);
+            const errorMessage = err?.response?.data?.message || 'Failed to create candidate';
+            addToast({
+              type: 'error',
+              title: 'Individual Creation Failed',
+              message: `${result.filename}: ${errorMessage}`,
+              duration: 4000
+            });
             failureCount++;
           }
         }

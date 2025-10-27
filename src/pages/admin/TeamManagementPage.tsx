@@ -256,9 +256,10 @@ const TeamManagementPage: React.FC = () => {
       await assignClientMutation.mutateAsync({ userId, clientId });
       toast.success('Client assigned successfully!');
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error assigning client:', error);
-      toast.error('Failed to assign client. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to assign client. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -268,9 +269,10 @@ const TeamManagementPage: React.FC = () => {
       await removeClientMutation.mutateAsync({ userId, clientId });
       toast.success('Client access removed successfully!');
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing client:', error);
-      toast.error('Failed to remove client access. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to remove client access. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -287,9 +289,10 @@ const TeamManagementPage: React.FC = () => {
       toast.success('Client assignments updated successfully!');
       closeAssignModal();
       refetchUsers(); // Refresh the users list
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating client assignments:', error);
-      toast.error('Failed to update client assignments. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to update client assignments. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -308,9 +311,10 @@ const TeamManagementPage: React.FC = () => {
       setSelectedClients([]);
       setBulkMode(false);
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in bulk assignment:', error);
-      toast.error('Failed to update client assignments. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to update client assignments. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -321,9 +325,10 @@ const TeamManagementPage: React.FC = () => {
       toast.success('User created successfully!');
       setShowUserModal(false);
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating user:', error);
-      toast.error('Failed to create user. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to create user. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -337,9 +342,10 @@ const TeamManagementPage: React.FC = () => {
       setShowUserModal(false);
       setEditingUser(null);
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user:', error);
-      toast.error('Failed to update user. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to update user. Please try again.';
+      toast.error(errorMessage);
     }
   };
 

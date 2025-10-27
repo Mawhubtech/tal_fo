@@ -14,10 +14,12 @@ import {
   Archive,
   RotateCcw
 } from 'lucide-react';
-import { jobApiService, type JobFilters } from '../services/jobApiService';
+import { useToast } from '../../../contexts/ToastContext';
+import { jobApiService, type JobFilters } from '../../../services/jobApiService';
 import type { Job } from '../../data/types';
 
 const ArchivedJobsPage: React.FC = () => {
+  const { addToast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +53,15 @@ const ArchivedJobsPage: React.FC = () => {
         page: response.page,
         limit: response.limit
       });
-    } catch (err) {
-      setError('Failed to load archived jobs. Please try again.');
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || 'Failed to load archived jobs. Please try again.';
+      setError(errorMessage);
       console.error('Error loading archived jobs:', err);
+      addToast({
+        type: 'error',
+        title: 'Load Failed',
+        message: errorMessage
+      });
     } finally {
       setLoading(false);
     }
@@ -84,12 +92,22 @@ const ArchivedJobsPage: React.FC = () => {
 
   const handleReactivateJob = async (jobId: string) => {
     try {
-      await jobApiService.updateJob(jobId, { status: 'Active' });
+      await jobApiService.updateJob(jobId, { status: 'Published' });
       // Refresh the list
       loadJobs();
-    } catch (err) {
+      addToast({
+        type: 'success',
+        title: 'Success',
+        message: 'Job reactivated successfully'
+      });
+    } catch (err: any) {
       console.error('Error reactivating job:', err);
-      // You might want to show a toast notification here
+      const errorMessage = err?.response?.data?.message || 'Failed to reactivate job. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Reactivation Failed',
+        message: errorMessage
+      });
     }
   };
   const formatSalary = (job: Job) => {

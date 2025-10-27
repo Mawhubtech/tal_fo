@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2, Loader2, Linkedin } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2, Loader2, Linkedin, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
 import AddCandidateModal from '../../components/AddCandidateModal';
@@ -295,19 +295,33 @@ const CandidatesPage: React.FC = () => {
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
       await updateStatusMutation.mutateAsync({ id, status: newStatus });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating candidate status:', error);
-      // Display some error notification here
+      const errorMessage = error?.response?.data?.message || 'Failed to update candidate status';
+      addToast({ 
+        type: 'error', 
+        title: 'Update Failed',
+        message: errorMessage
+      });
     }
   };  // Function to handle adding a new candidate
   const handleAddCandidate = async (candidateData: CreateCandidateDto & { avatarFile?: File | null }) => {
     try {
       await createCandidateMutation.mutateAsync(candidateData);
       setIsAddModalOpen(false);
-      // Show success notification here if you have a notification system
-    } catch (error) {
+      addToast({ 
+        type: 'success', 
+        title: 'Success',
+        message: 'Candidate created successfully'
+      });
+    } catch (error: any) {
       console.error('Error creating candidate:', error);
-      // Display error notification here
+      const errorMessage = error?.response?.data?.message || 'Failed to create candidate';
+      addToast({ 
+        type: 'error', 
+        title: 'Creation Failed',
+        message: errorMessage
+      });
     }
   };
 
@@ -328,10 +342,19 @@ const CandidatesPage: React.FC = () => {
       });
       setIsEditModalOpen(false);
       setEditingCandidate(null);
-      // Show success notification here if you have a notification system
-    } catch (error) {
+      addToast({ 
+        type: 'success', 
+        title: 'Success',
+        message: 'Candidate updated successfully'
+      });
+    } catch (error: any) {
       console.error('Error updating candidate:', error);
-      // Display error notification here
+      const errorMessage = error?.response?.data?.message || 'Failed to update candidate';
+      addToast({ 
+        type: 'error', 
+        title: 'Update Failed',
+        message: errorMessage
+      });
     }
   };
 
@@ -350,18 +373,36 @@ const CandidatesPage: React.FC = () => {
     try {
       await deleteCandidateMutation.mutateAsync(deleteConfirmation.candidate.id);
       setDeleteConfirmation({ isOpen: false, candidate: null });
-      // Show success notification here if you have a notification system
-      console.log('Candidate deleted successfully');
+      addToast({ 
+        type: 'success', 
+        title: 'Success',
+        message: 'Candidate deleted successfully'
+      });
     } catch (error: any) {
       console.error('Error deleting candidate:', error);
       
+      // Extract error message from backend
+      const errorMessage = error?.response?.data?.message || 'Failed to delete candidate';
+      
       // Check for specific error types
       if (error?.response?.status === 409) {
-        alert('Cannot delete candidate: This candidate has active job applications. Please remove job applications first.');
+        addToast({ 
+          type: 'error', 
+          title: 'Cannot Delete Candidate',
+          message: errorMessage || 'This candidate has active job applications. Please remove job applications first.'
+        });
       } else if (error?.response?.status === 403) {
-        alert('You do not have permission to delete this candidate.');
+        addToast({ 
+          type: 'error', 
+          title: 'Permission Denied',
+          message: errorMessage || 'You do not have permission to delete this candidate.'
+        });
       } else {
-        alert('Failed to delete candidate. Please try again or contact support if the issue persists.');
+        addToast({ 
+          type: 'error', 
+          title: 'Deletion Failed',
+          message: errorMessage
+        });
       }
       
       // Keep the modal open on error
@@ -489,6 +530,20 @@ const CandidatesPage: React.FC = () => {
       console.error('Error formatting date:', e);
       return 'Invalid date';
     }
+  };
+
+  // Refresh handler
+  const handleRefresh = async () => {
+    await Promise.all([
+      candidatesQuery.refetch(),
+      statsQuery.refetch()
+    ]);
+    addToast({
+      type: 'success',
+      title: 'Data Refreshed',
+      message: 'Candidate data has been updated successfully',
+      duration: 3000
+    });
   };
 
   if (loading) {
@@ -623,6 +678,15 @@ const CandidatesPage: React.FC = () => {
               
               {/* Action buttons section - always in a row */}
               <div className="flex flex-nowrap gap-1 sm:gap-2">
+                <button 
+                  title="Refresh candidate data"
+                  className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-xs sm:text-sm transition-all"
+                  onClick={handleRefresh}
+                  disabled={candidatesQuery.isRefetching || statsQuery.isRefetching}
+                >
+                  <RefreshCw className={`h-4 w-4 sm:mr-1 ${candidatesQuery.isRefetching || statsQuery.isRefetching ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">Refresh</span>
+                </button>
                 {/* {isUserSuperAdmin && (
                   <button
                     title="Export candidates to CSV" 

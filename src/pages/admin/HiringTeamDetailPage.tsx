@@ -110,9 +110,10 @@ const HiringTeamDetailPage: React.FC = () => {
       await updateTeamMutation.mutateAsync({ teamId: id, data: teamData });
       toast.success('Hiring team updated successfully!');
       setIsEditModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating team:', err);
-      toast.error('Failed to update hiring team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update hiring team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -125,9 +126,10 @@ const HiringTeamDetailPage: React.FC = () => {
         data: { status: newStatus }
       });
       toast.success(`Team ${newStatus === 'archived' ? 'archived' : 'restored'} successfully!`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error archiving team:', err);
-      toast.error('Failed to update team status. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update team status. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -164,9 +166,10 @@ const HiringTeamDetailPage: React.FC = () => {
         await navigator.clipboard.writeText(shareUrl);
         toast.success('Team link copied to clipboard!');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error sharing team:', err);
-      toast.error('Failed to share team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to share team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 

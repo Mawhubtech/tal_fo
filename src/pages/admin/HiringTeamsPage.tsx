@@ -102,9 +102,10 @@ const HiringTeamsPage: React.FC = () => {
       await createTeamMutation.mutateAsync(teamData);
       toast.success('Hiring team created successfully!');
       setModalMode('none');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating team:', err);
-      toast.error('Failed to create hiring team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to create hiring team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -120,9 +121,10 @@ const HiringTeamsPage: React.FC = () => {
       await updateTeamMutation.mutateAsync({ teamId: id, data: teamData });
       toast.success('Hiring team updated successfully!');
       setModalMode('none');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating team:', err);
-      toast.error('Failed to update hiring team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update hiring team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -156,9 +158,10 @@ const HiringTeamsPage: React.FC = () => {
       await createTeamMutation.mutateAsync(duplicateData);
       toast.success('Team duplicated successfully!');
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error duplicating team:', err);
-      toast.error('Failed to duplicate team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to duplicate team. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
@@ -174,9 +177,10 @@ const HiringTeamsPage: React.FC = () => {
       });
       toast.success(`Team ${team.isDefault ? 'removed from' : 'set as'} default successfully!`);
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error toggling default status:', err);
-      toast.error('Failed to update default status. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update default status. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
@@ -193,9 +197,10 @@ const HiringTeamsPage: React.FC = () => {
       });
       toast.success(`Team ${newStatus === 'archived' ? 'archived' : 'restored'} successfully!`);
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error archiving team:', err);
-      toast.error('Failed to update team status. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update team status. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
@@ -229,9 +234,10 @@ const HiringTeamsPage: React.FC = () => {
 
       toast.success('Team data exported successfully!');
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error exporting team:', err);
-      toast.error('Failed to export team data. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to export team data. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -252,9 +258,10 @@ const HiringTeamsPage: React.FC = () => {
         toast.success('Team link copied to clipboard!');
       }
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error sharing team:', err);
-      toast.error('Failed to share team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to share team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 

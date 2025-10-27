@@ -50,12 +50,13 @@ const EmailSequencesPage: React.FC = () => {
         });
       }
       handleCloseModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save sequence:', error);
+      const errorMessage = error?.response?.data?.message || `There was an error ${modalMode === 'edit' ? 'updating' : 'creating'} the system preset. Please try again.`;
       addToast({
         type: 'error',
         title: modalMode === 'edit' ? 'Failed to Update Preset' : 'Failed to Create Preset',
-        message: `There was an error ${modalMode === 'edit' ? 'updating' : 'creating'} the system preset. Please try again.`,
+        message: errorMessage,
         duration: 5000
       });
     }

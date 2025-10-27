@@ -8,6 +8,7 @@ import { useHiringTeams } from '../../../hooks/useHiringTeam';
 import { usePipelines } from '../../../hooks/usePipelines';
 import { usePipelineModal } from '../../../hooks/usePipelineModal';
 import { useAuth } from '../../../hooks/useAuth';
+import { useToast } from '../../../contexts/ToastContext';
 import { pipelineService } from '../../../services/pipelineService';
 import { jobApiService } from '../../../services/jobApiService';
 import { createJobUrl } from '../../../lib/urlUtils';
@@ -109,6 +110,7 @@ const CreateJobPage: React.FC = () => {
 
   const createJobMutation = useCreateJob();
   const updateJobMutation = useUpdateJob();
+  const { addToast } = useToast();
   
   // AI Prompt State
   const [aiPrompt, setAiPrompt] = useState<string>('');
@@ -213,8 +215,14 @@ const CreateJobPage: React.FC = () => {
         // Safe to edit directly
         openPipelineEditModal(pipeline);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking pipeline usage:', error);
+      const errorMessage = error?.response?.data?.message || 'Failed to check pipeline usage';
+      addToast({
+        type: 'error',
+        title: 'Error',
+        message: errorMessage
+      });
       // If check fails, allow editing but user should be aware
       openPipelineEditModal(pipeline);
     }
@@ -239,8 +247,14 @@ const CreateJobPage: React.FC = () => {
       // Select and edit the new copy
       setSelectedPipelineId(copiedPipeline.id);
       openPipelineEditModal(copiedPipeline);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating pipeline copy:', error);
+      const errorMessage = error?.response?.data?.message || 'Failed to create pipeline copy';
+      addToast({
+        type: 'error',
+        title: 'Copy Failed',
+        message: errorMessage
+      });
     }
   };
 
@@ -356,9 +370,15 @@ const CreateJobPage: React.FC = () => {
       try {
         const boards = await jobApiService.getAvailableJobBoards();
         setAvailableJobBoards(boards);
-      } catch (error) {
+      } catch (error: any) {
         console.warn('Failed to fetch available job boards:', error);
         // Continue without external job boards - user will see only TAL board and private options
+        addToast({
+          type: 'error',
+          title: 'Warning',
+          message: 'Failed to load external job boards. You can still publish to TAL board.',
+          duration: 5000
+        });
       }
     };
 
@@ -711,7 +731,13 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
             setPendingCollaborators([]);
           } catch (inviteError: any) {
             console.error('Error inviting collaborators:', inviteError);
+            const errorMessage = inviteError?.response?.data?.message || 'Failed to send some invitations';
             // Show warning but don't fail the job update
+            addToast({
+              type: 'error',
+              title: 'Partial Success',
+              message: `Job updated successfully, but ${errorMessage}`
+            });
             setError(`Job updated successfully, but failed to send some invitations: ${inviteError.message}`);
           }
         }
@@ -728,12 +754,23 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
       // Navigate to the job ATS page with slugified title
       if (resultJob.slug) {
         navigate(createJobUrl(resultJob.slug, resultJob.title));
+        addToast({
+          type: 'success',
+          title: 'Success',
+          message: `Job ${isEditMode ? 'updated' : 'created'} successfully`
+        });
       } else {
         navigate('/organizations');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`);
+      const errorMessage = err?.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`;
+      setError(errorMessage);
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} job:`, err);
+      addToast({
+        type: 'error',
+        title: `${isEditMode ? 'Update' : 'Creation'} Failed`,
+        message: errorMessage
+      });
     }
   };
 
@@ -833,6 +870,12 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
       // Only close modal on success
       handleClosePipelineModal();
       
+      addToast({
+        type: 'success',
+        title: 'Success',
+        message: `Pipeline ${editingPipeline ? 'updated' : 'created'} successfully`
+      });
+      
       if (!editingPipeline) {
         // For new pipelines, find and select the newly created one
         const updatedPipelines = await refetchActivePipelines();
@@ -859,6 +902,11 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
       }
       
       setPipelineError(errorMessage);
+      addToast({
+        type: 'error',
+        title: `Pipeline ${editingPipeline ? 'Update' : 'Creation'} Failed`,
+        message: errorMessage
+      });
       // Don't close the modal on error - let user see the error and try again
     } finally {
       setModalLoading(false);
