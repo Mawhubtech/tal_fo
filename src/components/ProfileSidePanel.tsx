@@ -740,20 +740,19 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
     } catch (error: any) {
       console.error('Failed to send email:', error);
       
-      // Check for Gmail connection expired error (401 with specific message)
-      if (error?.response?.status === 401) {
-        const errorMessage = error.response?.data?.message || '';
-        if (errorMessage.includes('Gmail') || errorMessage.includes('reconnect')) {
-          // Show Gmail reconnection modal instead of fallback
-          setShowGmailReconnectModal(true);
-          throw error;
-        }
+      // Check for Gmail authentication/permission errors (401 Unauthorized or 403 Forbidden)
+      const status = error?.response?.status;
+      const errorMessage = error.response?.data?.message || '';
+      
+      if (status === 401 || status === 403) {
+        // Gmail connection expired or insufficient scopes - close panel and show reconnect modal
+        console.log('Gmail authentication/permission error detected, showing reconnect modal');
+        onStateChange('closed'); // Close the side panel
+        setShowGmailReconnectModal(true); // Show reconnect modal
+        throw error;
       }
       
-      // Fallback to opening email client if API fails for other reasons
-      const subject = encodeURIComponent(emailData.subject);
-      const body = encodeURIComponent(emailData.body.replace(/<[^>]*>/g, '')); // Strip HTML for mailto
-      window.open(`mailto:${emailData.to}?subject=${subject}&body=${body}`, '_self');
+      // For other errors, just throw - no fallback to mailto
       throw error;
     }
   };
@@ -1888,7 +1887,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
           </div>
 
           {/* Floating Action Bar */}
-          <div className="absolute bottom-6 left-4 right-4 py-4 flex justify-center">
+          <div className="absolute bottom-6 left-4 right-4 py-4 flex justify-center z-30">
 			  {/* <div className='bg-white/50 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-1 py-1.5'> */}
             <div className="flex items-center justify-between gap-2 bg-white/20 backdrop-blur-md border border-gray-200 rounded-lg shadow-lg px-4 py-4 max-w-md w-full">
               {!hideAddToJob && (
@@ -2006,6 +2005,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
               <div 
                 className="flex-1 overflow-y-auto p-4"
                 onWheel={(e) => e.stopPropagation()}
+                style={{ pointerEvents: 'auto' }}
               >
                 {/* Communication Tab */}
                 {activeSideTab === 1 && (
@@ -2173,15 +2173,14 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                             {/* Message Body */}
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">Message:</label>
-                              <div className="border border-gray-300 rounded-md">
+                              <div className="border border-gray-300 rounded-md mb-12">
                                 <ReactQuill
                                   value={emailBody}
                                   onChange={setEmailBody}
                                   theme="snow"
                                   placeholder="Type your message here..."
                                   style={{ 
-                                    height: '200px',
-                                    marginBottom: '42px'
+                                    height: '200px'
                                   }}
                                   modules={{
                                     toolbar: [
@@ -2197,7 +2196,7 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex gap-2 pt-3">
+                            <div className="flex gap-2 pt-3" style={{ position: 'relative', zIndex: 10 }}>
                               <button
                                 onClick={async () => {
                                   try {
@@ -2221,18 +2220,19 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                                     // Reload email history to show the new email
                                     loadEmailHistory();
                                   } catch (error: any) {
-                                    // Check if this is a Gmail reconnection error - don't show toast, modal will appear
-                                    if (error?.response?.status === 401 && 
-                                        (error.response?.data?.message?.includes('Gmail') || 
-                                         error.response?.data?.message?.includes('reconnect'))) {
-                                      // Gmail modal will be shown by sendEmail function, don't show error toast
+                                    // Check if this is a Gmail authentication/permission error (401 or 403)
+                                    // Panel will be closed and modal will be shown by sendEmail function
+                                    const status = error?.response?.status;
+                                    if (status === 401 || status === 403) {
+                                      // Don't show error toast - Gmail reconnect modal will be shown
                                       return;
                                     }
                                     
+                                    // For other errors, show error toast
                                     addToast({
                                       type: 'error',
                                       title: 'Failed to Send Email',
-                                      message: 'Please try again or check your connection.',
+                                      message: error?.response?.data?.message || 'Please try again or check your connection.',
                                       duration: 5000
                                     });
                                   } finally {
@@ -2494,14 +2494,19 @@ const ProfileSidePanel: React.FC<ProfileSidePanelProps> = ({ userData, panelStat
                         {/* Email Action */}
                         {personalInfo.email && (
                           <button
-                            onClick={() => {
+                            type="button"
+                            onClick={(e) => {
+                              console.log('Email button clicked!', { email: personalInfo.email });
+                              e.preventDefault();
+                              e.stopPropagation();
                               setActiveSideTab(1); // Switch to Communication tab
                               setIsComposingEmail(true);
                               setEmailTo(personalInfo.email || '');
                               setEmailSubject(`Regarding your profile - ${personalInfo.fullName}`);
                               setEmailBody(`Hi ${personalInfo.fullName.split(' ')[0]},\n\nI hope this email finds you well. I came across your profile and would like to discuss potential opportunities.\n\nBest regards`);
                             }}
-                            className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+                            className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group cursor-pointer"
+                            style={{ position: 'relative', zIndex: 1 }}
                           >
                             <div className="flex items-center">
                               <Mail className="w-4 h-4 text-gray-600 group-hover:text-blue-600 mr-3" />

@@ -72,33 +72,9 @@ class EmailApiService {
    * Send an email to a candidate using the general email endpoint
    */
   async sendCandidateEmail(emailData: SendCandidateEmailDto): Promise<EmailResponse> {
-    // Try the enhanced candidate email endpoint first (if available)
-    try {
-      const response = await apiClient.post('/email-management/send-candidate-email', emailData);
-      return response.data;
-    } catch (error: any) {
-      // Check if this is a Gmail reconnection error - don't use fallback, re-throw it
-      if (error?.response?.status === 401) {
-        const errorMessage = error.response?.data?.message || '';
-        if (errorMessage.includes('Gmail') || errorMessage.includes('reconnect')) {
-          // Re-throw Gmail errors so they can be handled by the UI
-          throw error;
-        }
-      }
-      
-      // Fallback to general email endpoint for other errors
-      console.warn('Enhanced candidate email endpoint not available, using fallback');
-      
-      const backendEmailData: SendEmailDto = {
-        emailType: 'candidate_outreach',
-        recipients: [emailData.to],
-        subject: emailData.subject,
-        body: emailData.htmlBody || emailData.body,
-      };
-
-      const response = await apiClient.post(`${this.baseUrl}/send`, backendEmailData);
-      return response.data;
-    }
+    // Use the enhanced candidate email endpoint only - no fallback
+    const response = await apiClient.post('/email-management/send-candidate-email', emailData);
+    return response.data;
   }
 
   /**
