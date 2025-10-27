@@ -267,15 +267,19 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.personalInfo.firstName?.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.personalInfo.lastName?.trim()) newErrors.lastName = 'Last name is required';
+    // Validate fullName (auto-generated from firstName + lastName)
+    if (!formData.personalInfo.fullName?.trim()) {
+      if (!formData.personalInfo.firstName?.trim() && !formData.personalInfo.lastName?.trim()) {
+        newErrors.firstName = 'At least first name or last name is required';
+      }
+    }
+
+    // Email is required and must be valid
     if (!formData.personalInfo.email?.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.personalInfo.email)) {
       newErrors.email = 'Email is invalid';
     }
-    if (!formData.personalInfo.phone?.trim()) newErrors.phone = 'Phone is required';
-    if (!formData.personalInfo.location?.trim()) newErrors.location = 'Location is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -293,6 +297,17 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
     // Remove empty avatar field if no avatar is set
     if (!cleanedPersonalInfo.avatar || cleanedPersonalInfo.avatar.trim() === '') {
       delete cleanedPersonalInfo.avatar;
+    }
+
+    // Remove empty URL fields to avoid backend validation errors
+    if (!cleanedPersonalInfo.website || cleanedPersonalInfo.website.trim() === '') {
+      delete cleanedPersonalInfo.website;
+    }
+    if (!cleanedPersonalInfo.linkedIn || cleanedPersonalInfo.linkedIn.trim() === '') {
+      delete cleanedPersonalInfo.linkedIn;
+    }
+    if (!cleanedPersonalInfo.github || cleanedPersonalInfo.github.trim() === '') {
+      delete cleanedPersonalInfo.github;
     }
 
     // Create the candidate data with avatar file if present
@@ -394,6 +409,23 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
             {/* Basic Info Tab */}
             {activeTab === 'basic' && (
               <div className="space-y-6">
+                {/* Required Fields Note */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-blue-700">
+                        <strong>Required fields:</strong> Only <strong>Email</strong> is mandatory. 
+                        Please provide at least a <strong>First Name</strong> or <strong>Last Name</strong> to identify the candidate.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Personal Information */}                <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <User className="w-5 h-5 mr-2 text-purple-600" />
@@ -454,7 +486,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name *
+                        First Name
                       </label>
                       <input
                         type="text"
@@ -469,7 +501,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name *
+                        Last Name
                       </label>
                       <input
                         type="text"
@@ -509,7 +541,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone *
+                        Phone
                       </label>
                       <input
                         type="tel"
@@ -524,7 +556,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Location *
+                        Location
                       </label>
                       <input
                         type="text"

@@ -16,6 +16,7 @@ import {
 import { useOrganization } from '../../hooks/useOrganizations';
 import { useUserClients } from '../../hooks/useUser';
 import type { HiringTeam, CreateHiringTeamData, UpdateHiringTeamData } from '../../services/hiringTeamApiService';
+import { formatApiError } from '../../utils/errorUtils';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 import JobAssignmentModal from '../../components/JobAssignmentModal';
@@ -131,9 +132,10 @@ const HiringTeamsPage: React.FC = () => {
       await deleteTeamMutation.mutateAsync(deleteConfirmTeam.id);
       toast.success('Hiring team deleted successfully!');
       setDeleteConfirmTeam(null);
-    } catch (err) {
-      console.error('Error deleting team:', err);
-      toast.error('Failed to delete hiring team. Please try again.');
+    } catch (error: any) {
+      console.error('Error deleting team:', error);
+      const errorMessage = formatApiError(error);
+      toast.error(errorMessage);
     }
   };
 
@@ -235,7 +237,7 @@ const HiringTeamsPage: React.FC = () => {
 
   const handleShareTeam = async (team: HiringTeam) => {
     try {
-      const shareUrl = `${window.location.origin}/dashboard/admin/hiring-teams/${team.id}`;
+      const shareUrl = `${window.location.origin}/admin/hiring-teams/${team.id}`;
       
       if (navigator.share) {
         await navigator.share({
@@ -389,7 +391,7 @@ const HiringTeamsPage: React.FC = () => {
           <div className="flex items-center mb-2">
             {/* FIX: Use template literal for dynamic Link 'to' prop */}
             <Link
-              to={`/dashboard/admin/hiring-teams`}
+              to={`/admin/hiring-teams`}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               Hiring Teams
@@ -611,7 +613,7 @@ const HiringTeamsPage: React.FC = () => {
                             <div className="py-1">
                               {/* Primary Actions */}
                               <Link
-                                to={`/dashboard/admin/hiring-teams/${team.id}`}
+                                to={`/admin/hiring-teams/${team.id}`}
                                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                 onClick={() => setActiveDropdown(null)}
                               >
@@ -629,7 +631,7 @@ const HiringTeamsPage: React.FC = () => {
                                 Edit Team
                               </button>
                               <Link
-                                to={`/dashboard/admin/hiring-teams/${team.id}/members`}
+                                to={`/admin/hiring-teams/${team.id}/members`}
                                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                 onClick={() => setActiveDropdown(null)}
                               >
