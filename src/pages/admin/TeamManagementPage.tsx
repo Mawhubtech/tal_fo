@@ -19,7 +19,7 @@ import {
   Users, Building, Link as LinkIcon, 
   MoreHorizontal, Edit, Plus, X, Check, AlertCircle, User,
   ChevronRight, UserCheck, Crown, Settings, RefreshCw, 
-  CheckSquare, Trash2, UserPlus, Shield, Eye, ChevronLeft
+  CheckSquare, Trash2, UserPlus, Shield, Eye, ChevronLeft, Search
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { 
@@ -85,9 +85,14 @@ const TeamManagementPage: React.FC = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   
-  // Pagination state
+  // Pagination state for users
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Client search and pagination state
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [clientPage, setClientPage] = useState(1);
+  const [clientLimit, setClientLimit] = useState(10);
 
   // API hooks - pass pagination parameters
   // Super-admin sees all users, regular users see only team members
@@ -101,9 +106,15 @@ const TeamManagementPage: React.FC = () => {
         limit: itemsPerPage
       });
   
-  // Super-admin sees all clients, regular users see only their assigned clients  
+  // Super-admin sees all clients with pagination and search, regular users see only their assigned clients  
   const { data: clientsResponse, isLoading: loadingClients } = isSuperAdmin 
-    ? useClients()
+    ? useClients({
+        page: clientPage,
+        limit: clientLimit,
+        search: clientSearchTerm,
+        sortBy: 'createdAt',
+        sortOrder: 'DESC'
+      })
     : useCurrentUserClients();
     
   const { data: roles = [] } = useRoles();
@@ -135,9 +146,7 @@ const TeamManagementPage: React.FC = () => {
         if (event.key === 'Escape') {
           // Close the appropriate modal
           if (showAssignModal) {
-            setShowAssignModal(false);
-            setSelectedUser(null);
-            setSelectedClients([]);
+            closeAssignModal();
           } else if (showBulkAssignModal) {
             setShowBulkAssignModal(false);
             setSelectedClients([]);
@@ -170,8 +179,10 @@ const TeamManagementPage: React.FC = () => {
   const totalPages = usersResponse?.pages || Math.ceil(totalUsers / itemsPerPage);
   const allRoles = Array.isArray(roles) ? roles : roles?.roles || [];
   
-  // Extract clients from response
+  // Extract clients from response with pagination data
   const allClients = Array.isArray(clientsResponse) ? clientsResponse : clientsResponse?.clients || [];
+  const totalClients = (clientsResponse as any)?.total || allClients.length;
+  const clientTotalPages = (clientsResponse as any)?.totalPages || Math.ceil((totalClients || allClients.length) / clientLimit);
   
   // Filter out admin/super-admin roles for team management context (except for super-admin users)
   const availableRoles = isSuperAdmin 
@@ -230,15 +241,25 @@ const TeamManagementPage: React.FC = () => {
     setSelectedUsers([]);
   }, [currentPage, itemsPerPage]);
 
+  // Helper function to close assign modal and reset state
+  const closeAssignModal = () => {
+    setShowAssignModal(false);
+    setSelectedUser(null);
+    setSelectedClients([]);
+    setClientSearchTerm('');
+    setClientPage(1);
+  };
+
   // Quick assign single client to user
   const handleQuickAssignClient = async (userId: string, clientId: string) => {
     try {
       await assignClientMutation.mutateAsync({ userId, clientId });
       toast.success('Client assigned successfully!');
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error assigning client:', error);
-      toast.error('Failed to assign client. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to assign client. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -248,9 +269,10 @@ const TeamManagementPage: React.FC = () => {
       await removeClientMutation.mutateAsync({ userId, clientId });
       toast.success('Client access removed successfully!');
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing client:', error);
-      toast.error('Failed to remove client access. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to remove client access. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -265,13 +287,12 @@ const TeamManagementPage: React.FC = () => {
       });
       
       toast.success('Client assignments updated successfully!');
-      setShowAssignModal(false);
-      setSelectedUser(null);
-      setSelectedClients([]);
+      closeAssignModal();
       refetchUsers(); // Refresh the users list
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating client assignments:', error);
-      toast.error('Failed to update client assignments. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to update client assignments. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -290,9 +311,10 @@ const TeamManagementPage: React.FC = () => {
       setSelectedClients([]);
       setBulkMode(false);
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in bulk assignment:', error);
-      toast.error('Failed to update client assignments. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to update client assignments. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -303,9 +325,10 @@ const TeamManagementPage: React.FC = () => {
       toast.success('User created successfully!');
       setShowUserModal(false);
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating user:', error);
-      toast.error('Failed to create user. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to create user. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -319,9 +342,10 @@ const TeamManagementPage: React.FC = () => {
       setShowUserModal(false);
       setEditingUser(null);
       refetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user:', error);
-      toast.error('Failed to update user. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to update user. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -488,9 +512,7 @@ const TeamManagementPage: React.FC = () => {
   // Handle overlay click to close modals
   const handleAssignModalOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
-      setShowAssignModal(false);
-      setSelectedUser(null);
-      setSelectedClients([]);
+      closeAssignModal();
     }
   };
 
@@ -886,11 +908,7 @@ const TeamManagementPage: React.FC = () => {
                     Manage Client Access - {selectedUser.firstName} {selectedUser.lastName}
                   </h3>
                   <button
-                    onClick={() => {
-                      setShowAssignModal(false);
-                      setSelectedUser(null);
-                      setSelectedClients([]);
-                    }}
+                    onClick={closeAssignModal}
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <X className="h-6 w-6" />
@@ -904,6 +922,23 @@ const TeamManagementPage: React.FC = () => {
                     <p className="text-sm text-gray-600 mb-4">
                       Select which clients/organizations {selectedUser.firstName} should have access to:
                     </p>
+                    
+                    {/* Search Input */}
+                    {isSuperAdmin && (
+                      <div className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search clients by name, industry, or location..."
+                          value={clientSearchTerm}
+                          onChange={(e) => {
+                            setClientSearchTerm(e.target.value);
+                            setClientPage(1); // Reset to first page on search
+                          }}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {loadingClients ? (
@@ -912,40 +947,74 @@ const TeamManagementPage: React.FC = () => {
                       <p className="text-sm mt-2">Loading clients...</p>
                     </div>
                   ) : allClients.length > 0 ? (
-                    <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3">
-                      {allClients.map((client) => (
-                        <label key={client.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedClients.includes(client.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedClients([...selectedClients, client.id]);
-                              } else {
-                                setSelectedClients(selectedClients.filter(id => id !== client.id));
-                              }
-                            }}
-                            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                          />
-                          <Building className="h-5 w-5 text-gray-500" />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{client.name}</div>
-                            {client.industry && (
-                              <div className="text-xs text-gray-500">{client.industry}</div>
-                            )}
+                    <>
+                      <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                        {allClients.map((client) => (
+                          <label key={client.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedClients.includes(client.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedClients([...selectedClients, client.id]);
+                                } else {
+                                  setSelectedClients(selectedClients.filter(id => id !== client.id));
+                                }
+                              }}
+                              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                            />
+                            <Building className="h-5 w-5 text-gray-500" />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                              {client.industry && (
+                                <div className="text-xs text-gray-500">{client.industry}</div>
+                              )}
+                            </div>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {client.status}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      
+                      {/* Pagination Controls for Clients */}
+                      {isSuperAdmin && clientTotalPages > 1 && (
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="text-gray-700">
+                            Showing {((clientPage - 1) * clientLimit) + 1} to {Math.min(clientPage * clientLimit, totalClients)} of {totalClients} clients
                           </div>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {client.status}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setClientPage(Math.max(1, clientPage - 1))}
+                              disabled={clientPage === 1}
+                              className="flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <ChevronLeft className="h-3 w-3 mr-1" />
+                              Prev
+                            </button>
+                            <span className="text-gray-700">
+                              Page {clientPage} of {clientTotalPages}
+                            </span>
+                            <button
+                              onClick={() => setClientPage(Math.min(clientTotalPages, clientPage + 1))}
+                              disabled={clientPage === clientTotalPages}
+                              className="flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Next
+                              <ChevronRight className="h-3 w-3 ml-1" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
                       <Building className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                      <p className="text-sm">No clients available</p>
+                      <p className="text-sm">
+                        {clientSearchTerm ? 'No clients found matching your search' : 'No clients available'}
+                      </p>
                     </div>
                   )}
 
@@ -962,11 +1031,7 @@ const TeamManagementPage: React.FC = () => {
 
               <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
                 <button
-                  onClick={() => {
-                    setShowAssignModal(false);
-                    setSelectedUser(null);
-                    setSelectedClients([]);
-                  }}
+                  onClick={closeAssignModal}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel

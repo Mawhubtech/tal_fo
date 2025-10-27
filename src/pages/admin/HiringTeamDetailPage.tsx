@@ -12,6 +12,7 @@ import { useJobsAssignedToTeam } from '../../hooks/useJobAssignment';
 import { useOrganization } from '../../hooks/useOrganizations';
 import { useUserClients } from '../../hooks/useUser';
 import { useCompany } from '../../hooks/useCompany';
+import { formatApiError } from '../../utils/errorUtils';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 import JobAssignmentModal from '../../components/JobAssignmentModal';
@@ -109,9 +110,10 @@ const HiringTeamDetailPage: React.FC = () => {
       await updateTeamMutation.mutateAsync({ teamId: id, data: teamData });
       toast.success('Hiring team updated successfully!');
       setIsEditModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating team:', err);
-      toast.error('Failed to update hiring team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update hiring team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -124,9 +126,10 @@ const HiringTeamDetailPage: React.FC = () => {
         data: { status: newStatus }
       });
       toast.success(`Team ${newStatus === 'archived' ? 'archived' : 'restored'} successfully!`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error archiving team:', err);
-      toast.error('Failed to update team status. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update team status. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -137,19 +140,20 @@ const HiringTeamDetailPage: React.FC = () => {
       toast.success('Team deleted successfully!');
       // Navigate back to the company page
       if (companyId) {
-        navigate(`/dashboard/admin/companies/${companyId}`);
+        navigate(`/admin/companies/${companyId}`);
       } else {
-        navigate(`/dashboard/admin/companies`);
+        navigate(`/admin/companies`);
       }
-    } catch (err) {
-      console.error('Error deleting team:', err);
-      toast.error('Failed to delete team. Please try again.');
+    } catch (error: any) {
+      console.error('Error deleting team:', error);
+      const errorMessage = formatApiError(error);
+      toast.error(errorMessage);
     }
   };
 
   const handleShareTeam = async () => {
     try {
-      const shareUrl = `${window.location.origin}/dashboard/admin/hiring-teams/${teamId}`;
+      const shareUrl = `${window.location.origin}/admin/hiring-teams/${teamId}`;
       
       if (navigator.share) {
         await navigator.share({
@@ -162,9 +166,10 @@ const HiringTeamDetailPage: React.FC = () => {
         await navigator.clipboard.writeText(shareUrl);
         toast.success('Team link copied to clipboard!');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error sharing team:', err);
-      toast.error('Failed to share team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to share team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -202,7 +207,7 @@ const HiringTeamDetailPage: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">Team Not Found</h3>
           <p className="text-gray-600 mb-6">The hiring team you're looking for doesn't exist or has been deleted.</p>
           <Link
-            to={companyId ? `/dashboard/admin/companies/${companyId}` : `/dashboard/admin/companies`}
+            to={companyId ? `/admin/companies/${companyId}` : `/admin/companies`}
             className="inline-flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -221,7 +226,7 @@ const HiringTeamDetailPage: React.FC = () => {
           {/* Breadcrumb Navigation */}
           <div className="flex items-center mb-4">
             <Link
-              to={`/dashboard/admin/companies`}
+              to={`/admin/companies`}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               Companies
@@ -230,7 +235,7 @@ const HiringTeamDetailPage: React.FC = () => {
               <>
                 <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
                 <Link
-                  to={`/dashboard/admin/companies/${companyId}`}
+                  to={`/admin/companies/${companyId}`}
                   className="text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   {company.company.name}
@@ -246,7 +251,7 @@ const HiringTeamDetailPage: React.FC = () => {
           {/* Back Button */}
           <div className="flex items-center mb-4">
             <Link
-              to={companyId ? `/dashboard/admin/companies/${companyId}` : `/dashboard/admin/companies`}
+              to={companyId ? `/admin/companies/${companyId}` : `/admin/companies`}
               className="inline-flex items-center text-gray-500 hover:text-gray-700 transition-colors mr-4"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />

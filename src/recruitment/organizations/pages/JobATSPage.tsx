@@ -344,8 +344,10 @@ const JobATSPage: React.FC = () => {
         // Safe to edit directly
         openPipelineEditModal(pipeline);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking pipeline usage:', error);
+      const errorMessage = error?.response?.data?.message || 'Failed to check pipeline usage';
+      toast.error('Error', errorMessage);
       // If check fails, allow editing but user should be aware
       openPipelineEditModal(pipeline);
     }
@@ -369,9 +371,10 @@ const JobATSPage: React.FC = () => {
       
       // Open edit modal for the new copy
       openPipelineEditModal(copiedPipeline);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating pipeline copy:', error);
-      toast.error('Failed to create pipeline copy');
+      const errorMessage = error?.response?.data?.message || 'Failed to create pipeline copy';
+      toast.error('Copy Failed', errorMessage);
     }
   };
 
@@ -638,6 +641,7 @@ const JobATSPage: React.FC = () => {
     
     if (!currentApplication) {
       console.error('Could not find application for candidate:', updatedCandidate.id);
+      toast.error('Update Failed', 'Could not find candidate application. Please refresh the page.');
       return;
     }
 
@@ -677,9 +681,10 @@ const JobATSPage: React.FC = () => {
           // Show success message
           toast.success('Stage Updated', `${updatedCandidate.name} moved to ${updatedCandidate.stage}`);
           
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error moving candidate stage:', error);
-          toast.error('Move Failed', 'Failed to move candidate. Please try again.');
+          const errorMessage = error?.response?.data?.message || 'Failed to move candidate. Please try again.';
+          toast.error('Move Failed', errorMessage);
           return;
         }
       }
@@ -711,9 +716,10 @@ const JobATSPage: React.FC = () => {
           toast.success('Candidate Updated', 'Candidate information has been updated successfully.');
         }
         
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error updating candidate:', error);
-        toast.error('Update Failed', 'Failed to update candidate. Please try again.');
+        const errorMessage = error?.response?.data?.message || 'Failed to update candidate. Please try again.';
+        toast.error('Update Failed', errorMessage);
       }
     }
   };
@@ -731,6 +737,7 @@ const JobATSPage: React.FC = () => {
       setPanelState(isSmallScreen ? 'collapsed' : 'collapsed');
     } else {
       console.error('No candidate ID found in candidate data:', candidateData);
+      toast.error('Error', 'Unable to open candidate profile. Candidate ID not found.');
     }
   };
 
@@ -771,9 +778,10 @@ const JobATSPage: React.FC = () => {
         taggedCandidateIds,
       });
       toast.success('Comment Posted', 'Your comment has been posted successfully.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error posting comment:', error);
-      toast.error('Post Failed', 'Failed to post comment. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to post comment. Please try again.';
+      toast.error('Post Failed', errorMessage);
     }
   };
 
@@ -784,9 +792,10 @@ const JobATSPage: React.FC = () => {
         data: { content },
       });
       toast.success('Comment Updated', 'Your comment has been updated successfully.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating comment:', error);
-      toast.error('Update Failed', 'Failed to update comment. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to update comment. Please try again.';
+      toast.error('Update Failed', errorMessage);
     }
   };
 
@@ -794,9 +803,10 @@ const JobATSPage: React.FC = () => {
     try {
       await deleteCommentMutation.mutateAsync(commentId);
       toast.success('Comment Deleted', 'Your comment has been deleted successfully.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting comment:', error);
-      toast.error('Delete Failed', 'Failed to delete comment. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to delete comment. Please try again.';
+      toast.error('Delete Failed', errorMessage);
     }
   };
 
@@ -806,9 +816,10 @@ const JobATSPage: React.FC = () => {
         commentId,
         emoji,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding reaction:', error);
-      toast.error('Reaction Failed', 'Failed to add reaction. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to add reaction. Please try again.';
+      toast.error('Reaction Failed', errorMessage);
     }
   };
 
@@ -818,9 +829,10 @@ const JobATSPage: React.FC = () => {
         commentId,
         emoji,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing reaction:', error);
-      toast.error('Reaction Failed', 'Failed to remove reaction. Please try again.');
+      const errorMessage = error?.response?.data?.message || 'Failed to remove reaction. Please try again.';
+      toast.error('Reaction Failed', errorMessage);
     }
   };
 

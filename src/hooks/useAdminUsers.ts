@@ -9,7 +9,7 @@ export const adminUserKeys = {
   user: (id: string) => [...adminUserKeys.all, 'user', id] as const,
   stats: () => [...adminUserKeys.all, 'stats'] as const,
   roles: () => [...adminUserKeys.all, 'roles'] as const,
-  clients: () => [...adminUserKeys.all, 'clients'] as const,
+  clients: (params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: 'ASC' | 'DESC' }) => [...adminUserKeys.all, 'clients', params] as const,
   userJobs: (userId: string) => [...adminUserKeys.all, 'userJobs', userId] as const,
   userOrganizations: (userId: string) => [...adminUserKeys.all, 'userOrganizations', userId] as const,
   currentUserClients: () => [...adminUserKeys.all, 'currentUserClients'] as const,
@@ -55,10 +55,10 @@ export function useRoles() {
 }
 
 // Get all clients
-export function useClients() {
+export function useClients(params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: 'ASC' | 'DESC' }) {
   return useQuery({
-    queryKey: adminUserKeys.clients(),
-    queryFn: () => AdminUserApiService.getClients(),
+    queryKey: adminUserKeys.clients(params),
+    queryFn: () => AdminUserApiService.getClients(params),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

@@ -22,11 +22,13 @@ import {
   XCircle,
   Archive,
   User,
-  UserCheck
+  UserCheck,
+  RefreshCw
 } from 'lucide-react';
 import { useJobs, useDeleteJob, useUpdateJob } from '../../../hooks/useJobs';
 import { useJobsWebSocket } from '../../../hooks/useJobsWebSocket';
 import { useAuthContext } from '../../../contexts/AuthContext';
+import { useToast } from '../../../contexts/ToastContext';
 import { useMyAssignment } from '../../../hooks/useUserAssignment';
 import { useUserTeamMemberships } from '../../../hooks/useHiringTeam';
 import JobPreviewModal from '../../../components/modals/JobPreviewModal';
@@ -37,6 +39,7 @@ import type { Job } from '../../data/types';
 const AllJobsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { addToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<JobFilters>({
     page: 1,
@@ -153,6 +156,17 @@ const AllJobsPage: React.FC = () => {
     }));
   };
 
+  // Refresh handler
+  const handleRefresh = async () => {
+    await refetchJobs();
+    addToast({
+      type: 'success',
+      title: 'Data Refreshed',
+      message: 'Jobs data has been updated successfully',
+      duration: 3000
+    });
+  };
+
   // Handler functions for CRUD operations
   const handleEditJob = (job: Job) => {
     // Navigate to standalone job edit page
@@ -160,14 +174,8 @@ const AllJobsPage: React.FC = () => {
   };
 
   const handleCreateJob = () => {
-    // Check if user has any form of access
-    const hasAccess = isSuperAdmin || hasHiringTeamAccess || (hasAssignmentRole && userAssignment?.organizationId);
-    
-    if (!hasAccess) {
-      return; // Prevent users with no access from creating jobs
-    }
-    
     // Navigate to standalone job creation page
+    // Backend handles all access control and validation
     navigate('/jobs/create');
   };
 
@@ -193,9 +201,19 @@ const AllJobsPage: React.FC = () => {
       await deleteJobMutation.mutateAsync(jobToDelete.id);
       setShowDeleteDialog(false);
       setJobToDelete(null);
-    } catch (error) {
+      addToast({
+        type: 'success',
+        title: 'Success',
+        message: 'Job deleted successfully'
+      });
+    } catch (error: any) {
       console.error('Error deleting job:', error);
-      // Error handling is managed by React Query, but we could add a toast here
+      const errorMessage = error?.response?.data?.message || 'Failed to delete job. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Deletion Failed',
+        message: errorMessage
+      });
     }
   };
 
@@ -213,8 +231,20 @@ const AllJobsPage: React.FC = () => {
         id: job.id,
         data: { status: newStatus }
       });
-    } catch (error) {
+      
+      addToast({
+        type: 'success',
+        title: 'Success',
+        message: `Job status changed to ${newStatus}`
+      });
+    } catch (error: any) {
       console.error('Error changing job status:', error);
+      const errorMessage = error?.response?.data?.message || 'Failed to change job status. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Status Update Failed',
+        message: errorMessage
+      });
     } finally {
       setJobStatusChanging(null);
     }
@@ -376,18 +406,29 @@ const AllJobsPage: React.FC = () => {
                     : 'Manage all job openings across your clients')}
             </p>
           </div>
-          <button
-            onClick={handleCreateJob}
-            disabled={!isSuperAdmin && !hasHiringTeamAccess && !(hasAssignmentRole && userAssignment?.organizationId)}
-            className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg flex items-center space-x-1.5 sm:space-x-2 border text-xs sm:text-sm whitespace-nowrap flex-shrink-0 w-full sm:w-auto justify-center ${
-              !isSuperAdmin && !hasHiringTeamAccess && !(hasAssignmentRole && userAssignment?.organizationId)
-                ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed' 
-                : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700 active:bg-purple-800'
-            }`}
-          >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span>Create Job</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg flex items-center space-x-1.5 sm:space-x-2 border text-xs sm:text-sm whitespace-nowrap flex-shrink-0 bg-white text-gray-700 border-gray-300 hover:bg-gray-50 active:bg-gray-100"
+              title="Refresh jobs data"
+            >
+              <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+            <button
+              onClick={handleCreateJob}
+              disabled={!isSuperAdmin && !hasHiringTeamAccess && !(hasAssignmentRole && userAssignment?.organizationId)}
+              className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg flex items-center space-x-1.5 sm:space-x-2 border text-xs sm:text-sm whitespace-nowrap flex-shrink-0 justify-center ${
+                !isSuperAdmin && !hasHiringTeamAccess && !(hasAssignmentRole && userAssignment?.organizationId)
+                  ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed' 
+                  : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700 active:bg-purple-800'
+              }`}
+            >
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Create Job</span>
+            </button>
+          </div>
         </div>
       </div>
 

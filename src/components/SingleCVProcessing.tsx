@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { FileText, Upload, CheckCircle, AlertCircle, User, Users, AlertTriangle, Sparkles } from 'lucide-react';
 import { useCVProcessing } from '../hooks/useCVProcessing';
 import { isDataSufficient, getMissingCriticalData, removeNullValues } from '../utils/cvDataTransformer';
+import { useToast } from '../contexts/ToastContext';
 
 const SingleCVProcessing: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -14,6 +15,7 @@ const SingleCVProcessing: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { processCV, createFromProcessed, loading, error } = useCVProcessing();
+  const { addToast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -56,9 +58,23 @@ const SingleCVProcessing: React.FC = () => {
         if (!hasRequiredData) {
           setShowCreateForm(true);
         }
+
+        addToast({
+          type: 'success',
+          title: 'CV Processed',
+          message: 'Resume has been successfully analyzed',
+          duration: 3000
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error processing CV:', err);
+      const errorMessage = err?.response?.data?.message || 'Failed to process CV. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Processing Failed',
+        message: errorMessage,
+        duration: 5000
+      });
     }
   };
 
@@ -78,9 +94,22 @@ const SingleCVProcessing: React.FC = () => {
       
       if (result) {
         setProcessingStep('create');
+        addToast({
+          type: 'success',
+          title: 'Candidate Created',
+          message: 'Candidate profile has been successfully created',
+          duration: 3000
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating candidate:', err);
+      const errorMessage = err?.response?.data?.message || 'Failed to create candidate. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Creation Failed',
+        message: errorMessage,
+        duration: 5000
+      });
     }
   };
 
@@ -591,7 +620,7 @@ const SingleCVProcessing: React.FC = () => {
                   type="button"
                   className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700"
                 >
-                  <a href="/dashboard/candidates" className="flex items-center">
+                  <a href="/candidates" className="flex items-center">
                     <Users className="w-4 h-4 mr-2" />
                     View Candidates
                   </a>

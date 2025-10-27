@@ -116,9 +116,10 @@ const PipelinesPage: React.FC = () => {
       setIsCreatingDefault(true);
       await createDefaultPipeline(defaultCreationType);
       toast.success('Default Pipeline Created', `The default ${defaultCreationType} pipeline has been created successfully.`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating default pipeline:', err);
-      toast.error('Creation Failed', 'Failed to create default pipeline. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to create default pipeline. Please try again.';
+      toast.error('Creation Failed', errorMessage);
     } finally {
       setIsCreatingDefault(false);
     }
@@ -139,9 +140,10 @@ const PipelinesPage: React.FC = () => {
       await duplicatePipeline(pipeline.id);
       toast.success('Pipeline Duplicated', `"${pipeline.name}" has been duplicated successfully.`);
       closeActionMenu();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error duplicating pipeline:', err);
-      toast.error('Duplication Failed', 'Failed to duplicate pipeline. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to duplicate pipeline. Please try again.';
+      toast.error('Duplication Failed', errorMessage);
       closeActionMenu();
     }
   };
@@ -162,9 +164,10 @@ const PipelinesPage: React.FC = () => {
     try {
       await deletePipeline(deleteConfirmPipeline.id);
       toast.success('Pipeline Deleted', `"${deleteConfirmPipeline.name}" has been deleted successfully.`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting pipeline:', err);
-      toast.error('Deletion Failed', 'Failed to delete pipeline. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to delete pipeline. Please try again.';
+      toast.error('Deletion Failed', errorMessage);
     }
   };
 
@@ -181,11 +184,12 @@ const PipelinesPage: React.FC = () => {
       }
       
       closeModal();
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Error ${selectedPipeline ? 'updating' : 'creating'} pipeline:`, err);
+      const errorMessage = err?.response?.data?.message || `Failed to ${selectedPipeline ? 'update' : 'create'} pipeline. Please try again.`;
       toast.error(
         selectedPipeline ? 'Update Failed' : 'Creation Failed', 
-        `Failed to ${selectedPipeline ? 'update' : 'create'} pipeline. Please try again.`
+        errorMessage
       );
     } finally {
       setModalLoading(false);

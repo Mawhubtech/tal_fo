@@ -16,6 +16,7 @@ import {
 import { useOrganization } from '../../hooks/useOrganizations';
 import { useUserClients } from '../../hooks/useUser';
 import type { HiringTeam, CreateHiringTeamData, UpdateHiringTeamData } from '../../services/hiringTeamApiService';
+import { formatApiError } from '../../utils/errorUtils';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ToastContainer, { toast } from '../../components/ToastContainer';
 import JobAssignmentModal from '../../components/JobAssignmentModal';
@@ -101,9 +102,10 @@ const HiringTeamsPage: React.FC = () => {
       await createTeamMutation.mutateAsync(teamData);
       toast.success('Hiring team created successfully!');
       setModalMode('none');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating team:', err);
-      toast.error('Failed to create hiring team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to create hiring team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -119,9 +121,10 @@ const HiringTeamsPage: React.FC = () => {
       await updateTeamMutation.mutateAsync({ teamId: id, data: teamData });
       toast.success('Hiring team updated successfully!');
       setModalMode('none');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating team:', err);
-      toast.error('Failed to update hiring team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update hiring team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -131,9 +134,10 @@ const HiringTeamsPage: React.FC = () => {
       await deleteTeamMutation.mutateAsync(deleteConfirmTeam.id);
       toast.success('Hiring team deleted successfully!');
       setDeleteConfirmTeam(null);
-    } catch (err) {
-      console.error('Error deleting team:', err);
-      toast.error('Failed to delete hiring team. Please try again.');
+    } catch (error: any) {
+      console.error('Error deleting team:', error);
+      const errorMessage = formatApiError(error);
+      toast.error(errorMessage);
     }
   };
 
@@ -154,9 +158,10 @@ const HiringTeamsPage: React.FC = () => {
       await createTeamMutation.mutateAsync(duplicateData);
       toast.success('Team duplicated successfully!');
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error duplicating team:', err);
-      toast.error('Failed to duplicate team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to duplicate team. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
@@ -172,9 +177,10 @@ const HiringTeamsPage: React.FC = () => {
       });
       toast.success(`Team ${team.isDefault ? 'removed from' : 'set as'} default successfully!`);
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error toggling default status:', err);
-      toast.error('Failed to update default status. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update default status. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
@@ -191,9 +197,10 @@ const HiringTeamsPage: React.FC = () => {
       });
       toast.success(`Team ${newStatus === 'archived' ? 'archived' : 'restored'} successfully!`);
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error archiving team:', err);
-      toast.error('Failed to update team status. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to update team status. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
     }
@@ -227,15 +234,16 @@ const HiringTeamsPage: React.FC = () => {
 
       toast.success('Team data exported successfully!');
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error exporting team:', err);
-      toast.error('Failed to export team data. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to export team data. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
   const handleShareTeam = async (team: HiringTeam) => {
     try {
-      const shareUrl = `${window.location.origin}/dashboard/admin/hiring-teams/${team.id}`;
+      const shareUrl = `${window.location.origin}/admin/hiring-teams/${team.id}`;
       
       if (navigator.share) {
         await navigator.share({
@@ -250,9 +258,10 @@ const HiringTeamsPage: React.FC = () => {
         toast.success('Team link copied to clipboard!');
       }
       setActiveDropdown(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error sharing team:', err);
-      toast.error('Failed to share team. Please try again.');
+      const errorMessage = err?.response?.data?.message || 'Failed to share team. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -389,7 +398,7 @@ const HiringTeamsPage: React.FC = () => {
           <div className="flex items-center mb-2">
             {/* FIX: Use template literal for dynamic Link 'to' prop */}
             <Link
-              to={`/dashboard/admin/hiring-teams`}
+              to={`/admin/hiring-teams`}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               Hiring Teams
@@ -611,7 +620,7 @@ const HiringTeamsPage: React.FC = () => {
                             <div className="py-1">
                               {/* Primary Actions */}
                               <Link
-                                to={`/dashboard/admin/hiring-teams/${team.id}`}
+                                to={`/admin/hiring-teams/${team.id}`}
                                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                 onClick={() => setActiveDropdown(null)}
                               >
@@ -629,7 +638,7 @@ const HiringTeamsPage: React.FC = () => {
                                 Edit Team
                               </button>
                               <Link
-                                to={`/dashboard/admin/hiring-teams/${team.id}/members`}
+                                to={`/admin/hiring-teams/${team.id}/members`}
                                 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                 onClick={() => setActiveDropdown(null)}
                               >

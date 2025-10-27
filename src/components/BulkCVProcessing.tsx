@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Package, Upload, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Settings, Zap, Sparkles } from 'lucide-react';
 import { useCVProcessing } from '../hooks/useCVProcessing';
+import { useToast } from '../contexts/ToastContext';
+import ConfirmationDialog from './ConfirmationDialog';
 
 const BulkCVProcessing: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -12,9 +14,12 @@ const BulkCVProcessing: React.FC = () => {
   const [aiProcessingMode, setAiProcessingMode] = useState<'parallel' | 'sequential' | 'batch'>('parallel');
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [processingOptions, setProcessingOptions] = useState<any>(null);
+  const [showCreateAllConfirm, setShowCreateAllConfirm] = useState(false);
+  const [isCreatingAll, setIsCreatingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { processBulkCVs, createFromProcessed, loading, error } = useCVProcessing();
+  const { addToast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -23,7 +28,11 @@ const BulkCVProcessing: React.FC = () => {
       setProcessedResults(null);
       setProcessingStep('upload');
     } else if (file) {
-      alert('Please select a valid ZIP file');
+      addToast({
+        type: 'error',
+        title: 'Invalid File',
+        message: 'Please select a valid ZIP file'
+      });
     }
   };
 
@@ -50,8 +59,15 @@ const BulkCVProcessing: React.FC = () => {
         });
         setExpandedResults(expanded);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error processing bulk CVs:', err);
+      const errorMessage = err?.response?.data?.message || 'Failed to process bulk CVs. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Bulk Processing Failed',
+        message: errorMessage,
+        duration: 5000
+      });
     }
   };
 
@@ -88,8 +104,22 @@ const BulkCVProcessing: React.FC = () => {
         
         return updated;
       });
-    } catch (err) {
+
+      addToast({
+        type: 'success',
+        title: 'Candidate Created',
+        message: 'Candidate profile has been successfully created',
+        duration: 3000
+      });
+    } catch (err: any) {
       console.error('Error creating candidate:', err);
+      const errorMessage = err?.response?.data?.message || 'Failed to create candidate. Please try again.';
+      addToast({
+        type: 'error',
+        title: 'Creation Failed',
+        message: errorMessage,
+        duration: 5000
+      });
     }
   };
 
@@ -102,14 +132,23 @@ const BulkCVProcessing: React.FC = () => {
     );
     
     if (eligibleResults.length === 0) {
-      alert('No eligible candidates to create. All successful results have already been processed.');
+      addToast({
+        type: 'info',
+        title: 'No Candidates Available',
+        message: 'All successful results have already been processed.'
+      });
       return;
     }
     
-    const confirmMessage = `This will create ${eligibleResults.length} candidates from the processed CVs. Are you sure you want to continue?`;
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+    // Show confirmation dialog
+    setShowCreateAllConfirm(true);
+  };
+
+  const handleConfirmCreateAll = async () => {
+    if (!processedResults) return;
+    
+    setIsCreatingAll(true);
+    setShowCreateAllConfirm(false);
     
     let successCount = 0;
     let failureCount = 0;
@@ -121,7 +160,7 @@ const BulkCVProcessing: React.FC = () => {
         
         if (result.success && !result.candidateCreated && result.structuredData) {
           try {
-            console.log(`Creating candidate ${i + 1}/${eligibleResults.length}: ${result.filename}`);
+            console.log(`Creating candidate ${successCount + 1}: ${result.filename}`);
             await createFromProcessed(result.structuredData);
             
             // Mark as created
@@ -141,8 +180,15 @@ const BulkCVProcessing: React.FC = () => {
             if (i < processedResults.length - 1) {
               await new Promise(resolve => setTimeout(resolve, 200));
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error(`Error creating candidate for ${result.filename}:`, err);
+            const errorMessage = err?.response?.data?.message || 'Failed to create candidate';
+            addToast({
+              type: 'error',
+              title: 'Individual Creation Failed',
+              message: `${result.filename}: ${errorMessage}`,
+              duration: 4000
+            });
             failureCount++;
           }
         }
@@ -150,14 +196,28 @@ const BulkCVProcessing: React.FC = () => {
       
       // Show completion message
       if (successCount > 0) {
-        alert(`Successfully created ${successCount} candidates! ${failureCount > 0 ? `${failureCount} failed.` : ''}`);
+        addToast({
+          type: 'success',
+          title: 'Bulk Creation Complete',
+          message: `Successfully created ${successCount} candidates!${failureCount > 0 ? ` ${failureCount} failed.` : ''}`
+        });
       } else {
-        alert('No candidates were created. Please check the console for errors.');
+        addToast({
+          type: 'error',
+          title: 'Creation Failed',
+          message: 'No candidates were created. Please check the console for errors.'
+        });
       }
       
     } catch (err) {
       console.error('Error in bulk candidate creation:', err);
-      alert('An error occurred during bulk candidate creation. Please try again.');
+      addToast({
+        type: 'error',
+        title: 'Bulk Creation Error',
+        message: 'An error occurred during bulk candidate creation. Please try again.'
+      });
+    } finally {
+      setIsCreatingAll(false);
     }
   };
 
@@ -676,14 +736,14 @@ const BulkCVProcessing: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleCreateAllCandidates}
-                    disabled={loading}
+                    disabled={isCreatingAll}
                     className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      loading
+                      isCreatingAll
                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                         : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
                   >
-                    {loading ? (
+                    {isCreatingAll ? (
                       <>
                         <span className="animate-spin mr-2">⌛</span>
                         Creating All...
@@ -698,7 +758,7 @@ const BulkCVProcessing: React.FC = () => {
                 
                 <button
                   type="button"
-                  onClick={() => window.location.href = '/dashboard/candidates'}
+                  onClick={() => window.location.href = '/candidates'}
                   className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700"
                 >
                   View All Candidates
@@ -708,6 +768,19 @@ const BulkCVProcessing: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog for Create All */}
+      <ConfirmationDialog
+        isOpen={showCreateAllConfirm}
+        onClose={() => setShowCreateAllConfirm(false)}
+        onConfirm={handleConfirmCreateAll}
+        title="Create All Candidates"
+        message={`This will create ${processedResults?.filter(r => r.success && !r.candidateCreated).length || 0} candidates from the processed CVs. Are you sure you want to continue?`}
+        confirmText="Create All"
+        cancelText="Cancel"
+        loading={isCreatingAll}
+        variant="info"
+      />
     </div>
   );
 };

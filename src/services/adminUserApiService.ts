@@ -200,8 +200,16 @@ export class AdminUserApiService {
   }
 
   // Get all clients
-  static async getClients(): Promise<{ clients: Client[]; message: string }> {
-    const response = await apiClient.get('/clients');
+  static async getClients(params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: 'ASC' | 'DESC' }): Promise<{ clients: Client[]; total: number; page: number; limit: number; totalPages: number; message: string }> {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params?.sortOrder) searchParams.append('sortOrder', params.sortOrder);
+
+    const response = await apiClient.get(`/clients?${searchParams.toString()}`);
     return response.data;
   }
 

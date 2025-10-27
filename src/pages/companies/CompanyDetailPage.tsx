@@ -238,7 +238,7 @@ export const CompanyDetailPage: React.FC = () => {
     try {
       await deleteCompany.mutateAsync(company.id);
       toast.success('Company Deleted', 'Company has been successfully deleted.');
-      navigate('/dashboard/admin/companies');
+      navigate('/admin/companies');
       
       // Additional query invalidations for comprehensive cleanup
       queryClient.invalidateQueries({ queryKey: adminUserKeys.users() });

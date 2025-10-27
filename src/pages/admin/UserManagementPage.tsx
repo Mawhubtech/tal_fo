@@ -169,8 +169,9 @@ const UserManagementPage: React.FC = () => {
       ]);
       toast.success('User Created', 'New user has been created successfully.');
       setIsUserModalOpen(false);
-    } catch (error) {
-      toast.error('Creation Failed', 'Failed to create user. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to create user. Please try again.';
+      toast.error('Creation Failed', errorMessage);
     }
   };
 
@@ -189,8 +190,9 @@ const UserManagementPage: React.FC = () => {
       setIsUserModalOpen(false);
       setSelectedUser(null);
       setIsEditing(false);
-    } catch (error) {
-      toast.error('Update Failed', 'Failed to update user. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to update user. Please try again.';
+      toast.error('Update Failed', errorMessage);
     }
   };
 
@@ -265,8 +267,9 @@ const UserManagementPage: React.FC = () => {
       toast.success('User Archived', 'User has been archived successfully.');
       setIsDetailsModalOpen(false);
       setSelectedUser(null);
-    } catch (error) {
-      toast.error('Archive Failed', 'Failed to archive user. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to archive user. Please try again.';
+      toast.error('Archive Failed', errorMessage);
     }
   };
 
@@ -280,8 +283,9 @@ const UserManagementPage: React.FC = () => {
         queryClient.refetchQueries({ queryKey: adminUserKeys.stats() })
       ]);
       toast.success('User Restored', 'User has been restored successfully.');
-    } catch (error) {
-      toast.error('Restore Failed', 'Failed to restore user. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to restore user. Please try again.';
+      toast.error('Restore Failed', errorMessage);
     }
   };
 
@@ -295,8 +299,9 @@ const UserManagementPage: React.FC = () => {
         queryClient.refetchQueries({ queryKey: adminUserKeys.stats() })
       ]);
       toast.success('Status Updated', `User status has been changed to ${status}.`);
-    } catch (error) {
-      toast.error('Status Update Failed', 'Failed to update user status. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to update user status. Please try again.';
+      toast.error('Status Update Failed', errorMessage);
     }
   };
 
@@ -304,8 +309,9 @@ const UserManagementPage: React.FC = () => {
     try {
       await sendPasswordReset.mutateAsync(userId);
       toast.success('Password Reset Sent', 'Password reset email has been sent to the user.');
-    } catch (error) {
-      toast.error('Send Failed', 'Failed to send password reset email. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to send password reset email. Please try again.';
+      toast.error('Send Failed', errorMessage);
     }
   };
 
@@ -313,8 +319,9 @@ const UserManagementPage: React.FC = () => {
     try {
       await sendEmailVerification.mutateAsync(userId);
       toast.success('Verification Sent', 'Email verification has been sent to the user.');
-    } catch (error) {
-      toast.error('Send Failed', 'Failed to send email verification. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Failed to send email verification. Please try again.';
+      toast.error('Send Failed', errorMessage);
     }
   };
 
