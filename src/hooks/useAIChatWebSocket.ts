@@ -18,6 +18,11 @@ interface UseAIChatWebSocketResult {
   getChat: (chatId: string) => void;
   deleteChat: (chatId: string) => void;
   loadMoreCandidates: (chatId: string, query: string, currentPage: number) => void;
+  // Voice chat methods
+  startVoiceTranscription: (chatId: string) => void;
+  sendAudioChunk: (chatId: string, audioData: ArrayBuffer) => void;
+  stopVoiceTranscription: (chatId: string, submitTranscript?: boolean) => void;
+  // Event listeners
   onMessageReceived: (callback: (data: any) => void) => void;
   onAIChunk: (callback: (data: any) => void) => void;
   onAIComplete: (callback: (data: any) => void) => void;
@@ -32,6 +37,12 @@ interface UseAIChatWebSocketResult {
   onMatchingJobs: (callback: (data: any) => void) => void;
   onJobMatchResults: (callback: (data: any) => void) => void;
   onError: (callback: (data: any) => void) => void;
+  // Voice event listeners
+  onVoiceTranscriptionStarted: (callback: (data: any) => void) => void;
+  onVoiceTranscript: (callback: (data: any) => void) => void;
+  onVoiceTranscriptComplete: (callback: (data: any) => void) => void;
+  onVoiceTranscriptionStopped: (callback: (data: any) => void) => void;
+  onVoiceError: (callback: (data: any) => void) => void;
 }
 
 export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
@@ -55,6 +66,13 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
   const matchingJobsCallbackRef = useRef<((data: any) => void) | null>(null);
   const jobMatchResultsCallbackRef = useRef<((data: any) => void) | null>(null);
   const errorCallbackRef = useRef<((data: any) => void) | null>(null);
+  
+  // Voice callback refs
+  const voiceTranscriptionStartedCallbackRef = useRef<((data: any) => void) | null>(null);
+  const voiceTranscriptCallbackRef = useRef<((data: any) => void) | null>(null);
+  const voiceTranscriptCompleteCallbackRef = useRef<((data: any) => void) | null>(null);
+  const voiceTranscriptionStoppedCallbackRef = useRef<((data: any) => void) | null>(null);
+  const voiceErrorCallbackRef = useRef<((data: any) => void) | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -232,6 +250,43 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
       }
     });
 
+    // Voice event handlers
+    socket.on('voice_transcription_started', (data) => {
+      console.log('🎤 Voice transcription started:', data);
+      if (voiceTranscriptionStartedCallbackRef.current) {
+        voiceTranscriptionStartedCallbackRef.current(data);
+      }
+    });
+
+    socket.on('voice_transcript', (data) => {
+      console.log('📝 Voice transcript:', data);
+      if (voiceTranscriptCallbackRef.current) {
+        voiceTranscriptCallbackRef.current(data);
+      }
+    });
+
+    socket.on('voice_transcript_complete', (data) => {
+      console.log('✅ Voice transcript complete:', data);
+      if (voiceTranscriptCompleteCallbackRef.current) {
+        voiceTranscriptCompleteCallbackRef.current(data);
+      }
+    });
+
+    socket.on('voice_transcription_stopped', (data) => {
+      console.log('🛑 Voice transcription stopped:', data);
+      if (voiceTranscriptionStoppedCallbackRef.current) {
+        voiceTranscriptionStoppedCallbackRef.current(data);
+      }
+    });
+
+    socket.on('voice_error', (data) => {
+      console.error('❌ Voice error:', data);
+      setError(data.message);
+      if (voiceErrorCallbackRef.current) {
+        voiceErrorCallbackRef.current(data);
+      }
+    });
+
     // Cleanup on unmount
     return () => {
       socket.disconnect();
@@ -354,6 +409,56 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     jobMatchResultsCallbackRef.current = callback;
   }, []);
 
+  // Voice methods
+  const startVoiceTranscription = useCallback((chatId: string) => {
+    if (!socketRef.current || !isConnected) {
+      setError('Not connected to WebSocket');
+      return;
+    }
+
+    console.log('🎤 Starting voice transcription for chat:', chatId);
+    socketRef.current.emit('start_voice_transcription', { chatId });
+  }, [isConnected]);
+
+  const sendAudioChunk = useCallback((chatId: string, audioData: ArrayBuffer) => {
+    if (!socketRef.current || !isConnected) {
+      return;
+    }
+
+    socketRef.current.emit('audio_chunk', { audioData, chatId });
+  }, [isConnected]);
+
+  const stopVoiceTranscription = useCallback((chatId: string, submitTranscript: boolean = true) => {
+    if (!socketRef.current || !isConnected) {
+      setError('Not connected to WebSocket');
+      return;
+    }
+
+    console.log('🛑 Stopping voice transcription for chat:', chatId);
+    socketRef.current.emit('stop_voice_transcription', { chatId, submitTranscript });
+  }, [isConnected]);
+
+  // Voice event callbacks
+  const onVoiceTranscriptionStarted = useCallback((callback: (data: any) => void) => {
+    voiceTranscriptionStartedCallbackRef.current = callback;
+  }, []);
+
+  const onVoiceTranscript = useCallback((callback: (data: any) => void) => {
+    voiceTranscriptCallbackRef.current = callback;
+  }, []);
+
+  const onVoiceTranscriptComplete = useCallback((callback: (data: any) => void) => {
+    voiceTranscriptCompleteCallbackRef.current = callback;
+  }, []);
+
+  const onVoiceTranscriptionStopped = useCallback((callback: (data: any) => void) => {
+    voiceTranscriptionStoppedCallbackRef.current = callback;
+  }, []);
+
+  const onVoiceError = useCallback((callback: (data: any) => void) => {
+    voiceErrorCallbackRef.current = callback;
+  }, []);
+
   return {
     isConnected,
     isStreaming,
@@ -378,5 +483,15 @@ export const useAIChatWebSocket = (): UseAIChatWebSocketResult => {
     onMatchingJobs,
     onJobMatchResults,
     onError,
+    // Voice methods
+    startVoiceTranscription,
+    sendAudioChunk,
+    stopVoiceTranscription,
+    // Voice event callbacks
+    onVoiceTranscriptionStarted,
+    onVoiceTranscript,
+    onVoiceTranscriptComplete,
+    onVoiceTranscriptionStopped,
+    onVoiceError,
   };
 };

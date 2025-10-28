@@ -12,7 +12,9 @@ import {
   WifiOff,
   Maximize2,
   Minimize2,
-  Loader2
+  Loader2,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useAIChatWebSocket } from '../../hooks/useAIChatWebSocket';
@@ -24,6 +26,8 @@ import { useCreateJobApplication } from '../../hooks/useJobApplications';
 import { useShortlistExternalCandidate } from '../../hooks/useShortlistExternal';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useVoiceChat } from '../../hooks/useVoiceChat';
+import { MicrophoneIcon } from '../icons/MicrophoneIcon';
 
 interface ChatMessage {
   id: string;
@@ -84,11 +88,203 @@ const ChatbotWidget: React.FC = () => {
   // Load more state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
+  // Voice/TTS state
+  const [isTTSEnabled, setIsTTSEnabled] = useState(true); // Enable TTS by default
+  const [isVoiceMode, setIsVoiceMode] = useState(false); // Voice mode - only play TTS when this is on
+  const [isTTSLoading, setIsTTSLoading] = useState(false); // Track TTS loading state
+  const [pendingAIMessage, setPendingAIMessage] = useState<string | null>(null); // Store AI message until voice starts
+  
   // Hooks
   const { user } = useAuthContext();
   const { addToast } = useToast();
   const createJobApplicationMutation = useCreateJobApplication();
   const shortlistExternalMutation = useShortlistExternalCandidate();
+  
+  // Voice chat hook
+  const {
+    isRecording,
+    isPlaying,
+    isSpeaking,
+    toggleRecording,
+    playAudio,
+    stopAudio,
+  } = useVoiceChat({
+    onTranscript: (text, isFinal) => {
+      if (isFinal) {
+        // Send the final transcript as a message
+        console.log('📝 Final transcript:', text);
+      } else {
+        // Show interim transcript in UI
+        console.log('📝 Interim transcript:', text);
+      }
+    },
+    onAudioData: (audioData) => {
+      // Send audio data to backend via WebSocket
+      if (activeChatId) {
+        console.log('🎤 Sending audio chunk:', audioData.byteLength, 'bytes to chat:', activeChatId);
+        sendAudioChunk(activeChatId, audioData);
+      } else {
+        console.warn('⚠️ No active chat ID, cannot send audio chunk');
+      }
+    },
+    onError: (error) => {
+      console.error('Voice chat error:', error);
+      addToast({
+        type: 'error',
+        title: 'Voice Error',
+        message: error.message
+      });
+    },
+    onPlaybackStart: () => {
+      console.log('🔊 Playback started - showing pending message');
+      // When audio starts playing, show the pending AI message
+      if (pendingAIMessage) {
+        setChatMessages(prev => {
+          // Remove loading messages
+          let messages = prev.filter(msg => {
+            const isLoadingById = loadingMessageIdRef.current && msg.id === loadingMessageIdRef.current;
+            const isLoadingByPrefix = msg.id.startsWith('loading-');
+            const isLoadingByContent = msg.content === 'Thinking...' || msg.content.includes('Searching') || msg.content.includes('Analyzing');
+            return !(isLoadingById || (isLoadingByPrefix && isLoadingByContent));
+          });
+
+          const streamingMsg = messages.find(msg => msg.id.startsWith('streaming-'));
+          
+          if (streamingMsg) {
+            // Finalize streaming message
+            return messages.map(msg => 
+              msg.id === streamingMsg.id
+                ? { ...msg, id: `ai-${Date.now()}` }
+                : msg
+            );
+          } else {
+            // Add the pending message
+            return [...messages, {
+              id: `ai-${Date.now()}`,
+              content: pendingAIMessage,
+              sender: 'ai',
+              timestamp: new Date()
+            }];
+          }
+        });
+        
+        // Clear pending message and loading ref
+        setPendingAIMessage(null);
+        if (loadingMessageIdRef.current) {
+          loadingMessageIdRef.current = null;
+        }
+      }
+    }
+  });
+  
+  // Text-to-Speech function
+  /**
+   * Strip markdown formatting from text for TTS
+   * Converts markdown to plain text so it sounds natural when spoken
+   */
+  const stripMarkdown = (text: string): string => {
+    return text
+      // Remove bold/italic (**text**, *text*, __text__, _text_)
+      .replace(/(\*\*|__)(.*?)\1/g, '$2')
+      .replace(/(\*|_)(.*?)\1/g, '$2')
+      // Remove headers (# Header)
+      .replace(/^#{1,6}\s+/gm, '')
+      // Remove links [text](url) -> text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      // Remove inline code `code`
+      .replace(/`([^`]+)`/g, '$1')
+      // Remove code blocks ```code```
+      .replace(/```[\s\S]*?```/g, '')
+      // Remove bullet points (-, *, +)
+      .replace(/^[\s]*[-*+]\s+/gm, '')
+      // Remove numbered lists (1., 2., etc)
+      .replace(/^[\s]*\d+\.\s+/gm, '')
+      // Remove horizontal rules (---, ***, ___)
+      .replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '')
+      // Remove blockquotes (> text)
+      .replace(/^>\s+/gm, '')
+      // Clean up extra whitespace
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
+  const speakText = async (text: string) => {
+    // Only play TTS if voice mode is enabled
+    if (!isVoiceMode || !text.trim()) {
+      return;
+    }
+
+    try {
+      setIsTTSLoading(true); // Show loading immediately
+      console.log('🔊 TTS loading started...');
+
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        console.warn('No auth token for TTS');
+        setIsTTSLoading(false);
+        return;
+      }
+
+      // Strip markdown formatting before sending to TTS
+      const plainText = stripMarkdown(text);
+      console.log('🔊 Original text length:', text.length);
+      console.log('🔊 Plain text length:', plainText.length);
+
+      // Call TTS endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}/ai/chats/tts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          text: plainText,
+          voice: 'aura-asteria-en', // Default female voice
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`TTS request failed: ${response.status}`);
+      }
+
+      // Convert response to ArrayBuffer
+      const audioData = await response.arrayBuffer();
+
+      console.log(`🔊 Playing TTS audio: ${audioData.byteLength} bytes`);
+      setIsTTSLoading(false); // Audio ready, about to play
+
+      // Play audio using voice chat hook (linear16 PCM format at 24kHz)
+      await playAudio(audioData, 'linear16', 24000);
+      
+      console.log('✅ TTS playback completed');
+    } catch (error) {
+      console.error('❌ TTS error:', error);
+      setIsTTSLoading(false);
+      // Don't show toast for TTS errors to avoid interrupting the user
+    }
+  };
+  
+  // Custom voice recording handler that syncs with WebSocket
+  const handleVoiceRecording = () => {
+    if (!activeChatId) {
+      addToast({
+        type: 'error',
+        title: 'No Active Chat',
+        message: 'Please create or select a chat first'
+      });
+      return;
+    }
+
+    if (!isRecording) {
+      // Start recording and WebSocket transcription
+      startVoiceTranscription(activeChatId);
+      toggleRecording();
+    } else {
+      // Stop recording and submit transcript
+      toggleRecording();
+      stopVoiceTranscription(activeChatId, true);
+    }
+  };
   
   // Track current intent for better loading messages
   const [currentIntent, setCurrentIntent] = useState<string | null>(null);
@@ -145,6 +341,13 @@ const ChatbotWidget: React.FC = () => {
     onMatchingJobs,
     onJobMatchResults,
     onError,
+    // Voice methods
+    startVoiceTranscription,
+    sendAudioChunk,
+    stopVoiceTranscription,
+    onVoiceTranscript,
+    onVoiceTranscriptComplete,
+    onVoiceError,
   } = useAIChatWebSocket();
   
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -153,50 +356,6 @@ const ChatbotWidget: React.FC = () => {
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const pendingMessageRef = useRef<string | null>(null);
   const loadingMessageIdRef = useRef<string | null>(null);
-
-  // System prompt for the chatbot
-  const SYSTEM_PROMPT = `You are the TAL Platform AI Assistant. TAL (Talent Acquisition Labs) is a comprehensive talent acquisition and recruitment platform designed for organizations, recruiters, and job seekers.
-
-**Platform Overview:**
-TAL provides end-to-end recruitment solutions including candidate sourcing, applicant tracking (ATS), job board integrations, recruitment pipeline management, and collaborative hiring workflows.
-
-**Key Features & Modules:**
-• **Recruitment Management**: Create and manage job postings, track candidates through customizable pipelines, and collaborate with hiring teams
-• **Multi-Platform Job Board Integration**: Automatically post jobs to LinkedIn, Indeed, Glassdoor, and other job boards with analytics tracking
-• **Candidate Sourcing**: Advanced candidate search with AI-powered matching, LinkedIn profile extraction via Chrome extension
-• **Applicant Tracking System (ATS)**: Complete pipeline management with stages, tasks, interviews, and team collaboration
-• **Client & Organization Management**: Multi-tenant system supporting internal teams, external clients, and recruitment agencies
-• **Email Automation**: Candidate outreach sequences, automated communications, and follow-up campaigns
-• **Analytics & Reporting**: Performance metrics, response rates, hiring analytics, and recruitment KPIs
-• **Document Processing**: AI-powered resume parsing and candidate profile extraction
-• **Role-Based Permissions**: Granular access control for different user types (recruiters, hiring managers, admins)
-
-**User Types:**
-• Job Seekers: Browse jobs, apply, manage profiles, track applications
-• Internal HR: Full recruitment features for organization's internal hiring
-• External HR/Recruiters: Client management plus recruitment tools
-• Hiring Team Members: Participate in hiring decisions and candidate evaluation
-• Admins: System configuration and user management
-
-**Common Support Topics:**
-1. **Account & Access**: Login issues, password resets, permission problems, team invitations
-2. **Job Management**: Creating jobs, publishing to job boards, managing applications, pipeline setup
-3. **Candidate Management**: Adding candidates, profile management, pipeline movement, communication
-4. **Job Board Integration**: Connecting external job boards (LinkedIn, Indeed, Glassdoor), posting issues, analytics
-5. **Team Collaboration**: Hiring team setup, task management, comment system, interview scheduling
-6. **Technical Issues**: Browser compatibility, upload problems, sync issues, performance
-7. **Billing & Organizations**: Account setup, user limits, feature access, subscription questions
-
-**IMPORTANT RESTRICTIONS & GUIDELINES:**
-• **ONLY answer questions related to TAL Platform** - Do NOT provide assistance with other recruitment tools, platforms, or general HR/recruitment advice unrelated to TAL
-• **Stay in scope** - If asked about competitors, other ATS systems, or non-TAL tools, politely redirect to TAL-specific help
-• **Technical limitations** - For complex technical issues, account access problems, billing questions, or system bugs, direct users to contact support
-• **No personal advice** - Do not provide legal, HR policy, or personal career advice - focus only on how to use TAL Platform features
-• **Unknown features** - If asked about TAL features you're unsure about, admit uncertainty and suggest contacting support rather than guessing
-• **Professional tone** - Keep responses helpful, concise, and focused on TAL Platform functionality
-
-**Response Format:**
-When helping users, be specific about TAL's features and provide actionable solutions. If asked about topics outside TAL Platform scope or if you encounter complex technical issues, direct them to contact support for detailed assistance.`;
 
   // Cycle through loading messages when streaming
   useEffect(() => {
@@ -342,10 +501,33 @@ When helping users, be specific about TAL's features and provide actionable solu
 
     // Handle AI response completion
     onAIComplete((data) => {
-
+      console.log('🤖 AI response complete:', { 
+        fullResponse: data.fullResponse?.substring(0, 100),
+        isTTSEnabled,
+        hasFullResponse: !!data.fullResponse
+      });
 
       setCurrentStreamingMessage('');
       setCurrentIntent(null); // Clear intent when workflow completes
+      
+      // If Voice Mode AND TTS is enabled, hold the message and start TTS
+      if (isVoiceMode && data.fullResponse) {
+        console.log('🔊 Voice Mode enabled - holding message until voice starts...');
+        // Store the message to show when voice starts
+        setPendingAIMessage(data.fullResponse);
+        // Start TTS immediately
+        speakText(data.fullResponse).catch(err => {
+          console.error('TTS playback error:', err);
+          // On error, show the message anyway
+          setPendingAIMessage(null);
+        });
+        // Don't process the message display yet - wait for voice to start
+        return;
+      } else if (!data.fullResponse) {
+        console.warn('⚠️ No fullResponse in AI complete event');
+      } else {
+        console.log('🔇 Voice Mode disabled, showing message immediately');
+      }
       
       // Remove any loading message and finalize streaming message
       setChatMessages(prev => {
@@ -566,7 +748,38 @@ When helping users, be specific about TAL's features and provide actionable solu
       });
     });
 
-  }, [onMessageReceived, onAIChunk, onAIComplete, onIntentDetected, onError, onSearchingCandidates, onSearchResults, onMatchingJobs, onJobMatchResults]);
+  }, [onMessageReceived, onAIChunk, onAIComplete, onIntentDetected, onError, onSearchingCandidates, onSearchResults, onMatchingJobs, onJobMatchResults, isTTSEnabled, speakText]);
+
+  // Voice event handlers
+  useEffect(() => {
+    // Handle voice transcripts
+    onVoiceTranscript((data) => {
+      console.log('📝 Voice transcript received:', data);
+      // TODO: Show interim transcript in UI
+      // For now, just log it
+    });
+
+    // Handle complete transcript
+    onVoiceTranscriptComplete((data) => {
+      console.log('✅ Voice transcript complete:', data.text);
+      console.log('📤 Transcript will be submitted to AI automatically');
+      addToast({
+        type: 'success',
+        title: 'Message Sent',
+        message: 'Your voice message has been sent to AI'
+      });
+    });
+
+    // Handle voice errors
+    onVoiceError((data) => {
+      console.error('❌ Voice error:', data);
+      addToast({
+        type: 'error',
+        title: 'Voice Error',
+        message: data.message || 'An error occurred during voice transcription'
+      });
+    });
+  }, [onVoiceTranscript, onVoiceTranscriptComplete, onVoiceError, addToast]);
 
   // Load chat history when activeChatId changes
   useEffect(() => {
@@ -973,7 +1186,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
       // Create chat with first message as title
       createChat({
         title: currentInput.slice(0, 30) + (currentInput.length > 30 ? '...' : ''),
-        systemPrompt: SYSTEM_PROMPT,
+        // No system prompt - backend will use default
       });
       
       return;
@@ -1509,17 +1722,48 @@ Please provide a natural, conversational summary highlighting their strengths, e
               </div>
               <div className="flex items-center space-x-2">
                 {!isMinimized && (
-                  <button
-                    onClick={() => setIsFullScreen(!isFullScreen)}
-                    className="p-1 hover:bg-purple-700 rounded transition-colors"
-                    title={isFullScreen ? "Exit fullscreen" : "Fullscreen"}
-                  >
-                    {isFullScreen ? (
-                      <Minimize2 className="w-5 h-5" />
-                    ) : (
-                      <Maximize2 className="w-5 h-5" />
-                    )}
-                  </button>
+                  <>
+                    {/* Voice Mode Toggle */}
+                    <button
+                      onClick={() => {
+                        setIsVoiceMode(!isVoiceMode);
+                        if (!isVoiceMode) {
+                          addToast({
+                            type: 'success',
+                            title: 'Voice Mode Enabled',
+                            message: 'AI responses will be spoken aloud'
+                          });
+                        } else {
+                          stopAudio(); // Stop any playing audio
+                          setPendingAIMessage(null); // Clear any pending messages
+                        }
+                      }}
+                      className={`p-1 rounded transition-colors ${
+                        isVoiceMode 
+                          ? 'bg-purple-700 hover:bg-purple-800' 
+                          : 'hover:bg-purple-700'
+                      }`}
+                      title={isVoiceMode ? "Voice Mode: ON (Click to disable)" : "Voice Mode: OFF (Click to enable)"}
+                    >
+                      {isVoiceMode ? (
+                        <Volume2 className="w-5 h-5" />
+                      ) : (
+                        <VolumeX className="w-5 h-5" />
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={() => setIsFullScreen(!isFullScreen)}
+                      className="p-1 hover:bg-purple-700 rounded transition-colors"
+                      title={isFullScreen ? "Exit fullscreen" : "Fullscreen"}
+                    >
+                      {isFullScreen ? (
+                        <Minimize2 className="w-5 h-5" />
+                      ) : (
+                        <Maximize2 className="w-5 h-5" />
+                      )}
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => {
@@ -1830,12 +2074,75 @@ Please provide a natural, conversational summary highlighting their strengths, e
                       <span>Disconnected from server. Reconnecting...</span>
                     </div>
                   )}
+                  
+                  {/* Voice status indicator */}
+                  {(isRecording || isSpeaking || isTTSLoading) && (
+                    <div className="mb-2 p-2 bg-purple-50 border border-purple-200 rounded text-sm text-purple-700 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {isRecording && (
+                          <>
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            <span>Listening...</span>
+                          </>
+                        )}
+                        {isTTSLoading && !isRecording && (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Preparing voice...</span>
+                          </>
+                        )}
+                        {isSpeaking && !isRecording && !isTTSLoading && (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>AI is speaking...</span>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Stop button when AI is speaking or loading */}
+                      {(isSpeaking || isTTSLoading) && !isRecording && (
+                        <button
+                          onClick={() => {
+                            stopAudio();
+                            setIsTTSLoading(false);
+                            setPendingAIMessage(null);
+                            addToast({
+                              type: 'info',
+                              title: 'Voice Stopped',
+                              message: 'AI voice playback stopped'
+                            });
+                          }}
+                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors flex items-center space-x-1"
+                          title="Stop AI voice"
+                        >
+                          <X className="w-3 h-3" />
+                          <span>Stop</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
                   <form onSubmit={handleChatSubmit} className="flex space-x-2">
+                    {/* Voice control button */}
+                    <button
+                      type="button"
+                      onClick={handleVoiceRecording}
+                      disabled={!isConnected || isSpeaking || !activeChatId}
+                      className={`px-3 py-2 rounded-lg transition-all flex items-center justify-center ${
+                        isRecording
+                          ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      title={isRecording ? 'Stop recording' : 'Start voice chat'}
+                    >
+                      <MicrophoneIcon isRecording={isRecording} className="w-5 h-5" />
+                    </button>
+                    
                     <input
                       type="text"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Type your message..."
+                      placeholder={isRecording ? "Listening... (or type your message)" : "Type your message..."}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
                       disabled={isStreaming || !isConnected}
                     />
