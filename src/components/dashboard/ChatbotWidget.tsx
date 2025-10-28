@@ -1493,7 +1493,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
   };
 
   // Handle add to database (without job)
-  const handleAddToDatabase = async () => {
+  const handleAddToDatabase = async (categoryIds?: string[]) => {
     if (!selectedCandidateForShortlist) return;
 
     try {
@@ -1540,6 +1540,21 @@ Please provide a natural, conversational summary highlighting their strengths, e
       });
 
       if (shortlistResult.success) {
+        // If categories were selected, assign them to the newly created candidate
+        if (categoryIds && categoryIds.length > 0 && shortlistResult.candidateId) {
+          try {
+            const { categoryApiService } = await import('../../services/categoryApiService');
+            await categoryApiService.assignCategoriesToCandidate(
+              shortlistResult.candidateId,
+              { categoryIds }
+            );
+            console.log('[ChatbotWidget] Categories assigned successfully to new candidate');
+          } catch (categoryError) {
+            console.error('[ChatbotWidget] Failed to assign categories:', categoryError);
+            // Don't fail the whole operation if category assignment fails
+          }
+        }
+
         addToast({
           type: 'success',
           title: 'Candidate Added to Database',
@@ -1547,6 +1562,20 @@ Please provide a natural, conversational summary highlighting their strengths, e
           duration: 3000
         });
       } else if (shortlistResult.existingCandidateId) {
+        // If candidate already exists, still try to assign categories if provided
+        if (categoryIds && categoryIds.length > 0) {
+          try {
+            const { categoryApiService } = await import('../../services/categoryApiService');
+            await categoryApiService.assignCategoriesToCandidate(
+              shortlistResult.existingCandidateId,
+              { categoryIds }
+            );
+            console.log('[ChatbotWidget] Categories assigned to existing candidate');
+          } catch (categoryError) {
+            console.error('[ChatbotWidget] Failed to assign categories:', categoryError);
+          }
+        }
+
         addToast({
           type: 'info',
           title: 'Candidate Already Exists',

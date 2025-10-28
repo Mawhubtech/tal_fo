@@ -228,61 +228,61 @@ const CategoryManagementModal: React.FC<CategoryManagementModalProps> = ({ isOpe
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {categories.map((category) => {
                       const candidateCount = getCandidateCount(category.id);
                       return (
                         <div
                           key={category.id}
-                          className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
+                          className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
                         >
                           {/* Color Badge */}
                           <div
-                            className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                            className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: category.color || '#9CA3AF' }}
                           >
-                            <Tag className="w-6 h-6 text-white" />
+                            <Tag className="w-4 h-4 text-white" />
                           </div>
 
                           {/* Category Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-gray-900">
+                              <h3 className="text-sm font-semibold text-gray-900">
                                 {category.name}
                               </h3>
                               {!category.isActive && (
-                                <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                                <span className="px-1.5 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded">
                                   Inactive
                                 </span>
                               )}
                             </div>
                             {category.description && (
-                              <p className="text-sm text-gray-600 mt-1">
+                              <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">
                                 {category.description}
                               </p>
                             )}
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-[10px] text-gray-500 mt-1">
                               {candidateCount} candidate{candidateCount !== 1 ? 's' : ''}
                             </p>
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-1 flex-shrink-0">
                             <button
                               onClick={() => handleEdit(category)}
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                              className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
                               title="Edit category"
                             >
-                              <Edit2 className="w-4 h-4 text-gray-600" />
+                              <Edit2 className="w-3.5 h-3.5 text-gray-600" />
                             </button>
                             <button
                               onClick={() => handleDelete(category)}
-                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1.5 hover:bg-red-50 rounded-md transition-colors"
                               title="Delete category"
                               disabled={candidateCount > 0}
                             >
                               <Trash2
-                                className={`w-4 h-4 ${
+                                className={`w-3.5 h-3.5 ${
                                   candidateCount > 0
                                     ? 'text-gray-300'
                                     : 'text-red-600'
