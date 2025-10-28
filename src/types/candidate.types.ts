@@ -3,6 +3,41 @@
  * Based on backend DTOs and entities
  */
 
+// Candidate Category types
+export interface CandidateCategory {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCandidateCategoryDto {
+  name: string;
+  description?: string;
+  color?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateCandidateCategoryDto {
+  name?: string;
+  description?: string;
+  color?: string;
+  isActive?: boolean;
+}
+
+export interface AssignCandidateCategoriesDto {
+  categoryIds: string[];
+}
+
+export interface CategoryStats {
+  categoryId: string;
+  categoryName: string;
+  candidateCount: number;
+}
+
 export interface CreatePersonalInfoDto {
   fullName: string;
   firstName?: string;

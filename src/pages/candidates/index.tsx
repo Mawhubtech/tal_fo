@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2, Loader2, Linkedin, RefreshCw } from 'lucide-react';
+import { Search, MapPin, Mail, Phone, Download, Plus, Upload, MessageSquare, UserCheck, Eye, ChevronDown, FileText, Home, ChevronRight, SearchCheckIcon, CheckCircle, XCircle, Clock, Edit, Trash2, Loader2, Linkedin, RefreshCw, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProfileSidePanel, { type PanelState, type UserStructuredData } from '../../components/ProfileSidePanel';
 import AddCandidateModal from '../../components/AddCandidateModal';
 import BulkImportModal from '../../components/BulkImportModal';
 import JobSelectionModal from '../../components/JobSelectionModal';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
+import CategoryManagementModal from '../../components/CategoryManagementModal';
+import CategoryFilter from '../../components/CategoryFilter';
+import CategoryAssignment from '../../components/CategoryAssignment';
 import { CreateCandidateDto } from '../../types/candidate.types';
 import { useCandidates, useCandidate, useCandidateStats, useUpdateCandidateStatus, useCreateCandidate, useUpdateCandidate, useDeleteCandidate } from '../../hooks/useCandidates';
 import { useCreateJobApplicationWithPipeline } from '../../hooks/useJobApplications';
@@ -66,6 +69,7 @@ const CandidatesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   // State for the profile side panel
@@ -90,6 +94,9 @@ const CandidatesPage: React.FC = () => {
   const [isShortlisting, setIsShortlisting] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
 
+  // State for category management modal
+  const [isCategoryManagementOpen, setIsCategoryManagementOpen] = useState(false);
+
   // React Query hooks for data fetching
   const candidatesQuery = useCandidates({
     page: currentPage,
@@ -97,6 +104,7 @@ const CandidatesPage: React.FC = () => {
     search: searchTerm || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     experienceLevel: experienceFilter !== 'all' ? experienceFilter : undefined,
+    categoryIds: categoryFilter.length > 0 ? categoryFilter : undefined,
   });
 
   const statsQuery = useCandidateStats(false);
@@ -674,10 +682,24 @@ const CandidatesPage: React.FC = () => {
                   <option value="mid">Mid (3-5 years)</option>
                   <option value="senior">Senior (5+ years)</option>
                 </select>
+                <CategoryFilter
+                  selectedCategoryIds={categoryFilter}
+                  onCategoryChange={setCategoryFilter}
+                />
               </div>
               
               {/* Action buttons section - always in a row */}
               <div className="flex flex-nowrap gap-1 sm:gap-2">
+                {isUserSuperAdmin && (
+                  <button 
+                    title="Manage Categories"
+                    className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-purple-600 rounded-lg hover:bg-purple-50 text-purple-700 text-xs sm:text-sm"
+                    onClick={() => setIsCategoryManagementOpen(true)}
+                  >
+                    <Tag className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Categories</span>
+                  </button>
+                )}
                 <button 
                   title="Refresh candidate data"
                   className="flex items-center justify-center px-2 sm:px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-xs sm:text-sm transition-all"
@@ -751,6 +773,9 @@ const CandidatesPage: React.FC = () => {
                     </th>
                     <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[70px] sm:w-[80px]">
                       Status
+                    </th>
+                    <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[110px] sm:w-[120px]">
+                      Categories
                     </th>
                     <th className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider w-[90px] sm:w-[100px]">
                       Skills
@@ -860,6 +885,15 @@ const CandidatesPage: React.FC = () => {
                           {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
                         </span>
                       </td>                      
+					  <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3">
+                        <div className="flex flex-wrap gap-0.5 sm:gap-1">
+                          {/* Category badges */}
+                          <CategoryAssignment 
+                            candidateId={candidate.id}
+                            onAssignmentChange={() => candidatesQuery.refetch()}
+                          />
+                        </div>
+                      </td>
 					  <td className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3">
                         <div className="flex flex-wrap gap-0.5 sm:gap-1">
                           {candidate.skills && Array.isArray(candidate.skills) && candidate.skills.slice(0, 2).map((skill: string, index: number) => (
@@ -1157,6 +1191,14 @@ const CandidatesPage: React.FC = () => {
         isLoading={isShortlisting || createJobApplicationMutation.isPending}
         showAddToDatabase={false}
       />
+
+      {/* Category Management Modal (Super Admin Only) */}
+      {isUserSuperAdmin && (
+        <CategoryManagementModal
+          isOpen={isCategoryManagementOpen}
+          onClose={() => setIsCategoryManagementOpen(false)}
+        />
+      )}
     </React.Fragment>
   );
 };

@@ -25,6 +25,7 @@ export interface CandidateQueryParams {
   certifications?: string[]; // Frontend uses array, gets converted to comma-separated string
   awards?: string[]; // Frontend uses array, gets converted to comma-separated string
   languages?: string[]; // Frontend uses array, gets converted to comma-separated string
+  categoryIds?: string[]; // Category filter for candidates
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
   includeJobseekers?: boolean; // Include candidates from jobseeker portal (no company)
@@ -73,6 +74,11 @@ export const candidatesService = {  // Get candidates with filtering and paginat
       // Transform languages array
       if (params.languages && Array.isArray(params.languages) && params.languages.length > 0) {
         transformedParams.languages = params.languages.join(',') as any;
+      }
+
+      // Transform categoryIds array
+      if (params.categoryIds && Array.isArray(params.categoryIds) && params.categoryIds.length > 0) {
+        transformedParams.categoryIds = params.categoryIds.join(',') as any;
       }
       
       console.log('Transformed params for API:', transformedParams);
