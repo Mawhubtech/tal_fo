@@ -11,6 +11,7 @@ interface PipelineListViewProps {
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
   onCandidateUpdate?: (candidate: Candidate) => void;
+  sortBy?: 'date-desc' | 'date-asc' | 'score-desc' | 'score-asc';
 }
 
 // Star Rating Component
@@ -85,7 +86,8 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
   onCandidateClick,
   onCandidateStageChange,
   onCandidateRemove,
-  onCandidateUpdate
+  onCandidateUpdate,
+  sortBy = 'date-desc'
 }) => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,10 +96,9 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
   // Track which candidate's rating is being updated
   const [updatingRatingId, setUpdatingRatingId] = useState<string | null>(null);
   
-  // Sort candidates by applied date (most recent first)
-  const sortedCandidates = [...candidates].sort((a, b) => {
-    return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
-  });
+  // Don't re-sort here - candidates are already sorted by PipelineTab based on sortBy prop
+  // Just use the candidates as they come in
+  const sortedCandidates = candidates;
   
   // Calculate pagination
   const totalPages = Math.ceil(sortedCandidates.length / itemsPerPage);
@@ -388,7 +389,12 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
               Showing {startIndex + 1}-{Math.min(endIndex, sortedCandidates.length)} of {sortedCandidates.length} candidates
             </p>
             <p className="text-xs text-gray-500">
-              Sorted by: Most Recent First
+              Sorted by: {
+                sortBy === 'date-desc' ? 'Date: Newest First' :
+                sortBy === 'date-asc' ? 'Date: Oldest First' :
+                sortBy === 'score-desc' ? 'Rating: Highest First' :
+                'Rating: Lowest First'
+              }
             </p>
           </div>
           <div className="flex gap-2">

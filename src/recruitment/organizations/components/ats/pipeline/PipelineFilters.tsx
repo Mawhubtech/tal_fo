@@ -7,8 +7,8 @@ interface PipelineFiltersProps {
   onSearchChange: (query: string) => void;
   selectedStage: string;
   onStageChange: (stage: string) => void;
-  sortBy: 'date' | 'score';
-  onSortChange: (sort: 'date' | 'score') => void;
+  sortBy: 'date-desc' | 'date-asc' | 'score-desc' | 'score-asc';
+  onSortChange: (sort: 'date-desc' | 'date-asc' | 'score-desc' | 'score-asc') => void;
   pipeline?: Pipeline | null;
 }
 
@@ -63,10 +63,12 @@ export const PipelineFilters: React.FC<PipelineFiltersProps> = ({
           <select
             className="w-full py-2 px-3 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none"
             value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as 'date' | 'score')}
+            onChange={(e) => onSortChange(e.target.value as 'date-desc' | 'date-asc' | 'score-desc' | 'score-asc')}
           >
-            <option value="date">Sort by Date</option>
-            <option value="score">Sort by Score</option>
+            <option value="date-desc">Date: Newest First</option>
+            <option value="date-asc">Date: Oldest First</option>
+            <option value="score-desc">Rating: Highest First</option>
+            <option value="score-asc">Rating: Lowest First</option>
           </select>
         </div>
       </div>
