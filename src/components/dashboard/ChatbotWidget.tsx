@@ -18,7 +18,12 @@ import ReactMarkdown from 'react-markdown';
 import { useAIChatWebSocket } from '../../hooks/useAIChatWebSocket';
 import { CandidateCard } from '../CandidateCard';
 import SourcingProfileSidePanel from '../../sourcing/outreach/components/SourcingProfileSidePanel';
+import JobSelectionModal from '../JobSelectionModal';
 import { searchApiService } from '../../services/searchApiService';
+import { useCreateJobApplication } from '../../hooks/useJobApplications';
+import { useShortlistExternalCandidate } from '../../hooks/useShortlistExternal';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface ChatMessage {
   id: string;
@@ -71,8 +76,19 @@ const ChatbotWidget: React.FC = () => {
   const [selectedUserDataForPanel, setSelectedUserDataForPanel] = useState<any>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   
+  // Shortlist modal state
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [selectedCandidateForShortlist, setSelectedCandidateForShortlist] = useState<any>(null);
+  const [isShortlisting, setIsShortlisting] = useState(false);
+  
   // Load more state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  // Hooks
+  const { user } = useAuthContext();
+  const { addToast } = useToast();
+  const createJobApplicationMutation = useCreateJobApplication();
+  const shortlistExternalMutation = useShortlistExternalCandidate();
   
   // Track current intent for better loading messages
   const [currentIntent, setCurrentIntent] = useState<string | null>(null);
@@ -1141,6 +1157,206 @@ Please provide a natural, conversational summary highlighting their strengths, e
     setPanelState('collapsed');
   };
 
+  // Handle shortlist candidate - opens job selection modal
+  const handleShortlistCandidate = (candidateMatch: any) => {
+    setSelectedCandidateForShortlist(candidateMatch);
+    setShowProjectModal(true);
+  };
+
+  // Handle job selected from modal
+  const handleJobSelected = async (jobId: string) => {
+    if (!selectedCandidateForShortlist) {
+      addToast({
+        type: 'error',
+        title: 'No candidate selected',
+        message: 'Please select a candidate first'
+      });
+      throw new Error('No candidate selected');
+    }
+
+    try {
+      setIsShortlisting(true);
+
+      // AI Chat candidates are ALWAYS from CoreSignal (external source)
+      // Extract candidate data from the wrapper object
+      const candidate = selectedCandidateForShortlist.candidate || selectedCandidateForShortlist;
+      
+      // Get the actual coreSignalId - prioritize top-level field from backend
+      let actualCoreSignalId = candidate.coreSignalId;
+      
+      // Parse notes/notesData to get the full CoreSignal data
+      let fullCandidateData = { ...candidate };
+      if (candidate.notesData) {
+        // notesData is already an object
+        fullCandidateData = { ...candidate, ...candidate.notesData };
+        if (!actualCoreSignalId && candidate.notesData.coreSignalId) {
+          actualCoreSignalId = candidate.notesData.coreSignalId;
+        }
+      } else if (candidate.notes) {
+        // notes might be a JSON string
+        try {
+          const notesData = typeof candidate.notes === 'string' 
+            ? JSON.parse(candidate.notes) 
+            : candidate.notes;
+          fullCandidateData = { ...candidate, ...notesData };
+          if (!actualCoreSignalId && notesData.coreSignalId) {
+            actualCoreSignalId = notesData.coreSignalId;
+          }
+        } catch (e) {
+          console.warn('Could not parse candidate notes:', e);
+        }
+      }
+      
+      // Validate we have a coreSignalId
+      if (!actualCoreSignalId) {
+        console.error('No coreSignalId found for AI Chat candidate:', candidate);
+        throw new Error('Cannot save AI Chat candidate without coreSignalId');
+      }
+      
+      console.log('[ChatbotWidget] Saving AI Chat candidate with coreSignalId:', actualCoreSignalId);
+      
+      // Step 1: Save external candidate to database first
+      const shortlistResult = await shortlistExternalMutation.mutateAsync({
+        coreSignalId: actualCoreSignalId,
+        candidateData: fullCandidateData,
+        createdBy: user?.id || ''
+      });
+
+      // Extract candidate ID from result
+      const candidateIdForApplication = shortlistResult.candidateId || shortlistResult.existingCandidateId;
+
+      if (!candidateIdForApplication) {
+        throw new Error('Failed to get candidate ID from shortlist result');
+      }
+
+      if (shortlistResult.success && !shortlistResult.existingCandidateId) {
+        addToast({
+          type: 'success',
+          title: 'Candidate Saved',
+          message: shortlistResult.message,
+          duration: 2000
+        });
+      }
+
+      // Step 2: Create job application with the database candidate ID
+      await createJobApplicationMutation.mutateAsync({
+        jobId: jobId,
+        candidateId: candidateIdForApplication,
+        status: 'Applied',
+        appliedDate: new Date().toISOString(),
+      });
+
+      addToast({
+        type: 'success',
+        title: 'Added to Job',
+        message: `${candidate.fullName || 'Candidate'} has been added to the job successfully.`,
+        duration: 3000
+      });
+
+      setShowProjectModal(false);
+      setSelectedCandidateForShortlist(null);
+    } catch (error: any) {
+      console.error('Error adding candidate to job:', error);
+      
+      if (error?.response?.status === 409 || error?.message?.includes('already applied')) {
+        addToast({
+          type: 'info',
+          title: 'Already Applied',
+          message: `${selectedCandidateForShortlist.candidate?.fullName || 'Candidate'} has already applied to this job.`,
+          duration: 3000
+        });
+      } else {
+        addToast({
+          type: 'error',
+          title: 'Failed to Add to Job',
+          message: error instanceof Error ? error.message : 'Failed to add candidate to the job. Please try again.',
+          duration: 5000
+        });
+      }
+      throw error;
+    } finally {
+      setIsShortlisting(false);
+    }
+  };
+
+  // Handle add to database (without job)
+  const handleAddToDatabase = async () => {
+    if (!selectedCandidateForShortlist) return;
+
+    try {
+      setIsShortlisting(true);
+
+      // AI Chat candidates are ALWAYS from CoreSignal (external source)
+      const candidate = selectedCandidateForShortlist.candidate || selectedCandidateForShortlist;
+      
+      // Get the actual coreSignalId - prioritize top-level field from backend
+      let actualCoreSignalId = candidate.coreSignalId;
+      
+      // Parse notes/notesData to get the full CoreSignal data
+      let fullCandidateData = { ...candidate };
+      if (candidate.notesData) {
+        fullCandidateData = { ...candidate, ...candidate.notesData };
+        if (!actualCoreSignalId && candidate.notesData.coreSignalId) {
+          actualCoreSignalId = candidate.notesData.coreSignalId;
+        }
+      } else if (candidate.notes) {
+        try {
+          const notesData = typeof candidate.notes === 'string' 
+            ? JSON.parse(candidate.notes) 
+            : candidate.notes;
+          fullCandidateData = { ...candidate, ...notesData };
+          if (!actualCoreSignalId && notesData.coreSignalId) {
+            actualCoreSignalId = notesData.coreSignalId;
+          }
+        } catch (e) {
+          console.warn('Could not parse candidate notes:', e);
+        }
+      }
+
+      if (!actualCoreSignalId) {
+        console.error('No coreSignalId found for AI Chat candidate:', candidate);
+        throw new Error('Cannot save AI Chat candidate without coreSignalId');
+      }
+
+      console.log('[ChatbotWidget] Adding AI Chat candidate to database with coreSignalId:', actualCoreSignalId);
+
+      const shortlistResult = await shortlistExternalMutation.mutateAsync({
+        coreSignalId: actualCoreSignalId,
+        candidateData: fullCandidateData,
+        createdBy: user?.id || ''
+      });
+
+      if (shortlistResult.success) {
+        addToast({
+          type: 'success',
+          title: 'Candidate Added to Database',
+          message: shortlistResult.message,
+          duration: 3000
+        });
+      } else if (shortlistResult.existingCandidateId) {
+        addToast({
+          type: 'info',
+          title: 'Candidate Already Exists',
+          message: shortlistResult.message || 'This candidate is already in your database',
+          duration: 3000
+        });
+      }
+      
+      setShowProjectModal(false);
+      setSelectedCandidateForShortlist(null);
+    } catch (error) {
+      console.error('Error adding candidate to database:', error);
+      addToast({
+        type: 'error',
+        title: 'Failed to Add Candidate',
+        message: error instanceof Error ? error.message : 'Failed to add candidate to database. Please try again.',
+        duration: 7000
+      });
+    } finally {
+      setIsShortlisting(false);
+    }
+  };
+
   // Handle panel state changes
   const handlePanelStateChange = (newState: 'closed' | 'collapsed' | 'expanded') => {
     setPanelState(newState);
@@ -1407,8 +1623,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
                                     handleOpenProfilePanel(cand);
                                   }}
                                   onShortlist={(cand) => {
-
-                                    // TODO: Implement shortlist functionality
+                                    handleShortlistCandidate(cand);
                                   }}
                                 />
                               ))}
@@ -1457,8 +1672,7 @@ Please provide a natural, conversational summary highlighting their strengths, e
                                     handleOpenProfilePanel(cand);
                                   }}
                                   onShortlist={(cand) => {
-
-                                    // TODO: Implement shortlist functionality
+                                    handleShortlistCandidate(cand);
                                   }}
                                 />
                               ))}
@@ -1646,6 +1860,23 @@ Please provide a natural, conversational summary highlighting their strengths, e
   return (
     <>
       {createPortal(chatContent, document.body)}
+      
+      {/* Job Selection Modal */}
+      {createPortal(
+        <JobSelectionModal
+          isOpen={showProjectModal}
+          onClose={() => {
+            setShowProjectModal(false);
+            setSelectedCandidateForShortlist(null);
+          }}
+          candidate={selectedCandidateForShortlist?.candidate || selectedCandidateForShortlist}
+          onJobSelected={handleJobSelected}
+          onAddToDatabase={handleAddToDatabase}
+          isLoading={isShortlisting || createJobApplicationMutation.isPending || shortlistExternalMutation.isPending}
+        />,
+        document.body
+      )}
+      
       {/* Profile Side Panel */}
       {panelState !== 'closed' && selectedUserDataForPanel && createPortal(
         <SourcingProfileSidePanel
@@ -1655,8 +1886,9 @@ Please provide a natural, conversational summary highlighting their strengths, e
           candidateId={selectedCandidateId || undefined}
           projectId={undefined}
           onShortlist={() => {
-
-            // TODO: Implement shortlist functionality
+            // Get the original candidate data from selectedUserDataForPanel
+            const candidateData = selectedUserDataForPanel.rawCandidateData || selectedUserDataForPanel;
+            handleShortlistCandidate(candidateData);
           }}
         />,
         document.body
