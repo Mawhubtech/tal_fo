@@ -140,6 +140,7 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
           onCandidateClick={onCandidateClick}
           onCandidateStageChange={handleCandidateStageChange}
           onCandidateRemove={onCandidateRemove}
+          onCandidateUpdate={onCandidateUpdate}
         />
       )}
 
