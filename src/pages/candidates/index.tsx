@@ -7,7 +7,7 @@ import BulkImportModal from '../../components/BulkImportModal';
 import JobSelectionModal from '../../components/JobSelectionModal';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
 import CategoryManagementModal from '../../components/CategoryManagementModal';
-import CategoryFilter from '../../components/CategoryFilter';
+import { useCategories } from '../../hooks/useCategories';
 import CategoryAssignment from '../../components/CategoryAssignment';
 import { CreateCandidateDto } from '../../types/candidate.types';
 import { useCandidates, useCandidate, useCandidateStats, useUpdateCandidateStatus, useCreateCandidate, useUpdateCandidate, useDeleteCandidate } from '../../hooks/useCandidates';
@@ -108,6 +108,10 @@ const CandidatesPage: React.FC = () => {
   });
 
   const statsQuery = useCandidateStats(false);
+  
+  // Hook for fetching categories
+  const { data: categoriesData } = useCategories({ isActive: true });
+  const categories = categoriesData?.categories || [];
   
   // Hook for fetching individual candidate details
   const selectedCandidateQuery = useCandidate(selectedCandidateId || '');
@@ -682,10 +686,25 @@ const CandidatesPage: React.FC = () => {
                   <option value="mid">Mid (3-5 years)</option>
                   <option value="senior">Senior (5+ years)</option>
                 </select>
-                <CategoryFilter
-                  selectedCategoryIds={categoryFilter}
-                  onCategoryChange={setCategoryFilter}
-                />
+                <select
+                  className="px-2 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                  value={categoryFilter.length > 0 ? categoryFilter[0] : 'all'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'all') {
+                      setCategoryFilter([]);
+                    } else {
+                      setCategoryFilter([value]);
+                    }
+                  }}
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               {/* Action buttons section - always in a row */}
