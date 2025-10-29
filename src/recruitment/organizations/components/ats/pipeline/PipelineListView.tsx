@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Mail, Phone, Star, Tag, MapPin, ChevronDown, Trash2, ExternalLink, Briefcase, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Mail, Phone, Star, Tag, MapPin, ChevronDown, Trash2, ExternalLink, Briefcase, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { Candidate } from '../../../data/mock';
 import type { Pipeline } from '../../../../../services/pipelineService';
 import { getScoreColor, getStageColor } from '../shared';
@@ -10,23 +10,95 @@ interface PipelineListViewProps {
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateStageChange?: (candidateId: string, newStage: string) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
+  onCandidateUpdate?: (candidate: Candidate) => void;
+  sortBy?: 'date-desc' | 'date-asc' | 'score-desc' | 'score-asc';
 }
+
+// Star Rating Component
+const StarRating: React.FC<{
+  rating: number;
+  maxRating?: number;
+  onChange: (rating: number) => void;
+  readonly?: boolean;
+  isLoading?: boolean;
+}> = ({ rating, maxRating = 5, onChange, readonly = false, isLoading = false }) => {
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  
+  const displayRating = hoverRating !== null ? hoverRating : rating;
+  const starCount = 5; // Display as 5 stars (each star represents 1 point)
+  
+  const handleClick = (starIndex: number) => {
+    if (readonly || isLoading) return;
+    const newRating = starIndex + 1;
+    onChange(newRating);
+  };
+  
+  const renderStar = (index: number) => {
+    const starValue = index + 1;
+    const isFilled = displayRating >= starValue;
+    
+    return (
+      <button
+        key={index}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick(index);
+        }}
+        onMouseEnter={() => !readonly && !isLoading && setHoverRating(index + 1)}
+        onMouseLeave={() => !readonly && !isLoading && setHoverRating(null)}
+        className={`focus:outline-none transition-transform ${
+          readonly || isLoading ? 'cursor-default' : 'cursor-pointer hover:scale-110'
+        } ${isLoading ? 'opacity-50' : ''}`}
+        disabled={readonly || isLoading}
+      >
+        {isFilled ? (
+          <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+        ) : (
+          <Star className="w-5 h-5 text-gray-300" />
+        )}
+      </button>
+    );
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2">
+        <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
+        <span className="text-xs text-gray-500 font-medium">Updating...</span>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: starCount }, (_, i) => renderStar(i))}
+      <span className="ml-2 text-xs text-gray-500 font-medium min-w-[20px]">
+        {displayRating > 0 ? `${displayRating}/5` : '-'}
+      </span>
+    </div>
+  );
+};
 
 export const PipelineListView: React.FC<PipelineListViewProps> = ({
   candidates,
   pipeline,
   onCandidateClick,
   onCandidateStageChange,
-  onCandidateRemove
+  onCandidateRemove,
+  onCandidateUpdate,
+  sortBy = 'date-desc'
 }) => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
   
-  // Sort candidates by applied date (most recent first)
-  const sortedCandidates = [...candidates].sort((a, b) => {
-    return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
-  });
+  // Track which candidate's rating is being updated
+  const [updatingRatingId, setUpdatingRatingId] = useState<string | null>(null);
+  
+  // Don't re-sort here - candidates are already sorted by PipelineTab based on sortBy prop
+  // Just use the candidates as they come in
+  const sortedCandidates = candidates;
   
   // Calculate pagination
   const totalPages = Math.ceil(sortedCandidates.length / itemsPerPage);
@@ -72,6 +144,22 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
     }
   };
 
+  // Handle rating change
+  const handleRatingChange = async (candidate: Candidate, newRating: number) => {
+    if (onCandidateUpdate) {
+      setUpdatingRatingId(candidate.id);
+      try {
+        const updatedCandidate = { ...candidate, score: newRating };
+        await onCandidateUpdate(updatedCandidate);
+      } finally {
+        // Keep loading state for a brief moment to show feedback
+        setTimeout(() => {
+          setUpdatingRatingId(null);
+        }, 300);
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
       <div className="overflow-x-auto">
@@ -92,6 +180,9 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
               </th> */}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Stage
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rating
               </th>
               {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Skills
@@ -231,6 +322,18 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
                   </div>
                 </td>
 
+                {/* Rating */}
+                <td 
+                  className="px-6 py-4 whitespace-nowrap"
+                  onClick={(e) => e.stopPropagation()} // Prevent row click when interacting with rating
+                >
+                  <StarRating
+                    rating={candidate.score || 0}
+                    onChange={(newRating) => handleRatingChange(candidate, newRating)}
+                    isLoading={updatingRatingId === candidate.id}
+                  />
+                </td>
+
                 {/* Skills/Tags - Hidden */}
                 {/* <td className="px-6 py-4">
                   <div className="flex flex-wrap gap-1">
@@ -286,7 +389,12 @@ export const PipelineListView: React.FC<PipelineListViewProps> = ({
               Showing {startIndex + 1}-{Math.min(endIndex, sortedCandidates.length)} of {sortedCandidates.length} candidates
             </p>
             <p className="text-xs text-gray-500">
-              Sorted by: Most Recent First
+              Sorted by: {
+                sortBy === 'date-desc' ? 'Date: Newest First' :
+                sortBy === 'date-asc' ? 'Date: Oldest First' :
+                sortBy === 'score-desc' ? 'Rating: Highest First' :
+                'Rating: Lowest First'
+              }
             </p>
           </div>
           <div className="flex gap-2">

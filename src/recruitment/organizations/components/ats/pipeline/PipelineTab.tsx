@@ -14,8 +14,8 @@ interface PipelineTabProps {
   onSearchChange: (query: string) => void;
   selectedStage: string;
   onStageChange: (stage: string) => void;
-  sortBy: 'date' | 'score';
-  onSortChange: (sort: 'date' | 'score') => void;
+  sortBy: 'date-desc' | 'date-asc' | 'score-desc' | 'score-asc';
+  onSortChange: (sort: 'date-desc' | 'date-asc' | 'score-desc' | 'score-asc') => void;
   onCandidateClick?: (candidate: Candidate) => void;
   onCandidateUpdate?: (candidate: Candidate) => void;
   onCandidateRemove?: (candidate: Candidate) => void;
@@ -53,10 +53,25 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
 
   // Sort candidates
   const sortedCandidates = [...filteredCandidates].sort((a, b) => {
-    if (sortBy === 'date') {
-      return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
-    } else {
-      return b.score - a.score;
+    switch (sortBy) {
+      case 'date-desc': // Newest first
+        return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
+      case 'date-asc': // Oldest first
+        return new Date(a.appliedDate).getTime() - new Date(b.appliedDate).getTime();
+      case 'score-desc': // Highest score first
+        {
+          const scoreA = parseFloat(a.score as any) || 0;
+          const scoreB = parseFloat(b.score as any) || 0;
+          return scoreB - scoreA;
+        }
+      case 'score-asc': // Lowest score first
+        {
+          const scoreA = parseFloat(a.score as any) || 0;
+          const scoreB = parseFloat(b.score as any) || 0;
+          return scoreA - scoreB;
+        }
+      default:
+        return 0;
     }
   });
 
@@ -140,6 +155,8 @@ export const PipelineTab: React.FC<PipelineTabProps> = ({
           onCandidateClick={onCandidateClick}
           onCandidateStageChange={handleCandidateStageChange}
           onCandidateRemove={onCandidateRemove}
+          onCandidateUpdate={onCandidateUpdate}
+          sortBy={sortBy}
         />
       )}
 

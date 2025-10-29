@@ -228,7 +228,7 @@ const JobATSPage: React.FC = () => {
   // Pipeline states
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'score'>('date');
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'score-desc' | 'score-asc'>('date-desc');
   
   // Calendar view states (for tasks only)
   const [tasksView, setTasksView] = useState<'list' | 'calendar'>('list');

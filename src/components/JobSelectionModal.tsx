@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { X, Briefcase, MapPin, Building, Clock, DollarSign, Users, ChevronRight, Loader2, Check, Plus, ChevronLeft } from 'lucide-react';
+import { X, Briefcase, MapPin, Building, Clock, DollarSign, Users, ChevronRight, Loader2, Check, Plus, ChevronLeft, Tag } from 'lucide-react';
 import { useJobs } from '../hooks/useJobs';
 import { useAuthContext } from '../contexts/AuthContext';
+import { useCategories } from '../hooks/useCategories';
 
 interface JobSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onJobSelected: (jobId: string) => Promise<void>;
-  onAddToDatabase?: () => void; // Make optional
+  onAddToDatabase?: (categoryIds?: string[]) => void; // Updated to accept category IDs
   candidate: any;
   isLoading?: boolean;
   showAddToDatabase?: boolean; // New prop to control visibility
@@ -30,6 +31,11 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
   const [addedJobIds, setAddedJobIds] = useState<Set<string>>(new Set());
   const [processingJobIds, setProcessingJobIds] = useState<Set<string>>(new Set());
   const [alreadyAppliedJobIds, setAlreadyAppliedJobIds] = useState<Set<string>>(new Set());
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showCategorySelection, setShowCategorySelection] = useState(false);
+
+  // Fetch active categories
+  const { data: categoriesData } = useCategories({ isActive: true });
 
   // Debounce search term
   React.useEffect(() => {
@@ -204,9 +210,9 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
         <div className="p-4 sm:p-6">
           {/* Add to Database Option - Only show if showAddToDatabase is true */}
           {showAddToDatabase && onAddToDatabase && (
-            <div className="mb-6">
+            <div className="mb-6 space-y-4">
               <button
-                onClick={onAddToDatabase}
+                onClick={() => setShowCategorySelection(!showCategorySelection)}
                 disabled={isLoading}
                 className="w-full p-4 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -217,7 +223,11 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                     </div>
                     <div className="text-left">
                       <div className="font-semibold text-gray-900">Save candidate without assigning to a specific job</div>
-                      
+                      {selectedCategories.length > 0 && (
+                        <div className="text-xs text-purple-600 mt-1">
+                          {selectedCategories.length} {selectedCategories.length === 1 ? 'category' : 'categories'} selected
+                        </div>
+                      )}
                     </div>
                   </div>
                   {isLoading ? (
@@ -227,6 +237,89 @@ const JobSelectionModal: React.FC<JobSelectionModalProps> = ({
                   )}
                 </div>
               </button>
+
+              {/* Category Selection */}
+              {showCategorySelection && (
+                <div className="border border-purple-200 rounded-lg p-4 bg-purple-50/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-purple-600" />
+                      <h4 className="text-sm font-semibold text-gray-900">Select Categories (Optional)</h4>
+                    </div>
+                    {selectedCategories.length > 0 && (
+                      <button
+                        onClick={() => setSelectedCategories([])}
+                        className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {categoriesData?.categories && categoriesData.categories.length > 0 ? (
+                      categoriesData.categories.map((category) => (
+                        <label
+                          key={category.id}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-white cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.includes(category.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCategories([...selectedCategories, category.id]);
+                              } else {
+                                setSelectedCategories(selectedCategories.filter(id => id !== category.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <div
+                            className="w-3 h-3 rounded flex-shrink-0"
+                            style={{ backgroundColor: category.color || '#9CA3AF' }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {category.name}
+                            </p>
+                            {category.description && (
+                              <p className="text-xs text-gray-500 truncate">
+                                {category.description}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500 text-center py-2">
+                        No categories available
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => {
+                        onAddToDatabase(selectedCategories.length > 0 ? selectedCategories : undefined);
+                        setShowCategorySelection(false);
+                        setSelectedCategories([]);
+                      }}
+                      disabled={isLoading}
+                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                    >
+                      Save Candidate
+                    </button>
+                    <button
+                      onClick={() => setShowCategorySelection(false)}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
