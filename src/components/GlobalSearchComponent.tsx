@@ -15,6 +15,7 @@ import BooleanSearchParser from '../services/booleanSearchParser';
 import type { SearchFilters } from '../services/searchService';
 import { useToast } from '../contexts/ToastContext';
 import { useSearch, useExternalSourceSearch, useCombinedSearch } from '../hooks/useSearch';
+import Threads from './animations/Threads';
 
 export interface GlobalSearchRef {
   clearSearch: () => void;
@@ -587,51 +588,94 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex justify-center items-start pt-6 sm:pt-12 md:pt-20 min-h-screen px-3 sm:px-4 md:px-6">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Prism Background */}
+      {/* <div className="absolute inset-0 z-0">
+        <Prism
+          height={3.5}
+          baseWidth={6}
+          animationType="3drotate"
+          glow={1.2}
+          offset={{ x: 0, y: 0 }}
+          noise={0}
+          transparent={true}
+          scale={3}
+          hueShift={.1}
+          colorFrequency={1.5}
+          hoverStrength={0.3}
+          inertia={0.7}
+          bloom={0.2}
+          suspendWhenOffscreen={false}
+          timeScale={1.2}
+        />
+      </div> */}
+      {/* Threads Background */}
+      <div className="absolute opacity-50 w-full inset-0 z-10">
+        <Threads 
+            amplitude={1.5}
+            distance={0.15}
+            enableMouseInteraction={true}
+        />
+      </div>
+      
+      {/* Custom CSS for animations */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+          }
+        `
+      }} />
+      
+      <div className="relative z-10 flex justify-center items-center min-h-[90vh] px-3 sm:px-4 md:px-6">
         {/* Centered Search Section */}
-        <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg sm:shadow-xl md:shadow-2xl border sm:border-2 border-purple-300 sm:border-purple-400 p-4 sm:p-6 md:p-8">
+        <div className="w-full max-w-5xl !py-[5rem] bg-white/30 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-4 sm:p-6 md:p-8 relative overflow-hidden">
+          {/* Inner glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5 rounded-2xl"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent rounded-2xl"></div>
           {/* Logo and title */}
-          <div className="text-center mb-4 sm:mb-6 md:mb-8">
+          <div className="text-center mb-4 sm:mb-6 md:mb-8 relative">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="flex-1"></div> {/* Spacer */}
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 text-center flex-1">Talent Search</h1>
-              {searchQuery.trim() && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                  }}
-                  className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-gray-100 text-gray-700 rounded-md sm:rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors flex-shrink-0"
-                  title="Clear search and start fresh"
-                >
-                  <X className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Clear</span>
-                </button>
-              )}
-              {!searchQuery.trim() && <div className="flex-1"></div>} {/* Spacer when no clear button */}
+              <div className="flex-1 flex items-center justify-center">
+                <h1 className="text-lg w-[200px] sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent text-center">
+                  AI Talent Search
+                </h1>
+                {/* AI Icon */}
+                <div className="ml-2 w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center animate-spin" style={{animationDuration: '3s'}}>
+                  <div className="w-3 h-3 bg-white rounded-full"></div>
+                </div>
+              </div>
+              {<div className="flex-1"></div>} {/* Spacer when no clear button */}
             </div>
-            <p className="text-gray-500 text-xs sm:text-sm px-2 sm:px-0">
-              Search across all talent databases and discover top talent.
+            <p className="text-gray-600 text-xs sm:text-sm px-2 sm:px-0 font-medium">
+              Powered by AI • Search across all talent databases and discover top talent
             </p>
           </div>
           
           {/* Who are you looking for section */}
           <div className="w-full mb-4 sm:mb-6">
             <div className="flex items-center gap-2 mb-3 sm:mb-4">
-              <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
-              <h2 className="text-sm sm:text-base md:text-lg font-medium text-gray-700">Who are you looking for?</h2>
+              <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                <SearchIcon className="w-3 h-3 text-white" />
+              </div>
+              <h2 className="text-sm sm:text-base md:text-lg font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                Who are you looking for?
+              </h2>
             </div>
             
-            <div className="relative">
-              <div className="bg-gray-50 p-2.5 sm:p-4 md:p-4 rounded-lg flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 border border-gray-200 hover:border-purple-300 focus-within:border-purple-400 transition-colors">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 rounded-xl blur-sm group-hover:blur-md transition-all duration-300"></div>
+              <div className="relative bg-gradient-to-r from-white to-gray-50/80 p-2.5 sm:p-4 md:p-4 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 border border-purple-200/50 hover:border-purple-300/70 focus-within:border-purple-400/80 transition-all duration-300 shadow-lg hover:shadow-xl backdrop-blur-sm">
                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
                   <input
                     type="text"
-                    placeholder="e.g. Software Engineers with 5+ years..."
+                    placeholder="e.g. Software Engineers with 5+ years experience..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-transparent border-none outline-none flex-1 text-sm sm:text-base md:text-lg text-gray-800 placeholder-gray-400 min-w-0 py-0.5 sm:py-1"
+                    className="bg-transparent border-none outline-none flex-1 text-sm sm:text-base md:text-lg text-gray-800 placeholder-gray-500 min-w-0 py-0.5 sm:py-1 font-medium"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && searchQuery.trim() && !isSearching) {
                         handleAISearch();
@@ -644,7 +688,7 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                       onClick={() => {
                         setSearchQuery('');
                       }}
-                      className="text-gray-400 hover:text-gray-600 active:text-gray-700 p-1 rounded-md transition-colors flex-shrink-0 sm:hidden"
+                      className="text-gray-400 hover:text-red-500 active:text-red-600 p-1 rounded-md transition-colors flex-shrink-0 sm:hidden hover:bg-red-50"
                       title="Clear search"
                     >
                       <X className="w-4 h-4" />
@@ -655,11 +699,11 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
                 <button 
                   onClick={handleAISearch}
                   disabled={!searchQuery.trim() || isSearching}
-                  className="bg-purple-600 hover:bg-purple-700 active:bg-purple-800 disabled:bg-gray-400 text-white px-3 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-2.5 rounded-md text-sm sm:text-base md:text-base font-medium transition-colors flex items-center justify-center gap-2 flex-shrink-0 w-full sm:w-auto"
-                  title="Search candidates"
+                  className="bg-purple-500 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 active:from-purple-800 active:via-pink-800 active:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white px-3 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-2.5 rounded-lg text-sm sm:text-base md:text-base font-semibold transition-all duration-300 flex items-center justify-center gap-2 flex-shrink-0 w-full sm:w-auto shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:shadow-none"
+                  title="Search candidates with AI"
                 >
                   <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Search</span>
+                  <span>AI Search</span>
                 </button>
               </div>
             </div>
@@ -668,12 +712,32 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
           {/* Loading Status Display */}
           <div className="w-full mb-2 sm:mb-3">
             {isSearching ? (
-              <div className="text-center py-2">
-                <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-sm sm:text-base md:text-lg font-bold text-purple-600">
-                    {searchLoadingMessage || 'Searching...'}
+              <div className="text-center py-4">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  {/* AI Brain Loading Animation */}
+                  <div className="relative">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full animate-ping opacity-75"></div>
+                    <div className="absolute inset-1 w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                      <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                  <span className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent animate-pulse">
+                    {searchLoadingMessage || 'AI is thinking...'}
                   </span>
+                </div>
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full animate-pulse" style={{
+                    width: '100%',
+                    animation: 'progress 2.5s ease-in-out infinite'
+                  }}></div>
+                </div>
+                {/* AI Processing Dots */}
+                <div className="flex justify-center gap-1 mt-3">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+                  <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                 </div>
               </div>
             ) : null}
@@ -681,33 +745,44 @@ const GlobalSearchComponent = forwardRef<GlobalSearchRef>((props, ref) => {
 
           {/* Action buttons */}
           <div className="w-full">
-            <p className="text-xs sm:text-sm text-gray-600 text-center mb-3 sm:mb-4 px-2">Or use advanced search options:</p>
-            <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 md:gap-4">
+            <p className="text-xs sm:text-sm text-gray-600 text-center mb-3 sm:mb-4 px-2 font-medium">
+              Or use advanced AI-powered search options:
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 md:gap-5">
               <button
-                className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-purple-700 border border-purple-300 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
+                className="group relative flex items-center justify-center gap-2 bg-gradient-to-r from-white to-gray-50 hover:from-purple-50 hover:to-pink-50 active:from-purple-100 active:to-pink-100 text-purple-700 hover:text-purple-800 border border-purple-200 hover:border-purple-300 px-4 sm:px-5 py-3 rounded-xl transition-all duration-300 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                 onClick={() => setIsJobDescriptionDialogOpen(true)}
-                title="Search from Job Description"
+                title="AI-powered Job Description Search"
               >
-                <FileText className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Job Description</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center group-hover:animate-pulse">
+                  <FileText className="w-3 h-3 text-white" />
+                </div>
+                <span className="truncate relative">Job Description</span>
               </button>
 
               <button
-                className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-purple-700 border border-purple-300 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
+                className="group relative flex items-center justify-center gap-2 bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-indigo-50 active:from-blue-100 active:to-indigo-100 text-blue-700 hover:text-blue-800 border border-blue-200 hover:border-blue-300 px-4 sm:px-5 py-3 rounded-xl transition-all duration-300 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                 onClick={() => setIsBooleanDialogOpen(true)}
-                title="Boolean Search"
+                title="Advanced Boolean Search with AI"
               >
-                <ToggleRight className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Boolean Search</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative w-5 h-5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center group-hover:animate-pulse">
+                  <ToggleRight className="w-3 h-3 text-white" />
+                </div>
+                <span className="truncate relative">Boolean Search</span>
               </button>
               
               <button
-                className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-purple-700 border border-purple-300 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
+                className="group relative flex items-center justify-center gap-2 bg-gradient-to-r from-white to-gray-50 hover:from-emerald-50 hover:to-teal-50 active:from-emerald-100 active:to-teal-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 hover:border-emerald-300 px-4 sm:px-5 py-3 rounded-xl transition-all duration-300 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                 onClick={toggleAdvancedFilters}
-                title="Advanced Filters"
+                title="AI-Enhanced Advanced Filters"
               >
-                <Filter className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Advanced Filters</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative w-5 h-5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center group-hover:animate-pulse">
+                  <Filter className="w-3 h-3 text-white" />
+                </div>
+                <span className="truncate relative">Advanced Filters</span>
               </button>
             </div>
           </div>

@@ -10,18 +10,37 @@ const LanguageToggle: React.FC = () => {
     i18n.changeLanguage(newLanguage);
   };
 
-  const currentLanguage = i18n.language === 'ar' ? 'العربية' : 'English';
-  const nextLanguage = i18n.language === 'ar' ? 'English' : 'العربية';
+  const isArabic = i18n.language === 'ar';
 
   return (
     <button
       onClick={toggleLanguage}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-      title={`Switch to ${nextLanguage}`}
+      className="relative inline-flex items-center justify-center w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+      title={`Switch to ${isArabic ? 'English' : 'العربية'}`}
     >
-      <Globe className="w-4 h-4" />
-      <span className="font-medium text-sm">{currentLanguage}</span>
-      <span className="text-xs text-gray-500">→ {nextLanguage}</span>
+      {/* Toggle Switch Background */}
+      <div className={`absolute inset-0 rounded-full transition-colors duration-300 ${
+        isArabic 
+          ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+          : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+      }`} />
+      
+      {/* Toggle Switch Handle */}
+      <div className={`relative w-6 h-6 bg-white rounded-full shadow-lg transform transition-transform duration-300 ${
+        isArabic ? 'translate-x-4' : '-translate-x-4'
+      }`}>
+        <Globe className="w-3 h-3 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-600" />
+      </div>
+      
+      {/* Language Labels */}
+      <div className="absolute inset-0 flex items-center justify-between px-2 pointer-events-none">
+        <span></span>
+        <span className={`text-xs font-medium transition-colors duration-300 ${
+          isArabic ? 'text-white' : 'text-white'
+        }`}>
+          {isArabic ? 'AR' : 'EN'}
+        </span>
+      </div>
     </button>
   );
 };

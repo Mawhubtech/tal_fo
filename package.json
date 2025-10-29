@@ -11,6 +11,7 @@
     "preview": "vite preview --host"
   },
   "dependencies": {
+    "@buf/mawhub_tal.bufbuild_es": "^2.10.0-20251028230547-f3359b82114e.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -23,6 +24,7 @@
     "i18next": "^25.6.0",
     "jspdf": "^3.0.1",
     "lucide-react": "^0.344.0",
+    "ogl": "^1.0.11",
     "quill": "^2.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -34,6 +36,7 @@
     "react-router-dom": "^6.22.3",
     "recharts": "^3.1.0",
     "socket.io-client": "^4.8.1",
+    "three": "^0.180.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

@@ -629,12 +629,6 @@ Make the content engaging, specific, and tailored to the role. Ensure salary ran
     await submitJob(publish, publishingOptions);
   };
 
-  const handlePublishWithOptions = async (options: JobPublishingOptions) => {
-    setPublishingOptions(options);
-    setShowPublishingModal(false);
-    await submitJob(true, options);
-  };
-
   const submitJob = async (publish: boolean, options: JobPublishingOptions) => {
     try {
       setError(null);

@@ -13,6 +13,7 @@ import { useEmailService } from '../hooks/useEmailService';
 import { useGmailStatus } from '../contexts/GmailStatusContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { NotificationType } from '../types/notification.types';
+import LanguageToggle from './LanguageToggle';
 
 // Helper function to format relative time
 const formatTimeAgo = (date: Date | string): string => {
@@ -499,6 +500,9 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch, onMenuToggle, showMo
           )}
         </div>
 
+        <LanguageToggle />
+
+
         {/* User profile dropdown */}
         <div className="relative">
           <button 
@@ -519,6 +523,7 @@ const TopNavbar: React.FC<TopNavbarProps> = ({ onNewSearch, onMenuToggle, showMo
             
             <ChevronDown className="w-4 h-4 text-gray-500" />
           </button>
+
           
           {/* User dropdown menu */}
           {showUserDropdown && (
